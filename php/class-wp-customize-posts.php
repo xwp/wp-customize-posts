@@ -29,27 +29,35 @@ final class WP_Customize_Posts {
 
 		$section_id = 'posts';
 
-		$previewed_post = $this->get_previewed_post();
-		if ( $previewed_post && ! $this->current_user_can_edit_post( $previewed_post ) ) {
-			$previewed_post = null;
-		}
+		$customized_posts = $this->get_customized_posts();
 
+		$top_priority = 1;
+		$bottom_position = 900; // Before widgets
 		$this->manager->add_section( $section_id, array(
 			'title'      => __( 'Posts' ),
-			'priority'   => $previewed_post ? 1 : 900,
+			'priority'   => ! empty( $customized_posts ) ? $top_priority : $bottom_position,
 			'capability' => 'edit_posts',
 		) );
 
-		$this->manager->add_setting( 'post_selection', array(
-			'default'    => $previewed_post ? $previewed_post->ID : 0,
-			'type'       => 'custom',
-			'capability' => $previewed_post ? get_post_type_object( $previewed_post->post_type )->cap->edit_posts : 'edit_posts',
-		) );
+		// @todo Allow any number of post settings and their controls to be registered, even dynamically
+		// @todo Add a setting-less control for adding additional post controls?
+		// @todo Allow post controls to be dynamically removed
 
-		$control = new WP_Post_Selector_Customize_Control( $this->manager, 'post_selection', array(
-			'section' => $section_id,
-		) );
-		$this->manager->add_control( $control );
+		foreach ( $customized_posts as $post ) {
+			$setting_id = $this->get_setting_id( $post->ID );
+
+			$this->manager->add_setting( $setting_id, array(
+				'default'    => $post->to_array(),
+				'type'       => 'custom',
+				'capability' => get_post_type_object( $post->post_type )->cap->edit_posts,
+			) );
+
+			$control = new WP_Post_Customize_Control( $this->manager, $setting_id, array(
+				'section' => $section_id,
+			) );
+			$this->manager->add_control( $control );
+
+		}
 
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 	}
@@ -68,6 +76,63 @@ final class WP_Customize_Posts {
 		}
 		$post = get_post( $post_id );
 		return $post;
+	}
+
+	/**
+	 * @return array[WP_Post]
+	 */
+	public function get_customized_posts() {
+		$posts = array();
+
+		if ( $this->manager->is_preview() && ! is_admin() ) {
+			// Create posts settings dynamically based on which settings are coming from customizer
+			// @todo Would be better to access private $this->manager->_post_values
+			if ( isset( $_POST['customized'] ) ) {
+				$post_values = json_decode( wp_unslash( $_POST['customized'] ), true );
+				foreach ( $post_values as $setting_id => $post_value ) {
+					if ( ( $post_id = $this->parse_setting_id( $setting_id ) ) && ( $post = get_post( $post_id ) ) ) {
+						$posts[] = $post;
+					}
+				}
+			}
+		} else {
+			// The user invoked the post preview and so the post's url appears as a query param
+			$previewed_post = $this->get_previewed_post();
+			if ( $previewed_post ) {
+				$posts[] = $previewed_post;
+			}
+		}
+
+		$customized_posts = array();
+		foreach ( $posts as $post ) {
+			if ( $this->current_user_can_edit_post( $post ) ) {
+				$customized_posts[] = $post;
+			}
+		}
+
+		return $customized_posts;
+	}
+
+	/**
+	 * @param int $post_id
+	 *
+	 * @return string
+	 */
+	public function get_setting_id( $post_id ) {
+		return sprintf( 'posts[%d]', $post_id );
+	}
+
+	/**
+	 * @param string $setting_id
+	 *
+	 * @return int|null
+	 */
+	public function parse_setting_id( $setting_id ) {
+		$post_id = null;
+		if ( preg_match( '/^posts\[(\d+)\]$/', $setting_id, $matches ) ) {
+			$post_id = (int) $matches[1];
+		}
+		return $post_id;
 	}
 
 	/**
