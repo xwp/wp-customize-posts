@@ -60,6 +60,19 @@ final class WP_Customize_Posts {
 		}
 
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+
+		// $check = apply_filters( "get_{$meta_type}_metadata", null, $object_id, $meta_key, $single );
+
+
+		// @todo we need to prevent the cached post from polluting the cache
+		// $_post = wp_cache_get( $post_id, 'posts' );
+
+		add_filter( 'the_posts', array( $this, 'preview_query_get_posts' ) );
+		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
+		// @todo Sanitize PHP and JS values
+
+		// add_action( 'wp' ); // set queried_object
+		// @todo The WP_Post class does not provide any facility to filter post fields
 	}
 
 	/**
@@ -106,7 +119,7 @@ final class WP_Customize_Posts {
 		$customized_posts = array();
 		foreach ( $posts as $post ) {
 			if ( $this->current_user_can_edit_post( $post ) ) {
-				$customized_posts[] = $post;
+				$customized_posts[ $post->ID ] = $post;
 			}
 		}
 
@@ -149,6 +162,67 @@ final class WP_Customize_Posts {
 	public function enqueue_scripts() {
 		wp_enqueue_script( 'customize-posts', CUSTOMIZE_POSTS_PLUGIN_URL . '/js/customize-posts.js', array( 'jquery', 'wp-backbone', 'customize-controls', 'underscore' ), false, 1 );
 		wp_enqueue_style( 'customize-posts-style', CUSTOMIZE_POSTS_PLUGIN_URL . '/css/customize-posts.css', array(  'wp-admin' ) );
+	}
+
+	/**
+	 * @param WP_Post $post
+	 * @return boolean
+	 */
+	public function override_post_data( WP_Post &$post ) {
+		$customized_posts = $this->get_customized_posts();
+		if ( ! isset( $customized_posts[ $post->ID ] ) ) {
+			return false;
+		}
+		$setting = $this->manager->get_setting( $this->get_setting_id( $post->ID ) );
+		if ( ! $setting ) {
+			return false;
+		}
+		$post_overrides = $this->manager->post_value( $setting );
+
+		if ( empty( $post_overrides ) ) {
+			return false;
+		}
+
+		foreach ( $post_overrides as $key => $value ) {
+			if ( in_array( $key, array( 'post_title', 'post_content', 'post_excerpt' ) ) ) { // @todo remove whitelist
+				$post->$key = $value; // @todo Sanitize post field? Actually, should be handled by post_value()
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Override the posts in the query with their previewed values.
+	 *
+	 * @param array $posts
+	 * @return array
+	 */
+	public function preview_query_get_posts( array $posts ) {
+		foreach ( $posts as &$post ) {
+			$this->override_post_data( $post );
+		}
+		return $posts;
+	}
+
+	/**
+	 * Override calls to setup_postdata with the previewed post_data. In most
+	 * cases, the get_posts filter above should already set this up as expected
+	 * but if a post os fetched via get_post() or by some other means, then
+	 * this will ensure that it gets supplied with the previewed data when
+	 * the post data is setup.
+	 *
+	 * @param WP_Post $post
+	 */
+	public function preview_setup_postdata( WP_Post $post ) {
+		static $prevent_setup_postdata_recursion = false;
+		if ( $prevent_setup_postdata_recursion ) {
+			return;
+		}
+
+		$this->override_post_data( $post );
+		$prevent_setup_postdata_recursion = true;
+		setup_postdata( $post );
+		$prevent_setup_postdata_recursion = false;
 	}
 
 }

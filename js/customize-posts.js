@@ -15,7 +15,7 @@
 			// Update the fields when the setting changes
 			this.setting.bind( function ( to, from ) {
 				if ( ! _( from ).isEqual( to ) ) {
-					control.find( ':input' ).each( function () {
+					control.container.find( ':input' ).each( function () {
 						var input, key;
 						input = $( this );
 						key = input.data( 'key' );
