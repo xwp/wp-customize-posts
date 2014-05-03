@@ -147,7 +147,7 @@ final class WP_Customize_Posts {
 	 *
 	 */
 	public function enqueue_scripts() {
-		wp_enqueue_script( 'customize-posts', CUSTOMIZE_POSTS_PLUGIN_URL . '/js/customize-posts.js', array( 'jquery', 'wp-backbone', 'customize-controls' ), false, 1 );
+		wp_enqueue_script( 'customize-posts', CUSTOMIZE_POSTS_PLUGIN_URL . '/js/customize-posts.js', array( 'jquery', 'wp-backbone', 'customize-controls', 'underscore' ), false, 1 );
 		wp_enqueue_style( 'customize-posts-style', CUSTOMIZE_POSTS_PLUGIN_URL . '/css/customize-posts.css', array(  'wp-admin' ) );
 	}
 

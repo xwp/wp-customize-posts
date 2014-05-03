@@ -39,13 +39,24 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 		$post_data = $this->setting->value();
 		?>
 		<div class="post-selector-control">
-			<p>
-				<label for="<?php echo esc_attr( $this->id . 'title' ) ?>"><?php esc_html_e( 'Title:' ); ?></label>
-				<input type="text" id="<?php echo esc_attr( $this->id . 'title' ) ?>" value="<?php echo esc_attr( $post_data ? $post_data['post_title'] : '' ) ?>">
-			</p>
-			<?php var_dump( $post_data ) ?>
-
+			<?php foreach ( $post_data as $key => $value ): ?>
+				<p>
+					<label for="<?php echo esc_attr( $this->get_field_id( $key ) ) ?>"><?php echo esc_html( $key . ':' ) ?></label>
+					<input type="text" id="<?php echo esc_attr( $this->get_field_id( $key ) ) ?>" data-key="<?php echo esc_attr( $key ) ?>" value="<?php echo esc_attr( is_array( $value ) ? serialize( $value ) : $value ) ?>" <?php disabled( is_array( $value ) ) ?>>
+				</p>
+			<?php endforeach; ?>
 		</div>
-	<?php
+		<?php
+	}
+
+	/**
+	 * Generate the HTML ID for a post input
+	 *
+	 * @param string $key
+	 *
+	 * @return string
+	 */
+	public function get_field_id( $key ) {
+		return sprintf( '%s[%s]', $this->id, $key );
 	}
 }
