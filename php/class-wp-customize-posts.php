@@ -55,9 +55,10 @@ final class WP_Customize_Posts {
 			$setting_id = $this->get_setting_id( $post->ID );
 
 			$this->manager->add_setting( $setting_id, array(
-				'default'    => $post->to_array(),
-				'type'       => 'custom',
-				'capability' => get_post_type_object( $post->post_type )->cap->edit_posts,
+				'default'              => $post->to_array(),
+				'type'                 => 'custom',
+				'capability'           => get_post_type_object( $post->post_type )->cap->edit_posts,
+				'sanitize_callback'    => array( $this, 'sanitize_setting' ),
 			) );
 
 			$control = new WP_Post_Customize_Control( $this->manager, $setting_id, array(
@@ -174,6 +175,26 @@ final class WP_Customize_Posts {
 	public function enqueue_scripts() {
 		wp_enqueue_script( 'customize-posts', CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-posts.js', array( 'jquery', 'wp-backbone', 'customize-controls', 'underscore' ), false, 1 );
 		wp_enqueue_style( 'customize-posts-style', CUSTOMIZE_POSTS_PLUGIN_URL . 'css/customize-posts.css', array(  'wp-admin' ) );
+	}
+
+	/**
+	 * @param array $post_data
+	 * @param WP_Customize_Setting $setting
+	 * @return array|null
+	 */
+	public function sanitize_setting( $post_data, WP_Customize_Setting $setting ) {
+		$post_id = $this->parse_setting_id( $setting->id );
+		if ( empty( $post_data['ID'] ) || $post_id !== (int) $post_data['ID'] ) {
+			return null;
+		}
+		$existing_post = get_post( $post_id );
+		if ( ! $existing_post ) {
+			return null;
+		}
+
+		$post_data = sanitize_post( $post_data, 'db' );
+
+		return $post_data;
 	}
 
 	/**
