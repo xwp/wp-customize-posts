@@ -18,6 +18,14 @@ final class WP_Customize_Posts {
 	public $manager;
 
 	/**
+	 * In the preview, keep track of all posts queried during the execution of
+	 * the page.
+	 *
+	 * @var array[int]
+	 */
+	public $preview_queried_post_ids = array();
+
+	/**
 	 * Initial loader.
 	 *
 	 * @access public
@@ -73,6 +81,8 @@ final class WP_Customize_Posts {
 
 		// add_action( 'wp' ); // set queried_object
 		// @todo The WP_Post class does not provide any facility to filter post fields
+
+		add_action( 'customize_preview_init', array( $this, 'customize_preview_init' ) );
 	}
 
 	/**
@@ -92,7 +102,9 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * @return array[WP_Post]
+	 * @todo When navigating in the preview, add a post edit control automatically for queried object? Suggest all posts queried in preview.
+	 *
+	 * @return array[WP_Post] where keys are the post IDs
 	 */
 	public function get_customized_posts() {
 		$posts = array();
@@ -160,8 +172,8 @@ final class WP_Customize_Posts {
 	 *
 	 */
 	public function enqueue_scripts() {
-		wp_enqueue_script( 'customize-posts', CUSTOMIZE_POSTS_PLUGIN_URL . '/js/customize-posts.js', array( 'jquery', 'wp-backbone', 'customize-controls', 'underscore' ), false, 1 );
-		wp_enqueue_style( 'customize-posts-style', CUSTOMIZE_POSTS_PLUGIN_URL . '/css/customize-posts.css', array(  'wp-admin' ) );
+		wp_enqueue_script( 'customize-posts', CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-posts.js', array( 'jquery', 'wp-backbone', 'customize-controls', 'underscore' ), false, 1 );
+		wp_enqueue_style( 'customize-posts-style', CUSTOMIZE_POSTS_PLUGIN_URL . 'css/customize-posts.css', array(  'wp-admin' ) );
 	}
 
 	/**
@@ -223,6 +235,45 @@ final class WP_Customize_Posts {
 		$prevent_setup_postdata_recursion = true;
 		setup_postdata( $post );
 		$prevent_setup_postdata_recursion = false;
+	}
+
+	/**
+	 *
+	 */
+	public function customize_preview_init() {
+		add_action( 'the_posts', array( $this, 'tally_queried_posts' ), 1000 );
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_preview_scripts' ) );
+		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
+	}
+
+	/**
+	 * @param array $posts
+	 * @return array
+	 */
+	public function tally_queried_posts( array $posts ) {
+		$this->preview_queried_post_ids = array_merge( $this->preview_queried_post_ids, wp_list_pluck( $posts, 'ID' ) );
+		return $posts;
+	}
+
+	/**
+	 *
+	 */
+	public function enqueue_preview_scripts() {
+		wp_enqueue_script( 'customize-preview-posts', CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-preview-posts.js', array( 'jquery', 'customize-preview' ), false, 1 );
+	}
+
+	/**
+	 *
+	 */
+	public function export_preview_data() {
+		global $wp_scripts;
+
+		$exported = array(
+			'preview_queried_post_ids' => $this->preview_queried_post_ids,
+		);
+
+		$data = sprintf( 'var _wpCustomizePostsSettings= %s;', json_encode( $exported ) );
+		$wp_scripts->registered['customize-preview-posts']->add_data( 'data', $data );
 	}
 
 }
