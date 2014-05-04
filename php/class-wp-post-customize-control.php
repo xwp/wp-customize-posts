@@ -37,13 +37,16 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 	 */
 	public function render_content() {
 		$post_data = $this->setting->value();
+		$editable_post_field_keys = $this->manager->posts->get_editable_post_field_keys();
 		?>
 		<div class="post-selector-control">
 			<?php foreach ( $post_data as $key => $value ): ?>
-				<p>
-					<label for="<?php echo esc_attr( $this->get_field_id( $key ) ) ?>"><?php echo esc_html( $key . ':' ) ?></label>
-					<input type="text" id="<?php echo esc_attr( $this->get_field_id( $key ) ) ?>" data-key="<?php echo esc_attr( $key ) ?>" value="<?php echo esc_attr( is_array( $value ) ? serialize( $value ) : $value ) ?>" <?php disabled( is_array( $value ) ) ?>>
-				</p>
+				<?php if ( in_array( $key, $editable_post_field_keys ) ) : ?>
+					<p>
+						<label for="<?php echo esc_attr( $this->get_field_id( $key ) ) ?>"><?php echo esc_html( $key . ':' ) ?></label>
+						<input type="text" id="<?php echo esc_attr( $this->get_field_id( $key ) ) ?>" data-key="<?php echo esc_attr( $key ) ?>" value="<?php echo esc_attr( is_array( $value ) ? serialize( $value ) : $value ) ?>" <?php disabled( is_array( $value ) ) ?>>
+					</p>
+				<?php endif; ?>
 			<?php endforeach; ?>
 		</div>
 		<?php

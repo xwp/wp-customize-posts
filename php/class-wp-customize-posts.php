@@ -198,6 +198,13 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * @return array
+	 */
+	public function get_editable_post_field_keys() {
+		return array( 'post_author', 'post_date', 'post_date_gmt', 'post_content', 'post_content_filtered', 'post_title', 'post_excerpt', 'post_status', 'post_type', 'comment_status', 'ping_status', 'post_password', 'post_name', 'to_ping', 'pinged', 'post_modified', 'post_modified_gmt', 'post_parent', 'menu_order' );
+	}
+
+	/**
 	 * @param WP_Post $post
 	 * @return boolean
 	 */
@@ -216,9 +223,10 @@ final class WP_Customize_Posts {
 			return false;
 		}
 
+		$editable_post_fields = $this->get_editable_post_field_keys();
 		foreach ( $post_overrides as $key => $value ) {
-			if ( in_array( $key, array( 'post_title', 'post_content', 'post_excerpt' ) ) ) { // @todo remove whitelist
-				$post->$key = $value; // @todo Sanitize post field? Actually, should be handled by post_value()
+			if ( in_array( $key, $editable_post_fields ) ) {
+				$post->$key = $value;
 			}
 		}
 		return true;
