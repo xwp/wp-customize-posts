@@ -30,8 +30,8 @@ function wp_customize_posts_init() {
 	global $wp_customize;
 	define( 'CUSTOMIZE_POSTS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 	define( 'CUSTOMIZE_POSTS_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
-	require_once( plugin_dir_path( __FILE__ ) . '/php/class-wp-customize-posts.php' );
-	require_once( plugin_dir_path( __FILE__ ) . '/php/class-wp-post-customize-control.php' );
+	require_once( CUSTOMIZE_POSTS_PLUGIN_PATH . 'php/class-wp-customize-posts.php' );
+	require_once( CUSTOMIZE_POSTS_PLUGIN_PATH . 'php/class-wp-post-customize-control.php' );
 	$wp_customize->posts = new WP_Customize_Posts( $wp_customize );
 }
 add_action( 'customize_register', 'wp_customize_posts_init' );
