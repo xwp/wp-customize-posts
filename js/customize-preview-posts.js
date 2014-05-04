@@ -11,6 +11,7 @@
 
 			preview.bind( 'active', function() {
 				preview.send( 'queried-posts', _wpCustomizePostsSettings.preview_queried_post_ids );
+				// @todo also send the post queried-object?
 			} );
 
 			OldPreview.prototype.initialize.call( this, params, options );

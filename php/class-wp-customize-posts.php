@@ -56,7 +56,7 @@ final class WP_Customize_Posts {
 
 			$this->manager->add_setting( $setting_id, array(
 				'default'              => $post->to_array(),
-				'type'                 => 'custom',
+				'type'                 => 'post',
 				'capability'           => get_post_type_object( $post->post_type )->cap->edit_posts,
 				'sanitize_callback'    => array( $this, 'sanitize_setting' ),
 			) );
@@ -72,15 +72,11 @@ final class WP_Customize_Posts {
 
 		// $check = apply_filters( "get_{$meta_type}_metadata", null, $object_id, $meta_key, $single );
 
-
-		// @todo we need to prevent the cached post from polluting the cache
-		// $_post = wp_cache_get( $post_id, 'posts' );
-
 		add_filter( 'the_posts', array( $this, 'preview_query_get_posts' ) );
 		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
-		// @todo Sanitize PHP and JS values
 
-		// add_action( 'wp' ); // set queried_object
+		add_action( 'customize_update_post', array( $this, 'update_post' ) );
+
 		// @todo The WP_Post class does not provide any facility to filter post fields
 
 		add_action( 'customize_preview_init', array( $this, 'customize_preview_init' ) );
@@ -103,30 +99,25 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * @todo When navigating in the preview, add a post edit control automatically for queried object? Suggest all posts queried in preview.
-	 *
 	 * @return array[WP_Post] where keys are the post IDs
 	 */
 	public function get_customized_posts() {
 		$posts = array();
 
-		if ( $this->manager->is_preview() && ! is_admin() ) {
-			// Create posts settings dynamically based on which settings are coming from customizer
-			// @todo Would be better to access private $this->manager->_post_values
-			if ( isset( $_POST['customized'] ) ) {
-				$post_values = json_decode( wp_unslash( $_POST['customized'] ), true );
-				foreach ( $post_values as $setting_id => $post_value ) {
-					if ( ( $post_id = $this->parse_setting_id( $setting_id ) ) && ( $post = get_post( $post_id ) ) ) {
-						$posts[] = $post;
-					}
+		// Create posts settings dynamically based on which settings are coming from customizer
+		// @todo Would be better to access private $this->manager->_post_values
+		if ( isset( $_POST['customized'] ) ) {
+			$post_values = json_decode( wp_unslash( $_POST['customized'] ), true );
+			foreach ( $post_values as $setting_id => $post_value ) {
+				if ( ( $post_id = $this->parse_setting_id( $setting_id ) ) && ( $post = get_post( $post_id ) ) ) {
+					$posts[] = $post;
 				}
 			}
-		} else {
-			// The user invoked the post preview and so the post's url appears as a query param
-			$previewed_post = $this->get_previewed_post();
-			if ( $previewed_post ) {
-				$posts[] = $previewed_post;
-			}
+		}
+
+		// The user invoked the post preview and so the post's url appears as a query param
+		if ( empty( $posts ) && ( $previewed_post = $this->get_previewed_post() ) ) {
+			$posts[] = $previewed_post;
 		}
 
 		$customized_posts = array();
@@ -162,10 +153,11 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * @param WP_Post $post
+	 * @param WP_Post|int $post
 	 * @return boolean
 	 */
-	public function current_user_can_edit_post( WP_Post $post ) {
+	public function current_user_can_edit_post( $post ) {
+		$post = get_post( $post );
 		return current_user_can( get_post_type_object( $post->post_type )->cap->edit_post, $post->ID );
 	}
 
@@ -194,7 +186,48 @@ final class WP_Customize_Posts {
 
 		$post_data = sanitize_post( $post_data, 'db' );
 
+		// @todo apply wp_insert_post_data filter here too?
+
 		return $post_data;
+	}
+
+	/**
+	 * Save the post and meta via the customize_update_post hook.
+	 *
+	 * @param array $data
+	 */
+	public function update_post( array $data ) {
+		if ( empty( $data ) ) {
+			return;
+		}
+		if ( empty( $data['ID'] ) ) {
+			trigger_error( 'customize_update_post requires an array including an ID' );
+			return;
+		}
+		if ( ! $this->current_user_can_edit_post( $data['ID'] ) ) {
+			return;
+		}
+
+		$post = array();
+		$allowed_keys = $this->get_editable_post_field_keys();
+		$allowed_keys[] = 'ID';
+		foreach ( $allowed_keys as $key ) {
+			if ( isset( $data[ $key ] ) ) {
+				$post[ $key ] = $data[ $key ];
+			}
+		}
+		wp_update_post( (object) $post ); // @todo handle error
+
+		$meta = array();
+		if ( isset( $post_data['meta'] ) ) {
+			$meta = $post_data['meta'];
+		}
+
+		foreach ( $meta as $key => $value ) {
+			update_post_meta( $data['ID'], $key, $value );
+		}
+
+		// @todo Taxonomies?
 	}
 
 	/**

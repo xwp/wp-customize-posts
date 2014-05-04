@@ -18,6 +18,7 @@
 			preview.bind( 'queried-posts', function( queriedPosts ) {
 				//console.info( 'Preview frame rendered these posts:', queriedPosts );
 				// @todo Use queriedPosts to auto-suggest posts to edit (create their controls on the fly)
+				// @todo When navigating in the preview, add a post edit control automatically for queried object? Suggest all posts queried in preview.
 			} );
 
 			OldPreviewer.prototype.initialize.call( this, params, options );

@@ -17,7 +17,6 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 	/**
 	 * Constructor.
 	 *
-	 * @since 3.4.0
 	 * @uses WP_Customize_Control::__construct()
 	 *
 	 * @param WP_Customize_Manager $manager
@@ -25,15 +24,11 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 	 * @param array $args
 	 */
 	public function __construct( $manager, $id, $args = array() ) {
-		$this->label = __( 'Post:' );
-
 		parent::__construct( $manager, $id, $args );
 	}
 
 	/**
 	 * Render the control's content.
-	 *
-	 * @since 3.4.0
 	 */
 	public function render_content() {
 		$post_data = $this->setting->value();
