@@ -31,26 +31,49 @@
 
 			// Update the fields when the setting changes
 			this.setting.bind( function ( to, from ) {
+
 				if ( ! _( from ).isEqual( to ) ) {
-					control.container.find( ':input' ).each( function () {
-						var input, key;
+					control.container.find( ':input[id]' ).each( function () {
+						var input, keys, key, value;
 						input = $( this );
-						key = input.data( 'key' );
-						if ( key && typeof to[ key ] !== 'undefined' ) {
-							input.val( to[ key ] );
+
+						keys = input.prop( 'id' ).replace( /^.*?\[/, '' ).replace( /\]$/, '' ).split( /\]\[/ );
+						keys.shift(); // get rid of the ID
+
+						value = _( to ).clone();
+						while ( keys.length && typeof value !== 'undefined' ) {
+							key = keys.shift();
+							value = value[ key ];
 						}
+
+						if ( typeof value !== 'undefined' ) {
+							input.val( value );
+						}
+						// @todo clones fail on meta
 					} );
 				}
 			} );
+			// @todo Construct the control's fields with JS here, using the setting as the value
+			// @todo Handle addition and deletion of postmeta
 
 			// Update the setting when the fields change
-			this.container.find( ':input' ).on( 'input propertychange', function () {
-				var input, key, data;
+			this.container.on( 'input propertychange', ':input', function () {
+				var input, leaf_key, keys, data, subdata;
 				input = $( this );
-				key = input.data( 'key' );
-				data = _( control.setting() ).clone(); // otherwise, the setting won't register as changed
-				if ( input.val() !== data[ key ] ) {
-					data[ key ] = input.val();
+
+				keys = input.prop( 'id' ).replace( /^.*?\[/, '' ).replace( /\]$/, '' ).split( /\]\[/ );
+				keys.shift(); // get rid of the ID
+				leaf_key = keys.pop(); // we want the top-level key
+
+				data = JSON.parse( JSON.stringify( control.setting() ) ); // hacky deeply clone
+
+				subdata = data;
+				while ( keys.length && typeof subdata !== 'undefined' ) {
+					subdata = subdata[ keys.shift() ];
+				}
+
+				if ( typeof subdata !== 'undefined' ) {
+					subdata[ leaf_key ] = input.val();
 					control.setting( data );
 				}
 			} );

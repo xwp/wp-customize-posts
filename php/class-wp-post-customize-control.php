@@ -36,13 +36,33 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 		?>
 		<div class="post-selector-control">
 			<?php foreach ( $post_data as $key => $value ): ?>
+				<?php // @todo All of this should get populated with JS via the setting ?>
 				<?php if ( in_array( $key, $editable_post_field_keys ) ) : ?>
 					<p>
-						<label for="<?php echo esc_attr( $this->get_field_id( $key ) ) ?>"><?php echo esc_html( $key . ':' ) ?></label>
-						<input type="text" id="<?php echo esc_attr( $this->get_field_id( $key ) ) ?>" data-key="<?php echo esc_attr( $key ) ?>" value="<?php echo esc_attr( is_array( $value ) ? serialize( $value ) : $value ) ?>" <?php disabled( is_array( $value ) ) ?>>
+						<label for="<?php echo esc_attr( $this->get_field_name( $key ) ) ?>"><?php echo esc_html( $key . ':' ) ?></label>
+						<input type="text" id="<?php echo esc_attr( $this->get_field_name( $key ) ) ?>" value="<?php echo esc_attr( is_array( $value ) ? serialize( $value ) : $value ) ?>" <?php disabled( is_array( $value ) ) ?>>
 					</p>
 				<?php endif; ?>
 			<?php endforeach; ?>
+
+			<fieldset>
+				<legend>Meta</legend>
+				<dl>
+					<?php foreach ( get_post_custom( $post_data['ID'] ) as $meta_key => $meta_values ): ?>
+						<?php // @todo All of this should get populated with JS via the setting ?>
+						<?php if ( ! is_protected_meta( $meta_key, 'post' ) ): ?>
+							<dt>
+								<?php echo esc_html( $meta_key ); ?>
+							</dt>
+							<dd>
+								<?php foreach ( $meta_values as $i => $meta_value ) : ?>
+									<p><input id="<?php echo esc_attr( $this->get_field_name( 'meta', $meta_key, $i ) ) ?>" value="<?php echo esc_attr( $meta_value ) ?>"></p>
+								<?php endforeach; ?>
+							</dd>
+						<?php endif; ?>
+					<?php endforeach; ?>
+				</dl>
+			</fieldset>
 		</div>
 		<?php
 	}
@@ -50,11 +70,9 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 	/**
 	 * Generate the HTML ID for a post input
 	 *
-	 * @param string $key
-	 *
 	 * @return string
 	 */
-	public function get_field_id( $key ) {
-		return sprintf( '%s[%s]', $this->id, $key );
+	public function get_field_name( /*...*/ ) {
+		return $this->id . '[' . join( '][', func_get_args() ) . ']';
 	}
 }

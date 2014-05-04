@@ -54,8 +54,16 @@ final class WP_Customize_Posts {
 		foreach ( $customized_posts as $post ) {
 			$setting_id = $this->get_setting_id( $post->ID );
 
+			$data = $post->to_array();
+			$data['meta'] = array();
+			foreach ( get_post_custom( $post->ID ) as $meta_key => $meta_values ) {
+				if ( ! is_protected_meta( $meta_key, 'post' ) ) {
+					$data['meta'][ $meta_key ] = $meta_values; // @todo Serialization?
+				}
+			}
+
 			$this->manager->add_setting( $setting_id, array(
-				'default'              => $post->to_array(),
+				'default'              => $data,
 				'type'                 => 'post',
 				'capability'           => get_post_type_object( $post->post_type )->cap->edit_posts,
 				'sanitize_callback'    => array( $this, 'sanitize_setting' ),
@@ -69,11 +77,6 @@ final class WP_Customize_Posts {
 		}
 
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
-
-		// $check = apply_filters( "get_{$meta_type}_metadata", null, $object_id, $meta_key, $single );
-
-		add_filter( 'the_posts', array( $this, 'preview_query_get_posts' ) );
-		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
 
 		add_action( 'customize_update_post', array( $this, 'update_post' ) );
 
@@ -219,12 +222,12 @@ final class WP_Customize_Posts {
 		wp_update_post( (object) $post ); // @todo handle error
 
 		$meta = array();
-		if ( isset( $post_data['meta'] ) ) {
-			$meta = $post_data['meta'];
+		if ( isset( $data['meta'] ) ) {
+			$meta = $data['meta'];
 		}
 
 		foreach ( $meta as $key => $value ) {
-			update_post_meta( $data['ID'], $key, $value );
+			update_post_meta( $data['ID'], $key, $value[0] ); // @todo This doesn't account for multiple
 		}
 
 		// @todo Taxonomies?
@@ -238,20 +241,29 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * @param int|WP_Post $post
+	 * @return bool|array
+	 */
+	public function get_post_overrides( $post ) {
+		$post = get_post( $post );
+		$customized_posts = $this->get_customized_posts();
+		if ( ! isset( $customized_posts[ $post->ID ] ) ) {
+			return null;
+		}
+		$setting = $this->manager->get_setting( $this->get_setting_id( $post->ID ) );
+		if ( ! $setting ) {
+			return null;
+		}
+		$post_overrides = $this->manager->post_value( $setting );
+		return $post_overrides;
+	}
+
+	/**
 	 * @param WP_Post $post
 	 * @return boolean
 	 */
 	public function override_post_data( WP_Post &$post ) {
-		$customized_posts = $this->get_customized_posts();
-		if ( ! isset( $customized_posts[ $post->ID ] ) ) {
-			return false;
-		}
-		$setting = $this->manager->get_setting( $this->get_setting_id( $post->ID ) );
-		if ( ! $setting ) {
-			return false;
-		}
-		$post_overrides = $this->manager->post_value( $setting );
-
+		$post_overrides = $this->get_post_overrides( $post );
 		if ( empty( $post_overrides ) ) {
 			return false;
 		}
@@ -300,12 +312,39 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * @param mixed $meta_value
+	 * @param int $post_id
+	 * @param string $meta_key
+	 * @param bool $single
+	 * @return mixed
+	 */
+	public function preview_post_meta( $meta_value, $post_id, $meta_key, $single ) {
+		$post_overrides = $this->get_post_overrides( $post_id );
+		if ( ! empty( $post_overrides ) ) {
+			if ( empty( $meta_key ) ) { // i.e. get_post_custom()
+				$meta_value = $post_overrides['meta']; // @todo do we need to handle $single?
+			} else if ( ! isset( $post_overrides['meta'][ $meta_key ] ) ) {
+				$meta_value = $single ? '' : array();
+			} elseif ( $single ) {
+				$meta_value = $post_overrides['meta'][ $meta_key ][0];
+			} else {
+				$meta_value = $post_overrides['meta'][ $meta_key ];
+			}
+		}
+		return $meta_value;
+	}
+
+	/**
 	 *
 	 */
 	public function customize_preview_init() {
 		add_action( 'the_posts', array( $this, 'tally_queried_posts' ), 1000 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_preview_scripts' ) );
 		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
+
+		add_filter( 'the_posts', array( $this, 'preview_query_get_posts' ) );
+		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
+		add_filter( 'get_post_metadata', array( $this, 'preview_post_meta' ), 10, 5 );
 	}
 
 	/**
