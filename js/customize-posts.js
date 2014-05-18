@@ -31,7 +31,6 @@
 
 			// Update the fields when the setting changes
 			this.setting.bind( function ( to, from ) {
-
 				if ( ! _( from ).isEqual( to ) ) {
 					control.container.find( ':input[id]' ).each( function () {
 						var input, keys, key, value;
@@ -40,7 +39,7 @@
 						keys = input.prop( 'id' ).replace( /^.*?\[/, '' ).replace( /\]$/, '' ).split( /\]\[/ );
 						keys.shift(); // get rid of the ID
 
-						value = _( to ).clone();
+						value = to;
 						while ( keys.length && typeof value !== 'undefined' ) {
 							key = keys.shift();
 							value = value[ key ];
@@ -49,7 +48,6 @@
 						if ( typeof value !== 'undefined' && input.val() !== value ) {
 							input.val( value );
 						}
-						// @todo clones fail on meta
 					} );
 				}
 			} );
@@ -62,7 +60,7 @@
 				input = $( this );
 
 				keys = input.prop( 'id' ).replace( /^.*?\[/, '' ).replace( /\]$/, '' ).split( /\]\[/ );
-				keys.shift(); // get rid of the ID
+				keys.shift(); // get rid of the post ID, e.g. from 'posts[519][meta][single2][0]'
 				leaf_key = keys.pop(); // we want the top-level key
 
 				data = JSON.parse( JSON.stringify( control.setting() ) ); // hacky deeply clone
