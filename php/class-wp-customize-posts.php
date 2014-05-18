@@ -366,10 +366,28 @@ final class WP_Customize_Posts {
 	 * @return mixed
 	 */
 	public function preview_post_meta( $meta_value, $post_id, $meta_key, $single ) {
+		static $prevent_recursion = false;
+		if ( $prevent_recursion ) {
+			return $meta_value;
+		}
+
+		if ( ! empty( $meta_key ) && is_protected_meta( $meta_key, 'post' ) ) {
+			return $meta_value;
+		}
+
 		$post_overrides = $this->get_post_overrides( $post_id );
 		if ( ! empty( $post_overrides ) ) {
 			if ( empty( $meta_key ) ) { // i.e. get_post_custom()
 				$meta_value = $post_overrides['meta']; // @todo do we need to handle $single?
+
+				// Make sure protected meta are not manipulated
+				$prevent_recursion = true;
+				foreach ( get_post_custom( $post_id ) as $key => $values ) {
+					if ( is_protected_meta( $key, 'post' ) ) {
+						$meta_value[ $key ] = $values;
+					}
+				}
+				$prevent_recursion = false;
 			} else if ( ! isset( $post_overrides['meta'][ $meta_key ] ) ) {
 				$meta_value = $single ? '' : array();
 			} elseif ( $single ) {
