@@ -56,7 +56,7 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 							</dt>
 							<dd>
 								<?php foreach ( $meta_values as $i => $meta_value ) : ?>
-									<p><input id="<?php echo esc_attr( $this->get_field_name( 'meta', $meta_key, $i ) ) ?>" value="<?php echo esc_attr( $meta_value ) ?>"></p>
+									<p><input <?php if ( is_serialized( $meta_value ) ): ?> readonly <?php endif; ?> id="<?php echo esc_attr( $this->get_field_name( 'meta', $meta_key, $i ) ) ?>" value="<?php echo esc_attr( $meta_value ) ?>"></p>
 								<?php endforeach; ?>
 							</dd>
 						<?php endif; ?>
