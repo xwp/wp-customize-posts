@@ -76,6 +76,8 @@ final class WP_Customize_Posts {
 
 		}
 
+		add_action( 'wp_default_scripts', array( $this, 'register_scripts' ) );
+		add_action( 'wp_default_styles', array( $this, 'register_styles' ) );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
 		add_action( 'customize_update_post', array( $this, 'update_post' ) );
@@ -86,6 +88,8 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * When loading the customizer from a post, get the post.
+	 *
 	 * @return WP_Post|null
 	 */
 	public function get_previewed_post() {
@@ -102,6 +106,8 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Given the data in $_POST[customized], get the posts being customized.
+	 *
 	 * @return array[WP_Post] where keys are the post IDs
 	 */
 	public function get_customized_posts() {
@@ -134,6 +140,8 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Convert a post ID into a setting ID.
+	 *
 	 * @param int $post_id
 	 *
 	 * @return string
@@ -143,6 +151,8 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Parse a post setting ID into its parts.
+	 *
 	 * @param string $setting_id
 	 *
 	 * @return int|null
@@ -156,6 +166,8 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Return whether current user can edit supplied post.
+	 *
 	 * @param WP_Post|int $post
 	 * @return boolean
 	 */
@@ -165,14 +177,39 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Register scripts for Customize Posts.
 	 *
+	 * Fires after wp_default_scripts
+	 *
+	 * @param WP_Scripts $scripts
 	 */
-	public function enqueue_scripts() {
-		wp_enqueue_script( 'customize-posts', CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-posts.js', array( 'jquery', 'wp-backbone', 'customize-controls', 'underscore' ), false, 1 );
-		wp_enqueue_style( 'customize-posts-style', CUSTOMIZE_POSTS_PLUGIN_URL . 'css/customize-posts.css', array(  'wp-admin' ) );
+	public function register_scripts( &$scripts ) {
+		$scripts->add( 'customize-posts', CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-posts.js', array( 'jquery', 'wp-backbone', 'customize-controls', 'underscore' ), false, 1 );
+		$scripts->add( 'customize-preview-posts', CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-preview-posts.js', array( 'jquery', 'customize-preview' ), false, 1 );
 	}
 
 	/**
+	 * Register styles for Customize Posts.
+	 *
+	 * Fires after wp_default_styles
+	 *
+	 * @param WP_Styles $styles
+	 */
+	public function register_styles( &$styles ) {
+		$styles->add( 'customize-posts-style', CUSTOMIZE_POSTS_PLUGIN_URL . 'css/customize-posts.css', array(  'wp-admin' ) );
+	}
+
+	/**
+	 * Enqueue scripts and styles for Customize Posts.
+	 */
+	public function enqueue_scripts() {
+		wp_enqueue_script( 'customize-posts' );
+		wp_enqueue_style( 'customize-posts-style' );
+	}
+
+	/**
+	 * Sanitize a setting for the customizer.
+	 *
 	 * @param array $post_data
 	 * @param WP_Customize_Setting $setting
 	 * @return array|null
@@ -234,6 +271,8 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Get the list of post data fields which can be edited.
+	 *
 	 * @return array
 	 */
 	public function get_editable_post_field_keys() {
@@ -241,6 +280,8 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Get the post overrides for a given post.
+	 *
 	 * @param int|WP_Post $post
 	 * @return bool|array
 	 */
@@ -259,6 +300,8 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Apply customized post override to a post.
+	 *
 	 * @param WP_Post $post
 	 * @return boolean
 	 */
@@ -279,6 +322,8 @@ final class WP_Customize_Posts {
 
 	/**
 	 * Override the posts in the query with their previewed values.
+	 *
+	 * Filters 'the_posts'.
 	 *
 	 * @param array $posts
 	 * @return array
@@ -312,6 +357,8 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Override a given postmeta from customized data.
+	 *
 	 * @param mixed $meta_value
 	 * @param int $post_id
 	 * @param string $meta_key
@@ -335,7 +382,7 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 *
+	 * Setup the customizer preview.
 	 */
 	public function customize_preview_init() {
 		add_action( 'the_posts', array( $this, 'tally_queried_posts' ), 1000 );
@@ -348,6 +395,8 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Keep track of the posts shown in the preview.
+	 *
 	 * @param array $posts
 	 * @return array
 	 */
@@ -357,14 +406,14 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 *
+	 * Enqueue scripts for the customizer preview.
 	 */
 	public function enqueue_preview_scripts() {
-		wp_enqueue_script( 'customize-preview-posts', CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-preview-posts.js', array( 'jquery', 'customize-preview' ), false, 1 );
+		wp_enqueue_script( 'customize-preview-posts' );
 	}
 
 	/**
-	 *
+	 * Export data into the customize preview.
 	 */
 	public function export_preview_data() {
 		global $wp_scripts;
