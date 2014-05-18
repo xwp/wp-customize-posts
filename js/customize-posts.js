@@ -46,7 +46,7 @@
 							value = value[ key ];
 						}
 
-						if ( typeof value !== 'undefined' ) {
+						if ( typeof value !== 'undefined' && input.val() !== value ) {
 							input.val( value );
 						}
 						// @todo clones fail on meta
