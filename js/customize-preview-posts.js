@@ -1,4 +1,4 @@
-/*global wp, jQuery, _wpCustomizePostsSettings */
+/*global wp, jQuery, _wpCustomizePreviewPostsSettings */
 ( function ( api, $ ) {
 
 	var OldPreview, preview;
@@ -10,7 +10,7 @@
 			preview = this;
 
 			preview.bind( 'active', function() {
-				preview.send( 'queried-posts', _wpCustomizePostsSettings.preview_queried_post_ids );
+				preview.send( 'queried-posts', _wpCustomizePreviewPostsSettings.preview_queried_post_ids );
 				// @todo also send the post queried-object?
 			} );
 

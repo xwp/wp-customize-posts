@@ -1,6 +1,9 @@
-/*global jQuery, wp, _ */
+/*global jQuery, wp, _, _wpCustomizePostsSettings */
 ( function ( api, $ ) {
 	var OldPreviewer, preview;
+
+	api.Posts = {};
+	$.extend( api.Posts, _wpCustomizePostsSettings );
 
 	api.bind( 'ready', function () {
 

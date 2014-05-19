@@ -74,11 +74,13 @@ final class WP_Customize_Posts {
 			) );
 			$this->manager->add_control( $control );
 
+			// @todo This needs to be dynamic. There needs to be a mechanism to get a setting value via JS, along with params like hierarchicahl, protected meta, etc
 		}
 
 		add_action( 'wp_default_scripts', array( $this, 'register_scripts' ) );
 		add_action( 'wp_default_styles', array( $this, 'register_styles' ) );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+		add_action( 'customize_controls_enqueue_scripts', array( $this, 'export_panel_data' ) );
 
 		add_action( 'customize_update_post', array( $this, 'update_post' ) );
 
@@ -431,6 +433,20 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Export data into the customize panel.
+	 */
+	public function export_panel_data() {
+		global $wp_scripts;
+
+		$exported = array(
+			'editable_post_field_keys' => $this->get_editable_post_field_keys(),
+		);
+
+		$data = sprintf( 'var _wpCustomizePostsSettings = %s;', json_encode( $exported ) );
+		$wp_scripts->add_data( 'customize-posts', 'data', $data );
+	}
+
+	/**
 	 * Export data into the customize preview.
 	 */
 	public function export_preview_data() {
@@ -440,8 +456,8 @@ final class WP_Customize_Posts {
 			'preview_queried_post_ids' => $this->preview_queried_post_ids,
 		);
 
-		$data = sprintf( 'var _wpCustomizePostsSettings= %s;', json_encode( $exported ) );
-		$wp_scripts->registered['customize-preview-posts']->add_data( 'data', $data );
+		$data = sprintf( 'var _wpCustomizePreviewPostsSettings= %s;', json_encode( $exported ) );
+		$wp_scripts->add_data( 'customize-preview-posts', 'data', $data );
 	}
 
 }
