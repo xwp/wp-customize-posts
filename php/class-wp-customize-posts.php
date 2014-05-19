@@ -232,6 +232,10 @@ final class WP_Customize_Posts {
 			$post_data['post_date_gmt'] = get_gmt_from_date( $post_data['post_date'] );
 		}
 
+		if ( ! isset( $post_data['meta'] ) ) {
+			$post_data['meta'] = array();
+		}
+
 		return $post_data;
 	}
 

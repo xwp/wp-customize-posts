@@ -54,8 +54,34 @@
 				control.updateSetting();
 			} );
 
+			control.container.on( 'click', '.add-meta', function () {
+				var setting, new_field;
+				setting = control.setting();
+				new_field = wp.template( 'customize-posts-meta-field' )( {
+					post_id: setting.ID,
+					key: '',
+					values: [ '' ]
+				} );
+				$( this ).closest( 'fieldset' ).find( 'dl' ).append( new_field ).find( '.meta-key:last' ).focus();
+			} );
+
+			control.container.on( 'click', '.add-meta-value', function () {
+				var setting, new_li, dd;
+				setting = control.setting();
+				dd = $( this ).closest( 'dd' );
+				new_li = wp.template( 'customize-posts-meta-field-value' )( {
+					post_id: setting.ID,
+					key: dd.prev( 'dt' ).find( '.meta-key' ).val(),
+					value: '',
+					i: dd.find( 'li' ).length
+				} );
+				new_li = $( new_li );
+				dd.find( 'ul' ).append( new_li );
+				new_li.find( '[name]' ).focus();
+			} );
+
 			control.container.on( 'click', '.delete-meta', function () {
-				var ul, li, meta_key_input, meta_key, old_setting, deleted_i, dd, prev_dd, next_dt;
+				var ul, li, meta_key_input, meta_key, old_setting, dt, dd, prev_dd, next_dt;
 
 				old_setting = control.setting();
 
