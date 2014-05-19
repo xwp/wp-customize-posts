@@ -54,8 +54,70 @@
 				control.updateSetting();
 			} );
 
+			control.container.on( 'click', '.delete-meta', function () {
+				var ul, li, meta_key_input, meta_key, old_setting, deleted_i, dd, prev_dd, next_dt;
+
+				old_setting = control.setting();
+
+				li = $( this ).closest( 'li' );
+				ul = li.closest( 'ul' );
+				dd = ul.closest( 'dd' );
+				dt = dd.prev( 'dt' );
+				prev_dd = dt.prev( 'dd' );
+				next_dt = dd.next( 'dt' );
+
+				meta_key_input = ul.closest( 'dd' ).prev( 'dt' ).find( '.meta-key' );
+				meta_key = meta_key_input.val();
+
+				li.find( ':input' ).prop( 'disabled', true );
+				li.slideUp( function () {
+					var value_lis;
+
+					li.remove();
+
+					value_lis = ul.find( 'li' );
+
+					// Restore focus
+					if ( ! value_lis.length ) {
+						// Eliminate dt/dd for meta since last value removed
+						dd.slideUp( function () {
+							dd.remove();
+						} );
+						dt.slideUp( function () {
+							dt.remove();
+						} );
+						if ( next_dt.length ) {
+							next_dt.find( ':input:first' ).focus();
+						} else if ( prev_dd.length ) {
+							prev_dd.find( ':input:last' ).focus();
+						} else {
+							control.container.find( 'button.add-meta' ).focus();
+						}
+					} else {
+						// Reset indicies for remaining meta values
+						value_lis.each( function ( i ) {
+							var old_li, new_li;
+							old_li = $( this );
+							new_li = wp.template( 'customize-posts-meta-field-value' )( {
+								post_id: old_setting.ID,
+								key: meta_key,
+								value: old_li.find( '[name]' ).val(),
+								i: i
+							} );
+							old_li.replaceWith( new_li );
+						} );
+
+						ul.find( '.delete-meta:first' ).focus();
+					}
+
+					control.updateSetting();
+				} );
+
+
+			} );
+
 			// Update the input names
-			this.container.on( 'change', '.meta-key', function () {
+			control.container.on( 'change', '.meta-key', function () {
 				var meta_key_input, dd;
 				meta_key_input = $( this );
 				dd = meta_key_input.closest( 'dt' ).next( 'dd' );

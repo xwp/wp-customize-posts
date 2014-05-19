@@ -57,7 +57,6 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 			return;
 		}
 
-		$editable_post_field_keys = $wp_customize->posts->get_editable_post_field_keys();
 		?>
 		<script id="tmpl-customize-posts-fields" type="text/html">
 			<p>
@@ -143,7 +142,7 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 					<# } ); #>
 				</dl>
 				<p>
-					<button type="button" class="add"><?php esc_html_e( 'Add meta', 'customize-posts' ) ?></button>
+					<button type="button" class="add add-meta button button-secondary"><?php esc_html_e( 'Add meta', 'customize-posts' ) ?></button>
 				</p>
 			</fieldset>
 		</script>
@@ -151,7 +150,6 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 		<script id="tmpl-customize-posts-meta-field" type="text/html">
 			<dt>
 				<input type="text" class="meta-key" value="{{ data.key }}">
-				<!-- whenever this is changed -->
 			</dt>
 			<dd>
 				<ul data-tmpl="customize-posts-meta-field-value">
@@ -166,7 +164,7 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 						}}}
 					<#  } ); #>
 				</ul>
-				<p><button type="button" class="add"><?php esc_html_e( 'Add value', 'customize-posts' ) ?></button></p>
+				<p><button type="button" class="add add-meta-value button button-secondary"><?php esc_html_e( 'Add value', 'customize-posts' ) ?></button></p>
 			</dd>
 		</script>
 
@@ -174,7 +172,10 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 			<?php
 			$id = 'posts[{{ data.post_id }}][meta][{{ data.key }}][{{ data.i }}]';
 			?>
-			<p><textarea class="meta-value" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">{{ data.value }}</textarea></p>
+			<li>
+				<textarea class="meta-value" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">{{ data.value }}</textarea>
+				<button type="button" class="delete-meta button button-secondary" title="<?php esc_attr_e( 'Delete meta value', 'customize-posts' ) ?>"><?php _e( '&times;', 'customize-posts' ) ?></button>
+			</li>
 		</script>
 		<?php
 	}
