@@ -228,6 +228,10 @@ final class WP_Customize_Posts {
 
 		// @todo apply wp_insert_post_data filter here too?
 
+		if ( ! empty( $post_data['post_date'] ) ) {
+			$post_data['post_date_gmt'] = get_gmt_from_date( $post_data['post_date'] );
+		}
+
 		return $post_data;
 	}
 
