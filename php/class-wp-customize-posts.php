@@ -403,7 +403,7 @@ final class WP_Customize_Posts {
 						} else {
 							foreach ( $old_values as $i => $old_value ) {
 								if ( is_serialized( $old_value ) ) {
-									$meta_value[ $i ] = $old_value;
+									$meta_value[ $key ][ $i ] = $old_value;
 								}
 							}
 						}
