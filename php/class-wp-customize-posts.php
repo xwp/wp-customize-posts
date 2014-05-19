@@ -57,9 +57,7 @@ final class WP_Customize_Posts {
 			$data = $post->to_array();
 			$data['meta'] = array();
 			foreach ( get_post_custom( $post->ID ) as $meta_key => $meta_values ) {
-				if ( ! is_protected_meta( $meta_key, 'post' ) ) {
-					$data['meta'][ $meta_key ] = $meta_values; // @todo Serialization?
-				}
+				$data['meta'][ $meta_key ] = $meta_values; // @todo Serialization?
 			}
 
 			$this->manager->add_setting( $setting_id, array(
@@ -373,29 +371,53 @@ final class WP_Customize_Posts {
 			return $meta_value;
 		}
 
-		if ( ! empty( $meta_key ) && is_protected_meta( $meta_key, 'post' ) ) {
+		$prevent_recursion = true;
+		$old_meta_value = get_post_meta( $post_id, $meta_key, $single );
+		$prevent_recursion = false;
+
+		// @todo Consider is_serialized?
+		if ( ! empty( $meta_key ) && ( is_protected_meta( $meta_key, 'post' ) || ! current_user_can( 'edit_post_meta', $post_id, $meta_key ) ) ) {
 			return $meta_value;
 		}
+
+		// @todo We should allow all protected meta to come through, but only opt-in to allowing it to be edited
 
 		$post_overrides = $this->get_post_overrides( $post_id );
 		if ( ! empty( $post_overrides ) ) {
 			if ( empty( $meta_key ) ) { // i.e. get_post_custom()
 				$meta_value = $post_overrides['meta']; // @todo do we need to handle $single?
 
-				// Make sure protected meta are not manipulated
-				$prevent_recursion = true;
-				foreach ( get_post_custom( $post_id ) as $key => $values ) {
-					if ( is_protected_meta( $key, 'post' ) ) {
-						$meta_value[ $key ] = $values;
+				// Make sure protected meta and serialized meta are not manipulated
+				if ( is_array( $old_meta_value ) ) {
+					foreach ( $old_meta_value as $key => $old_values ) {
+						if ( is_protected_meta( $key, 'post' ) ) {
+							$meta_value[ $key ] = $old_values;
+						} else {
+							foreach ( $old_values as $i => $old_value ) {
+								if ( is_serialized( $old_value ) ) {
+									$meta_value[ $i ] = $old_value;
+								}
+							}
+						}
 					}
 				}
-				$prevent_recursion = false;
+			} else if ( $single && is_serialized( $old_meta_value ) ) {
+				$meta_value = $single ? '' : array();
 			} else if ( ! isset( $post_overrides['meta'][ $meta_key ] ) ) {
 				$meta_value = $single ? '' : array();
 			} elseif ( $single ) {
 				$meta_value = $post_overrides['meta'][ $meta_key ][0];
 			} else {
 				$meta_value = $post_overrides['meta'][ $meta_key ];
+			}
+
+			// Make sure that serialized values persist
+			if ( ! $single && is_array( $old_meta_value ) ) {
+				foreach ( $old_meta_value as $i => $old_value ) {
+					if ( is_serialized( $old_value ) ) {
+						$meta_value[ $i ] = $old_value;
+					}
+				}
 			}
 		}
 		return $meta_value;
