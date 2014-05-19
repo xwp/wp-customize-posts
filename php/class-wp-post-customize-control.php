@@ -128,8 +128,8 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 				</p>
 			<# } #>
 
-			<fieldset>
-				<legend><?php esc_html_e( 'Meta', 'customize-posts' ) ?></legend>
+			<section class="post-meta">
+				<h3><?php esc_html_e( 'Meta', 'customize-posts' ) ?></h3>
 				<dl class="post-meta" data-tmpl="customize-posts-meta-field">
 					<# _.each( data.meta, function ( values, key ) { #>
 						{{{
@@ -144,7 +144,7 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 				<p>
 					<button type="button" class="add add-meta button button-secondary"><?php esc_html_e( 'Add meta', 'customize-posts' ) ?></button>
 				</p>
-			</fieldset>
+			</section>
 		</script>
 
 		<script id="tmpl-customize-posts-meta-field" type="text/html">

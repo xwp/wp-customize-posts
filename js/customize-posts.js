@@ -36,7 +36,7 @@
 		ready: function () {
 			var control = this;
 
-			this.post_fields_tpl = wp.template( 'customize-posts-fields' );
+			control.post_fields_tpl = wp.template( 'customize-posts-fields' );
 
 			// Update the fields when the setting changes
 			this.setting.bind( function ( to, from ) {
@@ -54,6 +54,7 @@
 				control.updateSetting();
 			} );
 
+			// Add new meta
 			control.container.on( 'click', '.add-meta', function () {
 				var setting, new_field;
 				setting = control.setting();
@@ -62,9 +63,10 @@
 					key: '',
 					values: [ '' ]
 				} );
-				$( this ).closest( 'fieldset' ).find( 'dl' ).append( new_field ).find( '.meta-key:last' ).focus();
+				control.container.find( 'section.post-meta:first' ).find( 'dl' ).append( new_field ).find( '.meta-key:last' ).focus();
 			} );
 
+			// Add new value to meta
 			control.container.on( 'click', '.add-meta-value', function () {
 				var setting, new_li, dd;
 				setting = control.setting();
@@ -80,6 +82,7 @@
 				new_li.find( '[name]' ).focus();
 			} );
 
+			// Delete a meta value
 			control.container.on( 'click', '.delete-meta', function () {
 				var ul, li, meta_key_input, meta_key, old_setting, dt, dd, prev_dd, next_dt;
 
