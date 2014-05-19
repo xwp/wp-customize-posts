@@ -29,55 +29,121 @@
 	} );
 
 	api.controlConstructor.post = api.Control.extend( {
+
+		/**
+		 *
+		 */
 		ready: function () {
 			var control = this;
+
+			this.post_fields_tpl = wp.template( 'customize-posts-fields' );
 
 			// Update the fields when the setting changes
 			this.setting.bind( function ( to, from ) {
 				if ( ! _( from ).isEqual( to ) ) {
-					control.container.find( ':input[id]' ).each( function () {
-						var input, keys, key, value;
-						input = $( this );
-
-						keys = input.prop( 'id' ).replace( /^.*?\[/, '' ).replace( /\]$/, '' ).split( /\]\[/ );
-						keys.shift(); // get rid of the ID
-
-						value = to;
-						while ( keys.length && typeof value !== 'undefined' ) {
-							key = keys.shift();
-							value = value[ key ];
-						}
-
-						if ( typeof value !== 'undefined' && input.val() !== value ) {
-							input.val( value );
-						}
-					} );
+					control.populateFields();
 				}
 			} );
+			control.populateFields();
+
 			// @todo Construct the control's fields with JS here, using the setting as the value
 			// @todo Handle addition and deletion of postmeta
 
 			// Update the setting when the fields change
-			this.container.on( 'input propertychange', ':input', function () {
-				var input, leaf_key, keys, data, subdata;
-				input = $( this );
+			control.container.on( 'change input propertychange', ':input[name]', function () {
+				control.updateSetting();
+			} );
 
-				keys = input.prop( 'id' ).replace( /^.*?\[/, '' ).replace( /\]$/, '' ).split( /\]\[/ );
-				keys.shift(); // get rid of the post ID, e.g. from 'posts[519][meta][single2][0]'
+			// Update the input names
+			this.container.on( 'change', '.meta-key', function () {
+				var meta_key_input, dd;
+				meta_key_input = $( this );
+				dd = meta_key_input.closest( 'dt' ).next( 'dd' );
+				dd.find( '.meta-value' ).each( function () {
+					var meta_value_input, name;
+					meta_value_input = $( this );
+					name = meta_value_input.prop( 'id' );
+					name = name.replace( /\[meta\]\[.*?\]/, '[meta][' + meta_key_input.val() + ']' );
+					meta_value_input.attr( {
+						id: name,
+						name: name
+					} );
+				} ).trigger( 'change' );
+			} );
+
+		},
+
+		/**
+		 *
+		 * @param id
+		 * @returns {Array}
+		 */
+		parseKeys: function ( id ) {
+			return id.replace( /^.*?\[/, '' ).replace( /\]$/, '' ).split( /\]\[/ );
+		},
+
+		/**
+		 *
+		 */
+		populateFields: function () {
+			var control, new_fields, old_fields, new_fields_container, old_fields_signature, new_fields_signature;
+
+			control = this;
+			new_fields_container = $( '<div>' + control.post_fields_tpl( control.setting() ) + '</div>' );
+			new_fields_container.find( 'select.post_author' ).val( control.setting().post_author );
+			new_fields_container.find( 'select.post_status' ).val( control.setting().post_status );
+			new_fields_container.find( 'select.comment_status' ).val( control.setting().comment_status );
+
+
+			old_fields = control.container.find( '[name]' );
+			new_fields = new_fields_container.find( '[name]' );
+			old_fields_signature = _( old_fields ).pluck( 'name' ).join( ',' );
+			new_fields_signature = _( new_fields ).pluck( 'name' ).join( ',' );
+
+			if ( old_fields_signature !== new_fields_signature ) {
+				control.container.empty();
+				control.container.append( new_fields_container.children() );
+			} else {
+				old_fields.each( function () {
+					var old_field, new_field;
+					old_field = $( this );
+					new_field = new_fields_container.find( '[name="' + this.name + '"]' );
+					if ( old_field.val() !== new_field.val() ) {
+						old_field.val( new_field.val() );
+					}
+				} );
+			}
+		},
+
+		/**
+		 *
+		 */
+		updateSetting: function () {
+			var control, new_setting;
+			control = this;
+
+			new_setting = {};
+			control.container.find( '[name]' ).each( function () {
+				var input, keys, leaf_key, sub_setting, level_key;
+
+				input = $( this );
+				keys = control.parseKeys( input.prop( 'name' ) );
+				new_setting.ID = keys.shift();
 				leaf_key = keys.pop(); // we want the top-level key
 
-				data = JSON.parse( JSON.stringify( control.setting() ) ); // hacky deeply clone
-
-				subdata = data;
-				while ( keys.length && typeof subdata !== 'undefined' ) {
-					subdata = subdata[ keys.shift() ];
+				sub_setting = new_setting;
+				while ( keys.length ) {
+					level_key = keys.shift();
+					if ( typeof sub_setting[ level_key ] === 'undefined' ) {
+						sub_setting[ level_key ] = {};
+					}
+					sub_setting = sub_setting[ level_key ];
 				}
 
-				if ( typeof subdata !== 'undefined' ) {
-					subdata[ leaf_key ] = input.val();
-					control.setting( data );
-				}
+				sub_setting[ leaf_key ] = input.val();
 			} );
+
+			control.setting( new_setting );
 
 		}
 	} );

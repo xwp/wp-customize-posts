@@ -25,45 +25,15 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 	 */
 	public function __construct( $manager, $id, $args = array() ) {
 		parent::__construct( $manager, $id, $args );
+		add_action( 'customize_controls_print_footer_scripts', array( __CLASS__, 'render_template' ) );
 	}
 
 	/**
 	 * Render the control's content.
 	 */
 	public function render_content() {
-		$post_data = $this->setting->value();
-		$editable_post_field_keys = $this->manager->posts->get_editable_post_field_keys();
 		?>
-		<div class="post-selector-control">
-			<?php foreach ( $post_data as $key => $value ): ?>
-				<?php // @todo All of this should get populated with JS via the setting ?>
-				<?php if ( in_array( $key, $editable_post_field_keys ) ) : ?>
-					<p>
-						<label for="<?php echo esc_attr( $this->get_field_name( $key ) ) ?>"><?php echo esc_html( $key . ':' ) ?></label>
-						<input type="text" id="<?php echo esc_attr( $this->get_field_name( $key ) ) ?>" value="<?php echo esc_attr( is_array( $value ) ? serialize( $value ) : $value ) ?>" <?php disabled( is_array( $value ) ) ?>>
-					</p>
-				<?php endif; ?>
-			<?php endforeach; ?>
 
-			<fieldset>
-				<legend>Meta</legend>
-				<dl>
-					<?php foreach ( get_post_custom( $post_data['ID'] ) as $meta_key => $meta_values ): ?>
-						<?php // @todo All of this should get populated with JS via the setting ?>
-						<?php if ( ! is_protected_meta( $meta_key, 'post' ) ): ?>
-							<dt>
-								<?php echo esc_html( $meta_key ); ?>
-							</dt>
-							<dd>
-								<?php foreach ( $meta_values as $i => $meta_value ) : ?>
-									<p><input <?php if ( is_serialized( $meta_value ) ): ?> readonly <?php endif; ?> id="<?php echo esc_attr( $this->get_field_name( 'meta', $meta_key, $i ) ) ?>" value="<?php echo esc_attr( $meta_value ) ?>"></p>
-								<?php endforeach; ?>
-							</dd>
-						<?php endif; ?>
-					<?php endforeach; ?>
-				</dl>
-			</fieldset>
-		</div>
 		<?php
 	}
 
@@ -74,5 +44,138 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 	 */
 	public function get_field_name( /*...*/ ) {
 		return $this->id . '[' . join( '][', func_get_args() ) . ']';
+	}
+
+	/**
+	 *
+	 */
+	static function render_template() {
+		global $wp_customize;
+
+		static $rendered = false;
+		if ( $rendered ) {
+			return;
+		}
+
+		$editable_post_field_keys = $wp_customize->posts->get_editable_post_field_keys();
+		?>
+		<script id="tmpl-customize-posts-fields" type="text/html">
+			<p>
+				<?php $id = 'posts[{{ data.ID }}][post_title]'; ?>
+				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Title:' ) ?></label>
+				<input type="text" class="post-data post_title" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>" value="{{ data.post_title }}" >
+			</p>
+			<p>
+				<?php $id = 'posts[{{ data.ID }}][post_name]'; ?>
+				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Slug:' ) ?></label>
+				<input type="text" class="post-data post_name" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>" value="{{ data.post_name }}" >
+			</p>
+			<p>
+				<?php $id = 'posts[{{ data.ID }}][post_author]'; ?>
+				<label for="posts[{{ data.ID }}][post_author]"><?php esc_html_e( 'Author:' ) ?></label>
+				<?php wp_dropdown_users( array( 'name' => $id, 'class' => 'post-data post_author' ) ); ?>
+			</p>
+			<p>
+				<?php $id = 'posts[{{ data.ID }}][post_date]'; ?>
+				<?php $label = sprintf( 'Published: (%s)', get_option( 'timezone_string' ) ?: 'UTC' . get_option( 'gmt_offset' ) ); ?>
+				<label for="<?php echo esc_attr( $id ) ?>"><?php echo esc_html( $label ) ?></label>
+				<input type="text" class="post-data post_date" pattern="\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>" value="{{ data.post_date }}" >
+			</p>
+			<p>
+				<?php $id = 'posts[{{ data.ID }}][post_content]'; ?>
+				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Content:' ) ?></label>
+				<textarea class="post-data post_content" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">{{ data.post_content }}</textarea>
+			</p>
+			<p>
+				<?php $id = 'posts[{{ data.ID }}][post_excerpt]'; ?>
+				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Excerpt:' ) ?></label>
+				<textarea class="post-data post_excerpt" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">{{ data.post_excerpt }}</textarea>
+			</p>
+			<p>
+				<?php $id = 'posts[{{ data.ID }}][post_status]'; ?>
+				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Status:' ) ?></label>
+				<select class="post-data post_status" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">
+					<?php foreach ( get_post_stati( array( 'internal' => false ) ) as $post_status ): ?>
+						<option value='<?php echo esc_attr( $post_status ) ?>'><?php echo esc_html( get_post_status_object( $post_status )->label ) ?></option>
+					<?php endforeach; ?>
+				</select>
+			</p>
+
+			<p>
+				<?php $id = 'posts[{{ data.ID }}][comment_status]'; ?>
+				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Comment:' ) ?></label>
+				<select class="post-data comment_status" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">
+					<option value="open"><?php esc_html_e( 'Open' ); ?>
+					<option value="closed"><?php esc_html_e( 'Closed' ); ?>
+				</select>
+			</p>
+
+			<!-- @todo: data.is_post_type_hierarchical -->
+			<# if ( data.post_type === 'page' ) { #>
+				<p>
+					<?php $id = 'posts[{{ data.ID }}][post_parent]'; ?>
+					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Parent:' ) ?></label>
+					TODO
+				</p>
+				<p>
+					<?php $id = 'posts[{{ data.ID }}][menu_order]'; ?>
+					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Menu order:' ) ?></label>
+					<input type="number" class="post-data menu_order" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>" value="{{ data.post_title }}" >
+				</p>
+				<p>
+					<?php $id = 'posts[{{ data.post_id }}][meta][_page_template][0]'; ?>
+					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Page template:' ) ?></label>
+					<input type="text" class="meta-value" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>" value="{{ data.meta._wp_page_template ? data.meta._wp_page_template[0] : '' }}" >
+				</p>
+			<# } #>
+
+			<fieldset>
+				<legend><?php esc_html_e( 'Meta', 'customize-posts' ) ?></legend>
+				<dl data-tmpl="customize-posts-meta-field">
+					<# _.each( data.meta, function ( values, key ) { #>
+						{{{
+							wp.template( 'customize-posts-meta-field' )( {
+								post_id: data.ID,
+								values: values,
+								key: key
+							} )
+						}}}
+					<# } ); #>
+				</dl>
+				<p>
+					<button type="button" class="add"><?php esc_html_e( 'Add meta', 'customize-posts' ) ?></button>
+				</p>
+			</fieldset>
+		</script>
+
+		<script id="tmpl-customize-posts-meta-field" type="text/html">
+			<dt>
+				<input type="text" class="meta-key" value="{{ data.key }}">
+				<!-- whenever this is changed -->
+			</dt>
+			<dd>
+				<ul data-tmpl="customize-posts-meta-field-value">
+					<# _.each( data.values, function ( value, i ) { #>
+						{{{
+							wp.template( 'customize-posts-meta-field-value' )( {
+								post_id: data.post_id,
+								key: data.key,
+								value: value,
+								i: i
+							} )
+						}}}
+					<#  } ); #>
+				</ul>
+				<p><button type="button" class="add"><?php esc_html_e( 'Add value', 'customize-posts' ) ?></button></p>
+			</dd>
+		</script>
+
+		<script id="tmpl-customize-posts-meta-field-value" type="text/html">
+			<?php
+			$id = 'posts[{{ data.post_id }}][meta][{{ data.key }}][{{ data.i }}]';
+			?>
+			<p><textarea class="meta-value" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">{{ data.value }}</textarea></p>
+		</script>
+		<?php
 	}
 }
