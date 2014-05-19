@@ -130,7 +130,7 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 
 			<fieldset>
 				<legend><?php esc_html_e( 'Meta', 'customize-posts' ) ?></legend>
-				<dl data-tmpl="customize-posts-meta-field">
+				<dl class="post-meta" data-tmpl="customize-posts-meta-field">
 					<# _.each( data.meta, function ( values, key ) { #>
 						{{{
 							wp.template( 'customize-posts-meta-field' )( {
@@ -152,7 +152,7 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 				<input type="text" class="meta-key" value="{{ data.key }}">
 			</dt>
 			<dd>
-				<ul data-tmpl="customize-posts-meta-field-value">
+				<ul class="meta-value-list" data-tmpl="customize-posts-meta-field-value">
 					<# _.each( data.values, function ( value, i ) { #>
 						{{{
 							wp.template( 'customize-posts-meta-field-value' )( {
@@ -164,7 +164,7 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 						}}}
 					<#  } ); #>
 				</ul>
-				<p><button type="button" class="add add-meta-value button button-secondary"><?php esc_html_e( 'Add value', 'customize-posts' ) ?></button></p>
+				<button type="button" class="add add-meta-value button button-secondary"><?php esc_html_e( 'Add value', 'customize-posts' ) ?></button>
 			</dd>
 		</script>
 
@@ -172,9 +172,9 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 			<?php
 			$id = 'posts[{{ data.post_id }}][meta][{{ data.key }}][{{ data.i }}]';
 			?>
-			<li>
-				<textarea class="meta-value" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">{{ data.value }}</textarea>
+			<li class="meta-value-item">
 				<button type="button" class="delete-meta button button-secondary" title="<?php esc_attr_e( 'Delete meta value', 'customize-posts' ) ?>"><?php _e( '&times;', 'customize-posts' ) ?></button>
+				<textarea class="meta-value" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">{{ data.value }}</textarea>
 			</li>
 		</script>
 		<?php
