@@ -3,7 +3,7 @@ Customize Posts WordPress Plugin
 
 **Edit posts and postmeta in the Customizer**
 
-*Stop editing your posts blind!*
+*Stop editing your posts/postmeta blind!*
 
 ![customize-posts](https://cloud.githubusercontent.com/assets/134745/3075895/daec722a-e39b-11e3-82b3-1d2929442778.png)
 
