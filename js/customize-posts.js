@@ -28,6 +28,12 @@
 		}
 	} );
 
+	api.controlConstructor.post_select = api.Control.extend( {
+		ready: function () {
+
+		}
+	} );
+
 	api.controlConstructor.post_edit = api.Control.extend( {
 
 		/**

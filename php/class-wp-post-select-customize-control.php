@@ -24,6 +24,7 @@ class WP_Post_Select_Customize_Control extends WP_Customize_Control {
 	 * @param array $args
 	 */
 	public function __construct( $manager, $id, $args = array() ) {
+		$this->label = __( 'Select posts:', 'customize-posts' );
 		parent::__construct( $manager, $id, $args );
 	}
 
@@ -32,7 +33,10 @@ class WP_Post_Select_Customize_Control extends WP_Customize_Control {
 	 */
 	public function render_content() {
 		?>
-
+		<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
+		<div class="customize-control-content">
+			TODO
+		</div>
 		<?php
 	}
 }

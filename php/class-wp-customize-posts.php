@@ -51,8 +51,18 @@ final class WP_Customize_Posts {
 		// @todo Add a setting-less control for adding additional post controls?
 		// @todo Allow post controls to be dynamically removed
 
+		$this->manager->add_setting( 'selected_posts', array(
+			'default'              => array(),
+			'capability'           => 'edit_posts',
+			'type'                 => 'global_variable',
+		) );
+		$control = new WP_Post_Select_Customize_Control( $this->manager, 'selected_posts', array(
+			'section' => $section_id,
+		) );
+		$this->manager->add_control( $control );
+
 		foreach ( $customized_posts as $post ) {
-			$setting_id = $this->get_setting_id( $post->ID );
+			$setting_id = $this->get_post_edit_setting_id( $post->ID );
 
 			$data = $post->to_array();
 			$data['meta'] = array();
@@ -84,6 +94,7 @@ final class WP_Customize_Posts {
 
 		// @todo The WP_Post class does not provide any facility to filter post fields
 
+		add_action( 'customize_controls_print_footer_scripts', array( 'WP_Post_Edit_Customize_Control', 'render_template' ) );
 		add_action( 'customize_preview_init', array( $this, 'customize_preview_init' ) );
 	}
 
@@ -146,7 +157,7 @@ final class WP_Customize_Posts {
 	 *
 	 * @return string
 	 */
-	public function get_setting_id( $post_id ) {
+	public function get_post_edit_setting_id( $post_id ) {
 		return sprintf( 'posts[%d]', $post_id );
 	}
 
@@ -299,7 +310,7 @@ final class WP_Customize_Posts {
 		if ( ! isset( $customized_posts[ $post->ID ] ) ) {
 			return null;
 		}
-		$setting = $this->manager->get_setting( $this->get_setting_id( $post->ID ) );
+		$setting = $this->manager->get_setting( $this->get_post_edit_setting_id( $post->ID ) );
 		if ( ! $setting ) {
 			return null;
 		}
