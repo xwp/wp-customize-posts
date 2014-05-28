@@ -37,13 +37,18 @@ final class WP_Customize_Posts {
 
 		$section_id = 'posts';
 
-		$customized_posts = $this->get_customized_posts();
+		// The user invoked the post preview and so the post's url appears as a query param
+		$selected_posts = array();
+		$previewed_post = $this->get_previewed_post();
+		if ( $previewed_post ) {
+			$selected_posts[] = $previewed_post->ID;
+		}
 
 		$top_priority = 1;
 		$bottom_position = 900; // Before widgets
 		$this->manager->add_section( $section_id, array(
 			'title'      => __( 'Posts' ),
-			'priority'   => ! empty( $customized_posts ) ? $top_priority : $bottom_position,
+			'priority'   => ! empty( $selected_posts ) ? $top_priority : $bottom_position,
 			'capability' => 'edit_posts',
 		) );
 
@@ -52,7 +57,7 @@ final class WP_Customize_Posts {
 		// @todo Allow post controls to be dynamically removed
 
 		$this->manager->add_setting( 'selected_posts', array(
-			'default'              => array(),
+			'default'              => $selected_posts,
 			'capability'           => 'edit_posts',
 			'type'                 => 'global_variable',
 		) );
@@ -61,7 +66,7 @@ final class WP_Customize_Posts {
 		) );
 		$this->manager->add_control( $control );
 
-		foreach ( $customized_posts as $post ) {
+		foreach ( $this->get_customized_posts() as $post ) {
 			$setting_id = $this->get_post_edit_setting_id( $post->ID );
 
 			$data = $post->to_array();
@@ -133,11 +138,6 @@ final class WP_Customize_Posts {
 					$posts[] = $post;
 				}
 			}
-		}
-
-		// The user invoked the post preview and so the post's url appears as a query param
-		if ( empty( $posts ) && ( $previewed_post = $this->get_previewed_post() ) ) {
-			$posts[] = $previewed_post;
 		}
 
 		$customized_posts = array();
