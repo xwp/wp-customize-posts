@@ -28,7 +28,7 @@
 		}
 	} );
 
-	api.controlConstructor.post = api.Control.extend( {
+	api.controlConstructor.post_edit = api.Control.extend( {
 
 		/**
 		 *

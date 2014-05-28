@@ -67,7 +67,7 @@ final class WP_Customize_Posts {
 				'sanitize_callback'    => array( $this, 'sanitize_setting' ),
 			) );
 
-			$control = new WP_Post_Customize_Control( $this->manager, $setting_id, array(
+			$control = new WP_Post_Edit_Customize_Control( $this->manager, $setting_id, array(
 				'section' => $section_id,
 			) );
 			$this->manager->add_control( $control );

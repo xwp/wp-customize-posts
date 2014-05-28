@@ -1,18 +1,18 @@
 <?php
 
 /**
- * Post Customize Control Class
+ * Post Selection Customize Control Class
  *
  * @package WordPress
  * @subpackage Customize
  */
-class WP_Post_Customize_Control extends WP_Customize_Control {
+class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 
 	/**
 	 * @access public
 	 * @var string
 	 */
-	public $type = 'post';
+	public $type = 'post_edit';
 
 	/**
 	 * Constructor.
@@ -50,7 +50,6 @@ class WP_Post_Customize_Control extends WP_Customize_Control {
 	 *
 	 */
 	static function render_template() {
-		global $wp_customize;
 
 		static $rendered = false;
 		if ( $rendered ) {
