@@ -99,7 +99,7 @@ final class WP_Customize_Posts {
 
 		// @todo The WP_Post class does not provide any facility to filter post fields
 
-		add_action( 'customize_controls_print_footer_scripts', array( 'WP_Post_Edit_Customize_Control', 'render_template' ) );
+		add_action( 'customize_controls_print_footer_scripts', array( 'WP_Post_Edit_Customize_Control', 'render_templates' ) );
 		add_action( 'customize_preview_init', array( $this, 'customize_preview_init' ) );
 	}
 
@@ -496,6 +496,7 @@ final class WP_Customize_Posts {
 		$exported = array(
 			'preview_queried_post_ids' => $this->preview_queried_post_ids,
 		);
+		// @todo grab get_control_fields() for each post here? Or should such data be loaded always over Ajax?
 
 		$data = sprintf( 'var _wpCustomizePreviewPostsSettings= %s;', json_encode( $exported ) );
 		$wp_scripts->add_data( 'customize-preview-posts', 'data', $data );
