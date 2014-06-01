@@ -66,8 +66,8 @@
 				setting = control.setting();
 				new_field = wp.template( 'customize-posts-meta-field' )( {
 					post_id: setting.ID,
-					key: '',
-					values: [ '' ]
+					meta_key: '',
+					meta_values: [ '' ]
 				} );
 				control.container.find( 'section.post-meta:first' ).find( 'dl' ).append( new_field ).find( '.meta-key:last' ).focus();
 			} );
@@ -79,8 +79,8 @@
 				dd = $( this ).closest( 'dd' );
 				new_li = wp.template( 'customize-posts-meta-field-value' )( {
 					post_id: setting.ID,
-					key: dd.prev( 'dt' ).find( '.meta-key' ).val(),
-					value: '',
+					meta_key: dd.prev( 'dt' ).find( '.meta-key' ).val(),
+					meta_value: '',
 					i: dd.find( 'li' ).length
 				} );
 				new_li = $( new_li );
@@ -135,8 +135,8 @@
 							old_li = $( this );
 							new_li = wp.template( 'customize-posts-meta-field-value' )( {
 								post_id: old_setting.ID,
-								key: meta_key,
-								value: old_li.find( '[name]' ).val(),
+								meta_key: meta_key,
+								meta_value: old_li.find( '[name]' ).val(),
 								i: i
 							} );
 							old_li.replaceWith( new_li );

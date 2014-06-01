@@ -42,34 +42,27 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 	static function render_templates() {
 		?>
 		<script id="tmpl-customize-posts-meta-field" type="text/html">
-			<dt>
-				<input type="text" class="meta-key" value="{{ data.key }}">
-			</dt>
-			<dd>
-				<ul class="meta-value-list" data-tmpl="customize-posts-meta-field-value">
-					<# _.each( data.values, function ( value, i ) { #>
-						{{{
-							wp.template( 'customize-posts-meta-field-value' )( {
-								post_id: data.post_id,
-								key: data.key,
-								value: value,
-								i: i
-							} )
-						}}}
-					<#  } ); #>
-				</ul>
-				<button type="button" class="add add-meta-value button button-secondary"><?php esc_html_e( 'Add value', 'customize-posts' ) ?></button>
-			</dd>
+			<?php
+			$tpl_vars = array(
+				'post_id' => '{{ data.post_id }}',
+				'meta_key' => '{{ data.meta_key }}',
+				'meta_values' => '{{ data.meta_value }}',
+				'is_mustache_tpl' => true,
+			);
+			echo self::get_meta_fields( $tpl_vars ); // xss ok
+			?>
 		</script>
 
 		<script id="tmpl-customize-posts-meta-field-value" type="text/html">
 			<?php
-			$id = 'posts[{{ data.post_id }}][meta][{{ data.key }}][{{ data.i }}]';
+			$tpl_vars = array(
+				'post_id' => '{{ data.post_id }}',
+				'meta_key' => '{{ data.meta_key }}',
+				'i' => '{{ data.i }}',
+				'meta_value' => '{{ data.meta_value }}',
+			);
+			echo self::get_meta_field_value( $tpl_vars ); // xss ok
 			?>
-			<li class="meta-value-item">
-				<button type="button" class="delete-meta button button-secondary" title="<?php esc_attr_e( 'Delete meta value', 'customize-posts' ) ?>"><?php _e( '&times;', 'customize-posts' ) ?></button>
-				<textarea class="meta-value" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">{{ data.value }}</textarea>
-			</li>
 		</script>
 		<?php
 	}
@@ -82,6 +75,7 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 	static function get_control_fields( $post ) {
 		$post = get_post( $post );
 		$post_type_obj = get_post_type_object( $post->post_type );
+		$post_id = $post->ID;
 
 		ob_start();
 		?>
@@ -160,26 +154,14 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 				</p>
 			<?php endif; ?>
 
-			<?php if ( current_user_can( 'edit_post_meta', $post->ID ) ): ?>
+			<?php if ( post_type_supports( $post->post_type, 'custom-fields' ) && current_user_can( 'edit_post_meta', $post->ID ) ): ?>
+				<?php // @todo Move this into another overridable method ?>
 				<section class="post-meta">
 					<h3><?php esc_html_e( 'Meta', 'customize-posts' ) ?></h3>
 					<dl class="post-meta" data-tmpl="customize-posts-meta-field">
+						<?php echo self::get_meta_fields( array( 'post_id' => '{{ data.post_id }}', 'meta_key' => '{{ data.meta_key }}', 'meta_values' => array() ) ); // xss ok ?>
 						<?php foreach ( get_post_custom( $post->ID ) as $meta_key => $meta_values ): ?>
-							<dt>
-								<input type="text" class="meta-key" value="<?php echo esc_attr( $meta_key ) ?>">
-							</dt>
-							<dd>
-								<ul class="meta-value-list" data-tmpl="customize-posts-meta-field-value">
-									<?php foreach ( $meta_values as $i => $meta_value ): ?>
-										<?php $id = "posts[$post->ID][meta][$meta_key][$i]"; ?>
-										<li class="meta-value-item">
-											<button type="button" class="delete-meta button button-secondary" title="<?php esc_attr_e( 'Delete meta value', 'customize-posts' ) ?>"><?php _e( '&times;', 'customize-posts' ) ?></button>
-											<textarea class="meta-value" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>"><?php echo esc_textarea( $meta_value ) ?></textarea>
-										</li>
-									<?php endforeach; ?>
-								</ul>
-								<button type="button" class="add add-meta-value button button-secondary"><?php esc_html_e( 'Add value', 'customize-posts' ) ?></button>
-							</dd>
+							<?php echo self::get_meta_fields( compact( 'post_id', 'meta_key', 'meta_values' ) ); // xss ok ?>
 						<?php endforeach; ?>
 					</dl>
 					<p>
@@ -193,6 +175,77 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 		$html = ob_get_contents();
 		ob_end_clean();
 
+		return $html;
+	}
+
+	/**
+	 * @param array $tpl_vars {
+	 *     Template variables.
+	 *
+	 *     @type int|string $post_id  May be a string in case of Moustache template
+	 *     @type string $meta_key
+	 *     @type array $meta_values
+	 *     @type bool is_mustache_tpl if true, then a template for customize-posts-meta-field-value will be rendered instead of looping over $meta_values
+	 * }
+	 *
+	 * @return string
+	 */
+	static function get_meta_fields( $tpl_vars ) {
+		ob_start();
+		?>
+		<dt>
+			<input type="text" class="meta-key" value="<?php echo esc_attr( $tpl_vars['meta_key'] ) ?>">
+		</dt>
+		<dd>
+			<ul class="meta-value-list" data-tmpl="customize-posts-meta-field-value">
+				<?php if ( ! empty( $tpl_vars['is_mustache_tpl'] ) ): ?>
+					<# _.each( data.values, function ( value, i ) { #>
+						{{{
+							wp.template( 'customize-posts-meta-field-value' )( {
+								post_id: data.post_id,
+								key: data.key,
+								value: value,
+								i: i
+							} )
+						}}}
+					<# } ); #>
+				<?php else : ?>
+					<?php foreach ( $tpl_vars['meta_values'] as $i => $meta_value ): ?>
+						<?php echo self::get_meta_field_value( array_merge( $tpl_vars, compact( 'i', 'meta_value' ) ) ); // xss ok ?>
+					<?php endforeach; ?>
+				<?php endif; ?>
+			</ul>
+			<button type="button" class="add add-meta-value button button-secondary"><?php esc_html_e( 'Add value', 'customize-posts' ) ?></button>
+		</dd>
+		<?php
+		$html = ob_get_contents();
+		ob_end_clean();
+		return $html;
+	}
+
+	/**
+	 * @param array $tpl_vars {
+	 *     Template variables.
+	 *
+	 *     @type int|string $post_id  May be a string in case of Moustache template
+	 *     @type int|string $i  May be a string in case of Moustache template
+	 *     @type string $meta_key
+	 *     @type array $meta_values
+	 * }
+	 *
+	 * @return string
+	 */
+	static function get_meta_field_value( $tpl_vars ) {
+		$id = "posts[$tpl_vars[post_id][meta][$tpl_vars[meta_key][$tpl_vars[i]]";
+		ob_start();
+		?>
+		<li class="meta-value-item">
+			<button type="button" class="delete-meta button button-secondary" title="<?php esc_attr_e( 'Delete meta value', 'customize-posts' ) ?>"><?php _e( '&times;', 'customize-posts' ) ?></button>
+			<textarea class="meta-value" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>"><?php echo esc_textarea( $tpl_vars['meta_value'] ) ?></textarea>
+		</li>
+		<?php
+		$html = ob_get_contents();
+		ob_end_clean();
 		return $html;
 	}
 }
