@@ -68,15 +68,10 @@ final class WP_Customize_Posts {
 
 		foreach ( $this->get_customized_posts() as $post ) {
 			$setting_id = $this->get_post_edit_setting_id( $post->ID );
-
-			$data = $post->to_array();
-			$data['meta'] = array();
-			foreach ( get_post_custom( $post->ID ) as $meta_key => $meta_values ) {
-				$data['meta'][ $meta_key ] = $meta_values; // @todo Serialization?
-			}
+			$value = $this->get_post_setting_value( $post );
 
 			$this->manager->add_setting( $setting_id, array(
-				'default'              => $data,
+				'default'              => $value,
 				'type'                 => 'post',
 				'capability'           => get_post_type_object( $post->post_type )->cap->edit_posts,
 				'sanitize_callback'    => array( $this, 'sanitize_setting' ),
@@ -99,8 +94,25 @@ final class WP_Customize_Posts {
 
 		// @todo The WP_Post class does not provide any facility to filter post fields
 
+		add_action( 'wp_ajax_customize_post_data', array( $this, 'ajax_customize_post_data' ) );
 		add_action( 'customize_controls_print_footer_scripts', array( 'WP_Post_Edit_Customize_Control', 'render_templates' ) );
 		add_action( 'customize_preview_init', array( $this, 'customize_preview_init' ) );
+	}
+
+	/**
+	 * Get value of customizer setting for post
+	 *
+	 * @param int|WP_Post $post
+	 * @return array
+	 */
+	public function get_post_setting_value( $post ) {
+		$post = get_post( $post );
+		$data = $post->to_array();
+		$data['meta'] = array();
+		foreach ( get_post_custom( $post->ID ) as $meta_key => $meta_values ) {
+			$data['meta'][ $meta_key ] = $meta_values; // @todo Serialization?
+		}
+		return $data;
 	}
 
 	/**
@@ -443,6 +455,35 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Serve back the fields for a post_edit control
+	 */
+	function ajax_customize_post_data() {
+		if ( ! check_ajax_referer( 'customize_post_data', 'nonce', false ) ) {
+			wp_send_json_error( 'nonce fail' );
+		}
+		if ( empty( $_POST['post_id'] ) || ! ( $post = get_post( $_POST['post_id'] ) ) ) {
+			wp_send_json_error( 'missing post_id' );
+		}
+		$post_type_pbj = get_post_type_object( $post->post_type );
+		if ( $post_type_pbj ) {
+			$cap = $post_type_pbj->cap->edit_post;
+		} else {
+			$cap = 'edit_post';
+		}
+		if ( ! current_user_can( $cap, $post->ID ) ) {
+			wp_send_json_error( 'cap denied' );
+		}
+
+		$data = array(
+			'setting' => $value = $this->get_post_setting_value( $post ),
+			'fields' => WP_Post_Edit_Customize_Control::get_control_fields( $post ),
+		);
+
+		wp_send_json_success( $data );
+	}
+
+
+	/**
 	 * Setup the customizer preview.
 	 */
 	public function customize_preview_init() {
@@ -481,6 +522,7 @@ final class WP_Customize_Posts {
 
 		$exported = array(
 			'editable_post_field_keys' => $this->get_editable_post_field_keys(),
+			'post_data_nonce' => wp_create_nonce( 'customize_post_data' ),
 		);
 
 		$data = sprintf( 'var _wpCustomizePostsSettings = %s;', json_encode( $exported ) );
