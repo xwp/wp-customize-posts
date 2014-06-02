@@ -1,9 +1,27 @@
 /*global jQuery, wp, _, _wpCustomizePostsSettings */
 ( function ( api, $ ) {
-	var OldPreviewer, preview;
+	var OldPreviewer, preview, PostData, PostsCollection;
 
-	api.Posts = {};
+	PostData = Backbone.Model.extend( {
+		id: null,
+		setting: {},
+		control: ''
+	} );
+	PostsCollection = Backbone.Collection.extend( {
+		model: PostData
+	} );
+
+	api.Posts = {
+		PostData: PostData,
+		PostsCollection: PostsCollection,
+		is_preview: new api.Value( null ),
+		is_singular: new api.Value( null ),
+		queried_post_id: new api.Value( null ),
+		collection: new PostsCollection()
+	};
 	$.extend( api.Posts, _wpCustomizePostsSettings );
+
+	api.Posts.data = new PostsCollection();
 
 	api.bind( 'ready', function () {
 
@@ -18,7 +36,12 @@
 		initialize: function( params, options ) {
 			preview = this;
 
-			preview.bind( 'queried-posts', function( queriedPosts ) {
+			preview.bind( 'customize-posts', function( data ) {
+				api.Posts.is_preview( data.is_preview );
+				api.Posts.is_singular( data.is_singular );
+				api.Posts.queried_post_id( data.queried_post_id );
+				api.Posts.collection.reset( data.collection );
+
 				//console.info( 'Preview frame rendered these posts:', queriedPosts );
 				// @todo Use queriedPosts to auto-suggest posts to edit (create their controls on the fly)
 				// @todo When navigating in the preview, add a post edit control automatically for queried object? Suggest all posts queried in preview.

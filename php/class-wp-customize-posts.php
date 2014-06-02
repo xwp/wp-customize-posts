@@ -455,7 +455,7 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Serve back the fields for a post_edit control
+	 * Serve back the fields and setting for a post_edit control
 	 */
 	function ajax_customize_post_data() {
 		if ( ! check_ajax_referer( 'customize_post_data', 'nonce', false ) ) {
@@ -464,6 +464,27 @@ final class WP_Customize_Posts {
 		if ( empty( $_POST['post_id'] ) || ! ( $post = get_post( $_POST['post_id'] ) ) ) {
 			wp_send_json_error( 'missing post_id' );
 		}
+
+		$data = $this->get_customize_post_data( $post );
+		if ( is_wp_error( $data ) ) {
+			wp_send_json_error( $data->get_error_message() );
+		}
+
+		wp_send_json_success( $data );
+	}
+
+	/**
+	 * get back the control and setting for a post_edit control
+	 *
+	 * @param int|WP_Post $post
+	 * @return array {
+	 *     @type array $setting
+	 *     @type string $control
+	 * }
+	 */
+	function get_customize_post_data( $post ) {
+		$post = get_post( $post );
+
 		$post_type_pbj = get_post_type_object( $post->post_type );
 		if ( $post_type_pbj ) {
 			$cap = $post_type_pbj->cap->edit_post;
@@ -471,17 +492,17 @@ final class WP_Customize_Posts {
 			$cap = 'edit_post';
 		}
 		if ( ! current_user_can( $cap, $post->ID ) ) {
-			wp_send_json_error( 'cap denied' );
+			return new WP_Error( 'cap_denied' );
 		}
 
 		$data = array(
+			'id' => $post->ID,
 			'setting' => $value = $this->get_post_setting_value( $post ),
-			'fields' => WP_Post_Edit_Customize_Control::get_control_fields( $post ),
+			'control' => WP_Post_Edit_Customize_Control::get_fields( $post ),
 		);
 
-		wp_send_json_success( $data );
+		return $data;
 	}
-
 
 	/**
 	 * Setup the customizer preview.
@@ -535,12 +556,23 @@ final class WP_Customize_Posts {
 	public function export_preview_data() {
 		global $wp_scripts;
 
+		$collection = array();
+		foreach ( $this->preview_queried_post_ids as $post_id ) {
+			$data = $this->get_customize_post_data( $post_id );
+			if ( ! is_wp_error( $data ) ) {
+				$collection[] = $data;
+			}
+		}
+
 		$exported = array(
-			'preview_queried_post_ids' => $this->preview_queried_post_ids,
+			'is_preview' => is_preview(),
+			'is_singular' => is_singular(),
+			'queried_post_id' => ( is_singular() ? get_queried_object_id() : null ),
+			'collection' => $collection,
 		);
 		// @todo grab get_control_fields() for each post here? Or should such data be loaded always over Ajax?
 
-		$data = sprintf( 'var _wpCustomizePreviewPostsSettings= %s;', json_encode( $exported ) );
+		$data = sprintf( 'var _wpCustomizePreviewPostsData = %s;', json_encode( $exported ) );
 		$wp_scripts->add_data( 'customize-preview-posts', 'data', $data );
 	}
 

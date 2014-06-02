@@ -67,12 +67,11 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 		<?php
 	}
 
-
 	/**
 	 * @param int|WP_Post $post
 	 * @return string
 	 */
-	static function get_control_fields( $post ) {
+	static function get_fields( $post ) {
 		$post = get_post( $post );
 		$post_type_obj = get_post_type_object( $post->post_type );
 		$post_id = $post->ID;

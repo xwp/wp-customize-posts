@@ -24,7 +24,7 @@ class WP_Post_Select_Customize_Control extends WP_Customize_Control {
 	 * @param array $args
 	 */
 	public function __construct( $manager, $id, $args = array() ) {
-		$this->label = __( 'Select posts:', 'customize-posts' );
+		$this->label = __( 'Select post to edit:', 'customize-posts' );
 		parent::__construct( $manager, $id, $args );
 	}
 
@@ -33,9 +33,12 @@ class WP_Post_Select_Customize_Control extends WP_Customize_Control {
 	 */
 	public function render_content() {
 		?>
-		<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
+		<span class="customize-control-title">
+			<label for="<?php echo esc_attr( $this->id ) ?>"><?php echo esc_html( $this->label ); ?></label>
+		</span>
 		<div class="customize-control-content">
-			TODO
+			<?php // @todo Select2-ish autocomplete ?>
+			<select id="<?php echo esc_attr( $this->id ) ?>" disabled></select><button type="button" class="button btn-secondary" disabled><?php esc_html_e( 'Edit' ) ?></button>
 		</div>
 		<?php
 	}

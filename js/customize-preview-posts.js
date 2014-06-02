@@ -10,8 +10,7 @@
 			preview = this;
 
 			preview.bind( 'active', function() {
-				preview.send( 'queried-posts', _wpCustomizePreviewPostsSettings.preview_queried_post_ids );
-				// @todo also send the post queried-object?
+				preview.send( 'customize-posts', _wpCustomizePreviewPostsData );
 			} );
 
 			OldPreview.prototype.initialize.call( this, params, options );
