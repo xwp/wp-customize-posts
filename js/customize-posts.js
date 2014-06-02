@@ -11,17 +11,14 @@
 		model: PostData
 	} );
 
-	api.Posts = {
+	api.Posts = $.extend( {}, _wpCustomizePostsSettings, {
 		PostData: PostData,
 		PostsCollection: PostsCollection,
 		is_preview: new api.Value( null ),
 		is_singular: new api.Value( null ),
 		queried_post_id: new api.Value( null ),
 		collection: new PostsCollection()
-	};
-	$.extend( api.Posts, _wpCustomizePostsSettings );
-
-	api.Posts.data = new PostsCollection();
+	} );
 
 	api.bind( 'ready', function () {
 
@@ -51,12 +48,34 @@
 		}
 	} );
 
+	/**
+	 * Customize Control for selecting a post to edit
+	 *
+	 * @type {wp.customize.Control}
+	 */
 	api.controlConstructor.post_select = api.Control.extend( {
 		ready: function () {
+			var control = this;
+
+			api.Posts.is_singular.bind( function ( is_singular ) {
+
+				var is_accordion_closed = ( 0 === $( '.control-section.accordion-section.open' ).length );
+				// Automatically open the Posts section when previewing a single
+
+				if ( is_singular && is_accordion_closed ) {
+					control.container.closest( '.accordion-section' ).addClass( 'open' );
+				}
+
+			} );
 
 		}
 	} );
 
+	/**
+	 * Customize Control for editing a post
+	 *
+	 * @type {wp.customize.Control}
+	 */
 	api.controlConstructor.post_edit = api.Control.extend( {
 
 		/**

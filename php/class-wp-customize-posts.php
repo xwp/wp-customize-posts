@@ -39,13 +39,11 @@ final class WP_Customize_Posts {
 
 		// The user invoked the post preview and so the post's url appears as a query param
 		$selected_posts = array();
-		$previewed_post = $this->get_previewed_post();
 
-		$top_priority = 1;
 		$bottom_position = 900; // Before widgets
 		$this->manager->add_section( $section_id, array(
 			'title'      => __( 'Posts' ),
-			'priority'   => ! empty( $previewed_post ) ? $top_priority : $bottom_position,
+			'priority'   => $bottom_position,
 			'capability' => 'edit_posts',
 		) );
 
