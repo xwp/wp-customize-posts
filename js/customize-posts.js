@@ -1,17 +1,41 @@
 /*global jQuery, wp, _, _wpCustomizePostsSettings */
 ( function ( api, $ ) {
-	var OldPreviewer, preview, PostData, PostsCollection;
+	var OldPreviewer, preview, PostData, PostsCollection, self;
 
+	// @todo Core really needs to not make the preview a private variable
+	OldPreviewer = api.Previewer;
+	api.Previewer = OldPreviewer.extend({
+		initialize: function( params, options ) {
+			preview = this;
+			OldPreviewer.prototype.initialize.call( this, params, options );
+		}
+	} );
+
+	/**
+	 *
+	 * @type {Backbone.Model}
+	 */
 	PostData = Backbone.Model.extend( {
 		id: null,
 		setting: {},
 		control: ''
 	} );
+
+	/**
+	 *
+	 * @type {Backbone.Model}
+	 */
 	PostsCollection = Backbone.Collection.extend( {
 		model: PostData
 	} );
 
-	api.Posts = $.extend( {}, _wpCustomizePostsSettings, {
+
+	/**
+	 * Namespace object for containing Customize Posts data
+	 *
+	 * @type {Object}
+	 */
+	self = api.Posts = $.extend( {}, _wpCustomizePostsSettings, {
 		PostData: PostData,
 		PostsCollection: PostsCollection,
 		is_preview: new api.Value( null ),
@@ -20,32 +44,20 @@
 		collection: new PostsCollection()
 	} );
 
+	// Update the model from messages passed from the preview
 	api.bind( 'ready', function () {
 
-		// Auto-open the posts section if it is at the top (we're previewing a post)
-		$( '#accordion-section-posts.top' ).addClass( 'open' );
+		preview.bind( 'customize-posts', function( data ) {
+			self.is_preview( data.is_preview );
+			self.is_singular( data.is_singular );
+			self.queried_post_id( data.queried_post_id );
+			self.collection.reset( data.collection );
 
-	} );
+			//console.info( 'Preview frame rendered these posts:', queriedPosts );
+			// @todo Use queriedPosts to auto-suggest posts to edit (create their controls on the fly)
+			// @todo When navigating in the preview, add a post edit control automatically for queried object? Suggest all posts queried in preview.
+		} );
 
-	// @todo Core really needs to not make the preview a private variable
-	OldPreviewer = api.Previewer;
-	api.Previewer = OldPreviewer.extend({
-		initialize: function( params, options ) {
-			preview = this;
-
-			preview.bind( 'customize-posts', function( data ) {
-				api.Posts.is_preview( data.is_preview );
-				api.Posts.is_singular( data.is_singular );
-				api.Posts.queried_post_id( data.queried_post_id );
-				api.Posts.collection.reset( data.collection );
-
-				//console.info( 'Preview frame rendered these posts:', queriedPosts );
-				// @todo Use queriedPosts to auto-suggest posts to edit (create their controls on the fly)
-				// @todo When navigating in the preview, add a post edit control automatically for queried object? Suggest all posts queried in preview.
-			} );
-
-			OldPreviewer.prototype.initialize.call( this, params, options );
-		}
 	} );
 
 	/**
@@ -56,16 +68,29 @@
 	api.controlConstructor.post_select = api.Control.extend( {
 		ready: function () {
 			var control = this;
+			control.select = control.container.find( 'select:first' );
+			control.edit_btn = control.container.find( 'button:first' );
 
-			api.Posts.is_singular.bind( function ( is_singular ) {
+			self.is_singular.bind( function ( is_singular ) {
 
-				var is_accordion_closed = ( 0 === $( '.control-section.accordion-section.open' ).length );
 				// Automatically open the Posts section when previewing a single
-
+				var is_accordion_closed = ( 0 === $( '.control-section.accordion-section.open' ).length );
 				if ( is_singular && is_accordion_closed ) {
 					control.container.closest( '.accordion-section' ).addClass( 'open' );
 				}
 
+			} );
+
+			self.collection.on( 'reset', function () {
+				control.select.empty();
+				this.each( function ( post_data ) {
+					var option = new Option( post_data.get( 'setting' ).post_title, post_data.get( 'id' ) );
+					control.select.append( option );
+				} );
+
+				control.select.prop( 'disabled', 0 === wp.customize.Posts.collection.length );
+				control.edit_btn.prop( 'disabled', 0 === wp.customize.Posts.collection.length );
+				control.select.prop( 'selectedIndex', -1 );
 			} );
 
 		}
