@@ -61,40 +61,69 @@
 	} );
 
 	/**
+	 * Return whether the Customizer accordion is closed
+	 *
+	 * @returns {boolean}
+	 */
+	self.isAccordionClosed = function () {
+		return ( 0 === $( '.control-section.accordion-section.open' ).length );
+	};
+
+	/**
 	 * Customize Control for selecting a post to edit
 	 *
 	 * @type {wp.customize.Control}
 	 */
 	api.controlConstructor.post_select = api.Control.extend( {
+
+		/**
+		 * Set up control
+		 */
 		ready: function () {
 			var control = this;
 			control.select = control.container.find( 'select:first' );
 
 			// @todo Hide the accordion section if no posts are displayed in the preview?
 
-			self.is_singular.bind( function ( is_singular ) {
-
-				// Automatically open the Posts section when previewing a single
-				var is_accordion_closed = ( 0 === $( '.control-section.accordion-section.open' ).length );
-				if ( is_singular && is_accordion_closed ) {
-					control.container.closest( '.accordion-section' ).addClass( 'open' );
-				}
-
+			self.is_singular.bind( function () {
+				control.openSectionConditionally();
 			} );
 
 			self.collection.on( 'reset', function () {
-				control.select.empty();
-				this.each( function ( post_data ) {
-					var option;
-					// @todo Skip if there is already a post_edit control open for this post
-					option = new Option( post_data.get( 'setting' ).post_title, post_data.get( 'id' ) );
-					control.select.append( option );
-				} );
-
-				control.select.prop( 'disabled', 0 === wp.customize.Posts.collection.length );
-				control.select.prop( 'selectedIndex', -1 );
+				control.populateSelect();
 			} );
 
+			control.select.on( 'change', function () {
+
+			} );
+
+		},
+
+		/**
+		 * Automatically open the Posts section when previewing a single
+		 */
+		openSectionConditionally: function () {
+			var control = this;
+			if ( self.is_singular() && self.isAccordionClosed() ) {
+				control.container.closest( '.accordion-section' ).addClass( 'open' );
+			}
+		},
+
+		/**
+		 * Populate the post select with the collection's posts
+		 */
+		populateSelect: function () {
+			var control = this;
+			control.select.empty();
+			self.collection.each( function ( post_data ) {
+				var option;
+				// @todo Skip if there is already a post_edit control open for this post
+				option = new Option( post_data.get( 'setting' ).post_title, post_data.get( 'id' ) );
+				control.select.append( option );
+			} );
+
+			control.select.prop( 'disabled', 0 === self.collection.length );
+			control.select.prop( 'selectedIndex', -1 );
 		}
 	} );
 
