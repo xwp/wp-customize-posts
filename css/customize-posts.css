@@ -1,30 +1,36 @@
-.customize-control.customize-control-post textarea,
-.customize-control.customize-control-post select,
-.customize-control.customize-control-post .meta-key
+.customize-control.customize-control-post_select select
 {
 	display: block;
 	width: 100%;
 }
 
-.customize-control.customize-control-post textarea {
+.customize-control.customize-control-post_edit textarea,
+.customize-control.customize-control-post_edit select,
+.customize-control.customize-control-post_edit .meta-key
+{
+	display: block;
+	width: 100%;
+}
+
+.customize-control.customize-control-post_edit textarea {
 	max-width: 100%;
 }
 
-.customize-control.customize-control-post .meta-value-item {
+.customize-control.customize-control-post_edit .meta-value-item {
 	position: relative;
 	text-align: left;
 }
-.customize-control.customize-control-post dd {
+.customize-control.customize-control-post_edit dd {
 	text-align: right;
 	margin-left: 0;
 	margin-left: 37px;
 }
 
-.customize-control.customize-control-post .meta-value-item .delete-meta {
+.customize-control.customize-control-post_edit .meta-value-item .delete-meta {
 	position: absolute;
 	top: 0;
 	left: -37px;
 	width: 35px;
 }
-.customize-control.customize-control-post .add-meta-value {
+.customize-control.customize-control-post_edit .add-meta-value {
 }

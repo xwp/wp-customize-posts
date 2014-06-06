@@ -69,7 +69,8 @@
 		ready: function () {
 			var control = this;
 			control.select = control.container.find( 'select:first' );
-			control.edit_btn = control.container.find( 'button:first' );
+
+			// @todo Hide the accordion section if no posts are displayed in the preview?
 
 			self.is_singular.bind( function ( is_singular ) {
 
@@ -84,12 +85,13 @@
 			self.collection.on( 'reset', function () {
 				control.select.empty();
 				this.each( function ( post_data ) {
-					var option = new Option( post_data.get( 'setting' ).post_title, post_data.get( 'id' ) );
+					var option;
+					// @todo Skip if there is already a post_edit control open for this post
+					option = new Option( post_data.get( 'setting' ).post_title, post_data.get( 'id' ) );
 					control.select.append( option );
 				} );
 
 				control.select.prop( 'disabled', 0 === wp.customize.Posts.collection.length );
-				control.edit_btn.prop( 'disabled', 0 === wp.customize.Posts.collection.length );
 				control.select.prop( 'selectedIndex', -1 );
 			} );
 
