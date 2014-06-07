@@ -83,38 +83,38 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 		</span>
 		<div class="customize-control-content">
 			<p>
-				<?php $id = "posts[$post->ID][post_parent]"; ?>
+				<?php $id = "posts[$post->ID][post_title]"; ?>
 				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Title:' ) ?></label>
 				<input type="text" class="post-data post_title" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>" value="<?php echo esc_attr( $post->post_title ) ?>" >
 			</p>
 			<p>
-				<?php $id = "posts[$post->ID][post_parent]"; ?>
+				<?php $id = "posts[$post->ID][post_name]"; ?>
 				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Slug:' ) ?></label>
 				<input type="text" class="post-data post_name" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>" value="<?php echo esc_attr( $post->post_name ) ?>" >
 			</p>
 			<p>
-				<?php $id = "posts[$post->ID][post_parent]"; ?>
+				<?php $id = "posts[$post->ID][post_author]"; ?>
 				<label for="posts[<?php echo esc_attr( $post->ID ) ?>][post_author]"><?php esc_html_e( 'Author:' ) ?></label>
 				<?php wp_dropdown_users( array( 'name' => $id, 'class' => 'post-data post_author' ) ); ?>
 			</p>
 			<p>
-				<?php $id = "posts[$post->ID][post_parent]"; ?>
+				<?php $id = "posts[$post->ID][post_date]"; ?>
 				<?php $label = sprintf( 'Published: (%s)', get_option( 'timezone_string' ) ?: 'UTC' . get_option( 'gmt_offset' ) ); ?>
 				<label for="<?php echo esc_attr( $id ) ?>"><?php echo esc_html( $label ) ?></label>
 				<input type="text" class="post-data post_date" pattern="\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>" value="<?php echo esc_attr( $post->post_date ) ?>" >
 			</p>
 			<p>
-				<?php $id = "posts[$post->ID][post_parent]"; ?>
+				<?php $id = "posts[$post->ID][post_content]"; ?>
 				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Content:' ) ?></label>
 				<textarea class="post-data post_content" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>"><?php echo esc_textarea( $post->post_content ) ?></textarea>
 			</p>
 			<p>
-				<?php $id = "posts[$post->ID][post_parent]"; ?>
+				<?php $id = "posts[$post->ID][post_excerpt]"; ?>
 				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Excerpt:' ) ?></label>
 				<textarea class="post-data post_excerpt" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>"><?php echo esc_textarea( $post->post_excerpt ) ?></textarea>
 			</p>
 			<p>
-				<?php $id = "posts[$post->ID][post_parent]"; ?>
+				<?php $id = "posts[$post->ID][post_status]"; ?>
 				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Status:' ) ?></label>
 				<select class="post-data post_status" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">
 					<?php foreach ( get_post_stati( array( 'internal' => false ) ) as $post_status ): ?>
@@ -124,7 +124,7 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 			</p>
 
 			<p>
-				<?php $id = "posts[$post->ID][post_parent]"; ?>
+				<?php $id = "posts[$post->ID][comment_status]"; ?>
 				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Comment:' ) ?></label>
 				<select class="post-data comment_status" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">
 					<option value="open"><?php esc_html_e( 'Open' ); ?>
@@ -139,7 +139,7 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 					TODO
 				</p>
 				<p>
-					<?php $id = "posts[$post->ID][post_parent]"; ?>
+					<?php $id = "posts[$post->ID][menu_order]"; ?>
 					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Menu order:' ) ?></label>
 					<input type="number" class="post-data menu_order" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>" value="<?php echo esc_attr( $post->menu_order ) ?>" >
 				</p>
@@ -235,7 +235,7 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 	 * @return string
 	 */
 	static function get_meta_field_value( $tpl_vars ) {
-		$id = "posts[$tpl_vars[post_id][meta][$tpl_vars[meta_key][$tpl_vars[i]]";
+		$id = sprintf( 'posts[%s][meta][%s][%s]', $tpl_vars['post_id'], $tpl_vars['meta_key'], $tpl_vars['i'] );
 		ob_start();
 		?>
 		<li class="meta-value-item">

@@ -12,7 +12,6 @@
 	} );
 
 	/**
-	 *
 	 * @type {Backbone.Model}
 	 */
 	PostData = Backbone.Model.extend( {
@@ -22,13 +21,11 @@
 	} );
 
 	/**
-	 *
 	 * @type {Backbone.Model}
 	 */
 	PostsCollection = Backbone.Collection.extend( {
 		model: PostData
 	} );
-
 
 	/**
 	 * Namespace object for containing Customize Posts data
@@ -41,11 +38,13 @@
 		is_preview: new api.Value( null ),
 		is_singular: new api.Value( null ),
 		queried_post_id: new api.Value( null ),
-		collection: new PostsCollection()
+		collection: new PostsCollection(),
+		accordion_section: null
 	} );
 
 	// Update the model from messages passed from the preview
 	api.bind( 'ready', function () {
+		self.accordion_section = $( '#accordion-section-posts' );
 
 		preview.bind( 'customize-posts', function( data ) {
 			self.is_preview( data.is_preview );
@@ -67,6 +66,16 @@
 	 */
 	self.isAccordionClosed = function () {
 		return ( 0 === $( '.control-section.accordion-section.open' ).length );
+	};
+
+	/**
+	 * Generate the ID for a Customizer post_edit control or setting
+	 *
+	 * @param post_id
+	 * @returns {string}
+	 */
+	self.getCustomizeId = function ( post_id ) {
+		return 'posts[' + post_id + ']';
 	};
 
 	/**
@@ -94,7 +103,7 @@
 			} );
 
 			control.select.on( 'change', function () {
-
+				control.editSelectedPost();
 			} );
 
 		},
@@ -103,9 +112,8 @@
 		 * Automatically open the Posts section when previewing a single
 		 */
 		openSectionConditionally: function () {
-			var control = this;
 			if ( self.is_singular() && self.isAccordionClosed() ) {
-				control.container.closest( '.accordion-section' ).addClass( 'open' );
+				self.accordion_section.addClass( 'open' );
 			}
 		},
 
@@ -124,6 +132,70 @@
 
 			control.select.prop( 'disabled', 0 === self.collection.length );
 			control.select.prop( 'selectedIndex', -1 );
+
+		},
+
+		/**
+		 *
+		 */
+		editSelectedPost: function () {
+			var control, customize_id, post_id, post_edit_control, post_data, control_container;
+			control = this;
+			post_id = control.select.val();
+			customize_id = self.getCustomizeId( post_id );
+
+			// @todo asset the post is in the collection, or asynchronously load the post data
+
+			post_data = self.collection.get( post_id );
+			if ( ! post_data ) {
+				throw new Error( 'No post data available. May need to implement async loading of post data on demand.' );
+			}
+
+			// Create setting
+			if ( ! api.has( customize_id ) ) {
+				api.create(
+					customize_id,
+					customize_id, // @todo what is this?
+					post_data.get( 'setting' ),
+					{
+						transport: 'refresh',
+						previewer: control.setting.previewer
+					}
+				);
+			}
+
+			// Create post_edit control
+			post_edit_control = api.control( customize_id );
+			if ( ! post_edit_control ) {
+
+				// Create container element for control
+				control_container = $( '<li/>' )
+					.addClass( 'customize-control' )
+					.addClass( 'customize-control-post_edit' );
+				control_container.hide(); // to be slid-down below
+				control_container.attr( 'id', 'customize-control-' + customize_id.replace( /\]/g, '' ).replace( /\[/g, '-' ) );
+				control_container.append( post_data.get( 'control' ) );
+				control.container.after( control_container );
+
+				// @todo now populate fields?
+
+				// Create control itself
+				post_edit_control = new api.controlConstructor.post_edit( customize_id, {
+					params: {
+						settings: {
+							'default': customize_id
+						},
+						type: 'post_edit'
+					},
+					previewer: control.setting.previewer
+				} );
+
+				api.control.add( customize_id, post_edit_control );
+
+				control_container.slideDown();
+			}
+
+			control.select.prop( 'selectedIndex', -1 );
 		}
 	} );
 
@@ -140,15 +212,16 @@
 		ready: function () {
 			var control = this;
 
-			control.post_fields_tpl = wp.template( 'customize-posts-fields' );
+			// @todo do we need this?
+//			control.post_fields_tpl = wp.template( 'customize-posts-fields' );
 
-			// Update the fields when the setting changes
-			this.setting.bind( function ( to, from ) {
-				if ( ! _( from ).isEqual( to ) ) {
-					control.populateFields();
-				}
-			} );
-			control.populateFields();
+//			// Update the fields when the setting changes
+//			this.setting.bind( function ( to, from ) {
+//				if ( ! _( from ).isEqual( to ) ) {
+//					control.populateFields();
+//				}
+//			} );
+//			control.populateFields();
 
 			// @todo Construct the control's fields with JS here, using the setting as the value
 			// @todo Handle addition and deletion of postmeta
@@ -288,7 +361,6 @@
 			new_fields_container.find( 'select.post_author' ).val( control.setting().post_author );
 			new_fields_container.find( 'select.post_status' ).val( control.setting().post_status );
 			new_fields_container.find( 'select.comment_status' ).val( control.setting().comment_status );
-
 
 			old_fields = control.container.find( '[name]' );
 			new_fields = new_fields_container.find( '[name]' );
