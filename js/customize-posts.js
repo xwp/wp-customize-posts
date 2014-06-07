@@ -1,4 +1,5 @@
 /*global jQuery, wp, _, _wpCustomizePostsSettings */
+
 ( function ( api, $ ) {
 	var OldPreviewer, preview, PostData, PostsCollection, self;
 
@@ -35,21 +36,21 @@
 	self = api.Posts = $.extend( {}, _wpCustomizePostsSettings, {
 		PostData: PostData,
 		PostsCollection: PostsCollection,
-		is_preview: new api.Value( null ),
-		is_singular: new api.Value( null ),
-		queried_post_id: new api.Value( null ),
+		isPostPreview: new api.Value( null ),
+		isSingular: new api.Value( null ),
+		queriedPostId: new api.Value( null ),
 		collection: new PostsCollection(),
-		accordion_section: null
+		accordionSection: null
 	} );
 
 	// Update the model from messages passed from the preview
 	api.bind( 'ready', function () {
-		self.accordion_section = $( '#accordion-section-posts' );
+		self.accordionSection = $( '#accordion-section-posts' );
 
 		preview.bind( 'customize-posts', function( data ) {
-			self.is_preview( data.is_preview );
-			self.is_singular( data.is_singular );
-			self.queried_post_id( data.queried_post_id );
+			self.isPostPreview( data.isPostPreview );
+			self.isSingular( data.isSingular );
+			self.queriedPostId( data.queriedPostId );
 			self.collection.reset( data.collection );
 
 			//console.info( 'Preview frame rendered these posts:', queriedPosts );
@@ -94,7 +95,7 @@
 
 			// @todo Hide the accordion section if no posts are displayed in the preview?
 
-			self.is_singular.bind( function () {
+			self.isSingular.bind( function () {
 				control.openSectionConditionally();
 			} );
 
@@ -112,8 +113,8 @@
 		 * Automatically open the Posts section when previewing a single
 		 */
 		openSectionConditionally: function () {
-			if ( self.is_singular() && self.isAccordionClosed() ) {
-				self.accordion_section.addClass( 'open' );
+			if ( self.isSingular() && self.isAccordionClosed() ) {
+				self.accordionSection.addClass( 'open' );
 			}
 		},
 

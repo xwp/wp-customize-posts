@@ -537,8 +537,8 @@ final class WP_Customize_Posts {
 		global $wp_scripts;
 
 		$exported = array(
-			'editable_post_field_keys' => $this->get_editable_post_field_keys(),
-			'post_data_nonce' => wp_create_nonce( 'customize_post_data' ),
+			'editablePostFieldKeys' => $this->get_editable_post_field_keys(),
+			'postDataNonce' => wp_create_nonce( 'customize_post_data' ),
 		);
 
 		$data = sprintf( 'var _wpCustomizePostsSettings = %s;', json_encode( $exported ) );
@@ -560,9 +560,9 @@ final class WP_Customize_Posts {
 		}
 
 		$exported = array(
-			'is_preview' => is_preview(),
-			'is_singular' => is_singular(),
-			'queried_post_id' => ( is_singular() ? get_queried_object_id() : null ),
+			'isPostPreview' => is_preview(),
+			'isSingular' => is_singular(),
+			'queriedPostId' => ( is_singular() ? get_queried_object_id() : null ),
 			'collection' => $collection,
 		);
 		// @todo grab get_control_fields() for each post here? Or should such data be loaded always over Ajax?
