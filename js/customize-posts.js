@@ -170,7 +170,7 @@
 	 *
 	 * @param {Object} root
 	 * @param {Array} keys
-	 * @param {*} defaultValue A default value which is used as a fallback. Default is null.
+	 * @param {*} [defaultValue] A default value which is used as a fallback. Default is null.
 	 * @return {*} The requested value or the default value.
 	 */
 	self.multidimensionalGet = function ( root, keys, defaultValue ) {
@@ -343,13 +343,13 @@
 			// @todo do we need this?
 //			control.post_fields_tpl = wp.template( 'customize-posts-fields' );
 
-//			// Update the fields when the setting changes
-//			this.setting.bind( function ( to, from ) {
-//				if ( ! _( from ).isEqual( to ) ) {
-//					control.populateFields();
-//				}
-//			} );
-//			control.populateFields();
+			// Update the fields when the setting changes
+			this.setting.bind( function ( to, from ) {
+				if ( ! _( from ).isEqual( to ) ) {
+					control.populateFields();
+				}
+			} );
+			control.populateFields();
 
 			// @todo Construct the control's fields with JS here, using the setting as the value
 			// @todo Handle addition and deletion of postmeta
@@ -470,8 +470,10 @@
 		},
 
 		/**
+		 * Given a multidimensional ID/name like "posts[519][meta][single1][0]",
+		 * return the keys as an array, like: [ '519', 'meta', 'single1', '0' ]
 		 *
-		 * @param id
+		 * @param {String} id
 		 * @returns {Array}
 		 */
 		parseKeys: function ( id ) {
@@ -479,35 +481,23 @@
 		},
 
 		/**
-		 *
+		 * Update the control's fields with the values in the setting
 		 */
 		populateFields: function () {
-			var control, new_fields, old_fields, new_fields_container, old_fields_signature, new_fields_signature;
+			var control, fields;
 
 			control = this;
-			new_fields_container = $( '<div>' + control.post_fields_tpl( control.setting() ) + '</div>' );
-			new_fields_container.find( 'select.post_author' ).val( control.setting().post_author );
-			new_fields_container.find( 'select.post_status' ).val( control.setting().post_status );
-			new_fields_container.find( 'select.comment_status' ).val( control.setting().comment_status );
-
-			old_fields = control.container.find( '[name]' );
-			new_fields = new_fields_container.find( '[name]' );
-			old_fields_signature = _( old_fields ).pluck( 'name' ).join( ',' );
-			new_fields_signature = _( new_fields ).pluck( 'name' ).join( ',' );
-
-			if ( old_fields_signature !== new_fields_signature ) {
-				control.container.empty();
-				control.container.append( new_fields_container.children() );
-			} else {
-				old_fields.each( function () {
-					var old_field, new_field;
-					old_field = $( this );
-					new_field = new_fields_container.find( '[name="' + this.name + '"]' );
-					if ( old_field.val() !== new_field.val() ) {
-						old_field.val( new_field.val() );
-					}
-				} );
-			}
+			fields = control.container.find( '[name]' );
+			fields.each( function () {
+				var field, keys, value;
+				field = $( this );
+				keys = control.parseKeys( field.prop( 'name' ) );
+				keys.shift(); // remove ID
+				value = self.multidimensionalGet( control.setting(), keys );
+				if ( field.val() !== value ) {
+					field.val( value );
+				}
+			} );
 		},
 
 		/**
