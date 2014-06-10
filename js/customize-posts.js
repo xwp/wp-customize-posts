@@ -5,7 +5,7 @@
 
 	// @todo Core really needs to not make the preview a private variable
 	OldPreviewer = api.Previewer;
-	api.Previewer = OldPreviewer.extend({
+	api.Previewer = OldPreviewer.extend( {
 		initialize: function( params, options ) {
 			preview = this;
 			OldPreviewer.prototype.initialize.call( this, params, options );
@@ -18,7 +18,8 @@
 	PostData = Backbone.Model.extend( {
 		id: null,
 		setting: {},
-		control: ''
+		control: '',
+		isControlCreated: false
 	} );
 
 	/**
@@ -204,6 +205,7 @@
 	};
 
 	/**
+	 * Create a post's setting and post_edit control if they don't already exist.
 	 *
 	 * @param post_id
 	 */
@@ -274,7 +276,8 @@
 		 * Set up control
 		 */
 		ready: function () {
-			var control = this;
+			var control, toggle_control_created;
+			control = this;
 			control.select = control.container.find( 'select:first' );
 
 			// @todo Hide the accordion section if no posts are displayed in the preview?
@@ -286,9 +289,27 @@
 			self.collection.on( 'reset', function () {
 				control.populateSelect();
 			} );
-
+			self.collection.on( 'change', function () {
+				control.populateSelect();
+			} );
 			control.select.on( 'change', function () {
 				control.editSelectedPost();
+			} );
+
+			toggle_control_created = function ( control, added ) {
+				var post_id, post_data;
+				if ( ! ( control instanceof api.controlConstructor.post_edit ) ) {
+					return;
+				}
+				post_id = control.setting().ID;
+				post_data = self.collection.get( post_id );
+				post_data.set( 'isControlCreated', added );
+			};
+			api.control.bind( 'add', function ( control ) {
+				toggle_control_created( control, true );
+			} );
+			api.control.bind( 'remove', function ( control ) {
+				toggle_control_created( control, false );
 			} );
 
 		},
@@ -310,18 +331,24 @@
 			control.select.empty();
 			self.collection.each( function ( post_data ) {
 				var option;
-				// @todo Skip if there is already a post_edit control open for this post
-				option = new Option( post_data.get( 'setting' ).post_title, post_data.get( 'id' ) );
-				control.select.append( option );
+				if ( ! post_data.get( 'isControlCreated' ) ) {
+					option = new Option( post_data.get( 'setting' ).post_title, post_data.get( 'id' ) );
+					control.select.append( option );
+				}
 			} );
 
 			control.select.prop( 'disabled', 0 === self.collection.length );
 			control.select.prop( 'selectedIndex', -1 );
+			if ( control.select.prop( 'length' ) === 0 ) {
+				control.container.slideUp();
+			} else {
+				control.container.slideDown();
+			}
 
 		},
 
 		/**
-		 *
+		 * Edit the selected post.
 		 */
 		editSelectedPost: function () {
 			var control, post_id;
