@@ -53,7 +53,6 @@
 			self.queriedPostId( data.queriedPostId );
 			self.collection.reset( data.collection );
 
-			//console.info( 'Preview frame rendered these posts:', queriedPosts );
 			// @todo Use queriedPosts to auto-suggest posts to edit (create their controls on the fly)
 			// @todo When navigating in the preview, add a post edit control automatically for queried object? Suggest all posts queried in preview.
 		} );
@@ -63,7 +62,7 @@
 	/**
 	 * Return whether the Customizer accordion is closed
 	 *
-	 * @returns {boolean}
+	 * @returns {Boolean}
 	 */
 	self.isAccordionClosed = function () {
 		return ( 0 === $( '.control-section.accordion-section.open' ).length );
@@ -72,8 +71,8 @@
 	/**
 	 * Generate the ID for a Customizer post_edit control or setting
 	 *
-	 * @param post_id
-	 * @returns {string}
+	 * @param {Number} post_id
+	 * @returns {String}
 	 */
 	self.getCustomizeId = function ( post_id ) {
 		return 'posts[' + post_id + ']';
@@ -137,17 +136,15 @@
 	/**
 	 * Will attempt to replace a specific value in a multidimensional array.
 	 *
-	 * @since 3.4.0
-	 *
-	 * @param $root
-	 * @param $keys
-	 * @param mixed $value The value to update.
-	 * @return
+	 * @param {Object} root
+	 * @param {Array} keys
+	 * @param {*} value The value to update.
+	 * @return {*}
 	 */
 	self.multidimensionalReplace = function ( root, keys, value ) {
 		var result;
 		if ( typeof value === 'undefined' ) {
-			return $root;
+			return root;
 		} else if ( ! keys.length ) { // If there are no keys, we're replacing the root.
 			return value;
 		}
@@ -205,6 +202,66 @@
 		result = this.multidimensionalGet( root, keys, noValue );
 		return result !== noValue;
 	};
+
+	/**
+	 *
+	 * @param post_id
+	 */
+	self.editPost = function ( post_id ) {
+		var customize_id, post_edit_control, post_data, control_container;
+		customize_id = self.getCustomizeId( post_id );
+
+		// @todo asset the post is in the collection, or asynchronously load the post data
+
+		post_data = self.collection.get( post_id );
+		if ( ! post_data ) {
+			throw new Error( 'No post data available. May need to implement async loading of post data on demand.' );
+		}
+
+		// Create setting
+		if ( ! api.has( customize_id ) ) {
+			api.create(
+				customize_id,
+				customize_id, // @todo what is this?
+				post_data.get( 'setting' ),
+				{
+					transport: 'refresh',
+					previewer: api( 'selected_posts' ).previewer
+				}
+			);
+		}
+
+		// Create post_edit control
+		post_edit_control = api.control( customize_id );
+		if ( ! post_edit_control ) {
+
+			// Create container element for control
+			control_container = $( '<li/>' )
+				.addClass( 'customize-control' )
+				.addClass( 'customize-control-post_edit' );
+			control_container.hide(); // to be slid-down below
+			control_container.attr( 'id', 'customize-control-' + customize_id.replace( /\]/g, '' ).replace( /\[/g, '-' ) );
+			control_container.append( post_data.get( 'control' ) );
+			api.control( 'selected_posts' ).container.after( control_container );
+
+			// @todo now populate fields?
+
+			// Create control itself
+			post_edit_control = new api.controlConstructor.post_edit( customize_id, {
+				params: {
+					settings: {
+						'default': customize_id
+					},
+					type: 'post_edit'
+				},
+				previewer: api( 'selected_posts' ).previewer
+			} );
+
+			api.control.add( customize_id, post_edit_control );
+
+			control_container.slideDown();
+		}
+	},
 
 	/**
 	 * Customize Control for selecting a post to edit
@@ -267,63 +324,13 @@
 		 *
 		 */
 		editSelectedPost: function () {
-			var control, customize_id, post_id, post_edit_control, post_data, control_container;
+			var control, post_id;
 			control = this;
 			post_id = control.select.val();
-			customize_id = self.getCustomizeId( post_id );
-
-			// @todo asset the post is in the collection, or asynchronously load the post data
-
-			post_data = self.collection.get( post_id );
-			if ( ! post_data ) {
-				throw new Error( 'No post data available. May need to implement async loading of post data on demand.' );
+			if ( post_id ) {
+				self.editPost( post_id );
+				control.select.prop( 'selectedIndex', -1 );
 			}
-
-			// Create setting
-			if ( ! api.has( customize_id ) ) {
-				api.create(
-					customize_id,
-					customize_id, // @todo what is this?
-					post_data.get( 'setting' ),
-					{
-						transport: 'refresh',
-						previewer: control.setting.previewer
-					}
-				);
-			}
-
-			// Create post_edit control
-			post_edit_control = api.control( customize_id );
-			if ( ! post_edit_control ) {
-
-				// Create container element for control
-				control_container = $( '<li/>' )
-					.addClass( 'customize-control' )
-					.addClass( 'customize-control-post_edit' );
-				control_container.hide(); // to be slid-down below
-				control_container.attr( 'id', 'customize-control-' + customize_id.replace( /\]/g, '' ).replace( /\[/g, '-' ) );
-				control_container.append( post_data.get( 'control' ) );
-				control.container.after( control_container );
-
-				// @todo now populate fields?
-
-				// Create control itself
-				post_edit_control = new api.controlConstructor.post_edit( customize_id, {
-					params: {
-						settings: {
-							'default': customize_id
-						},
-						type: 'post_edit'
-					},
-					previewer: control.setting.previewer
-				} );
-
-				api.control.add( customize_id, post_edit_control );
-
-				control_container.slideDown();
-			}
-
-			control.select.prop( 'selectedIndex', -1 );
 		}
 	} );
 
@@ -339,9 +346,6 @@
 		 */
 		ready: function () {
 			var control = this;
-
-			// @todo do we need this?
-//			control.post_fields_tpl = wp.template( 'customize-posts-fields' );
 
 			// Update the fields when the setting changes
 			this.setting.bind( function ( to, from ) {
