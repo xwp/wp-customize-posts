@@ -102,6 +102,7 @@ final class WP_Customize_Posts {
 	 */
 	public function get_post_setting_value( $post ) {
 		$post = get_post( $post );
+		$this->override_post_data( $post );
 		$data = $post->to_array();
 		$data['meta'] = array();
 		foreach ( get_post_custom( $post->ID ) as $meta_key => $meta_values ) {
