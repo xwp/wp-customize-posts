@@ -17,16 +17,66 @@
 	 */
 	PostData = Backbone.Model.extend( {
 		id: null,
-		setting: {},
-		control: '',
-		isControlCreated: false
+		setting: {}, // @todo this should be settingData
+		control: '', // @todo this should be controlContent
+
+		/**
+		 *
+		 * @returns {wp.customize.Setting|undefined}
+		 */
+		getSetting: function () {
+			return api( self.createCustomizeId( this.id ) );
+		},
+
+		/**
+		 *
+		 * @returns {wp.customize.Control|undefined}
+		 */
+		getControl: function () {
+			return api.control( self.createCustomizeId( this.id ) );
+		},
+
+		/**
+		 * Create the customizer control and setting for this post
+		 */
+		customize: function () {
+			self.editPost( this.id );
+		},
+
+		/**
+		 *
+		 * @returns {String}
+		 */
+		getTitle: function () {
+			var setting = api( self.createCustomizeId( this.id ) );
+			if ( setting ) {
+				return setting().post_title;
+			} else {
+				return this.get( 'setting' ).post_title;
+			}
+		}
 	} );
 
 	/**
 	 * @type {Backbone.Model}
 	 */
 	PostsCollection = Backbone.Collection.extend( {
-		model: PostData
+		model: PostData,
+		comparator: function ( model ) {
+			return model.getTitle();
+		},
+		merge: function ( post_datas ) {
+			var collection = this;
+			_.each( post_datas, function ( post_data ) {
+				var model = collection.get( post_data.id );
+				if ( model ) {
+					model.set( post_data );
+				} else {
+					collection.add( post_data );
+				}
+			} );
+			collection.sort();
+		}
 	} );
 
 	/**
@@ -52,12 +102,25 @@
 			self.isPostPreview( data.isPostPreview );
 			self.isSingular( data.isSingular );
 			self.queriedPostId( data.queriedPostId );
-			self.collection.reset( data.collection );
+			self.collection.merge( data.collection );
 
-			// @todo Use queriedPosts to auto-suggest posts to edit (create their controls on the fly)
 			// @todo When navigating in the preview, add a post edit control automatically for queried object? Suggest all posts queried in preview.
 		} );
 
+		// Trigger updates on the Backbone PostData model when the corresponding Customize Setting changes
+		api.bind( 'add', function ( setting ) {
+			var handler, post_id;
+			post_id = self.parseCustomizeId( setting.id );
+			if ( post_id ) {
+				handler = function () {
+					var post_data = self.collection.get( post_id );
+					if ( post_data ) {
+						post_data.trigger( 'change' );
+					}
+				};
+				setting.bind( handler );
+			}
+		} );
 	} );
 
 	/**
@@ -70,13 +133,34 @@
 	};
 
 	/**
+	 * Pattern for a Customize ID
+	 * @type {RegExp}
+	 */
+	self.customizeIdRegex = /^posts\[(\d+)\]$/;
+
+	/**
 	 * Generate the ID for a Customizer post_edit control or setting
 	 *
 	 * @param {Number} post_id
 	 * @returns {String}
 	 */
-	self.getCustomizeId = function ( post_id ) {
+	self.createCustomizeId = function ( post_id ) {
 		return 'posts[' + post_id + ']';
+	};
+
+	/**
+	 * Obtain the post ID from a given customize post setting/control ID
+	 *
+	 * @param {String} customize_id
+	 * @return {Number|null} the post ID contained in the customize ID, or null
+	 */
+	self.parseCustomizeId = function ( customize_id ) {
+		var matches = customize_id.match( self.customizeIdRegex );
+		if ( matches ) {
+			return parseInt( matches[1], 10 );
+		} else {
+			return null;
+		}
 	};
 
 	/**
@@ -211,7 +295,7 @@
 	 */
 	self.editPost = function ( post_id ) {
 		var customize_id, post_edit_control, post_data, control_container;
-		customize_id = self.getCustomizeId( post_id );
+		customize_id = self.createCustomizeId( post_id );
 
 		// @todo asset the post is in the collection, or asynchronously load the post data
 
@@ -224,7 +308,7 @@
 		if ( ! api.has( customize_id ) ) {
 			api.create(
 				customize_id,
-				customize_id, // @todo what is this?
+				customize_id, // @todo what is this parameter for?
 				post_data.get( 'setting' ),
 				{
 					transport: 'refresh',
@@ -245,8 +329,6 @@
 			control_container.attr( 'id', 'customize-control-' + customize_id.replace( /\]/g, '' ).replace( /\[/g, '-' ) );
 			control_container.append( post_data.get( 'control' ) );
 			api.control( 'selected_posts' ).container.after( control_container );
-
-			// @todo now populate fields?
 
 			// Create control itself
 			post_edit_control = new api.controlConstructor.post_edit( customize_id, {
@@ -286,31 +368,20 @@
 				control.openSectionConditionally();
 			} );
 
-			self.collection.on( 'reset', function () {
-				control.populateSelect();
-			} );
-			self.collection.on( 'change', function () {
+			self.collection.on( 'sort add remove reset change', function () {
 				control.populateSelect();
 			} );
 			control.select.on( 'change', function () {
 				control.editSelectedPost();
 			} );
 
-			toggle_control_created = function ( control, added ) {
-				var post_id, post_data;
-				if ( ! ( control instanceof api.controlConstructor.post_edit ) ) {
-					return;
+			toggle_control_created = function ( other_control ) {
+				if ( other_control instanceof api.controlConstructor.post_edit ) {
+					control.populateSelect();
 				}
-				post_id = control.setting().ID;
-				post_data = self.collection.get( post_id );
-				post_data.set( 'isControlCreated', added );
-			};
-			api.control.bind( 'add', function ( control ) {
-				toggle_control_created( control, true );
-			} );
-			api.control.bind( 'remove', function ( control ) {
-				toggle_control_created( control, false );
-			} );
+			}
+			api.control.bind( 'add', toggle_control_created );
+			api.control.bind( 'remove', toggle_control_created );
 
 		},
 
@@ -331,7 +402,7 @@
 			control.select.empty();
 			self.collection.each( function ( post_data ) {
 				var option;
-				if ( ! post_data.get( 'isControlCreated' ) ) {
+				if ( ! api.control( self.createCustomizeId( post_data.id ) ) ) {
 					option = new Option( post_data.get( 'setting' ).post_title, post_data.get( 'id' ) );
 					control.select.append( option );
 				}
@@ -382,7 +453,6 @@
 			} );
 			control.populateFields();
 
-			// @todo Construct the control's fields with JS here, using the setting as the value
 			// @todo Handle addition and deletion of postmeta
 
 			// Update the setting when the fields change
@@ -516,6 +586,7 @@
 		 */
 		populateFields: function () {
 			var control, fields;
+			// @todo Should this use wp.customize.Element?
 
 			control = this;
 			fields = control.container.find( '[name]' );
