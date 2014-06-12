@@ -102,26 +102,32 @@
 			self.isPostPreview( data.isPostPreview );
 			self.isSingular( data.isSingular );
 			self.queriedPostId( data.queriedPostId );
-			self.collection.merge( data.collection );
+			self.collection.merge( data.collection ); // @todo Remove posts from self.collection that aren't in data.collection and which aren't in opened controls
 
 			// @todo When navigating in the preview, add a post edit control automatically for queried object? Suggest all posts queried in preview.
 		} );
 
-		// Trigger updates on the Backbone PostData model when the corresponding Customize Setting changes
-		api.bind( 'add', function ( setting ) {
-			var handler, post_id;
-			post_id = self.parseCustomizeId( setting.id );
-			if ( post_id ) {
-				handler = function () {
-					var post_data = self.collection.get( post_id );
-					if ( post_data ) {
-						post_data.trigger( 'change' );
-					}
-				};
-				setting.bind( handler );
-			}
-		} );
+		api.bind( 'add', self.setupSettingModelSync );
 	} );
+
+	/**
+	 * Trigger updates on the Backbone PostData model when the corresponding Customize Setting changes
+	 *
+	 * @param {wp.customize.Setting} setting
+	 */
+	self.setupSettingModelSync = function ( setting ) {
+		var handler, post_id;
+		post_id = self.parseCustomizeId( setting.id );
+		if ( post_id ) {
+			handler = function () {
+				var post_data = self.collection.get( post_id );
+				if ( post_data ) {
+					post_data.trigger( 'change' );
+				}
+			};
+			setting.bind( handler );
+		}
+	};
 
 	/**
 	 * Return whether the Customizer accordion is closed
@@ -379,7 +385,7 @@
 				if ( other_control instanceof api.controlConstructor.post_edit ) {
 					control.populateSelect();
 				}
-			}
+			};
 			api.control.bind( 'add', toggle_control_created );
 			api.control.bind( 'remove', toggle_control_created );
 
@@ -452,8 +458,6 @@
 				}
 			} );
 			control.populateFields();
-
-			// @todo Handle addition and deletion of postmeta
 
 			// Update the setting when the fields change
 			control.container.on( 'change input propertychange', ':input[name]', function () {

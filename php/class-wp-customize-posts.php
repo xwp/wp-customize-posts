@@ -417,7 +417,7 @@ final class WP_Customize_Posts {
 				// Make sure protected meta and serialized meta are not manipulated
 				if ( is_array( $old_meta_value ) ) {
 					foreach ( $old_meta_value as $key => $old_values ) {
-						if ( is_protected_meta( $key, 'post' ) ) {
+						if ( is_protected_meta( $key, 'post' ) || ! current_user_can( 'edit_post_meta', $post_id, $key ) ) {
 							$meta_value[ $key ] = $old_values;
 						} else {
 							foreach ( $old_values as $i => $old_value ) {

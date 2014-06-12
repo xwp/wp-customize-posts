@@ -158,7 +158,6 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 				<section class="post-meta">
 					<h3><?php esc_html_e( 'Meta', 'customize-posts' ) ?></h3>
 					<dl class="post-meta" data-tmpl="customize-posts-meta-field">
-						<?php echo self::get_meta_fields( array( 'post_id' => '{{ data.post_id }}', 'meta_key' => '{{ data.meta_key }}', 'meta_values' => array() ) ); // xss ok ?>
 						<?php foreach ( get_post_custom( $post->ID ) as $meta_key => $meta_values ): ?>
 							<?php echo self::get_meta_fields( compact( 'post_id', 'meta_key', 'meta_values' ) ); // xss ok ?>
 						<?php endforeach; ?>
