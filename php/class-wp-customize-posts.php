@@ -403,6 +403,7 @@ final class WP_Customize_Posts {
 		$prevent_recursion = false;
 
 		// @todo Consider is_serialized?
+		// @todo Move disabled logic into another method, with cap check for whether user can edit protected meta
 		if ( ! empty( $meta_key ) && ( is_protected_meta( $meta_key, 'post' ) || ! current_user_can( 'edit_post_meta', $post_id, $meta_key ) ) ) {
 			return $meta_value;
 		}
@@ -417,6 +418,7 @@ final class WP_Customize_Posts {
 				// Make sure protected meta and serialized meta are not manipulated
 				if ( is_array( $old_meta_value ) ) {
 					foreach ( $old_meta_value as $key => $old_values ) {
+						// @todo Move disabled logic into another method, with cap check for whether user can edit protected meta
 						if ( is_protected_meta( $key, 'post' ) || ! current_user_can( 'edit_post_meta', $post_id, $key ) ) {
 							$meta_value[ $key ] = $old_values;
 						} else {

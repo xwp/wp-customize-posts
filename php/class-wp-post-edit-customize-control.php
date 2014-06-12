@@ -76,6 +76,8 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 		$post_type_obj = get_post_type_object( $post->post_type );
 		$post_id = $post->ID;
 
+		// @todo Don't show any fields by default? Provide a select2-style list for selecting a field that you want to edit?
+		// @todo Each field in this should be a separate overridable method, and the overall list needs to be filterable.
 		ob_start();
 		?>
 		<span class="customize-control-title">
@@ -190,9 +192,12 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 	 */
 	static function get_meta_fields( $tpl_vars ) {
 		ob_start();
+		// @todo Move disabled logic into another method, with cap check for whether user can edit protected meta
+		$disabled = ( is_protected_meta( $tpl_vars['meta_key'], 'post' ) || ! current_user_can( 'edit_post_meta', $tpl_vars['post_id'], $tpl_vars['meta_key'] ) );
+		// @todo If the meta is disabled, it shouldn't be shown at all, unless the user is an admin or has been granted special caps
 		?>
 		<dt>
-			<input type="text" class="meta-key" value="<?php echo esc_attr( $tpl_vars['meta_key'] ) ?>">
+			<input <?php disabled( $disabled ) ?> type="text" class="meta-key" value="<?php echo esc_attr( $tpl_vars['meta_key'] ) ?>">
 		</dt>
 		<dd>
 			<ul class="meta-value-list" data-tmpl="customize-posts-meta-field-value">
@@ -213,7 +218,9 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 					<?php endforeach; ?>
 				<?php endif; ?>
 			</ul>
-			<button type="button" class="add add-meta-value button button-secondary"><?php esc_html_e( 'Add value', 'customize-posts' ) ?></button>
+			<?php if ( ! $disabled ): ?>
+				<button type="button" class="add add-meta-value button button-secondary"><?php esc_html_e( 'Add value', 'customize-posts' ) ?></button>
+			<?php endif; ?>
 		</dd>
 		<?php
 		$html = ob_get_contents();
@@ -235,11 +242,15 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 	 */
 	static function get_meta_field_value( $tpl_vars ) {
 		$id = sprintf( 'posts[%s][meta][%s][%s]', $tpl_vars['post_id'], $tpl_vars['meta_key'], $tpl_vars['i'] );
+		// @todo Move disabled logic into another method, with cap check for whether user can edit protected meta
+		$disabled = ( is_protected_meta( $tpl_vars['meta_key'], 'post' ) || ! current_user_can( 'edit_post_meta', $tpl_vars['post_id'], $tpl_vars['meta_key'] ) );
 		ob_start();
 		?>
 		<li class="meta-value-item">
-			<button type="button" class="delete-meta button button-secondary" title="<?php esc_attr_e( 'Delete meta value', 'customize-posts' ) ?>"><?php _e( '&times;', 'customize-posts' ) ?></button>
-			<textarea class="meta-value" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>"><?php echo esc_textarea( $tpl_vars['meta_value'] ) ?></textarea>
+			<?php if ( ! $disabled ): ?>
+				<button type="button" class="delete-meta button button-secondary" title="<?php esc_attr_e( 'Delete meta value', 'customize-posts' ) ?>"><?php _e( '&times;', 'customize-posts' ) ?></button>
+			<?php endif; ?>
+			<textarea <?php disabled( $disabled ) ?> class="meta-value" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>"><?php echo esc_textarea( $tpl_vars['meta_value'] ) ?></textarea>
 		</li>
 		<?php
 		$html = ob_get_contents();
