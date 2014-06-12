@@ -193,7 +193,7 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 	static function get_meta_fields( $tpl_vars ) {
 		ob_start();
 		// @todo Move disabled logic into another method, with cap check for whether user can edit protected meta
-		$disabled = ( is_protected_meta( $tpl_vars['meta_key'], 'post' ) || ! current_user_can( 'edit_post_meta', $tpl_vars['post_id'], $tpl_vars['meta_key'] ) );
+		$disabled = ( is_protected_meta( $tpl_vars['meta_key'], 'post' ) || ( is_numeric( $tpl_vars['post_id'] ) && ! current_user_can( 'edit_post_meta', $tpl_vars['post_id'], $tpl_vars['meta_key'] ) ) );
 		// @todo If the meta is disabled, it shouldn't be shown at all, unless the user is an admin or has been granted special caps
 		?>
 		<dt>
@@ -243,7 +243,7 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 	static function get_meta_field_value( $tpl_vars ) {
 		$id = sprintf( 'posts[%s][meta][%s][%s]', $tpl_vars['post_id'], $tpl_vars['meta_key'], $tpl_vars['i'] );
 		// @todo Move disabled logic into another method, with cap check for whether user can edit protected meta
-		$disabled = ( is_protected_meta( $tpl_vars['meta_key'], 'post' ) || ! current_user_can( 'edit_post_meta', $tpl_vars['post_id'], $tpl_vars['meta_key'] ) );
+		$disabled = ( is_protected_meta( $tpl_vars['meta_key'], 'post' ) || ( is_numeric( $tpl_vars['post_id'] ) && ! current_user_can( 'edit_post_meta', $tpl_vars['post_id'], $tpl_vars['meta_key'] ) ) );
 		ob_start();
 		?>
 		<li class="meta-value-item">
