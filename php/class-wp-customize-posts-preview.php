@@ -185,14 +185,26 @@ final class WP_Customize_Posts_Preview {
 		foreach ( $this->preview_queried_post_ids as $post_id ) {
 			$data = $this->manager->posts->get_customize_post_data( $post_id );
 			if ( ! is_wp_error( $data ) ) {
-				$collection[] = $data;
+				$collection[ $post_id ] = $data;
 			}
 		}
+
+		$queried_post_id = 0; // can't be null due to wp.customize.Value
+		if ( get_queried_object() && is_a( get_queried_object(), 'WP_Post' ) ) {
+			$queried_post_id = get_queried_object_id();
+			if ( empty( $collection[ $queried_post_id ] ) ) {
+				$data = $this->manager->posts->get_customize_post_data( $queried_post_id );
+				if ( ! is_wp_error( $data ) ) {
+					$collection[ $queried_post_id ] = $data;
+				}
+			}
+		}
+		$collection = array_values( $collection );
 
 		$exported = array(
 			'isPostPreview' => is_preview(),
 			'isSingular' => is_singular(),
-			'queriedPostId' => ( is_singular() ? get_queried_object_id() : null ),
+			'queriedPostId' => $queried_post_id,
 			'collection' => $collection,
 		);
 		// @todo grab get_control_fields() for each post here? Or should such data be loaded always over Ajax?
