@@ -396,7 +396,7 @@
 		 */
 		openSectionConditionally: function () {
 			if ( self.isSingular() && self.isAccordionClosed() ) {
-				self.accordionSection.addClass( 'open' );
+				self.accordionSection.find( '.accordion-section-title:first' ).trigger( 'click' );
 			}
 		},
 
