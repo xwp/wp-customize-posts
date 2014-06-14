@@ -64,18 +64,6 @@
 		model: PostData,
 		comparator: function ( model ) {
 			return model.getTitle();
-		},
-		merge: function ( post_datas ) {
-			var collection = this;
-			_.each( post_datas, function ( post_data ) {
-				var model = collection.get( post_data.id );
-				if ( model ) {
-					model.set( post_data );
-				} else {
-					collection.add( post_data );
-				}
-			} );
-			collection.sort();
 		}
 	} );
 
@@ -102,13 +90,48 @@
 			self.isPostPreview( data.isPostPreview );
 			self.isSingular( data.isSingular );
 			self.queriedPostId( data.queriedPostId );
-			self.collection.merge( data.collection ); // @todo Remove posts from self.collection that aren't in data.collection and which aren't in opened controls
+			self.updateCollection( data.collection );
 
 			// @todo When navigating in the preview, add a post edit control automatically for queried object? Suggest all posts queried in preview.
 		} );
 
 		api.bind( 'add', self.setupSettingModelSync );
 	} );
+
+	/**
+	 * Remove any posts from self.collection() that aren't in collection, and
+	 * which aren't currently being edited in the Customizer.
+	 *
+	 * @param {Array} new_collection
+	 */
+	self.updateCollection = function ( new_collection ) {
+		var keep_post_ids;
+		keep_post_ids = _.pluck( new_collection, 'id' );
+
+		// Append any IDs for posts currently being edited
+		api.each( function ( setting ) {
+			var post_id = self.parseCustomizeId( setting.id );
+			if ( post_id ) {
+				keep_post_ids.push( post_id );
+			}
+		} );
+
+		// Remove any post not kept
+		self.collection.remove( self.collection.filter( function ( post_data ) {
+			return ( -1 === keep_post_ids.indexOf( post_data.id ) );
+		} ) );
+
+		// Add/update any new post_data to the collection
+		_.each( new_collection, function ( post_data ) {
+			var model = self.collection.get( post_data.id );
+			if ( model ) {
+				model.set( post_data );
+			} else {
+				self.collection.add( post_data );
+			}
+		} );
+		self.collection.sort();
+	};
 
 	/**
 	 * Trigger updates on the Backbone PostData model when the corresponding Customize Setting changes
@@ -172,7 +195,7 @@
 	/**
 	 * Multidimensional helper function.
 	 *
-	 * This is a port of WP_Customize_Setting::multidimensional()
+	 * Port of WP_Customize_Setting::multidimensional()
 	 *
 	 * @todo This should be migrated to customize-base.js
 	 *
@@ -227,6 +250,8 @@
 	/**
 	 * Will attempt to replace a specific value in a multidimensional array.
 	 *
+	 * Port of WP_Customize_Setting::multidimensional_replace()
+	 *
 	 * @param {Object} root
 	 * @param {Array} keys
 	 * @param {*} value The value to update.
@@ -279,7 +304,7 @@
 	/**
 	 * Will attempt to check if a specific value in a multidimensional array is set.
 	 *
-	 * This is a port of WP_Customize_Setting::multidimensional_isset()
+	 * Port of WP_Customize_Setting::multidimensional_isset()
 	 *
 	 * @todo Fold this into customize-base.js
 	 *
