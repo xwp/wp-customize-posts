@@ -207,7 +207,6 @@ final class WP_Customize_Posts_Preview {
 			'queriedPostId' => $queried_post_id,
 			'collection' => $collection,
 		);
-		// @todo grab get_control_fields() for each post here? Or should such data be loaded always over Ajax?
 
 		$data = sprintf( 'var _wpCustomizePreviewPostsData = %s;', json_encode( $exported ) );
 		$wp_scripts->add_data( 'customize-preview-posts', 'data', $data );

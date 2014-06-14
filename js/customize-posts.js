@@ -84,7 +84,7 @@
 
 	// Update the model from messages passed from the preview
 	api.bind( 'ready', function () {
-		self.accordionSection = $( '#accordion-section-posts' );
+		self.section.init();
 
 		preview.bind( 'customize-posts', function( data ) {
 			self.isPostPreview( data.isPostPreview );
@@ -96,7 +96,53 @@
 		} );
 
 		api.bind( 'add', self.setupSettingModelSync );
+
 	} );
+
+	/**
+	 * Encapsultation of model for Customize Section
+	 */
+	self.section = {
+		container: null,
+
+		init: function () {
+			var section = this;
+			section.container = $( '#accordion-section-posts' );
+
+			// Toggle visibility of customize section
+			self.collection.on( 'all', function () {
+				if ( self.collection.length ) {
+					section.container.slideDown();
+				} else {
+					section.container.slideUp();
+				}
+			} );
+
+			self.isSingular.bind( function () {
+				section.openSectionConditionally();
+			} );
+		},
+
+		/**
+		 * Return whether the Customizer accordion is closed
+		 *
+		 * @returns {Boolean}
+		 */
+		isAccordionClosed: function () {
+			return ( 0 === $( '.control-section.accordion-section.open' ).length );
+		},
+
+		/**
+		 * Automatically open the Posts section when previewing a single
+		 */
+		openSectionConditionally: function () {
+			var section = this;
+			if ( self.isSingular() && section.isAccordionClosed() ) {
+				section.container.find( '.accordion-section-title:first' ).trigger( 'click' );
+			}
+		}
+
+	};
 
 	/**
 	 * Remove any posts from self.collection() that aren't in collection, and
@@ -150,15 +196,6 @@
 			};
 			setting.bind( handler );
 		}
-	};
-
-	/**
-	 * Return whether the Customizer accordion is closed
-	 *
-	 * @returns {Boolean}
-	 */
-	self.isAccordionClosed = function () {
-		return ( 0 === $( '.control-section.accordion-section.open' ).length );
 	};
 
 	/**
@@ -393,12 +430,6 @@
 			control = this;
 			control.select = control.container.find( 'select:first' );
 
-			// @todo Hide the accordion section if no posts are displayed in the preview?
-
-			self.isSingular.bind( function () {
-				control.openSectionConditionally();
-			} );
-
 			self.collection.on( 'sort add remove reset change', function () {
 				control.populateSelect();
 			} );
@@ -414,15 +445,6 @@
 			api.control.bind( 'add', toggle_control_created );
 			api.control.bind( 'remove', toggle_control_created );
 
-		},
-
-		/**
-		 * Automatically open the Posts section when previewing a single
-		 */
-		openSectionConditionally: function () {
-			if ( self.isSingular() && self.isAccordionClosed() ) {
-				self.accordionSection.find( '.accordion-section-title:first' ).trigger( 'click' );
-			}
 		},
 
 		/**
