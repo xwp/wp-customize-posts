@@ -189,7 +189,25 @@ final class WP_Customize_Posts {
 	 */
 	public function current_user_can_edit_post( $post ) {
 		$post = get_post( $post );
-		return current_user_can( get_post_type_object( $post->post_type )->cap->edit_post, $post->ID );
+		$can_edit = current_user_can( get_post_type_object( $post->post_type )->cap->edit_post, $post->ID );
+		return $can_edit;
+	}
+
+	/**
+	 * Return whether current user can edit supplied post.
+	 *
+	 * @param WP_Post|int|null $post
+	 * @param string $key
+	 * @param string $value
+	 * @return boolean
+	 */
+	public function current_user_can_edit_post_meta( $post, $key, $value = '' ) {
+		$can_edit = ( ! is_protected_meta( $key, 'post' ) && ! is_serialized_string( $value ) );
+		if ( ! empty( $post ) ) {
+			$post = get_post( $post );
+			$can_edit = $can_edit && current_user_can( 'edit_post_meta', $post->ID, $key );
+		}
+		return $can_edit;
 	}
 
 	/**
@@ -288,7 +306,10 @@ final class WP_Customize_Posts {
 		}
 
 		foreach ( $meta as $key => $value ) {
-			update_post_meta( $data['ID'], $key, $value[0] ); // @todo This doesn't account for multiple
+			$can_edit = $this->current_user_can_edit_post_meta( $data['ID'], $key, $value );
+			if ( $can_edit ) {
+				update_post_meta( $data['ID'], $key, $value[0] ); // @todo This doesn't account for multiple
+			}
 		}
 
 		// @todo Taxonomies?
