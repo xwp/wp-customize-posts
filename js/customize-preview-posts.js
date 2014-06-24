@@ -1,5 +1,5 @@
-/*global wp, jQuery, _wpCustomizePreviewPostsSettings */
-( function ( api, $ ) {
+/*global wp, _wpCustomizePreviewPostsData */
+( function ( api ) {
 
 	var OldPreview, preview;
 
@@ -17,4 +17,4 @@
 		}
 	} );
 
-} )( wp.customize, jQuery );
+} )( wp.customize );

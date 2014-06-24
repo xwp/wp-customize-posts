@@ -1,4 +1,4 @@
-/*global jQuery, wp, _, _wpCustomizePostsSettings */
+/*global jQuery, wp, _, Backbone, _wpCustomizePostsSettings */
 
 ( function ( api, $ ) {
 	var OldPreviewer, preview, PostData, PostsCollection, self;
