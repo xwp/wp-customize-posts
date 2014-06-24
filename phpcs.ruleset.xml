@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<ruleset name="Customize Posts">
+	<description>PHPCS ruleset for Customize Posts</description>
+
+	<rule ref="WordPress/Subsets/core.ruleset.xml"/>
+</ruleset>
