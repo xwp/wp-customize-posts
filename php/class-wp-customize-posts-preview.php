@@ -107,36 +107,47 @@ final class WP_Customize_Posts_Preview {
 		$old_meta_value = get_post_meta( $post_id, $meta_key, $single );
 		$prevent_recursion = false;
 
-		// @todo Consider is_serialized?
-		// @todo Move disabled logic into another method, with cap check for whether user can edit protected meta
-		if ( ! empty( $meta_key ) && ( is_protected_meta( $meta_key, 'post' ) || ! current_user_can( 'edit_post_meta', $post_id, $meta_key ) ) ) {
+		if ( ! empty( $meta_key ) && ! $this->manager->posts->current_user_can_edit_post_meta( $post_id, $meta_key ) ) {
 			return $meta_value;
 		}
 
-		// @todo We should allow all protected meta to come through, but only opt-in to allowing it to be edited
+		// @todo need to handle deletion
+		// @todo THIS NEEDS TO BE COMPLETELY RE-THOUGHT
 
 		$post_overrides = $this->manager->posts->get_post_overrides( $post_id );
 		if ( ! empty( $post_overrides ) ) {
-			if ( empty( $meta_key ) ) { // i.e. get_post_custom()
-				$meta_value = $post_overrides['meta']; // @todo do we need to handle $single?
+			// @todo serialized meta should have sanitizers to make sure they get hydrated and de-hydrated properly
 
-				// Make sure protected meta and serialized meta are not manipulated
-				if ( is_array( $old_meta_value ) ) {
-					foreach ( $old_meta_value as $key => $old_values ) {
-						// @todo Move disabled logic into another method, with cap check for whether user can edit protected meta
-						if ( is_protected_meta( $key, 'post' ) || ! current_user_can( 'edit_post_meta', $post_id, $key ) ) {
-							$meta_value[ $key ] = $old_values;
-						} else {
-							foreach ( $old_values as $i => $old_value ) {
-								if ( is_serialized( $old_value ) ) {
-									$meta_value[ $key ][ $i ] = $old_value;
-								}
+			if ( empty( $meta_key ) ) { // i.e. get_post_custom()
+				$new_meta_value = $post_overrides['meta'];
+
+				if ( $single ) {
+					$new_meta_values = array( &$new_meta_value );
+					$old_meta_values = array( &$old_meta_value );
+				} else {
+					$new_meta_values = &$new_meta_value;
+					$old_meta_values = &$old_meta_value;
+				}
+
+				// Make sure immutable (protected meta) are not manipulated
+				foreach ( $old_meta_values as $key => $old_values ) {
+					if ( ! $this->manager->posts->current_user_can_edit_post_meta( $post_id, $key ) ) {
+						$meta_value[ $key ] = $old_values;
+					} else {
+						foreach ( $old_values as $i => $old_value ) {
+							if ( $this->manager->posts->current_user_can_edit_post_meta( $post_id, $key, $old_value ) ) {
+								$meta_value[ $key ][] = $old_value;
 							}
 						}
 					}
 				}
-			} else if ( $single && is_serialized( $old_meta_value ) ) {
-				$meta_value = $single ? '' : array();
+
+				// Add new meta values
+				foreach ( $new_meta_values as $key => $new_values ) {
+					foreach ( $new_values as $new_value ) {
+						$meta_value[ $key ][] = $new_value;
+					}
+				}
 			} else if ( ! isset( $post_overrides['meta'][ $meta_key ] ) ) {
 				$meta_value = $single ? '' : array();
 			} elseif ( $single ) {
@@ -145,10 +156,12 @@ final class WP_Customize_Posts_Preview {
 				$meta_value = $post_overrides['meta'][ $meta_key ];
 			}
 
-			// Make sure that serialized values persist
+			// @todo Need to apply the filters meta sanitization filters
+
+			// Make sure that immutable values persist
 			if ( ! $single && is_array( $old_meta_value ) ) {
 				foreach ( $old_meta_value as $i => $old_value ) {
-					if ( is_serialized( $old_value ) ) {
+					if ( ! $this->manager->posts->current_user_can_edit_post_meta( $post_id, $meta_key, $old_value ) ) {
 						$meta_value[ $i ] = $old_value;
 					}
 				}

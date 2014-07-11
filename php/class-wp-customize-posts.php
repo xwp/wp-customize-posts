@@ -202,7 +202,8 @@ final class WP_Customize_Posts {
 	 * @return boolean
 	 */
 	public function current_user_can_edit_post_meta( $post, $key, $value = '' ) {
-		$can_edit = ( ! is_protected_meta( $key, 'post' ) && ! is_serialized_string( $value ) );
+		// @todo Allow serialized to be edited if it is not protected, because the sanitizer can make sure it is fixed.
+		$can_edit = ( ! is_protected_meta( $key, 'post' ) );
 		if ( ! empty( $post ) ) {
 			$post = get_post( $post );
 			$can_edit = $can_edit && current_user_can( 'edit_post_meta', $post->ID, $key );
@@ -266,6 +267,7 @@ final class WP_Customize_Posts {
 			$post_data['post_date_gmt'] = get_gmt_from_date( $post_data['post_date'] );
 		}
 
+		// @todo Need to apply the filters meta sanitization filters
 		if ( ! isset( $post_data['meta'] ) ) {
 			$post_data['meta'] = array();
 		}
@@ -305,10 +307,39 @@ final class WP_Customize_Posts {
 			$meta = $data['meta'];
 		}
 
-		foreach ( $meta as $key => $value ) {
-			$can_edit = $this->current_user_can_edit_post_meta( $data['ID'], $key, $value );
-			if ( $can_edit ) {
-				update_post_meta( $data['ID'], $key, $value[0] ); // @todo This doesn't account for multiple
+		foreach ( $meta as $key => $new_values ) {
+
+			// @todo Need to apply the filters meta sanitization filters
+
+			$old_values = get_post_meta( $data['ID'], $key, false );
+
+			// Find the old postmeta that can't be changed
+			$immutable_values = array();
+			foreach ( $old_values as $value ) {
+				$can_edit = $this->current_user_can_edit_post_meta( $data['ID'], $key, $value );
+				if ( ! $can_edit ) {
+					$immutable_values[] = $value;
+				}
+			}
+
+			// Grab all of the values that added
+			$all_values = $immutable_values;
+			foreach ( $new_values as $i => $value ) {
+				$can_edit = $this->current_user_can_edit_post_meta( $data['ID'], $key, $value );
+				if ( $can_edit ) {
+					$all_values[] = $value;
+				}
+			}
+
+			// Remove immutable values since they get re-added
+			foreach ( $immutable_values as $value ) {
+				delete_post_meta( $data['ID'], $key, $value );
+			}
+
+			// Now re-add all postmeta, immutable and new
+			$all_values = array_merge( $immutable_values, $new_values );
+			foreach ( $all_values as $value ) {
+				add_post_meta( $data['ID'], $key, $value, false );
 			}
 		}
 
@@ -429,6 +460,5 @@ final class WP_Customize_Posts {
 		$data = sprintf( 'var _wpCustomizePostsSettings = %s;', json_encode( $exported ) );
 		$wp_scripts->add_data( 'customize-posts', 'data', $data );
 	}
-
 
 }
