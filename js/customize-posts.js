@@ -661,11 +661,12 @@
 			control = this;
 
 			new_setting = {};
+			new_setting.ID = control.setting().ID;
 			control.container.find( '[name]' ).each( function () {
 				var input, keys;
 				input = $( this );
 				keys = control.parseKeys( input.prop( 'name' ) );
-				new_setting.ID = keys.shift();
+				keys.shift(); // get rid of ID
 				self.multidimensionalReplace( new_setting, keys, input.val() );
 			} );
 
