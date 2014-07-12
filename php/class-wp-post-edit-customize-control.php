@@ -138,20 +138,35 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 				<p>
 					<?php $id = "posts[$post->ID][post_parent]"; ?>
 					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Parent:' ) ?></label>
-					TODO
+					<?php
+					$dropdown_args = array(
+						'post_type'        => $post->post_type,
+						'exclude_tree'     => $post->ID,
+						'selected'         => $post->post_parent,
+						'name'             => $id,
+						'id'               => $id,
+						'show_option_none' => __( '(no parent)' ),
+						'sort_column'      => 'menu_order, post_title',
+					);
+					$dropdown_args = apply_filters( 'page_attributes_dropdown_pages_args', $dropdown_args, $post );
+					wp_dropdown_pages( $dropdown_args );
+					?>
 				</p>
 				<p>
 					<?php $id = "posts[$post->ID][menu_order]"; ?>
 					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Menu order:' ) ?></label>
-					<input type="number" class="post-data menu_order" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>" value="<?php echo esc_attr( $post->menu_order ) ?>" >
+					<input type="number" class="post-data menu_order" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>" value="<?php echo esc_attr( $post->menu_order ) ?>" min="0">
 				</p>
 			<?php endif; ?>
 
 			<?php if ( 'page' === $post->post_type ): ?>
 				<p>
-					<?php $id = 'posts[{{ data.post_id }}][meta][_page_template][0]'; ?>
+					<?php $id = 'posts[{{ data.post_id }}][page_template]'; ?>
 					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Page template:' ) ?></label>
-					<input type="text" class="meta-value" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>" value="{{ data.meta._wp_page_template ? data.meta._wp_page_template[0] : '' }}" >
+					<select id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">
+						<option value=""><?php esc_html_e( 'Default Template' ); ?></option>
+						<?php page_template_dropdown( get_post_meta( $post->ID, '_wp_page_template', true ) ); ?>
+					</select>
 				</p>
 			<?php endif; ?>
 
