@@ -102,9 +102,12 @@ final class WP_Customize_Posts {
 		$this->override_post_data( $post );
 		$data = $post->to_array();
 		$data['meta'] = array();
-		foreach ( get_post_custom( $post->ID ) as $meta_key => $meta_values ) {
-			$data['meta'][ $meta_key ] = $meta_values; // @todo Serialization?
-		}
+
+		require_once( ABSPATH . 'wp-admin/includes/post.php' );
+		$data['meta'] = has_meta( $post->ID );
+		// @todo skip serialization?
+		// @todo skip protected
+
 		return $data;
 	}
 

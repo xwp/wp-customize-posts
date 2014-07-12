@@ -16,21 +16,16 @@
 	max-width: 100%;
 }
 
-.customize-control.customize-control-post_edit .meta-value-item {
-	position: relative;
-	text-align: left;
-}
 .customize-control.customize-control-post_edit dd {
+	position: relative;
 	text-align: right;
 	margin-left: 0;
 	margin-left: 37px;
 }
 
-.customize-control.customize-control-post_edit .meta-value-item .delete-meta {
+.customize-control.customize-control-post_edit .delete-meta {
 	position: absolute;
 	top: 0;
 	left: -37px;
 	width: 35px;
-}
-.customize-control.customize-control-post_edit .add-meta-value {
 }

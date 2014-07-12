@@ -41,27 +41,16 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 	 */
 	static function render_templates() {
 		?>
-		<script id="tmpl-customize-posts-meta-field" type="text/html">
+		<script id="tmpl-customize-posts-meta-fields" type="text/html">
 			<?php
 			$tpl_vars = array(
 				'post_id' => '{{ data.post_id }}',
+				'meta_id' => '-1',
 				'meta_key' => '{{ data.meta_key }}',
-				'meta_values' => '{{ data.meta_value }}',
+				'meta_value' => '{{ data.meta_value }}',
 				'is_mustache_tpl' => true,
 			);
 			echo self::get_meta_fields( $tpl_vars ); // xss ok
-			?>
-		</script>
-
-		<script id="tmpl-customize-posts-meta-field-value" type="text/html">
-			<?php
-			$tpl_vars = array(
-				'post_id' => '{{ data.post_id }}',
-				'meta_key' => '{{ data.meta_key }}',
-				'i' => '{{ data.i }}',
-				'meta_value' => '{{ data.meta_value }}',
-			);
-			echo self::get_meta_field_value( $tpl_vars ); // xss ok
 			?>
 		</script>
 		<?php
@@ -72,9 +61,16 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 	 * @return string
 	 */
 	static function get_fields( $post ) {
+		global $wpdb;
+
 		$post = get_post( $post );
 		$post_type_obj = get_post_type_object( $post->post_type );
 		$post_id = $post->ID;
+
+		require_once( ABSPATH . 'wp-admin/includes/post.php' );
+		require_once( ABSPATH . 'wp-admin/includes/theme.php' );
+		require_once( ABSPATH . 'wp-admin/includes/template.php' );
+		$post_meta = has_meta( $post_id );
 
 		// @todo Don't show any fields by default? Provide a select2-style list for selecting a field that you want to edit?
 		// @todo Each field in this should be a separate overridable method, and the overall list needs to be filterable.
@@ -175,8 +171,8 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 				<section class="post-meta">
 					<h3><?php esc_html_e( 'Meta', 'customize-posts' ) ?></h3>
 					<dl class="post-meta" data-tmpl="customize-posts-meta-field">
-						<?php foreach ( get_post_custom( $post->ID ) as $meta_key => $meta_values ): ?>
-							<?php echo self::get_meta_fields( compact( 'post_id', 'meta_key', 'meta_values' ) ); // xss ok ?>
+						<?php foreach ( $post_meta as $meta ): ?>
+							<?php echo self::get_meta_fields( $meta ); // xss ok ?>
 						<?php endforeach; ?>
 					</dl>
 					<p>
@@ -194,13 +190,16 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 	}
 
 	/**
+	 * Get the meta key input and meta value input for a given postmeta.
+	 *
 	 * @param array $tpl_vars {
 	 *     Template variables.
 	 *
 	 *     @type int|string $post_id  May be a string in case of Moustache template
+	 *     @type int $meta_id  For template this is -1
 	 *     @type string $meta_key
-	 *     @type array $meta_values
-	 *     @type bool is_mustache_tpl if true, then a template for customize-posts-meta-field-value will be rendered instead of looping over $meta_values
+	 *     @type string $meta_value
+	 *     @type bool is_mustache_tpl
 	 * }
 	 *
 	 * @return string
@@ -210,39 +209,24 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 
 		$disabled = false;
 		if ( is_numeric( $tpl_vars['post_id'] ) ) {
-			$disabled = ! $wp_customize->posts->current_user_can_edit_post_meta( $tpl_vars['post_id'], $tpl_vars['meta_key'] );
+			$disabled = ! $wp_customize->posts->current_user_can_edit_post_meta( $tpl_vars['post_id'], $tpl_vars['meta_key'], $tpl_vars['meta_value'] );
 		}
 		if ( $disabled ) {
 			return '';
 		}
 
+		$id_base = sprintf( 'posts[%s][meta][-1]', $tpl_vars['post_id'], $tpl_vars['meta_id'] );
+		// @todo instead of -1, should we generate a GUID for the mid? Then update later with the actual mid when it is saved.
+		// @todo When saving the postmeta, we need to grab the mids that were saved
+		// @todo We also need to make sure that we update the control with the sanitized values from the server
 		ob_start();
 		?>
 		<dt>
-			<input <?php disabled( $disabled ) ?> type="text" class="meta-key" value="<?php echo esc_attr( $tpl_vars['meta_key'] ) ?>">
+			<input <?php disabled( $disabled ) ?> type="text" class="meta-key" name="<?php echo esc_attr( $id_base . '[key]' ) ?>" value="<?php echo esc_attr( $tpl_vars['meta_key'] ) ?>">:
 		</dt>
 		<dd>
-			<ul class="meta-value-list" data-tmpl="customize-posts-meta-field-value">
-				<?php if ( ! empty( $tpl_vars['is_mustache_tpl'] ) ): ?>
-					<# _.each( data.values, function ( value, i ) { #>
-						{{{
-							wp.template( 'customize-posts-meta-field-value' )( {
-								post_id: data.post_id,
-								key: data.key,
-								value: value,
-								i: i
-							} )
-						}}}
-					<# } ); #>
-				<?php else : ?>
-					<?php foreach ( $tpl_vars['meta_values'] as $i => $meta_value ): ?>
-						<?php echo self::get_meta_field_value( array_merge( $tpl_vars, compact( 'i', 'meta_value' ) ) ); // xss ok ?>
-					<?php endforeach; ?>
-				<?php endif; ?>
-			</ul>
-			<?php if ( ! $disabled ): ?>
-				<button type="button" class="add add-meta-value button button-secondary"><?php esc_html_e( 'Add value', 'customize-posts' ) ?></button>
-			<?php endif; ?>
+			<textarea <?php disabled( $disabled ) ?> id="<?php echo esc_attr( $id_base . '[value]' ) ?>" name="<?php echo esc_attr( $id_base . '[value]' ) ?>" class="meta-value"><?php echo esc_textarea( $tpl_vars['meta_value'] ) ?></textarea>
+			<button type="button" class="delete-meta button secondary-button" title="<?php esc_attr_e( 'Delete meta', 'customize-posts' ) ?>"><?php esc_html_e( '&times;', 'customize-posts' ) ?></button>
 		</dd>
 		<?php
 		$html = ob_get_contents();
@@ -250,41 +234,4 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 		return $html;
 	}
 
-	/**
-	 * @param array $tpl_vars {
-	 *     Template variables.
-	 *
-	 *     @type int|string $post_id  May be a string in case of Moustache template
-	 *     @type int|string $i  May be a string in case of Moustache template
-	 *     @type string $meta_key
-	 *     @type array $meta_values
-	 * }
-	 *
-	 * @return string
-	 */
-	static function get_meta_field_value( $tpl_vars ) {
-		global $wp_customize;
-		$id = sprintf( 'posts[%s][meta][%s][%s]', $tpl_vars['post_id'], $tpl_vars['meta_key'], $tpl_vars['i'] );
-
-		$disabled = false;
-		if ( is_numeric( $tpl_vars['post_id'] ) ) {
-			$disabled = ! $wp_customize->posts->current_user_can_edit_post_meta( $tpl_vars['post_id'], $tpl_vars['meta_key'], $tpl_vars['meta_value'] );
-		}
-		if ( $disabled ) {
-			return '';
-		}
-
-		ob_start();
-		?>
-		<li class="meta-value-item">
-			<?php if ( ! $disabled ): ?>
-				<button type="button" class="delete-meta button button-secondary" title="<?php esc_attr_e( 'Delete meta value', 'customize-posts' ) ?>"><?php _e( '&times;', 'customize-posts' ) ?></button>
-			<?php endif; ?>
-			<textarea <?php disabled( $disabled ) ?> class="meta-value" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>"><?php echo esc_textarea( $tpl_vars['meta_value'] ) ?></textarea>
-		</li>
-		<?php
-		$html = ob_get_contents();
-		ob_end_clean();
-		return $html;
-	}
 }

@@ -504,7 +504,6 @@
 					control.populateFields();
 				}
 			} );
-			control.populateFields();
 
 			// Update the setting when the fields change
 			control.container.on( 'change input propertychange', ':input[name]', function () {
@@ -515,28 +514,12 @@
 			control.container.on( 'click', '.add-meta', function () {
 				var setting, new_field;
 				setting = control.setting();
-				new_field = wp.template( 'customize-posts-meta-field' )( {
+				new_field = wp.template( 'customize-posts-meta-fields' )( {
 					post_id: setting.ID,
 					meta_key: '',
 					meta_values: [ '' ]
 				} );
 				control.container.find( 'section.post-meta:first' ).find( 'dl' ).append( new_field ).find( '.meta-key:last' ).focus();
-			} );
-
-			// Add new value to meta
-			control.container.on( 'click', '.add-meta-value', function () {
-				var setting, new_li, dd;
-				setting = control.setting();
-				dd = $( this ).closest( 'dd' );
-				new_li = wp.template( 'customize-posts-meta-field-value' )( {
-					post_id: setting.ID,
-					meta_key: dd.prev( 'dt' ).find( '.meta-key' ).val(),
-					meta_value: '',
-					i: dd.find( 'li' ).length
-				} );
-				new_li = $( new_li );
-				dd.find( 'ul' ).append( new_li );
-				new_li.find( '[name]' ).focus();
 			} );
 
 			// Delete a meta value
