@@ -516,92 +516,41 @@
 				setting = control.setting();
 				new_field = wp.template( 'customize-posts-meta-fields' )( {
 					post_id: setting.ID,
+					meta_id: -1, // @todo GUID?
 					meta_key: '',
-					meta_values: [ '' ]
+					meta_value: ''
 				} );
 				control.container.find( 'section.post-meta:first' ).find( 'dl' ).append( new_field ).find( '.meta-key:last' ).focus();
 			} );
 
 			// Delete a meta value
 			control.container.on( 'click', '.delete-meta', function () {
-				var ul, li, meta_key_input, meta_key, old_setting, dt, dd, prev_dd, next_dt;
+				var containers, dt, dd, prev_dd, next_dt;
 
-				old_setting = control.setting();
-
-				li = $( this ).closest( 'li' );
-				ul = li.closest( 'ul' );
-				dd = ul.closest( 'dd' );
+				dd = $( this ).closest( 'dd' );
 				dt = dd.prev( 'dt' );
+				containers = dd.add( dt );
+
 				prev_dd = dt.prev( 'dd' );
 				next_dt = dd.next( 'dt' );
 
-				meta_key_input = ul.closest( 'dd' ).prev( 'dt' ).find( '.meta-key' );
-				meta_key = meta_key_input.val();
+				containers.find( ':input' ).prop( 'disabled', true );
 
-				li.find( ':input' ).prop( 'disabled', true );
-				li.slideUp( function () {
-					var value_lis;
+				dd.find( '.meta-value' ).data( 'deleted', true );
+				control.updateSetting();
 
-					li.remove();
-
-					value_lis = ul.find( 'li' );
-
-					// Restore focus
-					if ( ! value_lis.length ) {
-						// Eliminate dt/dd for meta since last value removed
-						dd.slideUp( function () {
-							dd.remove();
-						} );
-						dt.slideUp( function () {
-							dt.remove();
-						} );
-						if ( next_dt.length ) {
-							next_dt.find( ':input:first' ).focus();
-						} else if ( prev_dd.length ) {
-							prev_dd.find( ':input:last' ).focus();
-						} else {
-							control.container.find( 'button.add-meta' ).focus();
-						}
+				containers.slideUp( function () {
+					if ( next_dt.length ) {
+						next_dt.find( ':input:first' ).focus();
+					} else if ( prev_dd.length ) {
+						prev_dd.find( ':input:last' ).focus();
 					} else {
-						// Reset indicies for remaining meta values
-						value_lis.each( function ( i ) {
-							var old_li, new_li;
-							old_li = $( this );
-							new_li = wp.template( 'customize-posts-meta-field-value' )( {
-								post_id: old_setting.ID,
-								meta_key: meta_key,
-								meta_value: old_li.find( '[name]' ).val(),
-								i: i
-							} );
-							old_li.replaceWith( new_li );
-						} );
-
-						ul.find( '.delete-meta:first' ).focus();
+						control.container.find( 'button.add-meta' ).focus();
 					}
 
-					control.updateSetting();
 				} );
 
-
 			} );
-
-			// Update the input names
-			control.container.on( 'change', '.meta-key', function () {
-				var meta_key_input, dd;
-				meta_key_input = $( this );
-				dd = meta_key_input.closest( 'dt' ).next( 'dd' );
-				dd.find( '.meta-value' ).each( function () {
-					var meta_value_input, name;
-					meta_value_input = $( this );
-					name = meta_value_input.prop( 'id' );
-					name = name.replace( /\[meta\]\[.*?\]/, '[meta][' + meta_key_input.val() + ']' );
-					meta_value_input.attr( {
-						id: name,
-						name: name
-					} );
-				} ).trigger( 'change' );
-			} );
-
 		},
 
 		/**
@@ -646,11 +595,16 @@
 			new_setting = {};
 			new_setting.ID = control.setting().ID;
 			control.container.find( '[name]' ).each( function () {
-				var input, keys;
+				var input, keys, value;
 				input = $( this );
 				keys = control.parseKeys( input.prop( 'name' ) );
 				keys.shift(); // get rid of ID
-				self.multidimensionalReplace( new_setting, keys, input.val() );
+				if ( input.data( 'deleted' ) ) {
+					value = null;
+				} else {
+					value = input.val();
+				}
+				self.multidimensionalReplace( new_setting, keys, value );
 			} );
 
 			control.setting( new_setting );

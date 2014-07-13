@@ -61,19 +61,20 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 	 * @return string
 	 */
 	static function get_fields( $post ) {
-		global $wpdb;
+		global $wpdb, $wp_customize;
 
 		$post = get_post( $post );
-		$post_type_obj = get_post_type_object( $post->post_type );
-		$post_id = $post->ID;
+		$data = $wp_customize->posts->get_post_setting_value( $post );
 
-		require_once( ABSPATH . 'wp-admin/includes/post.php' );
+		$post_type_obj = get_post_type_object( $post->post_type );
+
 		require_once( ABSPATH . 'wp-admin/includes/theme.php' );
 		require_once( ABSPATH . 'wp-admin/includes/template.php' );
-		$post_meta = has_meta( $post_id );
 
 		// @todo Don't show any fields by default? Provide a select2-style list for selecting a field that you want to edit?
 		// @todo Each field in this should be a separate overridable method, and the overall list needs to be filterable.
+
+		// @todo Each of the following should refer to $data['...'] not $post->...
 		ob_start();
 		?>
 		<span class="customize-control-title">
@@ -171,8 +172,8 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 				<section class="post-meta">
 					<h3><?php esc_html_e( 'Meta', 'customize-posts' ) ?></h3>
 					<dl class="post-meta" data-tmpl="customize-posts-meta-field">
-						<?php foreach ( $post_meta as $meta ): ?>
-							<?php echo self::get_meta_fields( $meta ); // xss ok ?>
+						<?php foreach ( $data['meta'] as $meta_id => $meta ): ?>
+							<?php echo self::get_meta_fields( array_merge( $meta, compact( 'meta_id' ) ) ); // xss ok ?>
 						<?php endforeach; ?>
 					</dl>
 					<p>
@@ -215,7 +216,7 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 			return '';
 		}
 
-		$id_base = sprintf( 'posts[%s][meta][-1]', $tpl_vars['post_id'], $tpl_vars['meta_id'] );
+		$id_base = sprintf( 'posts[%s][meta][%s]', $tpl_vars['post_id'], $tpl_vars['meta_id'] );
 		// @todo instead of -1, should we generate a GUID for the mid? Then update later with the actual mid when it is saved.
 		// @todo When saving the postmeta, we need to grab the mids that were saved
 		// @todo We also need to make sure that we update the control with the sanitized values from the server

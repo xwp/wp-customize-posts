@@ -98,15 +98,21 @@ final class WP_Customize_Posts {
 	 * @return array
 	 */
 	public function get_post_setting_value( $post ) {
+
 		$post = get_post( $post );
 		$this->override_post_data( $post );
 		$data = $post->to_array();
 		$data['meta'] = array();
 
 		require_once( ABSPATH . 'wp-admin/includes/post.php' );
-		$data['meta'] = has_meta( $post->ID );
-		// @todo skip serialization?
-		// @todo skip protected
+		$data['meta'] = array();
+		foreach ( has_meta( $post->ID ) as $meta ) {
+			if ( $this->current_user_can_edit_post_meta( $post->ID, $meta['meta_key'], $meta['meta_value'] ) ) {
+				$mid = $meta['meta_id'];
+				unset( $meta['meta_id'] );
+				$data['meta'][ $mid ] = $meta;
+			}
+		}
 
 		return $data;
 	}
@@ -205,6 +211,7 @@ final class WP_Customize_Posts {
 	 * @return boolean
 	 */
 	public function current_user_can_edit_post_meta( $post, $key, $value = '' ) {
+		// @todo skip serialization?
 		// @todo Allow serialized to be edited if it is not protected, because the sanitizer can make sure it is fixed.
 		$can_edit = ( ! is_protected_meta( $key, 'post' ) );
 		if ( ! empty( $post ) ) {
