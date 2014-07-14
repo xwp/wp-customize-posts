@@ -255,13 +255,13 @@ final class WP_Customize_Posts {
 	/**
 	 * Sanitize a setting for the customizer.
 	 *
-	 * @param array $post_data
+	 * @param array $data
 	 * @param WP_Customize_Setting $setting
 	 * @return array|null
 	 */
-	public function sanitize_setting( $post_data, WP_Customize_Setting $setting ) {
+	public function sanitize_setting( $data, WP_Customize_Setting $setting ) {
 		$post_id = $this->parse_setting_id( $setting->id );
-		if ( empty( $post_data['ID'] ) || $post_id !== (int) $post_data['ID'] ) {
+		if ( empty( $data['ID'] ) || $post_id !== (int)$data['ID'] ) {
 			return null;
 		}
 		$existing_post = get_post( $post_id );
@@ -269,20 +269,86 @@ final class WP_Customize_Posts {
 			return null;
 		}
 
-		$post_data = sanitize_post( $post_data, 'db' );
+		$data = sanitize_post( $data, 'db' ); // @todo: will meta and taxonomies get stripped out?
+
+		/*
+		 * Handle post data
+		 */
 
 		// @todo apply wp_insert_post_data filter here too?
 
-		if ( ! empty( $post_data['post_date'] ) ) {
-			$post_data['post_date_gmt'] = get_gmt_from_date( $post_data['post_date'] );
+		if ( ! empty( $data['post_date'] ) ) {
+			$data['post_date_gmt'] = get_gmt_from_date( $data['post_date'] );
 		}
 
-		// @todo Need to apply the filters meta sanitization filters
-		if ( ! isset( $post_data['meta'] ) ) {
-			$post_data['meta'] = array();
+		/*
+		 * Handle post meta
+		 */
+		require_once( ABSPATH . 'wp-admin/includes/post.php' );
+		$cur_meta = array();
+		// @todo Refactor into a WP_Customize_posts helper method?
+		foreach ( has_meta( $post_id ) as $entry ) {
+			$cur_meta[ $entry['meta_id'] ] = array(
+				'key' => $entry['meta_key'],
+				'value' => $entry['meta_value'],
+				'prev_value' => null,
+			);
 		}
 
-		return $post_data;
+		if ( ! isset( $data['meta'] ) ) {
+			$data['meta'] = array();
+		}
+		$new_meta = array();
+		foreach ( $data['meta'] as $mid => $entry ) {
+			$is_insertion = ( ! isset( $cur_meta[ $mid ] ) );
+			$is_deletion = is_null( $entry['value'] );
+			$is_update = ( ! $is_insertion && ! $is_deletion );
+
+			// Check whether the user is allowed to manage this postmeta
+			// @todo are filters here expecting pre-slashed data?
+			if ( $is_deletion ) {
+				$prev_value = ( isset( $cur_meta[ $mid ] ) ? $cur_meta[ $mid ] : null );
+				$delete_all = false;
+				$check = apply_filters( 'delete_post_metadata', null, $post_id, $entry['key'], $entry['value'], $delete_all );
+				if ( $check === null && ! current_user_can( 'delete_post_meta', $post_id, $entry['key'] ) ) {
+					$check = false;
+				}
+			} elseif ( $is_insertion ) {
+				// @todo $mid is probably -1 or something unique, like a non-number $mid to ensure no collision
+				// @todo reminder: when the settings are actually saved, we need to make sure we update $mids with their new IDs. Just fetch the setting and update the control.
+				$unique = false; // @todo?
+				$prev_value = null;
+				$check = apply_filters( 'add_post_metadata', null, $post_id, $entry['key'], $entry['value'], $unique );
+				if ( $check === null && ! current_user_can( 'add_post_meta', $post_id, $entry['key'] ) ) {
+					$check = false;
+				}
+			} elseif ( $is_update ) {
+				$prev_value = $cur_meta[ $mid ]['value'];
+				$check = apply_filters( 'update_post_metadata', null, $post_id, $entry['key'], $entry['value'], $prev_value );
+				if ( $check === null && ! current_user_can( 'edit_post_meta', $post_id, $entry['key'] ) ) {
+					$check = false;
+				}
+			} else {
+				trigger_error( 'Unknown state', E_USER_WARNING );
+				return null;
+			}
+
+			// Now that we know whether the user can manage this postmeta or not, process it.
+			if ( null !== $check ) {
+				if ( $is_update || $is_deletion ) {
+					$new_meta[ $mid ] = $cur_meta[ $mid ];
+				}
+			} else {
+				$entry['prev_value'] = $prev_value; // convenience for later
+				if ( $is_insertion || $is_update ) {
+					$entry['value'] = sanitize_meta( $entry['key'], $entry['value'], 'post' );
+				}
+				$new_meta[ $mid ] = $entry;
+			}
+		}
+		$data['meta'] = $new_meta;
+
+		return $data;
 	}
 
 	/**
@@ -318,8 +384,10 @@ final class WP_Customize_Posts {
 		}
 
 		foreach ( $meta as $key => $new_values ) {
+			// @todo use update_meta()
 
 			// @todo Need to apply the filters meta sanitization filters
+			// @todo Sanitization should have alreasy
 
 			$old_values = get_post_meta( $data['ID'], $key, false );
 

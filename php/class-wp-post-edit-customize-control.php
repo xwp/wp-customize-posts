@@ -66,8 +66,6 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 		$post = get_post( $post );
 		$data = $wp_customize->posts->get_post_setting_value( $post );
 
-		$post_type_obj = get_post_type_object( $post->post_type );
-
 		require_once( ABSPATH . 'wp-admin/includes/theme.php' );
 		require_once( ABSPATH . 'wp-admin/includes/template.php' );
 

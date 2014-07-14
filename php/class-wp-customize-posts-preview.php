@@ -91,83 +91,86 @@ final class WP_Customize_Posts_Preview {
 	/**
 	 * Override a given postmeta from customized data.
 	 *
-	 * @param mixed $meta_value
+	 * @param mixed $original_meta_value
 	 * @param int $post_id
 	 * @param string $meta_key
 	 * @param bool $single
 	 * @return mixed
 	 */
-	public function preview_post_meta( $meta_value, $post_id, $meta_key, $single ) {
-		static $prevent_recursion = false;
-		if ( $prevent_recursion ) {
-			return $meta_value;
-		}
-
-		$prevent_recursion = true;
-		$old_meta_value = get_post_meta( $post_id, $meta_key, $single );
-		$prevent_recursion = false;
-
+	public function preview_post_meta( $original_meta_value, $post_id, $meta_key, $single ) {
 		if ( ! empty( $meta_key ) && ! $this->manager->posts->current_user_can_edit_post_meta( $post_id, $meta_key ) ) {
-			return $meta_value;
+			return $original_meta_value;
 		}
-
-		// @todo need to handle deletion
-		// @todo THIS NEEDS TO BE COMPLETELY RE-THOUGHT
 
 		$post_overrides = $this->manager->posts->get_post_overrides( $post_id );
-		if ( ! empty( $post_overrides ) ) {
-			// @todo serialized meta should have sanitizers to make sure they get hydrated and de-hydrated properly
+		if ( empty( $post_overrides['meta'] ) ) {
+			return $original_meta_value;
+		}
+		$new_meta = $post_overrides['meta'];
 
-			if ( empty( $meta_key ) ) { // i.e. get_post_custom()
-				$new_meta_value = $post_overrides['meta'];
-
-				if ( $single ) {
-					$new_meta_values = array( &$new_meta_value );
-					$old_meta_values = array( &$old_meta_value );
-				} else {
-					$new_meta_values = &$new_meta_value;
-					$old_meta_values = &$old_meta_value;
-				}
-
-				// Make sure immutable (protected meta) are not manipulated
-				foreach ( $old_meta_values as $key => $old_values ) {
-					if ( ! $this->manager->posts->current_user_can_edit_post_meta( $post_id, $key ) ) {
-						$meta_value[ $key ] = $old_values;
-					} else {
-						foreach ( $old_values as $i => $old_value ) {
-							if ( $this->manager->posts->current_user_can_edit_post_meta( $post_id, $key, $old_value ) ) {
-								$meta_value[ $key ][] = $old_value;
-							}
-						}
-					}
-				}
-
-				// Add new meta values
-				foreach ( $new_meta_values as $key => $new_values ) {
-					foreach ( $new_values as $new_value ) {
-						$meta_value[ $key ][] = $new_value;
-					}
-				}
-			} else if ( ! isset( $post_overrides['meta'][ $meta_key ] ) ) {
-				$meta_value = $single ? '' : array();
-			} elseif ( $single ) {
-				$meta_value = $post_overrides['meta'][ $meta_key ][0];
-			} else {
-				$meta_value = $post_overrides['meta'][ $meta_key ];
-			}
-
-			// @todo Need to apply the filters meta sanitization filters
-
-			// Make sure that immutable values persist
-			if ( ! $single && is_array( $old_meta_value ) ) {
-				foreach ( $old_meta_value as $i => $old_value ) {
-					if ( ! $this->manager->posts->current_user_can_edit_post_meta( $post_id, $meta_key, $old_value ) ) {
-						$meta_value[ $i ] = $old_value;
-					}
-				}
+		// Make sure all meta are available
+		require_once( ABSPATH . 'wp-admin/includes/post.php' );
+		$all_meta = has_meta( $post_id ); // @todo cache
+		foreach ( $all_meta as $entry ) {
+			if ( ! isset( $new_meta[ $entry['meta_id'] ] ) ) {
+				$new_meta[ $entry['meta_id'] ] = array(
+					'key' => $entry['meta_key'],
+					'value' => $entry['meta_value'],
+					'prev_value' => null,
+				);
 			}
 		}
-		return $meta_value;
+
+		$new_meta_by_key = array();
+		foreach ( $new_meta as $mid => $entry ) {
+			$new_meta_by_key[ $entry['key'] ][ $mid ] = $entry;
+		}
+
+		if ( empty( $meta_key ) ) {
+			// Requesting all meta, i.e. get_post_custom()
+			$all_meta = array();
+			foreach ( $new_meta as $entry ) {
+				if ( ! is_null( $entry['value'] ) ) {
+					$all_meta[ $entry['key'] ][] = $entry['value'];
+				}
+			}
+			return $all_meta;
+		} elseif ( empty( $new_meta_by_key[ $meta_key ] ) ) {
+			// Meta does not exist
+			return $single ? '' : array();
+		} else {
+			$values = array();
+			foreach ( $new_meta_by_key[ $meta_key ] as $meta ) {
+				if ( is_null( $meta['value'] ) ) {
+					// Deleted
+					continue;
+				}
+				$value = $meta['value'];
+				$can_unserialize = (
+					'' === $meta['prev_value']
+					||
+					null === $meta['prev_value']
+					||
+					is_serialized( $meta['prev_value'] )
+				);
+				// @todo What are the conditions (if any) should we allow unserialization?
+				if ( $can_unserialize && is_serialized( $value ) ) {
+					$value = maybe_unserialize( $value );
+					if ( $single && is_array( $value ) ) {
+						// This is a hack to get around bad logic for handling the filter's return value in get_metadata
+						$single = false;
+					}
+				}
+				$values[] = $value;
+			}
+
+			if ( $single ) {
+				return $values[0];
+			} else {
+				return $values;
+			}
+		}
+
 	}
 
 	/**
