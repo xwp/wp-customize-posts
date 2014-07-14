@@ -49,7 +49,7 @@ final class WP_Customize_Posts_Preview {
 
 		add_filter( 'the_posts', array( $this, 'preview_query_get_posts' ) );
 		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
-		add_filter( 'get_post_metadata', array( $this, 'preview_post_meta' ), 10, 5 );
+		add_filter( 'get_post_metadata', array( $this, 'preview_post_meta' ), 1, 5 );
 	}
 
 	/**
