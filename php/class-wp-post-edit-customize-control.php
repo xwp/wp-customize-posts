@@ -169,11 +169,11 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 				<?php // @todo Move this into another overridable method ?>
 				<section class="post-meta">
 					<h3><?php esc_html_e( 'Meta', 'customize-posts' ) ?></h3>
-					<dl class="post-meta" data-tmpl="customize-posts-meta-field">
+					<ul class="post-meta" data-tmpl="customize-posts-meta-field">
 						<?php foreach ( $data['meta'] as $meta_id => $meta ): ?>
 							<?php echo self::get_meta_fields( array_merge( $meta, compact( 'meta_id' ) ) ); // xss ok ?>
 						<?php endforeach; ?>
-					</dl>
+					</ul>
 					<p>
 						<button type="button" class="add add-meta button button-secondary"><?php esc_html_e( 'Add meta', 'customize-posts' ) ?></button>
 					</p>
@@ -215,18 +215,15 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 		}
 
 		$id_base = sprintf( 'posts[%s][meta][%s]', $tpl_vars['post_id'], $tpl_vars['meta_id'] );
-		// @todo instead of -1, should we generate a GUID for the mid? Then update later with the actual mid when it is saved.
 		// @todo When saving the postmeta, we need to grab the mids that were saved
 		// @todo We also need to make sure that we update the control with the sanitized values from the server
 		ob_start();
 		?>
-		<dt>
+		<li>
 			<input <?php disabled( $disabled ) ?> type="text" class="meta-key" name="<?php echo esc_attr( $id_base . '[key]' ) ?>" value="<?php echo esc_attr( $tpl_vars['meta_key'] ) ?>">
-		</dt>
-		<dd>
-			<textarea <?php disabled( $disabled ) ?> id="<?php echo esc_attr( $id_base . '[value]' ) ?>" name="<?php echo esc_attr( $id_base . '[value]' ) ?>" class="meta-value"><?php echo esc_textarea( $tpl_vars['meta_value'] ) ?></textarea>
 			<button type="button" class="delete-meta button secondary-button" title="<?php esc_attr_e( 'Delete meta', 'customize-posts' ) ?>"><?php esc_html_e( '&times;', 'customize-posts' ) ?></button>
-		</dd>
+			<textarea <?php disabled( $disabled ) ?> id="<?php echo esc_attr( $id_base . '[value]' ) ?>" name="<?php echo esc_attr( $id_base . '[value]' ) ?>" class="meta-value"><?php echo esc_textarea( $tpl_vars['meta_value'] ) ?></textarea>
+		</li>
 		<?php
 		$html = ob_get_contents();
 		ob_end_clean();

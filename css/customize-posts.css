@@ -1,31 +1,32 @@
-.customize-control.customize-control-post_select select
-{
+.customize-control.customize-control-post_select select {
 	display: block;
 	width: 100%;
 }
 
 .customize-control.customize-control-post_edit textarea,
 .customize-control.customize-control-post_edit select,
-.customize-control.customize-control-post_edit .meta-key
-{
+.customize-control.customize-control-post_edit .meta-key {
 	display: block;
 	width: 100%;
 }
 
-.customize-control.customize-control-post_edit textarea {
-	max-width: 100%;
-}
-
-.customize-control.customize-control-post_edit dd {
+.customize-control.customize-control-post_edit .post-meta li {
 	position: relative;
-	text-align: right;
 	margin-left: 0;
-	margin-left: 37px;
 }
 
-.customize-control.customize-control-post_edit .delete-meta {
+.customize-control.customize-control-post_edit .post-meta .meta-key {
+	padding-right: 37px;
+}
+
+.customize-control.customize-control-post_edit .post-meta textarea {
+	display: block;
+	margin-top: 0;
+}
+
+.customize-control.customize-control-post_edit .post-meta .delete-meta {
 	position: absolute;
 	top: 0;
-	left: -37px;
+	right: 0px;
 	width: 35px;
 }

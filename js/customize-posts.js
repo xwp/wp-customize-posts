@@ -525,25 +525,23 @@
 
 			// Delete a meta value
 			control.container.on( 'click', '.delete-meta', function () {
-				var containers, dt, dd, prev_dd, next_dt;
+				var li, prev_li, next_li;
 
-				dd = $( this ).closest( 'dd' );
-				dt = dd.prev( 'dt' );
-				containers = dd.add( dt );
+				li = $( this ).closest( 'li' );
 
-				prev_dd = dt.prev( 'dd' );
-				next_dt = dd.next( 'dt' );
+				prev_li = li.prev( 'li' );
+				next_li = li.next( 'li' );
 
-				containers.find( ':input' ).prop( 'disabled', true );
+				li.find( ':input' ).prop( 'disabled', true );
 
-				dd.find( '.meta-value' ).data( 'deleted', true );
+				li.find( '.meta-value' ).data( 'deleted', true );
 				control.updateSetting();
 
-				containers.slideUp( function () {
-					if ( next_dt.length ) {
-						next_dt.find( ':input:first' ).focus();
-					} else if ( prev_dd.length ) {
-						prev_dd.find( ':input:last' ).focus();
+				li.slideUp( function () {
+					if ( next_li.length ) {
+						next_li.find( ':input:first' ).focus();
+					} else if ( prev_li.length ) {
+						prev_li.find( ':input:last' ).focus();
 					} else {
 						control.container.find( 'button.add-meta' ).focus();
 					}

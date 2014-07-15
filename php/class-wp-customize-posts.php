@@ -319,7 +319,6 @@ final class WP_Customize_Posts {
 					$check = false;
 				}
 			} elseif ( $is_insertion ) {
-				// @todo $mid is probably -1 or something unique, like a non-number $mid to ensure no collision
 				// @todo reminder: when the settings are actually saved, we need to make sure we update $mids with their new IDs. Just fetch the setting and update the control.
 				$unique = false; // @todo?
 				$prev_value = null;
