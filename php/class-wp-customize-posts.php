@@ -300,6 +300,11 @@ final class WP_Customize_Posts {
 		}
 		$new_meta = array();
 		foreach ( $data['meta'] as $mid => $entry ) {
+			if ( ! preg_match( '/^(new)?\d+$/', $mid ) ) {
+				trigger_error( 'Bad meta_id', E_USER_WARNING );
+				continue;
+			}
+
 			$is_insertion = ( ! isset( $cur_meta[ $mid ] ) );
 			$is_deletion = is_null( $entry['value'] );
 			$is_update = ( ! $is_insertion && ! $is_deletion );

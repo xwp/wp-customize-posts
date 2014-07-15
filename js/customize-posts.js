@@ -516,7 +516,7 @@
 				setting = control.setting();
 				new_field = wp.template( 'customize-posts-meta-fields' )( {
 					post_id: setting.ID,
-					meta_id: -1, // @todo GUID?
+					meta_id: control.generateTempMetaId(),
 					meta_key: '',
 					meta_value: ''
 				} );
@@ -586,7 +586,7 @@
 		},
 
 		/**
-		 *
+		 * Update the setting from the data in the fields.
 		 */
 		updateSetting: function () {
 			var control, new_setting;
@@ -608,7 +608,15 @@
 			} );
 
 			control.setting( new_setting );
+		},
 
+		/**
+		 * Generate a temporary meta ID for a postmeta.
+		 *
+		 * @returns {string}
+		 */
+		generateTempMetaId: function () {
+			return 'new' + (new Date().valueOf()).toString();
 		}
 	} );
 

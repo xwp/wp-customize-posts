@@ -45,7 +45,7 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 			<?php
 			$tpl_vars = array(
 				'post_id' => '{{ data.post_id }}',
-				'meta_id' => '-1',
+				'meta_id' => '{{ data.meta_id }}',
 				'meta_key' => '{{ data.meta_key }}',
 				'meta_value' => '{{ data.meta_value }}',
 				'is_mustache_tpl' => true,
@@ -221,7 +221,7 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 		ob_start();
 		?>
 		<dt>
-			<input <?php disabled( $disabled ) ?> type="text" class="meta-key" name="<?php echo esc_attr( $id_base . '[key]' ) ?>" value="<?php echo esc_attr( $tpl_vars['meta_key'] ) ?>">:
+			<input <?php disabled( $disabled ) ?> type="text" class="meta-key" name="<?php echo esc_attr( $id_base . '[key]' ) ?>" value="<?php echo esc_attr( $tpl_vars['meta_key'] ) ?>">
 		</dt>
 		<dd>
 			<textarea <?php disabled( $disabled ) ?> id="<?php echo esc_attr( $id_base . '[value]' ) ?>" name="<?php echo esc_attr( $id_base . '[value]' ) ?>" class="meta-value"><?php echo esc_textarea( $tpl_vars['meta_value'] ) ?></textarea>
