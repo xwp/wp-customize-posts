@@ -305,7 +305,7 @@ final class WP_Customize_Posts {
 		}
 		$new_meta = array();
 		foreach ( $data['meta'] as $mid => $entry ) {
-			if ( ! preg_match( '/^(new)?\d+$/', $mid ) ) {
+			if ( ! $this->is_temp_meta_id( $mid ) && ! ( preg_match( '/^\d+$/', $mid ) || $mid > 0 ) ) {
 				trigger_error( 'Bad meta_id', E_USER_WARNING );
 				continue;
 			}
@@ -387,46 +387,25 @@ final class WP_Customize_Posts {
 		}
 		wp_update_post( (object) $post ); // @todo handle error
 
-		$meta = array();
+		$metas = array();
 		if ( isset( $data['meta'] ) ) {
-			$meta = $data['meta'];
+			$metas = $data['meta'];
 		}
 
-		foreach ( $meta as $key => $new_values ) {
-			// @todo use update_meta()
+		foreach ( $metas as $meta_id => $meta ) {
+			$is_insert = ( $this->is_temp_meta_id( $meta_id ) );
+			$is_delete = ( $meta['value'] === null && ! $is_insert );
+			$is_update = ( ! $is_delete && ! $is_insert );
 
-			// @todo Need to apply the filters meta sanitization filters
-			// @todo Sanitization should have alreasy
+			$meta_id = (int) $meta_id;
 
-			$old_values = get_post_meta( $data['ID'], $key, false );
-
-			// Find the old postmeta that can't be changed
-			$immutable_values = array();
-			foreach ( $old_values as $value ) {
-				$can_edit = $this->current_user_can_edit_post_meta( $data['ID'], $key, $value );
-				if ( ! $can_edit ) {
-					$immutable_values[] = $value;
-				}
-			}
-
-			// Grab all of the values that added
-			$all_values = $immutable_values;
-			foreach ( $new_values as $i => $value ) {
-				$can_edit = $this->current_user_can_edit_post_meta( $data['ID'], $key, $value );
-				if ( $can_edit ) {
-					$all_values[] = $value;
-				}
-			}
-
-			// Remove immutable values since they get re-added
-			foreach ( $immutable_values as $value ) {
-				delete_post_meta( $data['ID'], $key, $value );
-			}
-
-			// Now re-add all postmeta, immutable and new
-			$all_values = array_merge( $immutable_values, $new_values );
-			foreach ( $all_values as $value ) {
-				add_post_meta( $data['ID'], $key, $value, false );
+			if ( $is_insert ) {
+				$unique = false;
+				add_post_meta( $data['ID'], $meta['key'], $meta['value'], $unique ); // @todo handle error
+			} elseif ( $is_update ) {
+				update_metadata_by_mid( 'post', $meta_id, $meta['value'], $meta['key'] ); // @todo handle error
+			} elseif ( $is_delete ) {
+				delete_metadata_by_mid( 'post', (int) $meta_id ); // @todo handle error
 			}
 		}
 
@@ -617,6 +596,19 @@ final class WP_Customize_Posts {
 
 		$data = sprintf( 'var _wpCustomizePostsSettings = %s;', json_encode( $exported ) );
 		$wp_scripts->add_data( 'customize-posts', 'data', $data );
+	}
+
+	/**
+	 * Return true if the supplied $meta_key is a temp meta ID for insertions.
+	 *
+	 * See wp.customize.Posts.generateTempMetaId
+	 *
+	 * @param $meta_key
+	 *
+	 * @return int
+	 */
+	public function is_temp_meta_id( $meta_key ) {
+		return preg_match( '/^new\d+$/', $meta_key );
 	}
 
 }
