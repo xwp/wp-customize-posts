@@ -317,7 +317,7 @@ final class WP_Customize_Posts {
 			// Check whether the user is allowed to manage this postmeta
 			// @todo are filters here expecting pre-slashed data?
 			if ( $is_deletion ) {
-				$prev_value = ( isset( $cur_meta[ $mid ] ) ? $cur_meta[ $mid ] : null );
+				$prev_value = ( isset( $cur_meta[ $mid ] ) ? $cur_meta[ $mid ]['value'] : null );
 				$delete_all = false;
 				$check = apply_filters( 'delete_post_metadata', null, $post_id, $entry['key'], $entry['value'], $delete_all );
 				if ( $check === null && ! current_user_can( 'delete_post_meta', $post_id, $entry['key'] ) ) {
