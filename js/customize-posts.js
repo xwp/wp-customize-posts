@@ -511,16 +511,24 @@
 			} );
 
 			// Add new meta
+			self.meta_field_tpl = wp.template( 'customize-posts-meta-fields' );
 			control.container.on( 'click', '.add-meta', function () {
-				var setting, new_field;
+				var setting, new_fields;
 				setting = control.setting();
-				new_field = wp.template( 'customize-posts-meta-fields' )( {
+				new_fields = $( self.meta_field_tpl( {
 					post_id: setting.ID,
 					meta_id: control.generateTempMetaId(),
 					meta_key: '',
 					meta_value: ''
+				} ) );
+				new_fields.hide();
+				control.container
+					.find( 'section.post-meta:first' )
+					.find( 'ul.post-meta' )
+					.append( new_fields );
+				new_fields.slideDown( function () {
+					new_fields.find( '.meta-key:first' ).focus();
 				} );
-				control.container.find( 'section.post-meta:first' ).find( 'dl' ).append( new_field ).find( '.meta-key:last' ).focus();
 			} );
 
 			// Delete a meta value
