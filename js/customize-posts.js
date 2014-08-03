@@ -614,7 +614,7 @@
 		 * @returns {string}
 		 */
 		generateTempMetaId: function () {
-			return 'new' + (new Date().valueOf()).toString();
+			return 'new' + ( new Date().valueOf() ).toString();
 		}
 	} );
 

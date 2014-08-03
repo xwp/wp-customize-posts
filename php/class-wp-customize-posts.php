@@ -68,7 +68,7 @@ final class WP_Customize_Posts {
 			$this->manager->add_setting( $setting_id, array(
 				'default'              => $value,
 				'type'                 => 'post',
-				'capability'           => get_post_type_object( $post->post_type )->cap->edit_posts,
+				'capability'           => get_post_type_object( $post->post_type )->cap->edit_posts, // Note that the edit_post cap has already been checked in the current_user_can_edit_post() method
 				'sanitize_callback'    => array( $this, 'sanitize_setting' ),
 			) );
 
@@ -260,13 +260,16 @@ final class WP_Customize_Posts {
 	/**
 	 * Sanitize a setting for the customizer.
 	 *
+	 * Note that the capability check is already handled by the Customizer when
+	 * the customize setting is added.
+	 *
 	 * @param array $data
 	 * @param WP_Customize_Setting $setting
 	 * @return array|null
 	 */
 	public function sanitize_setting( $data, WP_Customize_Setting $setting ) {
 		$post_id = $this->parse_setting_id( $setting->id );
-		if ( empty( $data['ID'] ) || $post_id !== (int)$data['ID'] ) {
+		if ( empty( $data['ID'] ) || absint( $post_id ) !== (int) $data['ID'] ) {
 			return null;
 		}
 		$existing_post = get_post( $post_id );
