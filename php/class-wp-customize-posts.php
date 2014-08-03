@@ -26,6 +26,14 @@ final class WP_Customize_Posts {
 	public $preview;
 
 	/**
+	 * When update_post is called, keep track of a mapping of the temp meta IDs
+	 * to the newly inserted post meta IDs, to be passed back to client.
+	 *
+	 * @var array
+	 */
+	public $temp_meta_id_mapping = array();
+
+	/**
 	 * Initial loader.
 	 *
 	 * @access public
@@ -400,13 +408,15 @@ final class WP_Customize_Posts {
 			$is_delete = ( $meta['value'] === null && ! $is_insert );
 			$is_update = ( ! $is_delete && ! $is_insert );
 
-			$meta_id = (int) $meta_id;
-
 			if ( $is_insert ) {
 				$unique = false;
-				add_post_meta( $data['ID'], $meta['key'], $meta['value'], $unique ); // @todo handle error
+				$temp_meta_id = $meta_id;
+				$meta_id = add_post_meta( $data['ID'], $meta['key'], $meta['value'], $unique ); // @todo handle error
+				if ( $meta_id ) {
+					$this->temp_meta_id_mapping[ $temp_meta_id ] = $meta_id;
+				}
 			} elseif ( $is_update ) {
-				update_metadata_by_mid( 'post', $meta_id, $meta['value'], $meta['key'] ); // @todo handle error
+				update_metadata_by_mid( 'post', (int) $meta_id, $meta['value'], $meta['key'] ); // @todo handle error
 			} elseif ( $is_delete ) {
 				delete_metadata_by_mid( 'post', (int) $meta_id ); // @todo handle error
 			}
@@ -415,6 +425,18 @@ final class WP_Customize_Posts {
 		// @todo Taxonomies?
 	}
 
+	/**
+	 * Export the new postmeta IDs when saving the inserted postmeta.
+	 *
+	 * The data is exported via the wp_customize_save_response filter.
+	 *
+	 * @param array $response
+	 * @return array
+	 */
+	public function export_new_postmeta_ids( $response ) {
+		$response['inserted_post_meta_ids'] = $this->temp_meta_id_mapping;
+		return $response;
+	}
 
 	/**
 	 * Override for WP_Customize_Manager::save() methid, which is WP Ajax

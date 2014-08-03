@@ -100,7 +100,7 @@
 	} );
 
 	/**
-	 * Encapsultation of model for Customize Section
+	 * Encapsulation of model for Customize Section
 	 */
 	self.section = {
 		container: null,
@@ -557,6 +557,17 @@
 				} );
 
 			} );
+
+			// When updating the customizer settings, update any inserted post meta with their new IDs
+			api.bind( 'save', function ( request ) {
+				// See https://core.trac.wordpress.org/ticket/29098 for how we could hook directly into the saved event instead
+				request.done( function ( response ) {
+					if ( response && response.success && response.data.inserted_post_meta_ids ) {
+						control.updateTempMetaIdsWithInsertedIds( response.data.inserted_post_meta_ids );
+					}
+				} );
+			} );
+
 		},
 
 		/**
@@ -623,6 +634,39 @@
 		 */
 		generateTempMetaId: function () {
 			return 'new' + ( new Date().valueOf() ).toString();
+		},
+
+		/**
+		 * Update post meta temp IDs with their newly-inserted IDs from the DB.
+		 *
+		 * @param {Object} mapping
+		 */
+		updateTempMetaIdsWithInsertedIds: function ( mapping ) {
+			var control, setting, fields;
+
+			control = this;
+			setting = control.setting();
+
+			$.each( mapping, function ( temp_meta_id, new_meta_id ) {
+				// Update setting. Note that this doesn't cause the Customizer enter a dirty state since the meta object is nested.
+				if ( setting.meta[ temp_meta_id ] ) {
+					setting.meta[ new_meta_id ] = setting.meta[ temp_meta_id ];
+					delete setting.meta[ temp_meta_id ];
+				}
+
+				// Update fields
+				// @todo It would be better technically to just apply the new setting to the template instead
+				fields = control.container.find( '[id*=' + temp_meta_id + '], [name*=' + temp_meta_id + ']' );
+				fields.each( function () {
+					var field = $( this );
+					$.each( [ 'id', 'name' ], function ( i, attr_name ) {
+						if ( field.prop( attr_name ) ) {
+							field.prop( attr_name, field.prop( attr_name ).replace( temp_meta_id, new_meta_id ) )
+						}
+					} );
+
+				} );
+			} );
 		}
 	} );
 
