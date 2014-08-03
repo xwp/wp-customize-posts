@@ -84,9 +84,14 @@ final class WP_Customize_Posts {
 		add_action( 'wp_default_styles', array( $this, 'register_styles' ) );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'export_panel_data' ) );
+		add_action( 'customize_controls_print_footer_scripts', array( 'WP_Post_Edit_Customize_Control', 'render_templates' ) );
 		add_action( 'wp_ajax_customize_post_data', array( $this, 'ajax_customize_post_data' ) );
 		add_action( 'customize_update_post', array( $this, 'update_post' ) );
-		add_action( 'customize_controls_print_footer_scripts', array( 'WP_Post_Edit_Customize_Control', 'render_templates' ) );
+		add_filter( 'wp_customize_save_response', array( $this, 'export_new_postmeta_ids' )  );
+
+		// Override ajax handler with one that has the necessary filters
+		remove_action( 'wp_ajax_customize_save', array( $manager, 'save' ) );
+		add_action( 'wp_ajax_customize_save', array( $this, 'ajax_customize_save_override' ) );
 
 		$this->preview = new WP_Customize_Posts_Preview( $this->manager );
 	}
@@ -426,6 +431,77 @@ final class WP_Customize_Posts {
 		}
 
 		// @todo Taxonomies?
+	}
+
+
+	/**
+	 * Override for WP_Customize_Manager::save() methid, which is WP Ajax
+	 * handler for customize_save.
+	 *
+	 * Switch the theme and trigger the save() method on each setting.
+	 *
+	 * The body of this method is taken from a patch on #29098, adapted with:
+	 *
+	 * s/\$this/$this->manager/g
+	 * s/->settings /->settings() /
+	 *
+	 * See https://github.com/x-team/wordpress-develop/pull/27.diff
+	 *
+	 * @since 3.4.0
+	 */
+	public function ajax_customize_save_override() {
+		if ( ! $this->manager->is_preview() ) {
+			wp_send_json_error( 'not_preview' );
+		}
+
+		$action = 'save-customize_' . $this->manager->get_stylesheet();
+		if ( ! check_ajax_referer( $action, 'nonce', false ) ) {
+			wp_send_json_error( 'cheatin' );
+		}
+
+		// Do we have to switch themes?
+		if ( ! $this->manager->is_theme_active() ) {
+			// Temporarily stop previewing the theme to allow switch_themes()
+			// to operate properly.
+			$this->manager->stop_previewing_theme();
+			switch_theme( $this->manager->get_stylesheet() );
+			update_option( 'theme_switched_via_customizer', true );
+			$this->manager->start_previewing_theme();
+		}
+
+		/**
+		 * Fires once the theme has switched in the Customizer, but before settings
+		 * have been saved.
+		 *
+		 * @since 3.4.0
+		 *
+		 * @param WP_Customize_Manager $this->manager WP_Customize_Manager instance.
+		 */
+		do_action( 'customize_save', $this->manager );
+
+		foreach ( $this->manager->settings() as $setting ) {
+			$setting->save();
+		}
+
+		/**
+		 * Fires after Customize settings have been saved.
+		 *
+		 * @since 3.6.0
+		 *
+		 * @param WP_Customize_Manager $this->manager WP_Customize_Manager instance.
+		 */
+		do_action( 'customize_save_after', $this->manager );
+
+		/**
+		 * Filter response data for customize_save Ajax request.
+		 *
+		 * @since 4.1.0
+		 *
+		 * @param array $data
+		 * @param WP_Customize_Manager $this->manager WP_Customize_Manager instance.
+		 */
+		$response = apply_filters( 'wp_customize_save_response', array(), $this->manager );
+		wp_send_json_success( $response );
 	}
 
 	/**
