@@ -664,7 +664,7 @@
 					var field = $( this );
 					$.each( [ 'id', 'name' ], function ( i, attr_name ) {
 						if ( field.prop( attr_name ) ) {
-							field.prop( attr_name, field.prop( attr_name ).replace( temp_meta_id, new_meta_id ) )
+							field.prop( attr_name, field.prop( attr_name ).replace( temp_meta_id, new_meta_id ) );
 						}
 					} );
 
