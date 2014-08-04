@@ -611,6 +611,8 @@
 			control = this;
 
 			new_setting = {};
+			new_setting.meta = _.clone( control.setting().meta );
+
 			new_setting.ID = control.setting().ID;
 			control.container.find( '[name]' ).each( function () {
 				var input, keys, value;
