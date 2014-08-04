@@ -517,9 +517,10 @@
 				setting = control.setting();
 				new_fields = $( self.meta_field_tpl( {
 					post_id: setting.ID,
-					meta_id: control.generateTempMetaId(),
-					meta_key: '',
-					meta_value: ''
+					id: control.generateTempMetaId(),
+					key: '',
+					value: '',
+					is_serialized: false
 				} ) );
 				new_fields.hide();
 				control.container

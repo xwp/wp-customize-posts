@@ -123,7 +123,12 @@ final class WP_Customize_Posts {
 			if ( $this->current_user_can_edit_post_meta( $post->ID, $meta['meta_key'], $meta['meta_value'] ) ) {
 				$mid = $meta['meta_id'];
 				unset( $meta['meta_id'] );
-				$data['meta'][ $mid ] = $meta;
+				$data['meta'][ $mid ] = array(
+					'post_id' => $post->ID,
+					'key' => $meta['meta_key'],
+					'value' => $meta['meta_value'],
+					'is_serialized' => is_serialized( $meta['meta_value'], true ),
+				);
 			}
 		}
 
@@ -308,6 +313,7 @@ final class WP_Customize_Posts {
 				'key' => $entry['meta_key'],
 				'value' => $entry['meta_value'],
 				'prev_value' => null,
+				'is_serialized' => is_serialized( $entry['meta_value'], true ),
 			);
 		}
 

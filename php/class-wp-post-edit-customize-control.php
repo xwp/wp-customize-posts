@@ -45,9 +45,9 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 			<?php
 			$tpl_vars = array(
 				'post_id' => '{{ data.post_id }}',
-				'meta_id' => '{{ data.meta_id }}',
-				'meta_key' => '{{ data.meta_key }}',
-				'meta_value' => '{{ data.meta_value }}',
+				'id' => '{{ data.id }}',
+				'key' => '{{ data.key }}',
+				'value' => '{{ data.value }}',
 				'is_mustache_tpl' => true,
 			);
 			echo self::get_meta_fields( $tpl_vars ); // xss ok
@@ -170,8 +170,8 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 				<section class="post-meta">
 					<h3><?php esc_html_e( 'Meta', 'customize-posts' ) ?></h3>
 					<ul class="post-meta" data-tmpl="customize-posts-meta-field">
-						<?php foreach ( $data['meta'] as $meta_id => $meta ): ?>
-							<?php echo self::get_meta_fields( array_merge( $meta, compact( 'meta_id' ) ) ); // xss ok ?>
+						<?php foreach ( $data['meta'] as $id => $meta ): ?>
+							<?php echo self::get_meta_fields( array_merge( $meta, compact( 'id' ) ) ); // xss ok ?>
 						<?php endforeach; ?>
 					</ul>
 					<p>
@@ -194,11 +194,12 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 	 * @param array $tpl_vars {
 	 *     Template variables.
 	 *
-	 *     @type int|string $post_id  May be a string in case of Moustache template
-	 *     @type int $meta_id  For template this is -1
-	 *     @type string $meta_key
-	 *     @type string $meta_value
-	 *     @type bool is_mustache_tpl
+	 *     @type int $post_id
+	 *     @type int|string $id May be a temp ID prefixed by 'new'
+	 *     @type string $key
+	 *     @type string $value
+	 *     @type bool $is_serialized
+	 *     @type bool $is_mustache_tpl
 	 * }
 	 *
 	 * @return string
@@ -208,21 +209,21 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 
 		$disabled = false;
 		if ( is_numeric( $tpl_vars['post_id'] ) ) {
-			$disabled = ! $wp_customize->posts->current_user_can_edit_post_meta( $tpl_vars['post_id'], $tpl_vars['meta_key'], $tpl_vars['meta_value'] );
+			$disabled = ! $wp_customize->posts->current_user_can_edit_post_meta( $tpl_vars['post_id'], $tpl_vars['key'], $tpl_vars['value'] );
 		}
 		if ( $disabled ) {
 			return '';
 		}
 
-		$id_base = sprintf( 'posts[%s][meta][%s]', $tpl_vars['post_id'], $tpl_vars['meta_id'] );
+		$id_base = sprintf( 'posts[%s][meta][%s]', $tpl_vars['post_id'], $tpl_vars['id'] );
 		// @todo When saving the postmeta, we need to grab the mids that were saved
 		// @todo We also need to make sure that we update the control with the sanitized values from the server
 		ob_start();
 		?>
 		<li>
-			<input <?php disabled( $disabled ) ?> type="text" class="meta-key" name="<?php echo esc_attr( $id_base . '[key]' ) ?>" value="<?php echo esc_attr( $tpl_vars['meta_key'] ) ?>">
+			<input <?php disabled( $disabled ) ?> type="text" class="meta-key" name="<?php echo esc_attr( $id_base . '[key]' ) ?>" value="<?php echo esc_attr( $tpl_vars['key'] ) ?>">
 			<button type="button" class="delete-meta button secondary-button" title="<?php esc_attr_e( 'Delete meta', 'customize-posts' ) ?>"><?php esc_html_e( '&times;', 'customize-posts' ) ?></button>
-			<textarea <?php disabled( $disabled ) ?> id="<?php echo esc_attr( $id_base . '[value]' ) ?>" name="<?php echo esc_attr( $id_base . '[value]' ) ?>" class="meta-value"><?php echo esc_textarea( $tpl_vars['meta_value'] ) ?></textarea>
+			<textarea <?php disabled( $disabled ) ?> id="<?php echo esc_attr( $id_base . '[value]' ) ?>" name="<?php echo esc_attr( $id_base . '[value]' ) ?>" class="meta-value"><?php echo esc_textarea( $tpl_vars['value'] ) ?></textarea>
 		</li>
 		<?php
 		$html = ob_get_contents();
