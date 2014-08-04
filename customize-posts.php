@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Customize Posts
  * Description: Manage posts and postmeta via the customizer.
- * Version: 0.1
+ * Version: 0.2
  * Author: X-Team
  * Author URI: http://x-team.com/wordpress/
  * License: GPLv2+
@@ -31,7 +31,9 @@ function wp_customize_posts_init() {
 	define( 'CUSTOMIZE_POSTS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 	define( 'CUSTOMIZE_POSTS_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 	require_once( CUSTOMIZE_POSTS_PLUGIN_PATH . 'php/class-wp-customize-posts.php' );
-	require_once( CUSTOMIZE_POSTS_PLUGIN_PATH . 'php/class-wp-post-customize-control.php' );
+	require_once( CUSTOMIZE_POSTS_PLUGIN_PATH . 'php/class-wp-customize-posts-preview.php' );
+	require_once( CUSTOMIZE_POSTS_PLUGIN_PATH . 'php/class-wp-post-edit-customize-control.php' );
+	require_once( CUSTOMIZE_POSTS_PLUGIN_PATH . 'php/class-wp-post-select-customize-control.php' );
 	$wp_customize->posts = new WP_Customize_Posts( $wp_customize );
 }
 add_action( 'customize_register', 'wp_customize_posts_init' );
