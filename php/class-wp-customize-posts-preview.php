@@ -146,20 +146,9 @@ final class WP_Customize_Posts_Preview {
 					continue;
 				}
 				$value = $meta['value'];
-				$can_unserialize = (
-					'' === $meta['prev_value']
-					||
-					null === $meta['prev_value']
-					||
-					is_serialized( $meta['prev_value'] )
-				);
-				// @todo What are the conditions (if any) should we allow unserialization?
-				if ( $can_unserialize && is_serialized( $value ) ) {
-					$value = maybe_unserialize( $value );
-					if ( $single && is_array( $value ) ) {
-						// This is a hack to get around bad logic for handling the filter's return value in get_metadata
-						$single = false;
-					}
+				if ( $single && is_array( $value ) ) {
+					// This is a hack to get around bad logic for handling the filter's return value in get_metadata
+					$single = false;
 				}
 				$values[] = $value;
 			}

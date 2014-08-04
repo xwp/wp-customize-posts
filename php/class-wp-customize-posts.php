@@ -331,6 +331,10 @@ final class WP_Customize_Posts {
 			$is_deletion = is_null( $entry['value'] );
 			$is_update = ( ! $is_insertion && ! $is_deletion );
 
+			if ( ! $is_deletion && is_serialized( $entry['value'], true ) ) {
+				$entry['value'] = maybe_unserialize( $entry['value'] );
+			}
+
 			// Check whether the user is allowed to manage this postmeta
 			// @todo are filters here expecting pre-slashed data?
 			if ( $is_deletion ) {
