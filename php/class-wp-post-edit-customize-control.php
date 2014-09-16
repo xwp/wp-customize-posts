@@ -120,16 +120,18 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 				</select>
 			</p>
 
-			<p>
-				<?php $id = "posts[$post->ID][comment_status]"; ?>
-				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Comment:' ) ?></label>
-				<select class="post-data comment_status" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">
-					<option value="open"><?php esc_html_e( 'Open' ); ?>
-					<option value="closed"><?php esc_html_e( 'Closed' ); ?>
-				</select>
-			</p>
+			<?php if ( post_type_supports( $post->post_type, 'comments' ) ): ?>
+				<p>
+					<?php $id = "posts[$post->ID][comment_status]"; ?>
+					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Comment:' ) ?></label>
+					<select class="post-data comment_status" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">
+						<option value="open"><?php esc_html_e( 'Open' ); ?>
+						<option value="closed"><?php esc_html_e( 'Closed' ); ?>
+					</select>
+				</p>
+			<?php endif; ?>
 
-			<?php if ( is_post_type_hierarchical( $post->post_type ) ): ?>
+			<?php if ( post_type_supports( $post->post_type, 'page-attributes' ) ): ?>
 				<p>
 					<?php $id = "posts[$post->ID][post_parent]"; ?>
 					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Parent:' ) ?></label>
@@ -152,11 +154,8 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Menu order:' ) ?></label>
 					<input type="number" class="post-data menu_order" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>" value="<?php echo esc_attr( $post->menu_order ) ?>" min="0">
 				</p>
-			<?php endif; ?>
-
-			<?php if ( 'page' === $post->post_type ): ?>
 				<p>
-					<?php $id = 'posts[{{ data.post_id }}][page_template]'; ?>
+					<?php $id = "posts[$post->ID][page_template]"; ?>
 					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Page template:' ) ?></label>
 					<select id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">
 						<option value=""><?php esc_html_e( 'Default Template' ); ?></option>
