@@ -268,7 +268,8 @@ final class WP_Customize_Posts {
 	 * @param WP_Scripts $scripts
 	 */
 	public function register_scripts( &$scripts ) {
-		$scripts->add( 'customize-posts', CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-posts.js', array( 'jquery', 'wp-backbone', 'customize-controls', 'underscore' ), false, 1 );
+		$scripts->add( 'customize-base-extensions', CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-base-extensions.js', array( 'customize-base' ), false, 1 );
+		$scripts->add( 'customize-posts', CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-posts.js', array( 'jquery', 'wp-backbone', 'customize-base-extensions', 'customize-controls', 'underscore' ), false, 1 );
 		$scripts->add( 'customize-preview-posts', CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-preview-posts.js', array( 'jquery', 'customize-preview' ), false, 1 );
 	}
 

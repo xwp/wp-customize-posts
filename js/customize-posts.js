@@ -230,133 +230,6 @@
 	};
 
 	/**
-	 * Multidimensional helper function.
-	 *
-	 * Port of WP_Customize_Setting::multidimensional()
-	 *
-	 * @todo This should be migrated to customize-base.js
-	 *
-	 * @param {Object} root
-	 * @param {Array} keys
-	 * @param {Boolean} create Default is false.
-	 * @return {null|Object} Keys are 'root', 'node', and 'key'.
-	 */
-	self.multidimensional = function ( root, keys, create ) {
-		var last, node, key, i;
-
-		if ( create && ! root ) {
-			root = {};
-		}
-
-		if ( ! root || ! keys.length ) {
-			return undefined;
-		}
-
-		last = keys.pop();
-		node = root;
-
-		for ( i = 0; i < keys.length; i += 1 ) {
-			key = keys[ i ];
-
-			if ( create && typeof node[ key ] === 'undefined' ) {
-				node[ key ] = {};
-			}
-
-			if ( typeof node !== 'object' || typeof node[ key ] === 'undefined' ) {
-				return undefined;
-			}
-
-			node = node[ key ];
-		}
-
-		if ( create && typeof node[ last ] === 'undefined' ) {
-			node[ last ] = {};
-		}
-
-		if ( typeof node[ last ] === 'undefined' ) {
-			return undefined;
-		}
-
-		return {
-			'root': root,
-			'node': node,
-			'key': last
-		};
-	};
-
-	/**
-	 * Will attempt to replace a specific value in a multidimensional array.
-	 *
-	 * Port of WP_Customize_Setting::multidimensional_replace()
-	 *
-	 * @param {Object} root
-	 * @param {Array} keys
-	 * @param {*} value The value to update.
-	 * @return {*}
-	 */
-	self.multidimensionalReplace = function ( root, keys, value ) {
-		var result;
-		if ( typeof value === 'undefined' ) {
-			return root;
-		} else if ( ! keys.length ) { // If there are no keys, we're replacing the root.
-			return value;
-		}
-
-		result = this.multidimensional( root, keys, true );
-
-		if ( result ) {
-			result.node[ result.key ] = value;
-		}
-
-		return root;
-	};
-
-	/**
-	 * Will attempt to fetch a specific value from a multidimensional array.
-	 *
-	 * Port of WP_Customize_Setting::multidimensional_get()
-	 *
-	 * @todo Should be ported over to customize-base.js
-	 *
-	 * @param {Object} root
-	 * @param {Array} keys
-	 * @param {*} [defaultValue] A default value which is used as a fallback. Default is null.
-	 * @return {*} The requested value or the default value.
-	 */
-	self.multidimensionalGet = function ( root, keys, defaultValue ) {
-		var result;
-		if ( typeof defaultValue === 'undefined' ) {
-			defaultValue = null;
-		}
-
-		if ( ! keys || ! keys.length ) { // If there are no keys, test the root.
-			return ( typeof root !== 'undefined' ) ? root : defaultValue;
-		}
-
-		result = this.multidimensional( root, keys );
-		return typeof result !== 'undefined' ? result.node[ result.key ] : defaultValue;
-	};
-
-
-	/**
-	 * Will attempt to check if a specific value in a multidimensional array is set.
-	 *
-	 * Port of WP_Customize_Setting::multidimensional_isset()
-	 *
-	 * @todo Fold this into customize-base.js
-	 *
-	 * @param {Object} root
-	 * @param {Array} keys
-	 * @return {Boolean} True if value is set, false if not.
-	 */
-	self.multidimensionalIsset = function ( root, keys ) {
-		var result, noValue;
-		noValue = {};
-		result = this.multidimensionalGet( root, keys, noValue );
-		return result !== noValue;
-	};
-
-	/**
 	 * Create a post's setting and post_edit control if they don't already exist.
 	 *
 	 * @param post_id
@@ -596,7 +469,7 @@
 				field = $( this );
 				keys = control.parseKeys( field.prop( 'name' ) );
 				keys.shift(); // remove ID
-				value = self.multidimensionalGet( control.setting(), keys );
+				value = api.multidimensionalGet( control.setting(), keys );
 				if ( field.val() !== value ) {
 					field.val( value );
 				}
@@ -624,7 +497,7 @@
 				} else {
 					value = input.val();
 				}
-				self.multidimensionalReplace( new_setting, keys, value );
+				api.multidimensionalReplace( new_setting, keys, value );
 			} );
 
 			control.setting( new_setting );
