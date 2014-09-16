@@ -306,15 +306,17 @@ final class WP_Customize_Posts {
 		 * Handle post meta
 		 */
 		require_once( ABSPATH . 'wp-admin/includes/post.php' );
-		$cur_meta = array();
+		$meta_ids_for_meta_keys = array();
+		$current_meta = array();
 		// @todo Refactor into a WP_Customize_posts helper method?
 		foreach ( has_meta( $post_id ) as $entry ) {
-			$cur_meta[ $entry['meta_id'] ] = array(
+			$current_meta[ $entry['meta_id'] ] = array(
 				'key' => $entry['meta_key'],
 				'value' => $entry['meta_value'],
 				'prev_value' => null,
 				'is_serialized' => is_serialized( $entry['meta_value'], true ),
 			);
+			$meta_ids_for_meta_keys[ $entry['meta_key'] ][] = $entry['meta_id'];
 		}
 
 		if ( ! isset( $data['meta'] ) ) {
@@ -327,7 +329,7 @@ final class WP_Customize_Posts {
 				continue;
 			}
 
-			$is_insertion = ( ! isset( $cur_meta[ $mid ] ) );
+			$is_insertion = ( ! isset( $current_meta[ $mid ] ) );
 			$is_deletion = is_null( $entry['value'] );
 			$is_update = ( ! $is_insertion && ! $is_deletion );
 
@@ -338,7 +340,7 @@ final class WP_Customize_Posts {
 			// Check whether the user is allowed to manage this postmeta
 			// @todo are filters here expecting pre-slashed data?
 			if ( $is_deletion ) {
-				$prev_value = ( isset( $cur_meta[ $mid ] ) ? $cur_meta[ $mid ]['value'] : null );
+				$prev_value = ( isset( $current_meta[ $mid ] ) ? $current_meta[ $mid ]['value'] : null );
 				$delete_all = false;
 				$check = apply_filters( 'delete_post_metadata', null, $post_id, $entry['key'], $entry['value'], $delete_all );
 				if ( $check === null && ! current_user_can( 'delete_post_meta', $post_id, $entry['key'] ) ) {
@@ -353,7 +355,7 @@ final class WP_Customize_Posts {
 					$check = false;
 				}
 			} elseif ( $is_update ) {
-				$prev_value = $cur_meta[ $mid ]['value'];
+				$prev_value = $current_meta[ $mid ]['value'];
 				$check = apply_filters( 'update_post_metadata', null, $post_id, $entry['key'], $entry['value'], $prev_value );
 				if ( $check === null && ! current_user_can( 'edit_post_meta', $post_id, $entry['key'] ) ) {
 					$check = false;
@@ -365,8 +367,9 @@ final class WP_Customize_Posts {
 
 			// Now that we know whether the user can manage this postmeta or not, process it.
 			if ( null !== $check ) {
+				// Not allowed, so preserve old meta values
 				if ( $is_update || $is_deletion ) {
-					$new_meta[ $mid ] = $cur_meta[ $mid ];
+					$new_meta[ $mid ] = $current_meta[ $mid ];
 				}
 			} else {
 				$entry['prev_value'] = $prev_value; // convenience for later
