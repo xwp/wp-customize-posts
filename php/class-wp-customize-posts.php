@@ -311,16 +311,31 @@ final class WP_Customize_Posts {
 			return null;
 		}
 
-		$data = sanitize_post( $data, 'db' ); // @todo: will meta and taxonomies get stripped out?
-
 		/*
-		 * Handle post data
+		 * Handle core post data
 		 */
+		$data = sanitize_post( $data, 'db' ); // @todo: will meta and taxonomies get stripped out?
 
 		// @todo apply wp_insert_post_data filter here too?
 
+		/*
+		 * Handle post meta
+		 */
+		if ( ! isset( $data['meta'] ) ) {
+			$data['meta'] = array();
+		}
+
 		if ( ! empty( $data['post_date'] ) ) {
 			$data['post_date_gmt'] = get_gmt_from_date( $data['post_date'] );
+		}
+
+		// @todo Taxonomies  (tax_input and tags_input)
+
+		// Handle fields not handled by wp_update_post which map to postmeta
+		foreach ( $this->get_post_pseudo_data_meta_mapping() as $data_key => $meta_key ) {
+			if ( isset( $data[ $data_key ] ) ) {
+				$data[ $data_key ] = sanitize_meta( 'meta_key', $data[ $data_key ], 'post' );
+			}
 		}
 
 		/*
@@ -340,9 +355,6 @@ final class WP_Customize_Posts {
 			$meta_ids_for_meta_keys[ $entry['meta_key'] ][] = $entry['meta_id'];
 		}
 
-		if ( ! isset( $data['meta'] ) ) {
-			$data['meta'] = array();
-		}
 		$this->add_sanitize_meta_filters();
 		$new_meta = array();
 		$sanitize_context = compact( 'data', 'current_meta', 'meta_ids_for_meta_keys', 'customize_posts', 'setting' );
@@ -466,38 +478,36 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Save the post and meta via the customize_update_post hook.
+	 * Save the post and meta via the customize_update_post hook. Note that the
+	 * $data has already been sanitized.
 	 *
 	 * @param array $data
+	 * @return bool
 	 */
 	public function update_post( array $data ) {
 		if ( empty( $data ) ) {
-			return;
+			return false;
 		}
 		if ( empty( $data['ID'] ) ) {
 			trigger_error( 'customize_update_post requires an array including an ID' );
-			return;
+			return  false;
 		}
 		if ( ! $this->current_user_can_edit_post( $data['ID'] ) ) {
-			return;
+			return false;
 		}
 
-		$post = array();
-		$allowed_keys = $this->get_editable_post_field_keys();
-		$allowed_keys[] = 'ID';
-		foreach ( $allowed_keys as $key ) {
-			if ( isset( $data[ $key ] ) ) {
-				$post[ $key ] = $data[ $key ];
-			}
+		if ( empty( $data['meta'] ) ) {
+			$data['meta'] = array();
 		}
+
+		// Save post data
+		$update_post_arg_keys = $this->get_update_post_arg_keys();
+		$post = wp_array_slice_assoc( $data, $update_post_arg_keys );
+
 		wp_update_post( (object) $post ); // @todo handle error
 
-		$metas = array();
-		if ( isset( $data['meta'] ) ) {
-			$metas = $data['meta'];
-		}
-
-		foreach ( $metas as $meta_id => $meta ) {
+		// Save post meta
+		foreach ( $data['meta'] as $meta_id => $meta ) {
 			$is_insert = ( $this->is_temp_meta_id( $meta_id ) );
 			$is_delete = ( $meta['value'] === null && ! $is_insert );
 			$is_update = ( ! $is_delete && ! $is_insert );
@@ -516,7 +526,14 @@ final class WP_Customize_Posts {
 			}
 		}
 
-		// @todo Taxonomies?
+		// Handle pseudo post fields which are mapped to postmeta
+		foreach ( $this->get_post_pseudo_data_meta_mapping() as $data_key => $meta_key ) {
+			if ( isset( $data[ $data_key ] ) && ! in_array( $data_key, $update_post_arg_keys ) ) {
+				update_post_meta( $data['ID'], $meta_key, wp_slash( $data[ $data_key ] ) ); // assuming keys are for singular postmeta
+			}
+		}
+
+		return true;
 	}
 
 	/**
@@ -602,13 +619,61 @@ final class WP_Customize_Posts {
 		wp_send_json_success( $response );
 	}
 
+
 	/**
-	 * Get the list of post data fields which can be edited.
+	 * Get the argument keys that wp_update_post supports, this is most of the
+	 * post schema fields plus some meta fields like page_template.
+	 *
+	 * @todo Some of these we probably don't want to allow to be updated.
 	 *
 	 * @return array
 	 */
-	public function get_editable_post_field_keys() {
-		return array( 'post_author', 'post_date', 'post_date_gmt', 'post_content', 'post_content_filtered', 'post_title', 'post_excerpt', 'post_status', 'post_type', 'comment_status', 'ping_status', 'post_password', 'post_name', 'to_ping', 'pinged', 'post_modified', 'post_modified_gmt', 'post_parent', 'menu_order' );
+	public function get_update_post_arg_keys() {
+		return array(
+			'ID',
+			'comment_status',
+			'guid',
+			'menu_order',
+			'ping_status',
+			'pinged',
+			'post_author',
+			'post_category',
+			'post_content',
+			'post_content_filtered',
+			'post_date',
+			'post_date_gmt',
+			'post_excerpt',
+			'post_mime_type',
+			'post_name',
+			'post_parent',
+			'post_password',
+			'post_status',
+			'post_title',
+			'post_type',
+			'to_ping',
+
+			'file',
+			'import_id',
+			'page_template',
+			'tags_input',
+			'tax_input',
+			'context',
+		);
+	}
+
+	/**
+	 * Get list of pseudo data keys mapped to their post meta keys. The keys here
+	 * are found in metabox inputs added to the control.
+	 *
+	 * @return array
+	 */
+	public function get_post_pseudo_data_meta_mapping() {
+		$mapping = array(
+			'thumbnail_id' => '_thumbnail_id',
+			'page_template' => '_wp_page_template', // Note: handled by wp_update_post
+		);
+		// @todo filter for allowing others to be registered, so that new inputs can be added to the post_edit control
+		return $mapping;
 	}
 
 	/**
@@ -643,9 +708,9 @@ final class WP_Customize_Posts {
 			return false;
 		}
 
-		$editable_post_fields = $this->get_editable_post_field_keys();
+		$post_object_keys = $this->get_update_post_arg_keys();
 		foreach ( $post_overrides as $key => $value ) {
-			if ( in_array( $key, $editable_post_fields ) ) {
+			if ( in_array( $key, $post_object_keys ) ) {
 				$post->$key = $value;
 			}
 		}
@@ -709,7 +774,6 @@ final class WP_Customize_Posts {
 		global $wp_scripts;
 
 		$exported = array(
-			'editablePostFieldKeys' => $this->get_editable_post_field_keys(),
 			'postDataNonce' => wp_create_nonce( 'customize_post_data' ),
 		);
 

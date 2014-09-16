@@ -164,6 +164,25 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 				</p>
 			<?php endif; ?>
 
+			<?php if ( post_type_supports( $post->post_type, 'thumbnail' ) ): ?>
+				<p>
+					<?php
+					$id = "posts[$post->ID][thumbnail_id]";
+					$attachment_id = get_post_meta( $post->ID, '_thumbnail_id', true );
+					$attachment = $attachment_id ? get_post( $attachment_id ) : null;
+					?>
+					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Featured image:' ) ?></label>
+					<input type="text" name="<?php echo esc_attr( $id ) ?>" value="<?php echo esc_attr( $attachment_id ) ?>">
+					<?php if ( $attachment ): ?>
+						<?php echo wp_get_attachment_image( $attachment_id ); ?>
+					<?php else : ?>
+						(not set)
+					<?php endif; ?>
+					<button type="button" class="button secondary-button">Remove</button>
+					<button type="button" class="button secondary-button">Select</button>
+				</p>
+			<?php endif; ?>
+
 			<?php if ( post_type_supports( $post->post_type, 'custom-fields' ) && current_user_can( 'edit_post_meta', $post->ID ) ): ?>
 				<?php // @todo Move this into another overridable method ?>
 				<section class="post-meta">

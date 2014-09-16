@@ -98,11 +98,21 @@ final class WP_Customize_Posts_Preview {
 	 * @return mixed
 	 */
 	public function preview_post_meta( $original_meta_value, $post_id, $meta_key, $single ) {
+		$post_overrides = $this->manager->posts->get_post_overrides( $post_id );
+
+		// Handle pseudo data inputs mapped to postmeta
+		$post_pesudo_data_to_meta_mapping = $this->manager->posts->get_post_pseudo_data_meta_mapping();
+		$post_meta_to_pseudo_data_mapping = array_flip( $post_pesudo_data_to_meta_mapping );
+
+		if ( ! empty( $meta_key ) && isset( $post_meta_to_pseudo_data_mapping[ $meta_key ] ) && isset( $post_overrides[ $post_meta_to_pseudo_data_mapping[ $meta_key ] ] ) ) {
+			$meta_value = $post_overrides[ $post_meta_to_pseudo_data_mapping[ $meta_key ] ];
+			return $single ? $meta_value : array( $meta_value );
+		}
+
 		if ( ! empty( $meta_key ) && ! $this->manager->posts->current_user_can_edit_post_meta( $post_id, $meta_key ) ) {
 			return $original_meta_value;
 		}
 
-		$post_overrides = $this->manager->posts->get_post_overrides( $post_id );
 		if ( empty( $post_overrides['meta'] ) ) {
 			return $original_meta_value;
 		}
@@ -132,6 +142,11 @@ final class WP_Customize_Posts_Preview {
 			foreach ( $new_meta as $entry ) {
 				if ( ! is_null( $entry['value'] ) ) {
 					$all_meta[ $entry['key'] ][] = $entry['value'];
+				}
+			}
+			foreach ( $post_meta_to_pseudo_data_mapping as $meta_key => $data_key ) {
+				if ( isset( $post_overrides[ $data_key ] ) ) {
+					$all_meta[ $meta_key ] = array( $post_overrides[ $data_key ] );
 				}
 			}
 			return $all_meta;
