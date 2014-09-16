@@ -32,7 +32,7 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 	 */
 	public function render_content() {
 		?>
-
+		<!-- populated via JS -->
 		<?php
 	}
 
@@ -61,7 +61,7 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 	 * @return string
 	 */
 	static function get_fields( $post ) {
-		global $wpdb, $wp_customize;
+		global $wp_customize;
 
 		$post = get_post( $post );
 		$data = $wp_customize->posts->get_post_setting_value( $post );

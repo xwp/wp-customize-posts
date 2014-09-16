@@ -34,6 +34,21 @@ final class WP_Customize_Posts {
 	public $temp_meta_id_mapping = array();
 
 	/**
+	 * Make data available to sanitize_meta filters since sanitize_meta() doesn't take a $post argument.
+	 * @var array
+	 */
+	protected $sanitize_context = array();
+
+	/**
+	 * Mapping of meta keys to callables for sanitization callables to apply to meta when sanitize_meta is called during Customize sanitization
+	 *
+	 * Filtered via wp_customize_posts_sanitize_meta_filters
+	 *
+	 * @var array
+	 */
+	protected $sanitize_meta_filters = array();
+
+	/**
 	 * Initial loader.
 	 *
 	 * @access public
@@ -87,6 +102,12 @@ final class WP_Customize_Posts {
 
 			// @todo This needs to be dynamic. There needs to be a mechanism to get a setting value via JS, along with params like hierarchicahl, protected meta, etc
 		}
+
+		$this->sanitize_meta_filters = array(
+			'_wp_page_template' => array( $this, 'sanitize_meta__wp_page_template' ),
+			'_thumbnail_id' => array( $this, 'sanitize_meta__thumbnail_id' ),
+		);
+		$this->sanitize_meta_filters = apply_filters( 'wp_customize_posts_sanitize_meta_filters', $this->sanitize_meta_filters );
 
 		add_action( 'wp_default_scripts', array( $this, 'register_scripts' ) );
 		add_action( 'wp_default_styles', array( $this, 'register_styles' ) );
@@ -322,7 +343,9 @@ final class WP_Customize_Posts {
 		if ( ! isset( $data['meta'] ) ) {
 			$data['meta'] = array();
 		}
+		$this->add_sanitize_meta_filters();
 		$new_meta = array();
+		$sanitize_context = compact( 'data', 'current_meta', 'meta_ids_for_meta_keys', 'customize_posts', 'setting' );
 		foreach ( $data['meta'] as $mid => $entry ) {
 			if ( ! $this->is_temp_meta_id( $mid ) && ! ( preg_match( '/^\d+$/', $mid ) || $mid > 0 ) ) {
 				trigger_error( 'Bad meta_id', E_USER_WARNING );
@@ -362,7 +385,7 @@ final class WP_Customize_Posts {
 				}
 			} else {
 				trigger_error( 'Unknown state', E_USER_WARNING );
-				return null;
+				continue;
 			}
 
 			// Now that we know whether the user can manage this postmeta or not, process it.
@@ -373,15 +396,73 @@ final class WP_Customize_Posts {
 				}
 			} else {
 				$entry['prev_value'] = $prev_value; // convenience for later
+				$sanitize_context['entry'] = $entry;
+				$this->sanitize_context = $sanitize_context; // make available to sanitize_meta filters
 				if ( $is_insertion || $is_update ) {
 					$entry['value'] = sanitize_meta( $entry['key'], $entry['value'], 'post' );
+					if ( is_wp_error( $entry['value'] ) ) { // @todo does this make sense if the value is invalid and cannot be sanitized? The previous/existing value should be available to sanitize_meta()
+						$entry['value'] = $prev_value;
+					}
 				}
 				$new_meta[ $mid ] = $entry;
+				$this->sanitize_context = null;
 			}
 		}
+		$this->remove_sanitize_meta_filters();
+
 		$data['meta'] = $new_meta;
 
 		return $data;
+	}
+
+	/**
+	 *
+	 */
+	public function add_sanitize_meta_filters() {
+		foreach ( $this->sanitize_meta_filters as $meta_key => $sanitize_callback ) {
+			add_filter( "sanitize_post_meta_{$meta_key}", $sanitize_callback, 10, 3 );
+		}
+	}
+
+	/**
+	 *
+	 */
+	public function remove_sanitize_meta_filters() {
+		foreach ( $this->sanitize_meta_filters as $meta_key => $sanitize_callback ) {
+			remove_filter( "sanitize_post_meta_{$meta_key}", $sanitize_callback, 10, 3 );
+		}
+	}
+
+	/**
+	 * @param $page_template
+	 *
+	 * @return mixed
+	 */
+	public function sanitize__wp_page_template( $page_template ) {
+		$page_templates = wp_get_theme()->get_page_templates( $this->sanitize_context['data']['ID'] );
+		if ( 'default' !== $page_template && ! isset( $page_templates[ $page_template ] ) ) {
+			$page_template = $this->sanitize_context['entry']['prev_value'];
+		}
+		return $page_template;
+	}
+
+	/**
+	 * @param $thumbnail_id
+	 *
+	 * @return mixed
+	 */
+	public function sanitize___thumbnail_id( $thumbnail_id ) {
+		$is_bad_thumbnail_id = (
+			empty( $thumbnail_id )
+			||
+			( ! get_post( $thumbnail_id ) )
+			||
+			( ! wp_get_attachment_image( $thumbnail_id, 'thumbnail' ) ) // see set_post_thumbnail()
+		);
+		if ( $is_bad_thumbnail_id ) {
+			$thumbnail_id = 0;
+		}
+		return $thumbnail_id;
 	}
 
 	/**
