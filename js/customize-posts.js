@@ -1,16 +1,7 @@
 /*global jQuery, wp, _, Backbone, _wpCustomizePostsSettings */
 
 ( function ( api, $ ) {
-	var OldPreviewer, preview, PostData, PostsCollection, self;
-
-	// @todo Core really needs to not make the preview a private variable
-	OldPreviewer = api.Previewer;
-	api.Previewer = OldPreviewer.extend( {
-		initialize: function( params, options ) {
-			preview = this;
-			OldPreviewer.prototype.initialize.call( this, params, options );
-		}
-	} );
+	var PostData, PostsCollection, self;
 
 	/**
 	 * @type {Backbone.Model}
@@ -86,7 +77,7 @@
 	api.bind( 'ready', function () {
 		self.section.init();
 
-		preview.bind( 'customize-posts', function( data ) {
+		api.previewer.bind( 'customize-posts', function( data ) {
 			self.isPostPreview( data.isPostPreview );
 			self.isSingular( data.isSingular );
 			self.queriedPostId( data.queriedPostId );
