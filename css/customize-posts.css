@@ -30,3 +30,17 @@
 	right: 0px;
 	width: 35px;
 }
+
+.customize-control.customize-control-post_edit .post-thumbnail label,
+.customize-control.customize-control-post_edit .post-thumbnail img {
+	display: block;
+}
+.customize-control.customize-control-post_edit .post-thumbnail img {
+	cursor: pointer;
+	margin-bottom: 3px;
+}
+
+.customize-control.customize-control-post_edit .post-thumbnail:not(.populated) img,
+.customize-control.customize-control-post_edit .post-thumbnail:not(.populated) .remove-featured-image {
+	display: none;
+}

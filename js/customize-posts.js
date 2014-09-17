@@ -1,16 +1,7 @@
 /*global jQuery, wp, _, Backbone, _wpCustomizePostsSettings */
 
 ( function ( api, $ ) {
-	var OldPreviewer, preview, PostData, PostsCollection, self;
-
-	// @todo Core really needs to not make the preview a private variable
-	OldPreviewer = api.Previewer;
-	api.Previewer = OldPreviewer.extend( {
-		initialize: function( params, options ) {
-			preview = this;
-			OldPreviewer.prototype.initialize.call( this, params, options );
-		}
-	} );
+	var PostData, PostsCollection, self;
 
 	/**
 	 * @type {Backbone.Model}
@@ -86,7 +77,7 @@
 	api.bind( 'ready', function () {
 		self.section.init();
 
-		preview.bind( 'customize-posts', function( data ) {
+		api.previewer.bind( 'customize-posts', function( data ) {
 			self.isPostPreview( data.isPostPreview );
 			self.isSingular( data.isSingular );
 			self.queriedPostId( data.queriedPostId );
@@ -230,133 +221,6 @@
 	};
 
 	/**
-	 * Multidimensional helper function.
-	 *
-	 * Port of WP_Customize_Setting::multidimensional()
-	 *
-	 * @todo This should be migrated to customize-base.js
-	 *
-	 * @param {Object} root
-	 * @param {Array} keys
-	 * @param {Boolean} create Default is false.
-	 * @return {null|Object} Keys are 'root', 'node', and 'key'.
-	 */
-	self.multidimensional = function ( root, keys, create ) {
-		var last, node, key, i;
-
-		if ( create && ! root ) {
-			root = {};
-		}
-
-		if ( ! root || ! keys.length ) {
-			return undefined;
-		}
-
-		last = keys.pop();
-		node = root;
-
-		for ( i = 0; i < keys.length; i += 1 ) {
-			key = keys[ i ];
-
-			if ( create && typeof node[ key ] === 'undefined' ) {
-				node[ key ] = {};
-			}
-
-			if ( typeof node !== 'object' || typeof node[ key ] === 'undefined' ) {
-				return undefined;
-			}
-
-			node = node[ key ];
-		}
-
-		if ( create && typeof node[ last ] === 'undefined' ) {
-			node[ last ] = {};
-		}
-
-		if ( typeof node[ last ] === 'undefined' ) {
-			return undefined;
-		}
-
-		return {
-			'root': root,
-			'node': node,
-			'key': last
-		};
-	};
-
-	/**
-	 * Will attempt to replace a specific value in a multidimensional array.
-	 *
-	 * Port of WP_Customize_Setting::multidimensional_replace()
-	 *
-	 * @param {Object} root
-	 * @param {Array} keys
-	 * @param {*} value The value to update.
-	 * @return {*}
-	 */
-	self.multidimensionalReplace = function ( root, keys, value ) {
-		var result;
-		if ( typeof value === 'undefined' ) {
-			return root;
-		} else if ( ! keys.length ) { // If there are no keys, we're replacing the root.
-			return value;
-		}
-
-		result = this.multidimensional( root, keys, true );
-
-		if ( result ) {
-			result.node[ result.key ] = value;
-		}
-
-		return root;
-	};
-
-	/**
-	 * Will attempt to fetch a specific value from a multidimensional array.
-	 *
-	 * Port of WP_Customize_Setting::multidimensional_get()
-	 *
-	 * @todo Should be ported over to customize-base.js
-	 *
-	 * @param {Object} root
-	 * @param {Array} keys
-	 * @param {*} [defaultValue] A default value which is used as a fallback. Default is null.
-	 * @return {*} The requested value or the default value.
-	 */
-	self.multidimensionalGet = function ( root, keys, defaultValue ) {
-		var result;
-		if ( typeof defaultValue === 'undefined' ) {
-			defaultValue = null;
-		}
-
-		if ( ! keys || ! keys.length ) { // If there are no keys, test the root.
-			return ( typeof root !== 'undefined' ) ? root : defaultValue;
-		}
-
-		result = this.multidimensional( root, keys );
-		return typeof result !== 'undefined' ? result.node[ result.key ] : defaultValue;
-	};
-
-
-	/**
-	 * Will attempt to check if a specific value in a multidimensional array is set.
-	 *
-	 * Port of WP_Customize_Setting::multidimensional_isset()
-	 *
-	 * @todo Fold this into customize-base.js
-	 *
-	 * @param {Object} root
-	 * @param {Array} keys
-	 * @return {Boolean} True if value is set, false if not.
-	 */
-	self.multidimensionalIsset = function ( root, keys ) {
-		var result, noValue;
-		noValue = {};
-		result = this.multidimensionalGet( root, keys, noValue );
-		return result !== noValue;
-	};
-
-	/**
 	 * Create a post's setting and post_edit control if they don't already exist.
 	 *
 	 * @param post_id
@@ -413,7 +277,7 @@
 
 			control_container.slideDown();
 		}
-	},
+	};
 
 	/**
 	 * Customize Control for selecting a post to edit
@@ -559,6 +423,8 @@
 
 			} );
 
+			control.setupFeaturedImageField();
+
 			// When updating the customizer settings, update any inserted post meta with their new IDs
 			api.bind( 'save', function ( request ) {
 				// See https://core.trac.wordpress.org/ticket/29098 for how we could hook directly into the saved event instead
@@ -568,6 +434,140 @@
 					}
 				} );
 			} );
+
+		},
+
+		featuredImage: null,
+
+		setFeaturedImage: function ( id ) {
+			var control = this,
+				container = control.container.find( '.post-thumbnail' ),
+				input = container.find( 'input.thumbnail-id' );
+
+			id = parseInt( id, 10 );
+			if ( isNaN( id ) || id < 0 ) {
+				container.removeClass( 'populated' );
+				input.val( '0' );
+			} else {
+				container.addClass( 'populated' );
+				input.val( id );
+			}
+			control.updateSetting();
+		},
+
+		/**
+		 * @todo move into separate control
+		 */
+		setupFeaturedImageField: function () {
+			var controller,
+				control = this,
+				container = control.container.find( '.post-thumbnail' );
+
+			controller = wp.media.controller.FeaturedImage.extend( {
+				/**
+				 * @since 3.5.0
+				 */
+				updateSelection: function() {
+					var selection = this.get( 'selection' ),
+						id = parseInt( control.setting().thumbnail_id, 10 ),
+						attachment;
+
+					if ( ! isNaN( id ) && id > 0 ) {
+						attachment = wp.media.model.Attachment.get( id );
+						attachment.fetch();
+					}
+
+					selection.reset( attachment ? [ attachment ] : [] );
+				}
+			} );
+
+			/**
+			 * wp.media.featuredImage
+			 * @namespace
+			 */
+			control.featuredImage = {
+				/**
+				 * Get the featured image post ID
+				 */
+				get: function() {
+					var id = control.setting().thumbnail_id;
+					return ( isNaN( id ) || id <= 0 ) ? -1 : id;
+				},
+
+				/**
+				 * Set the featured image id, save the post thumbnail data and
+				 * set the HTML in the post meta box to the new featured image.
+				 *
+				 * @param {number} id The post ID of the featured image, or -1 to unset it.
+				 */
+				set: function( id ) {
+					control.setFeaturedImage( id );
+				},
+
+				/**
+				 * The Featured Image workflow
+				 *
+				 * @global wp.media.controller.FeaturedImage
+				 * @global wp.media.view.l10n
+				 *
+				 * @this wp.media.featuredImage
+				 *
+				 * @returns {wp.media.view.MediaFrame.Select} A media workflow.
+				 */
+				frame: function() {
+					if ( this._frame ) {
+						return this._frame;
+					}
+
+					this._frame = wp.media( {
+						state: 'featured-image',
+						states: [ new controller() ]
+					} );
+
+					this._frame.on( 'toolbar:create:featured-image', function( toolbar ) {
+						/**
+						 * @this wp.media.view.MediaFrame.Select
+						 */
+						this.createSelectToolbar( toolbar, {
+							text: wp.media.view.l10n.setFeaturedImage
+						} );
+					}, this._frame );
+
+					this._frame.state( 'featured-image' ).on( 'select', this.select );
+					return this._frame;
+				},
+
+				/**
+				 * 'select' callback for Featured Image workflow, triggered when
+				 *  the 'Set Featured Image' button is clicked in the media modal.
+				 */
+				select: function() {
+					var selection = this.get( 'selection' ).single();
+					if ( selection.id ) {
+						container.find( 'img' ).attr( 'src', selection.get( 'sizes' ).thumbnail.url );
+					}
+					control.featuredImage.set( selection ? selection.id : -1 );
+				},
+
+				/**
+				 * Open the content media manager to the 'featured image' tab when
+				 * the post thumbnail is clicked.
+				 *
+				 * Update the featured image id when the 'remove' link is clicked.
+				 *
+				 * @global wp.media.view.settings
+				 */
+				init: function () {
+					container.find( 'img, .select-featured-image' ).on( 'click', function () {
+						control.featuredImage.frame().open();
+					} );
+					container.find( '.remove-featured-image' ).on( 'click', function () {
+						control.setFeaturedImage( -1 );
+					} );
+				}
+			};
+
+			control.featuredImage.init();
 
 		},
 
@@ -596,7 +596,7 @@
 				field = $( this );
 				keys = control.parseKeys( field.prop( 'name' ) );
 				keys.shift(); // remove ID
-				value = self.multidimensionalGet( control.setting(), keys );
+				value = api.multidimensionalGet( control.setting(), keys );
 				if ( field.val() !== value ) {
 					field.val( value );
 				}
@@ -624,7 +624,7 @@
 				} else {
 					value = input.val();
 				}
-				self.multidimensionalReplace( new_setting, keys, value );
+				api.multidimensionalReplace( new_setting, keys, value );
 			} );
 
 			control.setting( new_setting );

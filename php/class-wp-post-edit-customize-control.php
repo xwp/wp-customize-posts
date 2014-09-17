@@ -32,7 +32,7 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 	 */
 	public function render_content() {
 		?>
-
+		<!-- populated via JS -->
 		<?php
 	}
 
@@ -61,7 +61,7 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 	 * @return string
 	 */
 	static function get_fields( $post ) {
-		global $wpdb, $wp_customize;
+		global $wp_customize;
 
 		$post = get_post( $post );
 		$data = $wp_customize->posts->get_post_setting_value( $post );
@@ -81,17 +81,17 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 		<div class="customize-control-content">
 			<p>
 				<?php $id = "posts[$post->ID][post_title]"; ?>
-				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Title:' ) ?></label>
+				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Title:', 'customize-posts', 'customize-posts' ) ?></label>
 				<input type="text" class="post-data post_title" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>" value="<?php echo esc_attr( $post->post_title ) ?>" >
 			</p>
 			<p>
 				<?php $id = "posts[$post->ID][post_name]"; ?>
-				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Slug:' ) ?></label>
+				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Slug:', 'customize-posts' ) ?></label>
 				<input type="text" class="post-data post_name" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>" value="<?php echo esc_attr( $post->post_name ) ?>" >
 			</p>
 			<p>
 				<?php $id = "posts[$post->ID][post_author]"; ?>
-				<label for="posts[<?php echo esc_attr( $post->ID ) ?>][post_author]"><?php esc_html_e( 'Author:' ) ?></label>
+				<label for="posts[<?php echo esc_attr( $post->ID ) ?>][post_author]"><?php esc_html_e( 'Author:', 'customize-posts' ) ?></label>
 				<?php wp_dropdown_users( array( 'name' => $id, 'class' => 'post-data post_author' ) ); ?>
 			</p>
 			<p>
@@ -102,17 +102,17 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 			</p>
 			<p>
 				<?php $id = "posts[$post->ID][post_content]"; ?>
-				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Content:' ) ?></label>
+				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Content:', 'customize-posts' ) ?></label>
 				<textarea class="post-data post_content" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>"><?php echo esc_textarea( $post->post_content ) ?></textarea>
 			</p>
 			<p>
 				<?php $id = "posts[$post->ID][post_excerpt]"; ?>
-				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Excerpt:' ) ?></label>
+				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Excerpt:', 'customize-posts' ) ?></label>
 				<textarea class="post-data post_excerpt" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>"><?php echo esc_textarea( $post->post_excerpt ) ?></textarea>
 			</p>
 			<p>
 				<?php $id = "posts[$post->ID][post_status]"; ?>
-				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Status:' ) ?></label>
+				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Status:', 'customize-posts' ) ?></label>
 				<select class="post-data post_status" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">
 					<?php foreach ( get_post_stati( array( 'internal' => false ) ) as $post_status ): ?>
 						<option value='<?php echo esc_attr( $post_status ) ?>'><?php echo esc_html( get_post_status_object( $post_status )->label ) ?></option>
@@ -120,19 +120,21 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 				</select>
 			</p>
 
-			<p>
-				<?php $id = "posts[$post->ID][comment_status]"; ?>
-				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Comment:' ) ?></label>
-				<select class="post-data comment_status" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">
-					<option value="open"><?php esc_html_e( 'Open' ); ?>
-					<option value="closed"><?php esc_html_e( 'Closed' ); ?>
-				</select>
-			</p>
+			<?php if ( post_type_supports( $post->post_type, 'comments' ) ): ?>
+				<p>
+					<?php $id = "posts[$post->ID][comment_status]"; ?>
+					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Comment:', 'customize-posts' ) ?></label>
+					<select class="post-data comment_status" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">
+						<option value="open"><?php esc_html_e( 'Open' ); ?>
+						<option value="closed"><?php esc_html_e( 'Closed' ); ?>
+					</select>
+				</p>
+			<?php endif; ?>
 
-			<?php if ( is_post_type_hierarchical( $post->post_type ) ): ?>
+			<?php if ( post_type_supports( $post->post_type, 'page-attributes' ) ): ?>
 				<p>
 					<?php $id = "posts[$post->ID][post_parent]"; ?>
-					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Parent:' ) ?></label>
+					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Parent:', 'customize-posts' ) ?></label>
 					<?php
 					$dropdown_args = array(
 						'post_type'        => $post->post_type,
@@ -149,19 +151,39 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 				</p>
 				<p>
 					<?php $id = "posts[$post->ID][menu_order]"; ?>
-					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Menu order:' ) ?></label>
+					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Menu order:', 'customize-posts' ) ?></label>
 					<input type="number" class="post-data menu_order" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>" value="<?php echo esc_attr( $post->menu_order ) ?>" min="0">
 				</p>
-			<?php endif; ?>
-
-			<?php if ( 'page' === $post->post_type ): ?>
 				<p>
-					<?php $id = 'posts[{{ data.post_id }}][page_template]'; ?>
-					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Page template:' ) ?></label>
+					<?php $id = "posts[$post->ID][page_template]"; ?>
+					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Page template:', 'customize-posts' ) ?></label>
 					<select id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">
 						<option value=""><?php esc_html_e( 'Default Template' ); ?></option>
 						<?php page_template_dropdown( get_post_meta( $post->ID, '_wp_page_template', true ) ); ?>
 					</select>
+				</p>
+			<?php endif; ?>
+
+			<?php if ( post_type_supports( $post->post_type, 'thumbnail' ) ): ?>
+				<?php
+				$id = "posts[$post->ID][thumbnail_id]";
+				$attachment_id = get_post_meta( $post->ID, '_thumbnail_id', true );
+				$attachment = $attachment_id ? get_post( $attachment_id ) : null;
+				// @codingStandardsIgnoreStart
+				// Re: phpcs, there is an erroneous error regarding bad indentation here
+				if ( $attachment ) {
+					list( $src ) = wp_get_attachment_image_src( $attachment_id, 'thumbnail' );
+				} else {
+					$src = '';
+				}
+				// @codingStandardsIgnoreEnd
+				?>
+				<p class="post-thumbnail <?php if ( ! empty( $attachment ) ) { echo 'populated'; } ?>">
+					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Featured image:', 'customize-posts' ) ?></label>
+					<input type="hidden" class="thumbnail-id" name="<?php echo esc_attr( $id ) ?>" id="<?php echo esc_attr( $id ) ?>" value="<?php echo esc_attr( $attachment_id ) ?>">
+					<img src="<?php echo esc_url( $src ) ?>">
+					<button type="button" class="button secondary-button select-featured-image"><?php esc_html_e( 'Select', 'customize-posts' ) ?></button>
+					<button type="button" class="button secondary-button remove-featured-image"><?php esc_html_e( 'Remove', 'customize-posts' ) ?></button>
 				</p>
 			<?php endif; ?>
 

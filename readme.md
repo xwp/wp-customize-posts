@@ -4,9 +4,9 @@
 Edit posts and postmeta in the Customizer. Stop editing your posts/postmeta blind!
 
 **Contributors:** [x-team](http://profiles.wordpress.org/x-team), [westonruter](http://profiles.wordpress.org/westonruter)  
-**Tags:** [customizer](http://wordpress.org/plugins/tags/customizer), [customize](http://wordpress.org/plugins/tags/customize), [posts](http://wordpress.org/plugins/tags/posts)  
-**Requires at least:** 3.9  
-**Tested up to:** 3.9.1  
+**Tags:** [customizer](http://wordpress.org/plugins/tags/customizer), [customize](http://wordpress.org/plugins/tags/customize), [posts](http://wordpress.org/plugins/tags/posts), [preview](http://wordpress.org/plugins/tags/preview), [featured-image](http://wordpress.org/plugins/tags/featured-image), [page-template](http://wordpress.org/plugins/tags/page-template)  
+**Requires at least:** 4.0  
+**Tested up to:** 4.0  
 **Stable tag:** trunk (master)  
 **License:** [GPLv2 or later](http://www.gnu.org/licenses/gpl-2.0.html)  
 
@@ -23,4 +23,8 @@ This **Customize Posts** plugin is not to be confused with 10up's [**Post Custom
 ### Edit posts and postmeta in the Customizer to preview them
 
 ![Edit posts and postmeta in the Customizer to preview them](assets/screenshot-1.png)
+
+### Customize link is moved to top of admin bar, and is made available to authors and editors in addition to administrators
+
+![Customize link is moved to top of admin bar, and is made available to authors and editors in addition to administrators](assets/screenshot-2.png)
 
