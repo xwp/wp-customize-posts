@@ -28,3 +28,14 @@ This **Customize Posts** plugin is not to be confused with 10up's [**Post Custom
 
 ![Customize link is moved to top of admin bar, and is made available to authors and editors in addition to administrators](assets/screenshot-2.png)
 
+## Changelog ##
+
+### 0.2.0 ###
+Initial release on WordPress.org. Key new features:
+
+* Postmeta can now be added, modified, and deleted—all of actions which are fully previewable.
+* Grant `customize` capability to authors and editors who normally can't access the Customizer, so they can edit posts there.
+* Move the “Customize” admin bar link to the top level, and add one for editors and authors.
+* Allow the Page Template and Featured Image to be modified and previewed.
+
+
