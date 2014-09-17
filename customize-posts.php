@@ -71,6 +71,9 @@ add_filter( 'user_has_cap', 'wp_customize_posts_grant_capability', 10, 3 );
  * @action admin_bar_menu
  */
 function wp_customize_posts_admin_bar_menu( $wp_admin_bar ) {
+	if ( ! current_user_can( 'customize' ) ) {
+		return;
+	}
 	if ( ! $wp_admin_bar->get_node( 'customize' ) ) {
 		// Copied from admin-bar.php
 		$current_url = ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
@@ -91,7 +94,6 @@ function wp_customize_posts_admin_bar_menu( $wp_admin_bar ) {
 	$customize_node->meta['title'] = __( 'View current page in the customizer', 'post-customizer' );
 	$wp_admin_bar->add_node( (array) $customize_node );
 }
-add_action( 'admin_bar_menu', 'wp_customize_posts_admin_bar_menu', 81 );
 
 /**
  * Add the right icon to the Customize
@@ -99,6 +101,10 @@ add_action( 'admin_bar_menu', 'wp_customize_posts_admin_bar_menu', 81 );
  * @todo Factor this out into proper class
  */
 function wp_customize_posts_admin_bar_init() {
+	if ( ! current_user_can( 'customize' ) ) {
+		return false;
+	}
 	wp_enqueue_style( 'customize-posts-admin-bar', plugin_dir_url( __FILE__ ) . 'css/admin-bar.css', array( 'admin-bar' ) );
+	add_action( 'admin_bar_menu', 'wp_customize_posts_admin_bar_menu', 81 );
 }
 add_action( 'admin_bar_init', 'wp_customize_posts_admin_bar_init' );
