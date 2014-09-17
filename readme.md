@@ -4,7 +4,7 @@
 Edit posts and postmeta in the Customizer. Stop editing your posts/postmeta blind!
 
 **Contributors:** [x-team](http://profiles.wordpress.org/x-team), [westonruter](http://profiles.wordpress.org/westonruter)  
-**Tags:** [customizer](http://wordpress.org/plugins/tags/customizer), [customize](http://wordpress.org/plugins/tags/customize), [posts](http://wordpress.org/plugins/tags/posts)  
+**Tags:** [customizer](http://wordpress.org/plugins/tags/customizer), [customize](http://wordpress.org/plugins/tags/customize), [posts](http://wordpress.org/plugins/tags/posts), [preview](http://wordpress.org/plugins/tags/preview), [featured-image](http://wordpress.org/plugins/tags/featured-image), [page-template](http://wordpress.org/plugins/tags/page-template)  
 **Requires at least:** 4.0  
 **Tested up to:** 4.0  
 **Stable tag:** trunk (master)  

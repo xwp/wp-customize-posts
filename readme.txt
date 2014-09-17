@@ -1,6 +1,6 @@
 === Customize Posts ===
 Contributors:      X-team, westonruter
-Tags:              customizer, customize, posts
+Tags:              customizer, customize, posts, preview, featured-image, page-template
 Requires at least: 4.0
 Tested up to:      4.0
 Stable tag:        trunk
