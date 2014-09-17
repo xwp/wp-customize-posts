@@ -59,3 +59,46 @@ function wp_customize_posts_grant_capability( $allcaps, $caps, $args ) {
 }
 
 add_filter( 'user_has_cap', 'wp_customize_posts_grant_capability', 10, 3 );
+
+/**
+ * Move the Customize link in the admin bar right after the Edit Post link
+ *
+ * @todo Factor this out into proper class
+ *
+ * Modified from Customizer Everywhere plugin: https://github.com/x-team/wp-customizer-everywhere/blob/3a43eef74d31aae209b1105aa0284c1a6326c31d/customizer-everywhere.php#L207-L220
+ *
+ * @param WP_Admin_Bar $wp_admin_bar
+ * @action admin_bar_menu
+ */
+function wp_customize_posts_admin_bar_menu( $wp_admin_bar ) {
+	if ( ! $wp_admin_bar->get_node( 'customize' ) ) {
+		// Copied from admin-bar.php
+		$current_url = ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+		$wp_admin_bar->add_menu( array(
+			'parent' => 'appearance',
+			'id'     => 'customize',
+			'title'  => __( 'Customize' ),
+			'href'   => add_query_arg( 'url', urlencode( $current_url ), wp_customize_url() ),
+			'meta'   => array(
+				'class' => 'hide-if-no-customize',
+			),
+		) );
+		add_action( 'wp_before_admin_bar_render', 'wp_customize_support_script' );
+	}
+	$customize_node = $wp_admin_bar->get_node( 'customize' );
+	$wp_admin_bar->remove_node( 'customize' );
+	$customize_node->parent = false;
+	$customize_node->meta['title'] = __( 'View current page in the customizer', 'post-customizer' );
+	$wp_admin_bar->add_node( (array) $customize_node );
+}
+add_action( 'admin_bar_menu', 'wp_customize_posts_admin_bar_menu', 81 );
+
+/**
+ * Add the right icon to the Customize
+ *
+ * @todo Factor this out into proper class
+ */
+function wp_customize_posts_admin_bar_init() {
+	wp_enqueue_style( 'customize-posts-admin-bar', plugin_dir_url( __FILE__ ) . 'css/admin-bar.css', array( 'admin-bar' ) );
+}
+add_action( 'admin_bar_init', 'wp_customize_posts_admin_bar_init' );
