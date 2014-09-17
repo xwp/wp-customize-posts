@@ -24,3 +24,7 @@ This **Customize Posts** plugin is not to be confused with 10up's [**Post Custom
 
 ![Edit posts and postmeta in the Customizer to preview them](assets/screenshot-1.png)
 
+### Customize link is moved to top of admin bar, and is made available to authors and editors in addition to administrators
+
+![Customize link is moved to top of admin bar, and is made available to authors and editors in addition to administrators](assets/screenshot-2.png)
+
