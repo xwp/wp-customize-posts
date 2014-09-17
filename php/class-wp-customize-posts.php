@@ -116,7 +116,8 @@ final class WP_Customize_Posts {
 		add_action( 'customize_controls_print_footer_scripts', array( 'WP_Post_Edit_Customize_Control', 'render_templates' ) );
 		add_action( 'wp_ajax_customize_post_data', array( $this, 'ajax_customize_post_data' ) );
 		add_action( 'customize_update_post', array( $this, 'update_post' ) );
-		add_filter( 'wp_customize_save_response', array( $this, 'export_new_postmeta_ids' )  );
+		add_filter( 'wp_customize_save_response', array( $this, 'export_new_postmeta_ids' ) );
+		add_action( 'customize_controls_init', 'wp_enqueue_media' );
 
 		// Override ajax handler with one that has the necessary filters
 		remove_action( 'wp_ajax_customize_save', array( $manager, 'save' ) );
@@ -150,6 +151,13 @@ final class WP_Customize_Posts {
 					'value' => $meta['meta_value'],
 					'is_serialized' => is_serialized( $meta['meta_value'], true ),
 				);
+			}
+		}
+
+		// Grab pseudo post fields (e.g. thumbnail_id)
+		foreach ( $this->get_post_pseudo_data_meta_mapping() as $data_key => $meta_key ) {
+			if ( ! isset( $data[ $data_key ] ) ) {
+				$data[ $data_key ] = get_post_meta( $post->ID, $meta_key, true );
 			}
 		}
 
