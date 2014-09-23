@@ -115,7 +115,7 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Status:', 'customize-posts' ) ?></label>
 				<select class="post-data post_status" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">
 					<?php foreach ( get_post_stati( array( 'internal' => false ) ) as $post_status ): ?>
-						<option value='<?php echo esc_attr( $post_status ) ?>'><?php echo esc_html( get_post_status_object( $post_status )->label ) ?></option>
+						<option value="<?php echo esc_attr( $post_status ) ?>" <?php selected( $post_status, $post->post_status ) ?>><?php echo esc_html( get_post_status_object( $post_status )->label ) ?></option>
 					<?php endforeach; ?>
 				</select>
 			</p>

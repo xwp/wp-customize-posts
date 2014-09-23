@@ -32,6 +32,9 @@ This **Customize Posts** plugin is not to be confused with 10up's [**Post Custom
 
 == Changelog ==
 
+= 0.2.1 =
+Supply missing `selected` attribute on `post_status` dropdown.
+
 = 0.2.0 =
 Initial release on WordPress.org. Key new features:
 

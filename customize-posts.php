@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Customize Posts
  * Description: Manage posts and postmeta via the customizer.
- * Version: 0.2.0
+ * Version: 0.2.1
  * Author: X-Team WP, Weston Ruter
  * Author URI: http://x-team.com/wordpress/
  * License: GPLv2+
