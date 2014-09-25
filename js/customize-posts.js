@@ -7,15 +7,89 @@
 	 * @type {Backbone.Model}
 	 */
 	PostData = Backbone.Model.extend( {
-		id: null,
+		id: null, // post ID
 		settingData: {}, // @todo should this be an array of settings?
 		controlContent: '',
+		dirty: {}, // @todo keep track if the post has been changed
+
+		initialize: function () {
+			this.set( 'dirty', new api.Value( false ) );
+		},
 
 		/**
-		 * Create the customizer control and setting for this post
+		 *
+		 * @returns {String}
 		 */
-		customize: function () {
-			self.editPost( this.id );
+		getCustomizeId: function () {
+			return self.createCustomizeId( this.id );
+		},
+
+		/**
+		 * Get the post's existing setting or create it if it doesn't exist.
+		 *
+		 * @returns {wp.customize.Value}
+		 */
+		getSetting: function () {
+			var customize_id, setting;
+			customize_id = this.getCustomizeId();
+			setting = api.has( customize_id );
+
+			if ( ! setting ) {
+				setting = api.create(
+					customize_id,
+					customize_id, // @todo what is this parameter for?
+					this.get( 'settingData' ),
+					{
+						transport: 'refresh',
+						previewer: api.previewer
+					}
+				);
+			}
+
+			return setting;
+		},
+
+		/**
+		 * Get the post's existing control or create it if it doesn't exist.
+		 *
+		 * @returns {wp.customize.controlConstructor.post_edit}
+		 */
+		getControl: function () {
+			var control, setting, customize_id, control_container;
+			customize_id = this.getCustomizeId();
+			control = api.control( customize_id );
+			if ( ! control ) {
+				setting = this.getSetting();
+
+				// Create container element for control
+				control_container = $( '<li/>' )
+					.addClass( 'customize-control' )
+					.addClass( 'customize-control-post_edit' );
+				control_container.hide(); // to be slid-down below
+				control_container.attr( 'id', 'customize-control-' + customize_id.replace( /\]/g, '' ).replace( /\[/g, '-' ) );
+				control_container.append( this.get( 'controlContent' ) );
+				api.control( 'selected_posts' ).container.after( control_container );
+
+				// Create control itself
+				control = new api.controlConstructor.post_edit( customize_id, {
+					params: {
+						settings: {
+							'default': setting.id
+						},
+						type: 'post_edit'
+					},
+					previewer: api.previewer
+				} );
+
+				api.control.add( customize_id, control );
+
+				control_container.slideDown();
+			}
+			return control;
+		},
+
+		removeControl: function () {
+			throw new Error( 'Not implemented. Remove the control, but then also remove the setting if it is not dirty.' ); // @todo
 		},
 
 		/**
@@ -210,8 +284,7 @@
 	 * @param post_id
 	 */
 	self.editPost = function ( post_id ) {
-		var customize_id, post_edit_control, post_data, control_container;
-		customize_id = self.createCustomizeId( post_id );
+		var post_data;
 
 		// @todo asset the post is in the collection, or asynchronously load the post data
 
@@ -220,49 +293,7 @@
 			throw new Error( 'No post data available. May need to implement async loading of post data on demand.' );
 		}
 
-		// Create setting
-		// @todo Move this into PostData, in getSetting()?
-		if ( ! api.has( customize_id ) ) {
-			api.create(
-				customize_id,
-				customize_id, // @todo what is this parameter for?
-				post_data.get( 'settingData' ),
-				{
-					transport: 'refresh',
-					previewer: api.previewer
-				}
-			);
-		}
-
-		// Create post_edit control
-		// @todo Move this into PostData, in getControl()?
-		post_edit_control = api.control( customize_id );
-		if ( ! post_edit_control ) {
-
-			// Create container element for control
-			control_container = $( '<li/>' )
-				.addClass( 'customize-control' )
-				.addClass( 'customize-control-post_edit' );
-			control_container.hide(); // to be slid-down below
-			control_container.attr( 'id', 'customize-control-' + customize_id.replace( /\]/g, '' ).replace( /\[/g, '-' ) );
-			control_container.append( post_data.get( 'controlContent' ) );
-			api.control( 'selected_posts' ).container.after( control_container );
-
-			// Create control itself
-			post_edit_control = new api.controlConstructor.post_edit( customize_id, {
-				params: {
-					settings: {
-						'default': customize_id
-					},
-					type: 'post_edit'
-				},
-				previewer: api.previewer
-			} );
-
-			api.control.add( customize_id, post_edit_control );
-
-			control_container.slideDown();
-		}
+		return post_data.getControl();
 	};
 
 	/**
