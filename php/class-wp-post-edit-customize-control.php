@@ -81,7 +81,7 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 		<div class="customize-control-content">
 			<p>
 				<?php $id = "posts[$post->ID][post_title]"; ?>
-				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Title:', 'customize-posts', 'customize-posts' ) ?></label>
+				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Title:', 'customize-posts' ) ?></label>
 				<input type="text" class="post-data post_title" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>" value="<?php echo esc_attr( $post->post_title ) ?>" >
 			</p>
 			<p>
