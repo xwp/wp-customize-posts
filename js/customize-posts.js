@@ -1,7 +1,7 @@
 /*global jQuery, wp, _, Backbone, _wpCustomizePostsSettings */
 
 ( function ( api, $ ) {
-	var PostData, PostsCollection, self;
+	var PostData, PostDataCollection, self;
 
 	/**
 	 * @type {Backbone.Model}
@@ -35,7 +35,7 @@
 	/**
 	 * @type {Backbone.Model}
 	 */
-	PostsCollection = Backbone.Collection.extend( {
+	PostDataCollection = Backbone.Collection.extend( {
 		model: PostData,
 		comparator: function ( model ) {
 			return model.getTitle();
@@ -49,11 +49,11 @@
 	 */
 	self = api.Posts = $.extend( {}, _wpCustomizePostsSettings, {
 		PostData: PostData,
-		PostsCollection: PostsCollection,
+		PostDataCollection: PostDataCollection,
 		isPostPreview: new api.Value( null ),
 		isSingular: new api.Value( null ),
 		queriedPostId: new api.Value( null ),
-		collection: new PostsCollection(),
+		collection: new PostDataCollection(),
 		accordionSection: null
 	} );
 
