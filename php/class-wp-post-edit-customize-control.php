@@ -59,12 +59,15 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 	/**
 	 * @param int|WP_Post $post
 	 * @return string
+	 * @todo This should return an array of controls?
 	 */
 	static function get_fields( $post ) {
 		global $wp_customize;
 
 		$post = get_post( $post );
-		$data = $wp_customize->posts->get_post_setting_value( $post );
+		// @todo Should this be devoid of data, which can be supplied via JS?
+		// @todo We should leverage the built-in $this->get_link( $key ) instead of manually looking for changes
+		$data = $wp_customize->posts->get_post_settings_data( $post );
 
 		require_once( ABSPATH . 'wp-admin/includes/theme.php' );
 		require_once( ABSPATH . 'wp-admin/includes/template.php' );

@@ -86,7 +86,7 @@ final class WP_Customize_Posts {
 
 		foreach ( $this->get_customized_posts() as $post ) {
 			$setting_id = $this->get_post_edit_setting_id( $post->ID );
-			$value = $this->get_post_setting_value( $post );
+			$value = $this->get_post_settings_data( $post );
 
 			$this->manager->add_setting( $setting_id, array(
 				'default'              => $value,
@@ -132,11 +132,12 @@ final class WP_Customize_Posts {
 	 * @param int|WP_Post $post
 	 * @return array
 	 */
-	public function get_post_setting_value( $post ) {
+	public function get_post_settings_data( $post ) {
 
 		$post = get_post( $post );
 		$this->override_post_data( $post );
 		$data = $post->to_array();
+		unset( $data['ID'] );
 		$data['meta'] = array();
 
 		require_once( ABSPATH . 'wp-admin/includes/post.php' );
@@ -312,9 +313,6 @@ final class WP_Customize_Posts {
 	 */
 	public function sanitize_setting( $data, WP_Customize_Setting $setting ) {
 		$post_id = $this->parse_setting_id( $setting->id );
-		if ( empty( $data['ID'] ) || absint( $post_id ) !== (int) $data['ID'] ) {
-			return null;
-		}
 		$existing_post = get_post( $post_id );
 		if ( ! $existing_post ) {
 			return null;
@@ -769,7 +767,7 @@ final class WP_Customize_Posts {
 
 		$data = array(
 			'id' => $post->ID,
-			'settingData' => $value = $this->get_post_setting_value( $post ),
+			'settingsData' => $this->get_post_settings_data( $post ),
 			'controlContent' => WP_Post_Edit_Customize_Control::get_fields( $post ),
 		);
 

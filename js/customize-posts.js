@@ -8,7 +8,7 @@
 	 */
 	PostData = Backbone.Model.extend( {
 		id: null, // post ID
-		settingData: {}, // @todo should this be an array of settings?
+		settingsData: {}, // @todo should this be an array of settings?
 		controlContent: '',
 		dirty: {}, // @todo keep track if the post has been changed
 
@@ -34,11 +34,13 @@
 			customize_id = this.getCustomizeId();
 			setting = api.has( customize_id );
 
+			// @todo here we need to loop over this.get( 'settingsData' ) and create a setting for each
+
 			if ( ! setting ) {
 				setting = api.create(
 					customize_id,
 					customize_id, // @todo what is this parameter for?
-					this.get( 'settingData' ),
+					this.get( 'settingsData' ),
 					{
 						transport: 'refresh',
 						previewer: api.previewer
@@ -101,7 +103,7 @@
 			if ( setting ) {
 				return setting().post_title;
 			} else {
-				return this.get( 'settingData' ).post_title;
+				return this.get( 'settingsData' ).post_title;
 			}
 		}
 	} );
