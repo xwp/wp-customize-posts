@@ -12,22 +12,6 @@
 		control: '', // @todo this should be controlContent
 
 		/**
-		 *
-		 * @returns {wp.customize.Setting|undefined}
-		 */
-		getSetting: function () {
-			return api( self.createCustomizeId( this.id ) );
-		},
-
-		/**
-		 *
-		 * @returns {wp.customize.Control|undefined}
-		 */
-		getControl: function () {
-			return api.control( self.createCustomizeId( this.id ) );
-		},
-
-		/**
 		 * Create the customizer control and setting for this post
 		 */
 		customize: function () {
