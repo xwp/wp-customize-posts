@@ -8,8 +8,8 @@
 	 */
 	PostData = Backbone.Model.extend( {
 		id: null,
-		setting: {}, // @todo this should be settingData
-		control: '', // @todo this should be controlContent
+		settingData: {}, // @todo should this be an array of settings?
+		controlContent: '',
 
 		/**
 		 * Create the customizer control and setting for this post
@@ -27,7 +27,7 @@
 			if ( setting ) {
 				return setting().post_title;
 			} else {
-				return this.get( 'setting' ).post_title;
+				return this.get( 'settingData' ).post_title;
 			}
 		}
 	} );
@@ -221,11 +221,12 @@
 		}
 
 		// Create setting
+		// @todo Move this into PostData, in getSetting()?
 		if ( ! api.has( customize_id ) ) {
 			api.create(
 				customize_id,
 				customize_id, // @todo what is this parameter for?
-				post_data.get( 'setting' ),
+				post_data.get( 'settingData' ),
 				{
 					transport: 'refresh',
 					previewer: api.previewer
@@ -234,6 +235,7 @@
 		}
 
 		// Create post_edit control
+		// @todo Move this into PostData, in getControl()?
 		post_edit_control = api.control( customize_id );
 		if ( ! post_edit_control ) {
 
@@ -243,7 +245,7 @@
 				.addClass( 'customize-control-post_edit' );
 			control_container.hide(); // to be slid-down below
 			control_container.attr( 'id', 'customize-control-' + customize_id.replace( /\]/g, '' ).replace( /\[/g, '-' ) );
-			control_container.append( post_data.get( 'control' ) );
+			control_container.append( post_data.get( 'controlContent' ) );
 			api.control( 'selected_posts' ).container.after( control_container );
 
 			// Create control itself
@@ -304,7 +306,7 @@
 			self.collection.each( function ( post_data ) {
 				var option;
 				if ( ! api.control( self.createCustomizeId( post_data.id ) ) ) {
-					option = new Option( post_data.get( 'setting' ).post_title, post_data.get( 'id' ) );
+					option = new Option( post_data.getTitle(), post_data.get( 'id' ) );
 					control.select.append( option );
 				}
 			} );

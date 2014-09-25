@@ -769,8 +769,8 @@ final class WP_Customize_Posts {
 
 		$data = array(
 			'id' => $post->ID,
-			'setting' => $value = $this->get_post_setting_value( $post ),
-			'control' => WP_Post_Edit_Customize_Control::get_fields( $post ),
+			'settingData' => $value = $this->get_post_setting_value( $post ),
+			'controlContent' => WP_Post_Edit_Customize_Control::get_fields( $post ),
 		);
 
 		return $data;
