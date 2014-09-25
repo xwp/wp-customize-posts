@@ -228,7 +228,7 @@
 				post_data.get( 'setting' ),
 				{
 					transport: 'refresh',
-					previewer: api( 'selected_posts' ).previewer
+					previewer: api.previewer
 				}
 			);
 		}
@@ -254,7 +254,7 @@
 					},
 					type: 'post_edit'
 				},
-				previewer: api( 'selected_posts' ).previewer
+				previewer: api.previewer
 			} );
 
 			api.control.add( customize_id, post_edit_control );
