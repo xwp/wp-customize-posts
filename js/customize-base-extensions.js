@@ -1,5 +1,28 @@
 /*global wp */
 
+
+/**
+ * Given a multidimensional ID/name like "posts[519][post_title]"
+ * return an object containing the 'base' property 'posts',
+ * and a 'keys' property containing [ '519', 'post_title' ].
+ *
+ * Port of logic in WP_Customize_Setting::__construct()
+ *
+ * @param {String} id
+ * @returns {Object}
+ */
+wp.customize.parseIdData = function ( id ) {
+	var id_data = {
+		base: '',
+		keys: []
+	};
+
+	// Parse the ID for array keys.
+	id_data.keys = id.replace( /\]/g, '' ).split( /\[/ );
+	id_data.base = id_data.keys.shift();
+	return id_data;
+};
+
 /**
  * Multidimensional helper function.
  *

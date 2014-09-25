@@ -115,7 +115,7 @@ final class WP_Customize_Posts {
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'export_panel_data' ) );
 		add_action( 'customize_controls_print_footer_scripts', array( 'WP_Post_Edit_Customize_Control', 'render_templates' ) );
 		add_action( 'wp_ajax_customize_post_data', array( $this, 'ajax_customize_post_data' ) );
-		add_action( 'customize_update_post', array( $this, 'update_post' ) );
+		add_action( 'customize_update_post', array( $this, 'update_post' ), 10, 2 );
 		add_filter( 'wp_customize_save_response', array( $this, 'export_new_postmeta_ids' ) );
 		add_action( 'customize_controls_init', 'wp_enqueue_media' );
 
@@ -489,17 +489,20 @@ final class WP_Customize_Posts {
 	 * $data has already been sanitized.
 	 *
 	 * @param array $data
+	 * @param WP_Customize_Setting $setting
 	 * @return bool
 	 */
-	public function update_post( array $data ) {
+	public function update_post( array $data, WP_Customize_Setting $setting ) {
 		if ( empty( $data ) ) {
 			return false;
 		}
-		if ( empty( $data['ID'] ) ) {
-			trigger_error( 'customize_update_post requires an array including an ID' );
-			return  false;
+		$post_id = $this->parse_setting_id( $setting->id );
+		if ( empty( $post_id ) ) {
+			trigger_error( 'customize_update_post unable to determine post ID' );
+			return false;
 		}
-		if ( ! $this->current_user_can_edit_post( $data['ID'] ) ) {
+		$data['ID'] = $post_id;
+		if ( ! $this->current_user_can_edit_post( $post_id ) ) {
 			return false;
 		}
 
@@ -522,7 +525,7 @@ final class WP_Customize_Posts {
 			if ( $is_insert ) {
 				$unique = false;
 				$temp_meta_id = $meta_id;
-				$meta_id = add_post_meta( $data['ID'], $meta['key'], $meta['value'], $unique ); // @todo handle error
+				$meta_id = add_post_meta( $post_id, $meta['key'], $meta['value'], $unique ); // @todo handle error
 				if ( $meta_id ) {
 					$this->temp_meta_id_mapping[ $temp_meta_id ] = $meta_id;
 				}
@@ -536,7 +539,7 @@ final class WP_Customize_Posts {
 		// Handle pseudo post fields which are mapped to postmeta
 		foreach ( $this->get_post_pseudo_data_meta_mapping() as $data_key => $meta_key ) {
 			if ( isset( $data[ $data_key ] ) && ! in_array( $data_key, $update_post_arg_keys ) ) {
-				update_post_meta( $data['ID'], $meta_key, wp_slash( $data[ $data_key ] ) ); // assuming keys are for singular postmeta
+				update_post_meta( $post_id, $meta_key, wp_slash( $data[ $data_key ] ) ); // assuming keys are for singular postmeta
 			}
 		}
 

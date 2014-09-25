@@ -591,17 +591,6 @@
 		},
 
 		/**
-		 * Given a multidimensional ID/name like "posts[519][meta][single1][0]",
-		 * return the keys as an array, like: [ '519', 'meta', 'single1', '0' ]
-		 *
-		 * @param {String} id
-		 * @returns {Array}
-		 */
-		parseKeys: function ( id ) {
-			return id.replace( /^.*?\[/, '' ).replace( /\]$/, '' ).split( /\]\[/ );
-		},
-
-		/**
 		 * Update the control's fields with the values in the setting
 		 */
 		populateFields: function () {
@@ -613,7 +602,7 @@
 			fields.each( function () {
 				var field, keys, value;
 				field = $( this );
-				keys = control.parseKeys( field.prop( 'name' ) );
+				keys = api.parseIdData( field.prop( 'name' ) ).keys;
 				keys.shift(); // remove ID
 				value = api.multidimensionalGet( control.setting(), keys );
 				if ( field.val() !== value ) {
@@ -636,7 +625,7 @@
 			control.container.find( '[name]' ).each( function () {
 				var input, keys, value;
 				input = $( this );
-				keys = control.parseKeys( input.prop( 'name' ) );
+				keys = api.parseIdData( input.prop( 'name' ) ).keys;
 				keys.shift(); // get rid of ID
 				if ( input.data( 'deleted' ) ) {
 					value = null;
