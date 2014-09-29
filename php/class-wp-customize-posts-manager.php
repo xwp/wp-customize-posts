@@ -7,7 +7,7 @@
  * @package WordPress
  * @subpackage Customize
  */
-final class WP_Customize_Posts {
+final class WP_Customize_Posts_Manager {
 
 	/**
 	 * WP_Customize_Manager instance.
