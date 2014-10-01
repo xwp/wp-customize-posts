@@ -322,6 +322,7 @@ final class WP_Customize_Posts_Manager {
 		 * Handle core post data
 		 */
 		$data = sanitize_post( $data, 'db' ); // @todo: will meta and taxonomies get stripped out?
+		unset( $data['ID'] );
 
 		// @todo apply wp_insert_post_data filter here too?
 
