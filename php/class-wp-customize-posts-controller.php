@@ -7,15 +7,15 @@
  * @package WordPress
  * @subpackage Customize
  */
-final class WP_Customize_Posts_Manager {
+final class WP_Customize_Posts_Controller {
 
 	/**
-	 * WP_Customize_Manager instance.
+	 * WP_Customize_Posts_Plugin instance.
 	 *
 	 * @access public
-	 * @var WP_Customize_Manager
+	 * @var WP_Customize_Posts_Plugin
 	 */
-	public $manager;
+	public $plugin;
 
 	/**
 	 * WP_Customize_Posts_Preview instance.
@@ -53,10 +53,16 @@ final class WP_Customize_Posts_Manager {
 	 *
 	 * @access public
 	 *
-	 * @param WP_Customize_Manager $manager Customize manager bootstrap instance.
+	 * @param WP_Customize_Posts_Plugin $plugin
 	 */
-	public function __construct( WP_Customize_Manager $manager ) {
-		$this->manager = $manager;
+	public function __construct( WP_Customize_Posts_Plugin $plugin ) {
+		$this->plugin = $plugin;
+		$this->plugin->manager->posts = $this;
+
+		require_once( CUSTOMIZE_POSTS_PLUGIN_PATH . 'php/class-wp-customize-posts-preview.php' );
+		require_once( CUSTOMIZE_POSTS_PLUGIN_PATH . 'php/class-wp-customize-posts-access.php' );
+		require_once( CUSTOMIZE_POSTS_PLUGIN_PATH . 'php/class-wp-post-edit-customize-control.php' );
+		require_once( CUSTOMIZE_POSTS_PLUGIN_PATH . 'php/class-wp-post-select-customize-control.php' );
 
 		$section_id = 'posts';
 
@@ -64,7 +70,7 @@ final class WP_Customize_Posts_Manager {
 		$selected_posts = array();
 
 		$bottom_position = 900; // Before widgets
-		$this->manager->add_section( $section_id, array(
+		$this->plugin->manager->add_section( $section_id, array(
 			'title'      => __( 'Posts' ),
 			'priority'   => $bottom_position,
 			'capability' => 'edit_posts',
@@ -74,31 +80,31 @@ final class WP_Customize_Posts_Manager {
 		// @todo Add a setting-less control for adding additional post controls?
 		// @todo Allow post controls to be dynamically removed
 
-		$this->manager->add_setting( 'selected_posts', array(
+		$this->plugin->manager->add_setting( 'selected_posts', array(
 			'default'              => $selected_posts,
 			'capability'           => 'edit_posts',
 			'type'                 => 'global_variable',
 		) );
-		$control = new WP_Post_Select_Customize_Control( $this->manager, 'selected_posts', array(
+		$control = new WP_Post_Select_Customize_Control( $this->plugin, 'selected_posts', array(
 			'section' => $section_id,
 		) );
-		$this->manager->add_control( $control );
+		$this->plugin->manager->add_control( $control );
 
 		foreach ( $this->get_customized_posts() as $post ) {
 			$setting_id = $this->get_post_edit_setting_id( $post->ID );
 			$value = $this->get_post_settings_data( $post );
 
-			$this->manager->add_setting( $setting_id, array(
+			$this->plugin->manager->add_setting( $setting_id, array(
 				'default'              => $value,
 				'type'                 => 'post',
 				'capability'           => get_post_type_object( $post->post_type )->cap->edit_posts, // Note that the edit_post cap has already been checked in the current_user_can_edit_post() method
 				'sanitize_callback'    => array( $this, 'sanitize_setting' ),
 			) );
 
-			$control = new WP_Post_Edit_Customize_Control( $this->manager, $setting_id, array(
+			$control = new WP_Post_Edit_Customize_Control( $this->plugin, $setting_id, array(
 				'section' => $section_id,
 			) );
-			$this->manager->add_control( $control );
+			$this->plugin->manager->add_control( $control );
 
 			// @todo This needs to be dynamic. There needs to be a mechanism to get a setting value via JS, along with params like hierarchicahl, protected meta, etc
 		}
@@ -120,10 +126,10 @@ final class WP_Customize_Posts_Manager {
 		add_action( 'customize_controls_init', 'wp_enqueue_media' );
 
 		// Override ajax handler with one that has the necessary filters
-		remove_action( 'wp_ajax_customize_save', array( $manager, 'save' ) );
+		remove_action( 'wp_ajax_customize_save', array( $this->plugin->manager, 'save' ) );
 		add_action( 'wp_ajax_customize_save', array( $this, 'ajax_customize_save_override' ) );
 
-		$this->preview = new WP_Customize_Posts_Preview( $this->manager );
+		$this->preview = new WP_Customize_Posts_Preview( $this->plugin );
 	}
 
 	/**
@@ -192,7 +198,7 @@ final class WP_Customize_Posts_Manager {
 		$posts = array();
 
 		// Create posts settings dynamically based on which settings are coming from customizer
-		// @todo Would be better to access private $this->manager->_post_values
+		// @todo Would be better to access private $this->plugin->manager->_post_values
 		if ( isset( $_POST['customized'] ) ) {
 			$post_values = json_decode( wp_unslash( $_POST['customized'] ), true );
 			foreach ( $post_values as $setting_id => $post_value ) {
@@ -568,7 +574,7 @@ final class WP_Customize_Posts_Manager {
 	 *
 	 * The body of this method is taken from a patch on #29098, adapted with:
 	 *
-	 * s/\$this/$this->manager/g
+	 * s/\$this/$this->plugin->manager/g
 	 * s/->settings /->settings() /
 	 *
 	 * See https://github.com/x-team/wordpress-develop/pull/27.diff
@@ -576,23 +582,23 @@ final class WP_Customize_Posts_Manager {
 	 * @since 3.4.0
 	 */
 	public function ajax_customize_save_override() {
-		if ( ! $this->manager->is_preview() ) {
+		if ( ! $this->plugin->manager->is_preview() ) {
 			wp_send_json_error( 'not_preview' );
 		}
 
-		$action = 'save-customize_' . $this->manager->get_stylesheet();
+		$action = 'save-customize_' . $this->plugin->manager->get_stylesheet();
 		if ( ! check_ajax_referer( $action, 'nonce', false ) ) {
 			wp_send_json_error( 'cheatin' );
 		}
 
 		// Do we have to switch themes?
-		if ( ! $this->manager->is_theme_active() ) {
+		if ( ! $this->plugin->manager->is_theme_active() ) {
 			// Temporarily stop previewing the theme to allow switch_themes()
 			// to operate properly.
-			$this->manager->stop_previewing_theme();
-			switch_theme( $this->manager->get_stylesheet() );
+			$this->plugin->manager->stop_previewing_theme();
+			switch_theme( $this->plugin->manager->get_stylesheet() );
 			update_option( 'theme_switched_via_customizer', true );
-			$this->manager->start_previewing_theme();
+			$this->plugin->manager->start_previewing_theme();
 		}
 
 		/**
@@ -601,11 +607,11 @@ final class WP_Customize_Posts_Manager {
 		 *
 		 * @since 3.4.0
 		 *
-		 * @param WP_Customize_Manager $this->manager WP_Customize_Manager instance.
+		 * @param WP_Customize_Manager $this->plugin->manager WP_Customize_Manager instance.
 		 */
-		do_action( 'customize_save', $this->manager );
+		do_action( 'customize_save', $this->plugin->manager );
 
-		foreach ( $this->manager->settings() as $setting ) {
+		foreach ( $this->plugin->manager->settings() as $setting ) {
 			$setting->save();
 		}
 
@@ -614,9 +620,9 @@ final class WP_Customize_Posts_Manager {
 		 *
 		 * @since 3.6.0
 		 *
-		 * @param WP_Customize_Manager $this->manager WP_Customize_Manager instance.
+		 * @param WP_Customize_Manager $this->plugin->manager WP_Customize_Manager instance.
 		 */
-		do_action( 'customize_save_after', $this->manager );
+		do_action( 'customize_save_after', $this->plugin->manager );
 
 		/**
 		 * Filter response data for customize_save Ajax request.
@@ -624,9 +630,9 @@ final class WP_Customize_Posts_Manager {
 		 * @since 4.1.0
 		 *
 		 * @param array $data
-		 * @param WP_Customize_Manager $this->manager WP_Customize_Manager instance.
+		 * @param WP_Customize_Manager $this->plugin->manager WP_Customize_Manager instance.
 		 */
-		$response = apply_filters( 'wp_customize_save_response', array(), $this->manager );
+		$response = apply_filters( 'wp_customize_save_response', array(), $this->plugin->manager );
 		wp_send_json_success( $response );
 	}
 
@@ -699,11 +705,11 @@ final class WP_Customize_Posts_Manager {
 		if ( ! isset( $customized_posts[ $post->ID ] ) ) {
 			return null;
 		}
-		$setting = $this->manager->get_setting( $this->get_post_edit_setting_id( $post->ID ) );
+		$setting = $this->plugin->manager->get_setting( $this->get_post_edit_setting_id( $post->ID ) );
 		if ( ! $setting ) {
 			return null;
 		}
-		$post_overrides = $this->manager->post_value( $setting );
+		$post_overrides = $this->plugin->manager->post_value( $setting );
 		return $post_overrides;
 	}
 
