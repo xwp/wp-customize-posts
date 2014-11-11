@@ -3,13 +3,13 @@
  * Plugin Name: Customize Posts
  * Description: Manage posts and postmeta via the customizer.
  * Version: 0.2.1
- * Author: X-Team WP, Weston Ruter
- * Author URI: http://x-team.com/wordpress/
+ * Author: XWP, Weston Ruter
+ * Author URI: https://xwp.co/
  * License: GPLv2+
  */
 
 /**
- * Copyright (c) 2014 X-Team (http://x-team.com/)
+ * Copyright (c) 2014 XWP (https://xwp.co/)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 or, at
@@ -65,7 +65,7 @@ add_filter( 'user_has_cap', 'wp_customize_posts_grant_capability', 10, 3 );
  *
  * @todo Factor this out into proper class
  *
- * Modified from Customizer Everywhere plugin: https://github.com/x-team/wp-customizer-everywhere/blob/3a43eef74d31aae209b1105aa0284c1a6326c31d/customizer-everywhere.php#L207-L220
+ * Modified from Customizer Everywhere plugin: https://github.com/xwp/wp-customizer-everywhere/blob/3a43eef74d31aae209b1105aa0284c1a6326c31d/customizer-everywhere.php#L207-L220
  *
  * @param WP_Admin_Bar $wp_admin_bar
  * @action admin_bar_menu
