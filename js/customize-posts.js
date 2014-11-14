@@ -1,37 +1,97 @@
 /*global jQuery, wp, _, Backbone, _wpCustomizePostsSettings */
 
 ( function ( api, $ ) {
-	var PostData, PostsCollection, self;
+	var PostData, PostDataCollection, self;
 
 	/**
 	 * @type {Backbone.Model}
 	 */
 	PostData = Backbone.Model.extend( {
-		id: null,
-		setting: {}, // @todo this should be settingData
-		control: '', // @todo this should be controlContent
+		id: null, // post ID
+		settingsData: {}, // @todo should this be an array of settings?
+		controlContent: '',
+		dirty: {}, // @todo keep track if the post has been changed
+
+		initialize: function () {
+			this.set( 'dirty', new api.Value( false ) );
+		},
 
 		/**
 		 *
-		 * @returns {wp.customize.Setting|undefined}
+		 * @returns {String}
+		 */
+		getCustomizeId: function () {
+			return self.createCustomizeId( this.id );
+		},
+
+		/**
+		 * Get the post's existing setting or create it if it doesn't exist.
+		 *
+		 * @returns {wp.customize.Value}
 		 */
 		getSetting: function () {
-			return api( self.createCustomizeId( this.id ) );
+			var customize_id, setting;
+			customize_id = this.getCustomizeId();
+			setting = api.has( customize_id );
+
+			// @todo here we need to loop over this.get( 'settingsData' ) and create a setting for each
+
+			if ( ! setting ) {
+				setting = api.create(
+					customize_id,
+					customize_id, // @todo what is this parameter for?
+					this.get( 'settingsData' ),
+					{
+						transport: 'refresh',
+						previewer: api.previewer
+					}
+				);
+			}
+
+			return setting;
 		},
 
 		/**
+		 * Get the post's existing control or create it if it doesn't exist.
 		 *
-		 * @returns {wp.customize.Control|undefined}
+		 * @returns {wp.customize.controlConstructor.post_edit}
 		 */
 		getControl: function () {
-			return api.control( self.createCustomizeId( this.id ) );
+			var control, setting, customize_id, control_container;
+			customize_id = this.getCustomizeId();
+			control = api.control( customize_id );
+			if ( ! control ) {
+				setting = this.getSetting();
+
+				// Create container element for control
+				control_container = $( '<li/>' )
+					.addClass( 'customize-control' )
+					.addClass( 'customize-control-post_edit' );
+				control_container.hide(); // to be slid-down below
+				control_container.attr( 'id', 'customize-control-' + customize_id.replace( /\]/g, '' ).replace( /\[/g, '-' ) );
+				control_container.append( this.get( 'controlContent' ) );
+				api.control( 'selected_posts' ).container.after( control_container );
+
+				// Create control itself
+				control = new api.controlConstructor.post_edit( customize_id, {
+					params: {
+						settings: {
+							'default': setting.id
+						},
+						type: 'post_edit'
+					},
+					previewer: api.previewer
+				} );
+
+				api.control.add( customize_id, control );
+
+				control_container.slideDown();
+			}
+			return control;
 		},
 
-		/**
-		 * Create the customizer control and setting for this post
-		 */
-		customize: function () {
-			self.editPost( this.id );
+		removeControl: function () {
+			throw new Error( 'Not implemented. Remove the control, but then also remove the setting if it is not dirty.' ); // @todo
 		},
 
 		/**
@@ -43,7 +103,7 @@
 			if ( setting ) {
 				return setting().post_title;
 			} else {
-				return this.get( 'setting' ).post_title;
+				return this.get( 'settingsData' ).post_title;
 			}
 		}
 	} );
@@ -51,7 +111,7 @@
 	/**
 	 * @type {Backbone.Model}
 	 */
-	PostsCollection = Backbone.Collection.extend( {
+	PostDataCollection = Backbone.Collection.extend( {
 		model: PostData,
 		comparator: function ( model ) {
 			return model.getTitle();
@@ -65,11 +125,11 @@
 	 */
 	self = api.Posts = $.extend( {}, _wpCustomizePostsSettings, {
 		PostData: PostData,
-		PostsCollection: PostsCollection,
+		PostDataCollection: PostDataCollection,
 		isPostPreview: new api.Value( null ),
 		isSingular: new api.Value( null ),
 		queriedPostId: new api.Value( null ),
-		collection: new PostsCollection(),
+		collection: new PostDataCollection(),
 		accordionSection: null
 	} );
 
@@ -226,8 +286,7 @@
 	 * @param post_id
 	 */
 	self.editPost = function ( post_id ) {
-		var customize_id, post_edit_control, post_data, control_container;
-		customize_id = self.createCustomizeId( post_id );
+		var post_data;
 
 		// @todo asset the post is in the collection, or asynchronously load the post data
 
@@ -236,47 +295,7 @@
 			throw new Error( 'No post data available. May need to implement async loading of post data on demand.' );
 		}
 
-		// Create setting
-		if ( ! api.has( customize_id ) ) {
-			api.create(
-				customize_id,
-				customize_id, // @todo what is this parameter for?
-				post_data.get( 'setting' ),
-				{
-					transport: 'refresh',
-					previewer: api( 'selected_posts' ).previewer
-				}
-			);
-		}
-
-		// Create post_edit control
-		post_edit_control = api.control( customize_id );
-		if ( ! post_edit_control ) {
-
-			// Create container element for control
-			control_container = $( '<li/>' )
-				.addClass( 'customize-control' )
-				.addClass( 'customize-control-post_edit' );
-			control_container.hide(); // to be slid-down below
-			control_container.attr( 'id', 'customize-control-' + customize_id.replace( /\]/g, '' ).replace( /\[/g, '-' ) );
-			control_container.append( post_data.get( 'control' ) );
-			api.control( 'selected_posts' ).container.after( control_container );
-
-			// Create control itself
-			post_edit_control = new api.controlConstructor.post_edit( customize_id, {
-				params: {
-					settings: {
-						'default': customize_id
-					},
-					type: 'post_edit'
-				},
-				previewer: api( 'selected_posts' ).previewer
-			} );
-
-			api.control.add( customize_id, post_edit_control );
-
-			control_container.slideDown();
-		}
+		return post_data.getControl();
 	};
 
 	/**
@@ -320,7 +339,7 @@
 			self.collection.each( function ( post_data ) {
 				var option;
 				if ( ! api.control( self.createCustomizeId( post_data.id ) ) ) {
-					option = new Option( post_data.get( 'setting' ).post_title, post_data.get( 'id' ) );
+					option = new Option( post_data.getTitle(), post_data.get( 'id' ) );
 					control.select.append( option );
 				}
 			} );
@@ -572,17 +591,6 @@
 		},
 
 		/**
-		 * Given a multidimensional ID/name like "posts[519][meta][single1][0]",
-		 * return the keys as an array, like: [ '519', 'meta', 'single1', '0' ]
-		 *
-		 * @param {String} id
-		 * @returns {Array}
-		 */
-		parseKeys: function ( id ) {
-			return id.replace( /^.*?\[/, '' ).replace( /\]$/, '' ).split( /\]\[/ );
-		},
-
-		/**
 		 * Update the control's fields with the values in the setting
 		 */
 		populateFields: function () {
@@ -594,7 +602,7 @@
 			fields.each( function () {
 				var field, keys, value;
 				field = $( this );
-				keys = control.parseKeys( field.prop( 'name' ) );
+				keys = api.parseIdData( field.prop( 'name' ) ).keys;
 				keys.shift(); // remove ID
 				value = api.multidimensionalGet( control.setting(), keys );
 				if ( field.val() !== value ) {
@@ -617,7 +625,7 @@
 			control.container.find( '[name]' ).each( function () {
 				var input, keys, value;
 				input = $( this );
-				keys = control.parseKeys( input.prop( 'name' ) );
+				keys = api.parseIdData( input.prop( 'name' ) ).keys;
 				keys.shift(); // get rid of ID
 				if ( input.data( 'deleted' ) ) {
 					value = null;

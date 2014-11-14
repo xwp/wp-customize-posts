@@ -9,6 +9,14 @@
 class WP_Post_Select_Customize_Control extends WP_Customize_Control {
 
 	/**
+	 * WP_Customize_Posts_Plugin instance.
+	 *
+	 * @access public
+	 * @var WP_Customize_Posts_Plugin
+	 */
+	public $plugin;
+
+	/**
 	 * @access public
 	 * @var string
 	 */
@@ -19,13 +27,14 @@ class WP_Post_Select_Customize_Control extends WP_Customize_Control {
 	 *
 	 * @uses WP_Customize_Control::__construct()
 	 *
-	 * @param WP_Customize_Manager $manager
+	 * @param WP_Customize_Posts_Plugin $plugin
 	 * @param string $id
 	 * @param array $args
 	 */
-	public function __construct( $manager, $id, $args = array() ) {
+	public function __construct( $plugin, $id, $args = array() ) {
+		$this->plugin = $plugin;
 		$this->label = __( 'Select post to edit:', 'customize-posts' );
-		parent::__construct( $manager, $id, $args );
+		parent::__construct( $plugin->manager, $id, $args );
 	}
 
 	/**

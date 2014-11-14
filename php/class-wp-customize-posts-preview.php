@@ -10,12 +10,12 @@
 final class WP_Customize_Posts_Preview {
 
 	/**
-	 * WP_Customize_Manager instance.
+	 * WP_Customize_Posts_Plugin instance.
 	 *
 	 * @access public
-	 * @var WP_Customize_Manager
+	 * @var WP_Customize_Posts_Plugin
 	 */
-	public $manager;
+	public $plugin;
 
 	/**
 	 * In the preview, keep track of all posts queried during the execution of
@@ -30,10 +30,10 @@ final class WP_Customize_Posts_Preview {
 	 *
 	 * @access public
 	 *
-	 * @param WP_Customize_Manager $manager Customize manager bootstrap instance.
+	 * @param WP_Customize_Posts_Plugin $plugin
 	 */
-	public function __construct( WP_Customize_Manager $manager ) {
-		$this->manager = $manager;
+	public function __construct( WP_Customize_Posts_Plugin $plugin ) {
+		$this->plugin = $plugin;
 
 		// @todo The WP_Post class does not provide any facility to filter post fields
 		add_action( 'customize_preview_init', array( $this, 'customize_preview_init' ) );
@@ -62,7 +62,7 @@ final class WP_Customize_Posts_Preview {
 	 */
 	public function preview_query_get_posts( array $posts ) {
 		foreach ( $posts as &$post ) {
-			$this->manager->posts->override_post_data( $post );
+			$this->plugin->controller->override_post_data( $post );
 		}
 		return $posts;
 	}
@@ -82,7 +82,7 @@ final class WP_Customize_Posts_Preview {
 			return;
 		}
 
-		$this->manager->posts->override_post_data( $post );
+		$this->plugin->controller->override_post_data( $post );
 		$prevent_setup_postdata_recursion = true;
 		setup_postdata( $post );
 		$prevent_setup_postdata_recursion = false;
@@ -98,10 +98,10 @@ final class WP_Customize_Posts_Preview {
 	 * @return mixed
 	 */
 	public function preview_post_meta( $original_meta_value, $post_id, $meta_key, $single ) {
-		$post_overrides = $this->manager->posts->get_post_overrides( $post_id );
+		$post_overrides = $this->plugin->controller->get_post_overrides( $post_id );
 
 		// Handle pseudo data inputs mapped to postmeta
-		$post_pesudo_data_to_meta_mapping = $this->manager->posts->get_post_pseudo_data_meta_mapping();
+		$post_pesudo_data_to_meta_mapping = $this->plugin->controller->get_post_pseudo_data_meta_mapping();
 		$post_meta_to_pseudo_data_mapping = array_flip( $post_pesudo_data_to_meta_mapping );
 
 		if ( ! empty( $meta_key ) && isset( $post_meta_to_pseudo_data_mapping[ $meta_key ] ) && isset( $post_overrides[ $post_meta_to_pseudo_data_mapping[ $meta_key ] ] ) ) {
@@ -109,7 +109,7 @@ final class WP_Customize_Posts_Preview {
 			return $single ? $meta_value : array( $meta_value );
 		}
 
-		if ( ! empty( $meta_key ) && ! $this->manager->posts->current_user_can_edit_post_meta( $post_id, $meta_key ) ) {
+		if ( ! empty( $meta_key ) && ! $this->plugin->controller->current_user_can_edit_post_meta( $post_id, $meta_key ) ) {
 			return $original_meta_value;
 		}
 
@@ -203,7 +203,7 @@ final class WP_Customize_Posts_Preview {
 
 		$collection = array();
 		foreach ( $this->preview_queried_post_ids as $post_id ) {
-			$data = $this->manager->posts->get_customize_post_data( $post_id );
+			$data = $this->plugin->controller->get_customize_post_data( $post_id );
 			if ( ! is_wp_error( $data ) ) {
 				$collection[ $post_id ] = $data;
 			}
@@ -213,7 +213,7 @@ final class WP_Customize_Posts_Preview {
 		if ( get_queried_object() && is_a( get_queried_object(), 'WP_Post' ) ) {
 			$queried_post_id = get_queried_object_id();
 			if ( empty( $collection[ $queried_post_id ] ) ) {
-				$data = $this->manager->posts->get_customize_post_data( $queried_post_id );
+				$data = $this->plugin->controller->get_customize_post_data( $queried_post_id );
 				if ( ! is_wp_error( $data ) ) {
 					$collection[ $queried_post_id ] = $data;
 				}
