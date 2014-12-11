@@ -485,11 +485,11 @@
 		 * @todo move into separate control
 		 */
 		setupFeaturedImageField: function () {
-			var controller,
+			var Controller,
 				control = this,
 				container = control.container.find( '.post-thumbnail' );
 
-			controller = wp.media.controller.FeaturedImage.extend( {
+			Controller = wp.media.controller.FeaturedImage.extend( {
 				/**
 				 * @since 3.5.0
 				 */
@@ -547,7 +547,7 @@
 
 					this._frame = wp.media( {
 						state: 'featured-image',
-						states: [ new controller() ]
+						states: [ new Controller() ]
 					} );
 
 					this._frame.on( 'toolbar:create:featured-image', function( toolbar ) {
