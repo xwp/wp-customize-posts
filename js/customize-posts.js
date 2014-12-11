@@ -1,6 +1,7 @@
 /*global jQuery, wp, _, Backbone, _wpCustomizePostsSettings */
 
 ( function ( api, $ ) {
+	'use strict';
 	var PostData, PostsCollection, self;
 
 	/**
