@@ -6,7 +6,7 @@ Edit posts and postmeta in the Customizer. Stop editing your posts/postmeta blin
 **Contributors:** [xwp](http://profiles.wordpress.org/xwp), [westonruter](http://profiles.wordpress.org/westonruter)  
 **Tags:** [customizer](http://wordpress.org/plugins/tags/customizer), [customize](http://wordpress.org/plugins/tags/customize), [posts](http://wordpress.org/plugins/tags/posts), [preview](http://wordpress.org/plugins/tags/preview), [featured-image](http://wordpress.org/plugins/tags/featured-image), [page-template](http://wordpress.org/plugins/tags/page-template)  
 **Requires at least:** 4.0  
-**Tested up to:** 4.0  
+**Tested up to:** 4.1  
 **Stable tag:** trunk (master)  
 **License:** [GPLv2 or later](http://www.gnu.org/licenses/gpl-2.0.html)  
 
@@ -39,6 +39,9 @@ This **Customize Posts** plugin is not to be confused with 10up's [**Post Custom
 ![Customize link is moved to top of admin bar, and is made available to authors and editors in addition to administrators](assets/screenshot-2.png)
 
 ## Changelog ##
+
+### 0.2.2 ###
+Add compatibility with WordPress 4.1 now that the Customizer has a proper JS API.
 
 ### 0.2.1 ###
 Supply missing `selected` attribute on `post_status` dropdown.
