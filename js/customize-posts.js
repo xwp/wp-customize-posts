@@ -1,6 +1,7 @@
 /*global jQuery, wp, _, Backbone, _wpCustomizePostsSettings */
 
 ( function ( api, $ ) {
+	'use strict';
 	var PostData, PostsCollection, self;
 
 	/**
@@ -258,24 +259,48 @@
 				.addClass( 'customize-control' )
 				.addClass( 'customize-control-post_edit' );
 			control_container.hide(); // to be slid-down below
-			control_container.attr( 'id', 'customize-control-' + customize_id.replace( /\]/g, '' ).replace( /\[/g, '-' ) );
 			control_container.append( post_data.get( 'control' ) );
-			api.control( 'selected_posts' ).container.after( control_container );
+			if ( ! api.section ) {
+				// back-compat for WordPress 4.0.x
+				control_container.attr( 'id', 'customize-control-' + customize_id.replace( /\]/g, '' ).replace( /\[/g, '-' ) );
+				api.control( 'selected_posts' ).container.after( control_container );
+			}
 
 			// Create control itself
 			post_edit_control = new api.controlConstructor.post_edit( customize_id, {
 				params: {
+					content: control_container,
 					settings: {
 						'default': customize_id
 					},
-					type: 'post_edit'
+					section: 'posts', // Required as of WordPress 4.1
+					type: 'post_edit',
+					priority: 2 // right after the post select control
 				},
 				previewer: api( 'selected_posts' ).previewer
 			} );
 
-			api.control.add( customize_id, post_edit_control );
+			// Shift the other post_edit controls down to make room for the new one (in WordPress 4.1+)
+			if ( api.section && api.section( 'posts' ) ) {
+				_.each( api.section( 'posts' ).controls(), function ( control ) {
+					if ( control.extended( api.controlConstructor.post_edit ) ) {
+						control.priority( control.priority() + 1 );
+					}
+				} );
+			}
 
-			control_container.slideDown();
+			if ( post_edit_control.deferred ) {
+				// WordPress 4.1+
+				post_edit_control.deferred.embedded.done( function () {
+					post_edit_control.container.slideDown( function () {
+						post_edit_control.focus();
+					} );
+				} );
+			} else {
+				// WordPress < 4.0.x
+				control_container.slideDown();
+			}
+			api.control.add( customize_id, post_edit_control );
 		}
 	};
 
@@ -317,6 +342,7 @@
 		populateSelect: function () {
 			var control = this;
 			control.select.empty();
+			control.select.append( new Option( '' ) );
 			self.collection.each( function ( post_data ) {
 				var option;
 				if ( ! api.control( self.createCustomizeId( post_data.id ) ) ) {
@@ -326,7 +352,7 @@
 			} );
 
 			control.select.prop( 'disabled', 0 === self.collection.length );
-			control.select.prop( 'selectedIndex', -1 );
+			control.select.prop( 'selectedIndex', 0 );
 			if ( control.select.prop( 'length' ) === 0 ) {
 				control.container.slideUp();
 			} else {
@@ -343,8 +369,8 @@
 			control = this;
 			post_id = control.select.val();
 			if ( post_id ) {
+				control.select.prop( 'selectedIndex', 0 );
 				self.editPost( post_id );
-				control.select.prop( 'selectedIndex', -1 );
 			}
 		}
 	} );
@@ -459,11 +485,11 @@
 		 * @todo move into separate control
 		 */
 		setupFeaturedImageField: function () {
-			var controller,
+			var Controller,
 				control = this,
 				container = control.container.find( '.post-thumbnail' );
 
-			controller = wp.media.controller.FeaturedImage.extend( {
+			Controller = wp.media.controller.FeaturedImage.extend( {
 				/**
 				 * @since 3.5.0
 				 */
@@ -521,7 +547,7 @@
 
 					this._frame = wp.media( {
 						state: 'featured-image',
-						states: [ new controller() ]
+						states: [ new Controller() ]
 					} );
 
 					this._frame.on( 'toolbar:create:featured-image', function( toolbar ) {

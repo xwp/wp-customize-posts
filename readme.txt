@@ -2,7 +2,7 @@
 Contributors:      xwp, westonruter
 Tags:              customizer, customize, posts, preview, featured-image, page-template
 Requires at least: 4.0
-Tested up to:      4.0
+Tested up to:      4.1
 Stable tag:        trunk
 License:           GPLv2 or later
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -31,6 +31,9 @@ This **Customize Posts** plugin is not to be confused with 10up's [**Post Custom
 2. Customize link is moved to top of admin bar, and is made available to authors and editors in addition to administrators
 
 == Changelog ==
+
+= 0.2.2 =
+Add compatibility with WordPress 4.1 now that the Customizer has a proper JS API.
 
 = 0.2.1 =
 Supply missing `selected` attribute on `post_status` dropdown.

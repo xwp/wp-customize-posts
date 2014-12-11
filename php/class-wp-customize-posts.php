@@ -79,8 +79,10 @@ final class WP_Customize_Posts {
 			'capability'           => 'edit_posts',
 			'type'                 => 'global_variable',
 		) );
+		$priority = 1;
 		$control = new WP_Post_Select_Customize_Control( $this->manager, 'selected_posts', array(
 			'section' => $section_id,
+			'priority' => $priority,
 		) );
 		$this->manager->add_control( $control );
 
@@ -95,8 +97,10 @@ final class WP_Customize_Posts {
 				'sanitize_callback'    => array( $this, 'sanitize_setting' ),
 			) );
 
+			$priority += 1;
 			$control = new WP_Post_Edit_Customize_Control( $this->manager, $setting_id, array(
 				'section' => $section_id,
+				'priority' => $priority,
 			) );
 			$this->manager->add_control( $control );
 
