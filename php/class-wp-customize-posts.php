@@ -569,7 +569,7 @@ final class WP_Customize_Posts {
 	 * s/\$this/$this->manager/g
 	 * s/->settings /->settings() /
 	 *
-	 * See https://github.com/x-team/wordpress-develop/pull/27.diff
+	 * See https://github.com/xwp/wordpress-develop/pull/27.diff
 	 *
 	 * @since 3.4.0
 	 */

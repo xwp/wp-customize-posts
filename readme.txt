@@ -1,5 +1,5 @@
 === Customize Posts ===
-Contributors:      X-team, westonruter
+Contributors:      xwp, westonruter
 Tags:              customizer, customize, posts, preview, featured-image, page-template
 Requires at least: 4.0
 Tested up to:      4.0
@@ -19,9 +19,9 @@ Likewise, did you know that **changing a page template cannot be previewed from 
 
 Most other changes to metaboxes containing data that gets saved to custom fields (postmeta) also get written when clicking the Preview button. The Customize Posts plugin provides a way to get around this, and also provides a live preview of the changes. Fixing this underlying issue of incorrectly persisting postmeta when doing a preview is captured in [#20299](https://core.trac.wordpress.org/ticket/20299). The current Customize Posts UI for editing postmeta is just a non-user-firendly first stab; future iterations should make it easy to add new controls to manage postmeta, just as metaboxes are added to the post editor.
 
-This project is collaborating with the Front-end Editor project, which is also being re-written to leverage the Customizer as the framework for previewing and persisting changes. See [#20](https://github.com/x-team/wp-customize-posts/issues/20) and [wp-front-end-editor#87](https://github.com/avryl/wp-front-end-editor/issues/87).
+This project is collaborating with the Front-end Editor project, which is also being re-written to leverage the Customizer as the framework for previewing and persisting changes. See [#20](https://github.com/xwp/wp-customize-posts/issues/20) and [wp-front-end-editor#87](https://github.com/avryl/wp-front-end-editor/issues/87).
 
-**Development of this plugin is done [on GitHub](https://github.com/x-team/wp-customize-posts). Pull requests welcome. Please see [issues](https://github.com/x-team/wp-customize-posts/issues) reported there before going to the [plugin forum](https://wordpress.org/support/plugin/customize-posts).**
+**Development of this plugin is done [on GitHub](https://github.com/xwp/wp-customize-posts). Pull requests welcome. Please see [issues](https://github.com/xwp/wp-customize-posts/issues) reported there before going to the [plugin forum](https://wordpress.org/support/plugin/customize-posts).**
 
 This **Customize Posts** plugin is not to be confused with 10up's [**Post Customizer**](https://github.com/10up/Post-Customizer) plugin which is a complimentary effort but seeks to address different use cases. The two plugin projects have [opened a discussion](https://github.com/10up/Post-Customizer/issues/9#issuecomment-43821746) to collaborate where possible.
 
