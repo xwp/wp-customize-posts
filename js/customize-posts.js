@@ -318,6 +318,7 @@
 		populateSelect: function () {
 			var control = this;
 			control.select.empty();
+			control.select.append( new Option( '' ) );
 			self.collection.each( function ( post_data ) {
 				var option;
 				if ( ! api.control( self.createCustomizeId( post_data.id ) ) ) {
@@ -327,7 +328,7 @@
 			} );
 
 			control.select.prop( 'disabled', 0 === self.collection.length );
-			control.select.prop( 'selectedIndex', -1 );
+			control.select.prop( 'selectedIndex', 0 );
 			if ( control.select.prop( 'length' ) === 0 ) {
 				control.container.slideUp();
 			} else {
@@ -344,8 +345,8 @@
 			control = this;
 			post_id = control.select.val();
 			if ( post_id ) {
+				control.select.prop( 'selectedIndex', 0 );
 				self.editPost( post_id );
-				control.select.prop( 'selectedIndex', -1 );
 			}
 		}
 	} );

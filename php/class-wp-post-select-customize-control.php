@@ -38,7 +38,7 @@ class WP_Post_Select_Customize_Control extends WP_Customize_Control {
 		</span>
 		<div class="customize-control-content">
 			<?php // @todo Select2-ish autocomplete ?>
-			<select id="<?php echo esc_attr( $this->id ) ?>" disabled></select>
+			<select id="<?php echo esc_attr( $this->id ) ?>" disabled><option></option></select>
 		</div>
 		<?php
 	}
