@@ -113,8 +113,6 @@ final class WP_Customize_Posts {
 		);
 		$this->sanitize_meta_filters = apply_filters( 'wp_customize_posts_sanitize_meta_filters', $this->sanitize_meta_filters );
 
-		add_action( 'wp_default_scripts', array( $this, 'register_scripts' ) );
-		add_action( 'wp_default_styles', array( $this, 'register_styles' ) );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'export_panel_data' ) );
 		add_action( 'customize_controls_print_footer_scripts', array( 'WP_Post_Edit_Customize_Control', 'render_templates' ) );
@@ -274,32 +272,26 @@ final class WP_Customize_Posts {
 
 	/**
 	 * Register scripts for Customize Posts.
-	 *
-	 * Fires after wp_default_scripts
-	 *
-	 * @param WP_Scripts $scripts
 	 */
-	public function register_scripts( &$scripts ) {
-		$scripts->add( 'customize-base-extensions', CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-base-extensions.js', array( 'customize-base' ), false, 1 );
-		$scripts->add( 'customize-posts', CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-posts.js', array( 'jquery', 'wp-backbone', 'customize-base-extensions', 'customize-controls', 'underscore' ), false, 1 );
-		$scripts->add( 'customize-preview-posts', CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-preview-posts.js', array( 'jquery', 'customize-preview' ), false, 1 );
+	public function register_scripts() {
+		wp_register_script( 'customize-base-extensions', CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-base-extensions.js', array( 'customize-base' ), false, 1 );
+		wp_register_script( 'customize-posts', CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-posts.js', array( 'jquery', 'wp-backbone', 'customize-base-extensions', 'customize-controls', 'underscore' ), false, 1 );
+		wp_register_script( 'customize-preview-posts', CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-preview-posts.js', array( 'jquery', 'customize-preview' ), false, 1 );
 	}
 
 	/**
 	 * Register styles for Customize Posts.
-	 *
-	 * Fires after wp_default_styles
-	 *
-	 * @param WP_Styles $styles
 	 */
-	public function register_styles( &$styles ) {
-		$styles->add( 'customize-posts-style', CUSTOMIZE_POSTS_PLUGIN_URL . 'css/customize-posts.css', array(  'wp-admin' ) );
+	public function register_styles() {
+		wp_register_style( 'customize-posts-style', CUSTOMIZE_POSTS_PLUGIN_URL . 'css/customize-posts.css', array( 'wp-admin' ) );
 	}
 
 	/**
 	 * Enqueue scripts and styles for Customize Posts.
 	 */
 	public function enqueue_scripts() {
+		$this->register_scripts();
+		$this->register_styles();
 		wp_enqueue_script( 'customize-posts' );
 		wp_enqueue_style( 'customize-posts-style' );
 	}
