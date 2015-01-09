@@ -192,6 +192,8 @@ final class WP_Customize_Posts_Preview {
 	 * Enqueue scripts for the customizer preview.
 	 */
 	public function enqueue_preview_scripts() {
+		$this->manager->posts->register_scripts();
+		$this->manager->posts->register_styles();
 		wp_enqueue_script( 'customize-preview-posts' );
 	}
 
