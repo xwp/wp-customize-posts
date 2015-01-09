@@ -40,6 +40,9 @@ This **Customize Posts** plugin is not to be confused with 10up's [**Post Custom
 
 ## Changelog ##
 
+### 0.2.3 ###
+Change method for registering scripts/styles to fix conflict w/ Jetpack. [PR #26](https://github.com/xwp/wp-customize-posts/pull/26)
+
 ### 0.2.2 ###
 Add compatibility with WordPress 4.1 now that the Customizer has a proper JS API.
 
