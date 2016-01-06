@@ -380,7 +380,7 @@ final class WP_Customize_Posts {
 				$prev_value = ( isset( $current_meta[ $mid ] ) ? $current_meta[ $mid ]['value'] : null );
 				$delete_all = false;
 				$check = apply_filters( 'delete_post_metadata', null, $post_id, $entry['key'], $entry['value'], $delete_all );
-				if ( $check === null && ! current_user_can( 'delete_post_meta', $post_id, $entry['key'] ) ) {
+				if ( null === $check && ! current_user_can( 'delete_post_meta', $post_id, $entry['key'] ) ) {
 					$check = false;
 				}
 			} elseif ( $is_insertion ) {
@@ -388,13 +388,13 @@ final class WP_Customize_Posts {
 				$unique = false; // @todo?
 				$prev_value = null;
 				$check = apply_filters( 'add_post_metadata', null, $post_id, $entry['key'], $entry['value'], $unique );
-				if ( $check === null && ! current_user_can( 'add_post_meta', $post_id, $entry['key'] ) ) {
+				if ( null === $check && ! current_user_can( 'add_post_meta', $post_id, $entry['key'] ) ) {
 					$check = false;
 				}
 			} elseif ( $is_update ) {
 				$prev_value = $current_meta[ $mid ]['value'];
 				$check = apply_filters( 'update_post_metadata', null, $post_id, $entry['key'], $entry['value'], $prev_value );
-				if ( $check === null && ! current_user_can( 'edit_post_meta', $post_id, $entry['key'] ) ) {
+				if ( null === $check && ! current_user_can( 'edit_post_meta', $post_id, $entry['key'] ) ) {
 					$check = false;
 				}
 			} else {
@@ -511,7 +511,7 @@ final class WP_Customize_Posts {
 		// Save post meta
 		foreach ( $data['meta'] as $meta_id => $meta ) {
 			$is_insert = ( $this->is_temp_meta_id( $meta_id ) );
-			$is_delete = ( $meta['value'] === null && ! $is_insert );
+			$is_delete = ( null === $meta['value'] && ! $is_insert );
 			$is_update = ( ! $is_delete && ! $is_insert );
 
 			if ( $is_insert ) {
@@ -724,5 +724,4 @@ final class WP_Customize_Posts {
 	public function is_temp_meta_id( $meta_key ) {
 		return preg_match( '/^new\d+$/', $meta_key );
 	}
-
 }

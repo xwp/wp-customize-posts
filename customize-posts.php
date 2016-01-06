@@ -67,7 +67,7 @@ add_filter( 'user_has_cap', 'wp_customize_posts_grant_capability', 10, 3 );
  *
  * Modified from Customizer Everywhere plugin: https://github.com/xwp/wp-customizer-everywhere/blob/3a43eef74d31aae209b1105aa0284c1a6326c31d/customizer-everywhere.php#L207-L220
  *
- * @param WP_Admin_Bar $wp_admin_bar
+ * @param WP_Admin_Bar $wp_admin_bar Admin bar instance.
  * @action admin_bar_menu
  */
 function wp_customize_posts_admin_bar_menu( $wp_admin_bar ) {
@@ -75,7 +75,7 @@ function wp_customize_posts_admin_bar_menu( $wp_admin_bar ) {
 		return;
 	}
 	if ( ! $wp_admin_bar->get_node( 'customize' ) ) {
-		// Copied from admin-bar.php
+		// Copied from admin-bar.php.
 		$current_url = ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 		$wp_admin_bar->add_menu( array(
 			'parent' => 'appearance',

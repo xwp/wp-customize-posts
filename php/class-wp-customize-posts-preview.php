@@ -233,5 +233,4 @@ final class WP_Customize_Posts_Preview {
 		$data = sprintf( 'var _wpCustomizePreviewPostsData = %s;', json_encode( $exported ) );
 		$wp_scripts->add_data( 'customize-preview-posts', 'data', $data );
 	}
-
 }

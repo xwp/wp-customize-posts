@@ -114,13 +114,13 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 				<?php $id = "posts[$post->ID][post_status]"; ?>
 				<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Status:', 'customize-posts' ) ?></label>
 				<select class="post-data post_status" id="<?php echo esc_attr( $id ) ?>" name="<?php echo esc_attr( $id ) ?>">
-					<?php foreach ( get_post_stati( array( 'internal' => false ) ) as $post_status ): ?>
+					<?php foreach ( get_post_stati( array( 'internal' => false ) ) as $post_status ) : ?>
 						<option value="<?php echo esc_attr( $post_status ) ?>" <?php selected( $post_status, $post->post_status ) ?>><?php echo esc_html( get_post_status_object( $post_status )->label ) ?></option>
 					<?php endforeach; ?>
 				</select>
 			</p>
 
-			<?php if ( post_type_supports( $post->post_type, 'comments' ) ): ?>
+			<?php if ( post_type_supports( $post->post_type, 'comments' ) ) :  ?>
 				<p>
 					<?php $id = "posts[$post->ID][comment_status]"; ?>
 					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Comment:', 'customize-posts' ) ?></label>
@@ -131,7 +131,7 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 				</p>
 			<?php endif; ?>
 
-			<?php if ( post_type_supports( $post->post_type, 'page-attributes' ) ): ?>
+			<?php if ( post_type_supports( $post->post_type, 'page-attributes' ) ) :  ?>
 				<p>
 					<?php $id = "posts[$post->ID][post_parent]"; ?>
 					<label for="<?php echo esc_attr( $id ) ?>"><?php esc_html_e( 'Parent:', 'customize-posts' ) ?></label>
@@ -164,7 +164,7 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 				</p>
 			<?php endif; ?>
 
-			<?php if ( post_type_supports( $post->post_type, 'thumbnail' ) ): ?>
+			<?php if ( post_type_supports( $post->post_type, 'thumbnail' ) ) :  ?>
 				<?php
 				$id = "posts[$post->ID][thumbnail_id]";
 				$attachment_id = get_post_meta( $post->ID, '_thumbnail_id', true );
@@ -187,12 +187,12 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 				</p>
 			<?php endif; ?>
 
-			<?php if ( post_type_supports( $post->post_type, 'custom-fields' ) && current_user_can( 'edit_post_meta', $post->ID ) ): ?>
+			<?php if ( post_type_supports( $post->post_type, 'custom-fields' ) && current_user_can( 'edit_post_meta', $post->ID ) ) :  ?>
 				<?php // @todo Move this into another overridable method ?>
 				<section class="post-meta">
 					<h3><?php esc_html_e( 'Meta', 'customize-posts' ) ?></h3>
 					<ul class="post-meta" data-tmpl="customize-posts-meta-field">
-						<?php foreach ( $data['meta'] as $id => $meta ): ?>
+						<?php foreach ( $data['meta'] as $id => $meta ) :  ?>
 							<?php echo self::get_meta_fields( array_merge( $meta, compact( 'id' ) ) ); // xss ok ?>
 						<?php endforeach; ?>
 					</ul>
@@ -252,5 +252,4 @@ class WP_Post_Edit_Customize_Control extends WP_Customize_Control {
 		ob_end_clean();
 		return $html;
 	}
-
 }
