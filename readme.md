@@ -3,14 +3,14 @@
 
 Edit posts and postmeta in the Customizer. Stop editing your posts/postmeta blind!
 
-**Contributors:** [xwp](http://profiles.wordpress.org/xwp), [westonruter](http://profiles.wordpress.org/westonruter)  
-**Tags:** [customizer](http://wordpress.org/plugins/tags/customizer), [customize](http://wordpress.org/plugins/tags/customize), [posts](http://wordpress.org/plugins/tags/posts), [preview](http://wordpress.org/plugins/tags/preview), [featured-image](http://wordpress.org/plugins/tags/featured-image), [page-template](http://wordpress.org/plugins/tags/page-template)  
-**Requires at least:** 4.0  
-**Tested up to:** 4.1  
+**Contributors:** [xwp](https://profiles.wordpress.org/xwp), [westonruter](https://profiles.wordpress.org/westonruter)  
+**Tags:** [customizer](https://wordpress.org/plugins/tags/customizer), [customize](https://wordpress.org/plugins/tags/customize), [posts](https://wordpress.org/plugins/tags/posts), [preview](https://wordpress.org/plugins/tags/preview), [featured-image](https://wordpress.org/plugins/tags/featured-image), [page-template](https://wordpress.org/plugins/tags/page-template)  
+**Requires at least:** 4.2  
+**Tested up to:** 4.4  
 **Stable tag:** trunk (master)  
 **License:** [GPLv2 or later](http://www.gnu.org/licenses/gpl-2.0.html)  
 
-[![Build Status](https://travis-ci.org/xwp/wp-customize-posts.png?branch=master)](https://travis-ci.org/xwp/wp-customize-posts) 
+[![Build Status](https://travis-ci.org/xwp/wp-customize-posts.svg?branch=master)](https://travis-ci.org/xwp/wp-customize-posts) 
 
 ## Description ##
 
@@ -39,6 +39,9 @@ This **Customize Posts** plugin is not to be confused with 10up's [**Post Custom
 ![Customize link is moved to top of admin bar, and is made available to authors and editors in addition to administrators](assets/screenshot-2.png)
 
 ## Changelog ##
+
+### 0.2.4 ###
+Remove shim that implemented the `customize_save_response` filter which was introduced in 4.2. The shim used a slightly different filter name and broke insertion of nav menu items in the Customizer.
 
 ### 0.2.3 ###
 Change method for registering scripts/styles to fix conflict w/ Jetpack. [PR #26](https://github.com/xwp/wp-customize-posts/pull/26)

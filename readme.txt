@@ -1,8 +1,8 @@
 === Customize Posts ===
 Contributors:      xwp, westonruter
 Tags:              customizer, customize, posts, preview, featured-image, page-template
-Requires at least: 4.0
-Tested up to:      4.1
+Requires at least: 4.2
+Tested up to:      4.4
 Stable tag:        trunk
 License:           GPLv2 or later
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -31,6 +31,9 @@ This **Customize Posts** plugin is not to be confused with 10up's [**Post Custom
 2. Customize link is moved to top of admin bar, and is made available to authors and editors in addition to administrators
 
 == Changelog ==
+
+= 0.2.4 =
+Remove shim that implemented the `customize_save_response` filter which was introduced in 4.2. The shim used a slightly different filter name and broke insertion of nav menu items in the Customizer.
 
 = 0.2.3 =
 Change method for registering scripts/styles to fix conflict w/ Jetpack. [PR #26](https://github.com/xwp/wp-customize-posts/pull/26)

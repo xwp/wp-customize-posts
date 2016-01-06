@@ -2,14 +2,14 @@
 /**
  * Plugin Name: Customize Posts
  * Description: Manage posts and postmeta via the customizer.
- * Version: 0.2.3
+ * Version: 0.2.4
  * Author: XWP, Weston Ruter
  * Author URI: https://xwp.co/
  * License: GPLv2+
  */
 
 /**
- * Copyright (c) 2014 XWP (https://xwp.co/)
+ * Copyright (c) 2015 XWP (https://xwp.co/)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 or, at
