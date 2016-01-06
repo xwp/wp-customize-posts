@@ -82,9 +82,7 @@ function wp_customize_posts_admin_bar_menu( $wp_admin_bar ) {
 			'id'     => 'customize',
 			'title'  => __( 'Customize' ),
 			'href'   => add_query_arg( 'url', urlencode( $current_url ), wp_customize_url() ),
-			'meta'   => array(
-				'class' => 'hide-if-no-customize',
-			),
+			'meta'   => array( 'class' => 'hide-if-no-customize' ),
 		) );
 		add_action( 'wp_before_admin_bar_render', 'wp_customize_support_script' );
 	}
