@@ -5,8 +5,8 @@ Edit posts and postmeta in the Customizer. Stop editing your posts/postmeta blin
 
 **Contributors:** [xwp](https://profiles.wordpress.org/xwp), [westonruter](https://profiles.wordpress.org/westonruter)  
 **Tags:** [customizer](https://wordpress.org/plugins/tags/customizer), [customize](https://wordpress.org/plugins/tags/customize), [posts](https://wordpress.org/plugins/tags/posts), [preview](https://wordpress.org/plugins/tags/preview), [featured-image](https://wordpress.org/plugins/tags/featured-image), [page-template](https://wordpress.org/plugins/tags/page-template)  
-**Requires at least:** 4.2  
-**Tested up to:** 4.4  
+**Requires at least:** 4.4  
+**Tested up to:** 4.5-alpha  
 **Stable tag:** trunk (master)  
 **License:** [GPLv2 or later](http://www.gnu.org/licenses/gpl-2.0.html)  
 

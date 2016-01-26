@@ -1,20 +1,10 @@
 /*global wp, _wpCustomizePreviewPostsData */
-( function ( api ) {
+( function( api ) {
 
-	var OldPreview, preview;
-
-	// @todo Core really needs to not make the preview a private variable
-	OldPreview = api.Preview;
-	api.Preview = OldPreview.extend( {
-		initialize: function( params, options ) {
-			preview = this;
-
-			preview.bind( 'active', function() {
-				preview.send( 'customize-posts', _wpCustomizePreviewPostsData );
-			} );
-
-			OldPreview.prototype.initialize.call( this, params, options );
-		}
+	api.bind( 'preview-ready', function() {
+		api.preview.bind( 'active', function() {
+			api.preview.send( 'customize-posts', _wpCustomizePreviewPostsData );
+		} );
 	} );
 
 } )( wp.customize );
