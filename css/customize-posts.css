@@ -1,46 +1,6 @@
-.customize-control.customize-control-post_select select {
-	display: block;
-	width: 100%;
-}
-
-.customize-control.customize-control-post_edit textarea,
-.customize-control.customize-control-post_edit select,
-.customize-control.customize-control-post_edit .meta-key {
-	display: block;
-	width: 100%;
-}
-
-.customize-control.customize-control-post_edit .post-meta li {
-	position: relative;
-	margin-left: 0;
-}
-
-.customize-control.customize-control-post_edit .post-meta .meta-key {
-	padding-right: 37px;
-}
-
-.customize-control.customize-control-post_edit .post-meta textarea {
-	display: block;
-	margin-top: 0;
-}
-
-.customize-control.customize-control-post_edit .post-meta .delete-meta {
-	position: absolute;
-	top: 0;
-	right: 0px;
-	width: 35px;
-}
-
-.customize-control.customize-control-post_edit .post-thumbnail label,
-.customize-control.customize-control-post_edit .post-thumbnail img {
-	display: block;
-}
-.customize-control.customize-control-post_edit .post-thumbnail img {
-	cursor: pointer;
-	margin-bottom: 3px;
-}
-
-.customize-control.customize-control-post_edit .post-thumbnail:not(.populated) img,
-.customize-control.customize-control-post_edit .post-thumbnail:not(.populated) .remove-featured-image {
-	display: none;
+.customize-posts-panel-notice {
+	color: #555;
+	background: #fff;
+	padding: 12px 15px;
+	border-top: 1px solid #ddd;
 }

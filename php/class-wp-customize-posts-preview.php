@@ -7,35 +7,37 @@
  * @package WordPress
  * @subpackage Customize
  */
+
+/**
+ * Class WP_Customize_Posts_Preview
+ */
 final class WP_Customize_Posts_Preview {
 
 	/**
-	 * WP_Customize_Manager instance.
+	 * WP_Customize_Posts instance.
 	 *
 	 * @access public
-	 * @var WP_Customize_Manager
+	 * @var WP_Customize_Posts
 	 */
-	public $manager;
+	public $component;
 
 	/**
-	 * In the preview, keep track of all posts queried during the execution of
-	 * the page.
+	 * Previewed post settings by ID.
 	 *
-	 * @var array[int]
+	 * @var WP_Customize_Post_Setting[]
 	 */
-	public $preview_queried_post_ids = array();
+	public $previewed_posts = array();
 
 	/**
 	 * Initial loader.
 	 *
 	 * @access public
 	 *
-	 * @param WP_Customize_Manager $manager Customize manager bootstrap instance.
+	 * @param WP_Customize_Posts $component Component.
 	 */
-	public function __construct( WP_Customize_Manager $manager ) {
-		$this->manager = $manager;
+	public function __construct( WP_Customize_Posts $component ) {
+		$this->component = $component;
 
-		// @todo The WP_Post class does not provide any facility to filter post fields
 		add_action( 'customize_preview_init', array( $this, 'customize_preview_init' ) );
 	}
 
@@ -43,28 +45,18 @@ final class WP_Customize_Posts_Preview {
 	 * Setup the customizer preview.
 	 */
 	public function customize_preview_init() {
-		add_action( 'the_posts', array( $this, 'tally_queried_posts' ), 1000 );
-		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_preview_scripts' ) );
-		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
-
-		add_filter( 'the_posts', array( $this, 'preview_query_get_posts' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+		add_filter( 'customize_dynamic_partial_args', array( $this, 'filter_customize_dynamic_partial_args' ), 10, 2 );
 		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
-		add_filter( 'get_post_metadata', array( $this, 'preview_post_meta' ), 1, 5 );
+		add_action( 'the_posts', array( $this, 'filter_the_posts_to_add_dynamic_post_settings_and_preview' ), 1000 );
+		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
 	}
 
 	/**
-	 * Override the posts in the query with their previewed values.
-	 *
-	 * Filters 'the_posts'.
-	 *
-	 * @param array $posts
-	 * @return array
+	 * Enqueue scripts for the customizer preview.
 	 */
-	public function preview_query_get_posts( array $posts ) {
-		foreach ( $posts as &$post ) {
-			$this->manager->posts->override_post_data( $post );
-		}
-		return $posts;
+	public function enqueue_scripts() {
+		wp_enqueue_script( 'customize-preview-posts' );
 	}
 
 	/**
@@ -74,163 +66,141 @@ final class WP_Customize_Posts_Preview {
 	 * this will ensure that it gets supplied with the previewed data when
 	 * the post data is setup.
 	 *
-	 * @param WP_Post $post
+	 * @todo The WP_Post class does not provide any facility to filter post fields.
+	 *
+	 * @param WP_Post $post Post.
 	 */
 	public function preview_setup_postdata( WP_Post $post ) {
 		static $prevent_setup_postdata_recursion = false;
 		if ( $prevent_setup_postdata_recursion ) {
 			return;
 		}
+		if ( ! $this->component->current_user_can_edit_post( $post ) ) {
+			return;
+		}
 
-		$this->manager->posts->override_post_data( $post );
-		$prevent_setup_postdata_recursion = true;
-		setup_postdata( $post );
-		$prevent_setup_postdata_recursion = false;
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+		$setting = $this->component->manager->get_setting( $setting_id );
+		if ( $setting instanceof WP_Customize_Post_Setting ) {
+			$prevent_setup_postdata_recursion = true;
+			$setting->override_post_data( $post );
+			setup_postdata( $post );
+			$prevent_setup_postdata_recursion = false;
+		}
 	}
 
 	/**
-	 * Override a given postmeta from customized data.
+	 * Create dynamic post setting for posts queried in the page, and apply changes to any dirty settings.
 	 *
-	 * @param mixed $original_meta_value
-	 * @param int $post_id
-	 * @param string $meta_key
-	 * @param bool $single
-	 * @return mixed
-	 */
-	public function preview_post_meta( $original_meta_value, $post_id, $meta_key, $single ) {
-		$post_overrides = $this->manager->posts->get_post_overrides( $post_id );
-
-		// Handle pseudo data inputs mapped to postmeta
-		$post_pesudo_data_to_meta_mapping = $this->manager->posts->get_post_pseudo_data_meta_mapping();
-		$post_meta_to_pseudo_data_mapping = array_flip( $post_pesudo_data_to_meta_mapping );
-
-		if ( ! empty( $meta_key ) && isset( $post_meta_to_pseudo_data_mapping[ $meta_key ] ) && isset( $post_overrides[ $post_meta_to_pseudo_data_mapping[ $meta_key ] ] ) ) {
-			$meta_value = $post_overrides[ $post_meta_to_pseudo_data_mapping[ $meta_key ] ];
-			return $single ? $meta_value : array( $meta_value );
-		}
-
-		if ( ! empty( $meta_key ) && ! $this->manager->posts->current_user_can_edit_post_meta( $post_id, $meta_key ) ) {
-			return $original_meta_value;
-		}
-
-		if ( empty( $post_overrides['meta'] ) ) {
-			return $original_meta_value;
-		}
-		$new_meta = $post_overrides['meta'];
-
-		// Make sure all meta are available
-		require_once( ABSPATH . 'wp-admin/includes/post.php' );
-		$all_meta = has_meta( $post_id ); // @todo cache
-		foreach ( $all_meta as $entry ) {
-			if ( ! isset( $new_meta[ $entry['meta_id'] ] ) ) {
-				$new_meta[ $entry['meta_id'] ] = array(
-					'key' => $entry['meta_key'],
-					'value' => $entry['meta_value'],
-					'prev_value' => null,
-				);
-			}
-		}
-
-		$new_meta_by_key = array();
-		foreach ( $new_meta as $mid => $entry ) {
-			$new_meta_by_key[ $entry['key'] ][ $mid ] = $entry;
-		}
-
-		if ( empty( $meta_key ) ) {
-			// Requesting all meta, i.e. get_post_custom()
-			$all_meta = array();
-			foreach ( $new_meta as $entry ) {
-				if ( ! is_null( $entry['value'] ) ) {
-					$all_meta[ $entry['key'] ][] = $entry['value'];
-				}
-			}
-			foreach ( $post_meta_to_pseudo_data_mapping as $meta_key => $data_key ) {
-				if ( isset( $post_overrides[ $data_key ] ) ) {
-					$all_meta[ $meta_key ] = array( $post_overrides[ $data_key ] );
-				}
-			}
-			return $all_meta;
-		} elseif ( empty( $new_meta_by_key[ $meta_key ] ) ) {
-			// Meta does not exist
-			return $single ? '' : array();
-		} else {
-			$values = array();
-			foreach ( $new_meta_by_key[ $meta_key ] as $meta ) {
-				if ( is_null( $meta['value'] ) ) {
-					// Deleted
-					continue;
-				}
-				$value = $meta['value'];
-				if ( $single && is_array( $value ) ) {
-					// This is a hack to get around bad logic for handling the filter's return value in get_metadata
-					$single = false;
-				}
-				$values[] = $value;
-			}
-
-			if ( $single ) {
-				return $values[0];
-			} else {
-				return $values;
-			}
-		}
-
-	}
-
-	/**
-	 * Keep track of the posts shown in the preview.
-	 *
-	 * @param array $posts
+	 * @param array $posts Posts.
 	 * @return array
 	 */
-	public function tally_queried_posts( array $posts ) {
-		$this->preview_queried_post_ids = array_merge( $this->preview_queried_post_ids, wp_list_pluck( $posts, 'ID' ) );
+	public function filter_the_posts_to_add_dynamic_post_settings_and_preview( array $posts ) {
+		foreach ( $posts as &$post ) {
+
+			if ( ! $this->component->current_user_can_edit_post( $post ) ) {
+				continue;
+			}
+
+			$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+			$this->component->manager->add_dynamic_settings( array( $post_setting_id ) );
+			$setting = $this->component->manager->get_setting( $post_setting_id );
+			if ( $setting instanceof WP_Customize_Post_Setting && ! $this->component->manager->get_section( $setting->id ) ) {
+				$section = new WP_Customize_Post_Section( $this->component->manager, $setting->id, array(
+					'panel' => sprintf( 'posts[%s]', $setting->post_type ),
+					'post_setting' => $setting,
+				) );
+				$this->component->manager->add_section( $section );
+			}
+
+			$setting = $this->component->manager->get_setting( $post_setting_id );
+			if ( $setting instanceof WP_Customize_Post_Setting ) {
+				$setting->override_post_data( $post );
+			}
+		}
 		return $posts;
 	}
 
 	/**
-	 * Enqueue scripts for the customizer preview.
+	 * Recognize partials for posts appearing in preview.
+	 *
+	 * @param array  $args Partial args.
+	 * @param string $id   Partial ID.
+	 *
+	 * @return array|false
 	 */
-	public function enqueue_preview_scripts() {
-		$this->manager->posts->register_scripts();
-		$this->manager->posts->register_styles();
-		wp_enqueue_script( 'customize-preview-posts' );
+	public function filter_customize_dynamic_partial_args( $args, $id ) {
+		$pattern = '/^post\[(?P<post_type>[^\]]+)\]\[(?P<post_id>-?\d+)\]\[(?P<field_id>\w+)\]/';
+		if ( preg_match( $pattern, $id, $matches ) ) {
+			$post_id = intval( $matches['post_id'] );
+			$post_type_obj = get_post_type_object( $matches['post_type'] );
+			if ( ! $post_type_obj ) {
+				return $args;
+			}
+			if ( false === $args ) {
+				$args = array();
+			}
+
+			// @todo Refactor the following to be PHP 5.2-friendly, and introduce a WP_Customize_Post_Field_Partial.
+			$args['type'] = 'post';
+			$args['capability'] = $post_type_obj->cap->edit_posts;
+			$args['settings'] = array( sprintf( 'post[%s][%d]', $post_type_obj->name, $post_id ) );
+			$args['post_id'] = $post_id;
+			$args['post_type'] = $post_type_obj->name;
+			$args['field_id'] = $matches['field_id'];
+			$args['render_callback'] = function() use ( $args ) {
+				global $post;
+				$rendered = null;
+				$post = get_post( $args['post_id'] );
+				if ( $post ) {
+					setup_postdata( $post );
+					if ( 'post_title' === $args['field_id'] ) {
+						$rendered = $post->post_title;
+
+						if ( ! empty( $post->post_password ) ) {
+							/** This filter is documented in wp-includes/post-template.php */
+							$protected_title_format = apply_filters( 'protected_title_format', __( 'Protected: %s' ), $post );
+							$rendered = sprintf( $protected_title_format, $rendered );
+						} elseif ( isset( $post->post_status ) && 'private' === $post->post_status ) {
+							/** This filter is documented in wp-includes/post-template.php */
+							$private_title_format = apply_filters( 'private_title_format', __( 'Private: %s' ), $post );
+							$rendered = sprintf( $private_title_format, $rendered );
+						}
+
+						/** This filter is documented in wp-includes/post-template.php */
+						$rendered = apply_filters( 'the_title', $rendered, $args['post_id'] );
+
+					} else if ( 'post_content' === $args['field_id'] ) {
+						$rendered = get_the_content();
+
+						/** This filter is documented in wp-includes/post-template.php */
+						$rendered = apply_filters( 'the_content', $rendered );
+						$rendered = str_replace( ']]>', ']]&gt;', $rendered );
+					}
+				}
+				wp_reset_postdata();
+				return $rendered;
+			};
+		}
+		return $args;
 	}
 
 	/**
 	 * Export data into the customize preview.
 	 */
 	public function export_preview_data() {
-		global $wp_scripts;
-
-		$collection = array();
-		foreach ( $this->preview_queried_post_ids as $post_id ) {
-			$data = $this->manager->posts->get_customize_post_data( $post_id );
-			if ( ! is_wp_error( $data ) ) {
-				$collection[ $post_id ] = $data;
-			}
-		}
-
-		$queried_post_id = 0; // can't be null due to wp.customize.Value
-		if ( get_queried_object() && is_a( get_queried_object(), 'WP_Post' ) ) {
+		$queried_post_id = 0; // Can't be null due to wp.customize.Value.
+		if ( get_queried_object() instanceof WP_Post ) {
 			$queried_post_id = get_queried_object_id();
-			if ( empty( $collection[ $queried_post_id ] ) ) {
-				$data = $this->manager->posts->get_customize_post_data( $queried_post_id );
-				if ( ! is_wp_error( $data ) ) {
-					$collection[ $queried_post_id ] = $data;
-				}
-			}
 		}
-		$collection = array_values( $collection );
 
 		$exported = array(
 			'isPostPreview' => is_preview(),
 			'isSingular' => is_singular(),
 			'queriedPostId' => $queried_post_id,
-			'collection' => $collection,
 		);
 
-		$data = sprintf( 'var _wpCustomizePreviewPostsData = %s;', json_encode( $exported ) );
-		$wp_scripts->add_data( 'customize-preview-posts', 'data', $data );
+		$data = sprintf( 'var _wpCustomizePreviewPostsData = %s;', wp_json_encode( $exported ) );
+		wp_scripts()->add_data( 'customize-preview-posts', 'data', $data );
 	}
 }
