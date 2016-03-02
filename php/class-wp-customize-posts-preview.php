@@ -173,6 +173,10 @@ final class WP_Customize_Posts_Preview {
 						/** This filter is documented in wp-includes/post-template.php */
 						$rendered = apply_filters( 'the_title', $rendered, $args['post_id'] );
 
+						// @todo We need to pass whether a link is present as placement context.
+						if ( ! is_single() ) {
+							$rendered = sprintf( '<a href="%s" rel="bookmark">%s</a>', esc_url( get_permalink( $post->ID ) ), $rendered );
+						}
 					} else if ( 'post_content' === $args['field_id'] ) {
 						$rendered = get_the_content();
 
