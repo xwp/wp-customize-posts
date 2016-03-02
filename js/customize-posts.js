@@ -96,11 +96,25 @@
 
 		/**
 		 * Focus on the section requested from the preview.
+		 *
+		 * @todo This can be merged into Core to correspond with focus-control-for-setting.
 		 */
 		api.previewer.bind( 'focus-section', function( sectionId ) {
 			var section = api.section( sectionId );
 			if ( section ) {
 				section.focus();
+			}
+		} );
+
+		/**
+		 * Focus on the section requested from the preview.
+		 *
+		 * @todo This can be merged into Core to correspond with focus-control-for-setting.
+		 */
+		api.previewer.bind( 'focus-control', function( controlId ) {
+			var control = api.control( controlId );
+			if ( control ) {
+				control.focus();
 			}
 		} );
 	} );

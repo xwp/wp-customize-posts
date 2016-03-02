@@ -58,6 +58,7 @@ final class WP_Customize_Posts_Preview {
 	 * Enqueue scripts for the customizer preview.
 	 */
 	public function enqueue_scripts() {
+		wp_enqueue_script( 'customize-post-field-partial' );
 		wp_enqueue_script( 'customize-preview-posts' );
 	}
 

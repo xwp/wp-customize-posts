@@ -270,9 +270,16 @@ final class WP_Customize_Posts {
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
 
+		$handle = 'customize-post-field-partial';
+		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-post-field-partial.js';
+		$deps = array( 'customize-selective-refresh' );
+		$version = null;
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
+
 		$handle = 'customize-preview-posts';
 		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-preview-posts.js';
-		$deps = array( 'jquery', 'customize-preview' );
+		$deps = array( 'jquery', 'customize-preview', 'customize-post-field-partial' );
 		$version = null;
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );

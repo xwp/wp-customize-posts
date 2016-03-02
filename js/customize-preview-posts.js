@@ -2,49 +2,34 @@
 ( function( api, $ ) {
 	'use strict';
 
+	if ( ! api.previewPosts ) {
+		api.previewPosts = {};
+	}
+
 	api.bind( 'preview-ready', function() {
 		api.preview.bind( 'active', function() {
 			var postSettings = {}, idPattern = /^post\[(.+)]\[(-?\d+)]$/;
 			api.each( function( setting ) {
-				var matches = setting.id.match( idPattern ), partial, postId, postType, isRelatedSetting;
-				if ( ! matches ) {
+				var partial;
+				if ( ! idPattern.test( setting.id ) ) {
 					return;
 				}
-				postType = matches[1];
-				postId = parseInt( matches[2], 10 );
-
 				postSettings[ setting.id ] = setting.get();
-				isRelatedSetting = function( setting, newValue, oldValue ) {
-					var partial = this;
-					if ( _.isObject( newValue ) && _.isObject( oldValue ) && partial.params.field_id && newValue[ partial.params.field_id ] === oldValue[ partial.params.field_id ] ) {
-						return false;
-					}
-					return api.selectiveRefresh.Partial.prototype.isRelatedSetting.call( partial, setting );
-				};
 
-				// @todo Implement new PostFieldPartial.
-				partial = new api.selectiveRefresh.Partial( setting.id + '[post_title]', {
+				// Post field partial for post_title.
+				partial = new api.previewPosts.PostFieldPartial( setting.id + '[post_title]', {
 					params: {
-						settings: [ setting.id ],
-						selector: '.hentry.post-' + String( postId ) + '.type-' + postType + ' .entry-title',
-						post_type: postType,
-						post_id: postId,
-						field_id: 'post_title'
+						settings: [ setting.id ]
 					}
 				} );
-				partial.isRelatedSetting = isRelatedSetting;
 				api.selectiveRefresh.partial.add( partial.id, partial );
 
-				partial = new api.selectiveRefresh.Partial( setting.id + '[post_content]', {
+				// Post field partial for post_content.
+				partial = new api.previewPosts.PostFieldPartial( setting.id + '[post_content]', {
 					params: {
-						settings: [ setting.id ],
-						selector: '.hentry.post-' + String( postId ) + '.type-' + postType + ' .entry-content',
-						post_type: postType,
-						post_id: postId,
-						field_id: 'post_content'
+						settings: [ setting.id ]
 					}
 				} );
-				partial.isRelatedSetting = isRelatedSetting;
 				api.selectiveRefresh.partial.add( partial.id, partial );
 			} );
 
