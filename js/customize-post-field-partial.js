@@ -66,6 +66,6 @@
 
 	});
 
-	api.selectiveRefresh.partialConstructor.postField = api.previewPosts.PostFieldPartial;
+	api.selectiveRefresh.partialConstructor.post_field = api.previewPosts.PostFieldPartial;
 
 })( wp.customize );

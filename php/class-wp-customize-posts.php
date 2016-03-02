@@ -43,6 +43,8 @@ final class WP_Customize_Posts {
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-section.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-dynamic-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-setting.php';
+		require_once ABSPATH . WPINC . '/customize/class-wp-customize-partial.php';
+		require_once dirname( __FILE__ ) . '/class-wp-customize-post-field-partial.php';
 
 		add_action( 'wp_default_scripts', array( $this, 'register_scripts' ), 11 );
 		add_action( 'wp_default_styles', array( $this, 'register_styles' ), 11 );

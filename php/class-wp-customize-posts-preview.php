@@ -47,6 +47,7 @@ final class WP_Customize_Posts_Preview {
 	public function customize_preview_init() {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_filter( 'customize_dynamic_partial_args', array( $this, 'filter_customize_dynamic_partial_args' ), 10, 2 );
+		add_filter( 'customize_dynamic_partial_class', array( $this, 'filter_customize_dynamic_partial_class' ), 10, 3 );
 		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
 		add_action( 'the_posts', array( $this, 'filter_the_posts_to_add_dynamic_post_settings_and_preview' ), 1000 );
 		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
@@ -133,9 +134,7 @@ final class WP_Customize_Posts_Preview {
 	 * @return array|false
 	 */
 	public function filter_customize_dynamic_partial_args( $args, $id ) {
-		$pattern = '/^post\[(?P<post_type>[^\]]+)\]\[(?P<post_id>-?\d+)\]\[(?P<field_id>\w+)\]/';
-		if ( preg_match( $pattern, $id, $matches ) ) {
-			$post_id = intval( $matches['post_id'] );
+		if ( preg_match( WP_Customize_Post_Field_Partial::ID_PATTERN, $id, $matches ) ) {
 			$post_type_obj = get_post_type_object( $matches['post_type'] );
 			if ( ! $post_type_obj ) {
 				return $args;
@@ -143,53 +142,25 @@ final class WP_Customize_Posts_Preview {
 			if ( false === $args ) {
 				$args = array();
 			}
-
-			// @todo Refactor the following to be PHP 5.2-friendly, and introduce a WP_Customize_Post_Field_Partial.
-			$args['type'] = 'post';
-			$args['capability'] = $post_type_obj->cap->edit_posts;
-			$args['settings'] = array( sprintf( 'post[%s][%d]', $post_type_obj->name, $post_id ) );
-			$args['post_id'] = $post_id;
-			$args['post_type'] = $post_type_obj->name;
-			$args['field_id'] = $matches['field_id'];
-			$args['render_callback'] = function() use ( $args ) {
-				global $post;
-				$rendered = null;
-				$post = get_post( $args['post_id'] );
-				if ( $post ) {
-					setup_postdata( $post );
-					if ( 'post_title' === $args['field_id'] ) {
-						$rendered = $post->post_title;
-
-						if ( ! empty( $post->post_password ) ) {
-							/** This filter is documented in wp-includes/post-template.php */
-							$protected_title_format = apply_filters( 'protected_title_format', __( 'Protected: %s' ), $post );
-							$rendered = sprintf( $protected_title_format, $rendered );
-						} elseif ( isset( $post->post_status ) && 'private' === $post->post_status ) {
-							/** This filter is documented in wp-includes/post-template.php */
-							$private_title_format = apply_filters( 'private_title_format', __( 'Private: %s' ), $post );
-							$rendered = sprintf( $private_title_format, $rendered );
-						}
-
-						/** This filter is documented in wp-includes/post-template.php */
-						$rendered = apply_filters( 'the_title', $rendered, $args['post_id'] );
-
-						// @todo We need to pass whether a link is present as placement context.
-						if ( ! is_single() ) {
-							$rendered = sprintf( '<a href="%s" rel="bookmark">%s</a>', esc_url( get_permalink( $post->ID ) ), $rendered );
-						}
-					} else if ( 'post_content' === $args['field_id'] ) {
-						$rendered = get_the_content();
-
-						/** This filter is documented in wp-includes/post-template.php */
-						$rendered = apply_filters( 'the_content', $rendered );
-						$rendered = str_replace( ']]>', ']]&gt;', $rendered );
-					}
-				}
-				wp_reset_postdata();
-				return $rendered;
-			};
+			$args['type'] = WP_Customize_Post_Field_Partial::TYPE;
 		}
 		return $args;
+	}
+
+	/**
+	 * Filters the class used to construct post field partials.
+	 *
+	 * @param string $partial_class WP_Customize_Partial or a subclass.
+	 * @param string $partial_id    ID for dynamic partial.
+	 * @param array  $partial_args  The arguments to the WP_Customize_Partial constructor.
+	 * @return string Class.
+	 */
+	function filter_customize_dynamic_partial_class( $partial_class, $partial_id, $partial_args ) {
+		unset( $partial_id );
+		if ( WP_Customize_Post_Field_Partial::TYPE === $partial_args['type'] ) {
+			$partial_class = 'WP_Customize_Post_Field_Partial';
+		}
+		return $partial_class;
 	}
 
 	/**
