@@ -1,5 +1,5 @@
 /*global wp, _wpCustomizePreviewPostsData */
-( function( api ) {
+( function( api, $ ) {
 	'use strict';
 
 	api.bind( 'preview-ready', function() {
@@ -55,7 +55,19 @@
 					postSettings: postSettings
 				}
 			) );
+
+			/**
+			 * Focus on the post section in the Customizer pane when clicking an edit-post-link.
+			 */
+			$( document.body ).on( 'click', '.post-edit-link', function( e ) {
+				var link = $( this ), settingId;
+				settingId = link.data( 'customize-post-setting-id' );
+				e.preventDefault();
+				if ( settingId ) {
+					api.preview.send( 'focus-section', settingId );
+				}
+			} );
 		} );
 	} );
 
-} )( wp.customize );
+} )( wp.customize, jQuery );

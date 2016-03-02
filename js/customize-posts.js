@@ -15,7 +15,9 @@
 		postTypes: {},
 		l10n: {
 			sectionCustomizeActionTpl: '',
-			fieldTitleLabel: ''
+			fieldTitleLabel: '',
+			fieldContentLabel: '',
+			fieldExcerptLabel: ''
 		}
 	};
 	if ( 'undefined' !== typeof _wpCustomizePostsExports ) {
@@ -90,6 +92,16 @@
 				});
 				api.section.add( sectionId, section );
 			} );
+		} );
+
+		/**
+		 * Focus on the section requested from the preview.
+		 */
+		api.previewer.bind( 'focus-section', function( sectionId ) {
+			var section = api.section( sectionId );
+			if ( section ) {
+				section.focus();
+			}
 		} );
 	} );
 

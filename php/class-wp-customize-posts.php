@@ -306,6 +306,8 @@ final class WP_Customize_Posts {
 				/* translators: &#9656; is the unicode right-pointing triangle, and %s is the section title in the Customizer */
 				'sectionCustomizeActionTpl' => __( 'Customizing &#9656; %s' ),
 				'fieldTitleLabel' => __( 'Title' ),
+				'fieldContentLabel' => __( 'Content' ),
+				'fieldExcerptLabel' => __( 'Excerpt' ),
 			),
 		);
 

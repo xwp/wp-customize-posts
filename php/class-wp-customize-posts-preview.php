@@ -50,6 +50,8 @@ final class WP_Customize_Posts_Preview {
 		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
 		add_action( 'the_posts', array( $this, 'filter_the_posts_to_add_dynamic_post_settings_and_preview' ), 1000 );
 		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
+		add_filter( 'edit_post_link', array( $this, 'filter_edit_post_link' ), 10, 2 );
+		add_filter( 'get_edit_post_link', array( $this, 'filter_get_edit_post_link' ), 10, 2 );
 	}
 
 	/**
@@ -183,6 +185,43 @@ final class WP_Customize_Posts_Preview {
 			};
 		}
 		return $args;
+	}
+
+	/**
+	 * Filters get_edit_post_link to short-circuits if post cannot be edited in Customizer.
+	 *
+	 * @param string $url The edit link.
+	 * @param int    $post_id Post ID.
+	 * @return string|null
+	 */
+	function filter_get_edit_post_link( $url, $post_id ) {
+		$edit_post = get_post( $post_id );
+		if ( ! $edit_post ) {
+			return null;
+		}
+		if ( ! $this->component->current_user_can_edit_post( $edit_post ) ) {
+			return null;
+		}
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $edit_post );
+		if ( ! $this->component->manager->get_setting( $setting_id ) ) {
+			return null;
+		}
+		return $url;
+	}
+
+	/**
+	 * Filter the post edit link so it can open the post in the Customizer.
+	 *
+	 * @param string $link    Anchor tag for the edit link.
+	 * @param int    $post_id Post ID.
+	 * @return string Edit link.
+	 */
+	function filter_edit_post_link( $link, $post_id ) {
+		$edit_post = get_post( $post_id );
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $edit_post );
+		$data_attributes = sprintf( ' data-customize-post-setting-id="%s"', $setting_id );
+		$link = preg_replace( '/(?<=<a\s)/', $data_attributes, $link );
+		return $link;
 	}
 
 	/**
