@@ -97,9 +97,21 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			throw new Exception( 'Posts component not instantiated.' );
 		}
 		$this->posts_component = $manager->posts;
+		$update = $args['post_id'] > 0;
+		$post_type_obj = get_post_type_object( $args['post_type'] );
 
-		// Warning: the update() callback must check the cap on the specific post when update happens.
-		$args['capability'] = $post_type_obj->cap->edit_posts; // Note that the edit_post cap has already been checked in the current_user_can_edit_post() method.
+		// Determine capability for editing this.
+		$can_edit = false;
+		if ( $update ) {
+			$can_edit = $this->posts_component->current_user_can_edit_post( $args['post_id'] );
+		} elseif ( $post_type_obj ) {
+			$can_edit = current_user_can( $post_type_obj->cap->edit_posts );
+		}
+		if ( $can_edit ) {
+			$args['capability'] = $post_type_obj->cap->edit_posts;
+		} else {
+			$args['capability'] = 'do_not_allow';
+		}
 
 		parent::__construct( $manager, $id, $args );
 
@@ -128,7 +140,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		if ( ! $this->posts_component->current_user_can_edit_post( $post ) ) {
 			return false;
 		}
-		if ( ! isset( $this->posts_component->preview->previewed_posts[ $post->ID ] ) ) {
+		if ( ! isset( $this->posts_component->preview->previewed_post_settings[ $post->ID ] ) ) {
 			return false;
 		}
 		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
@@ -191,7 +203,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		}
 
 		if ( $this->is_previewed ) {
-			$post_data = array_merge( $post_data, $this->post_value() );
+			$post_data = array_merge( $post_data, $this->post_value( array() ) );
 		}
 
 		$post_data = $this->normalize_post_data( $post_data );
@@ -253,15 +265,12 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		$update = ( $this->post_id > 0 );
 
 		$post_type_obj = get_post_type_object( $this->post_type );
-		$post_data['post_type'] = $this->post_type;
-
-		$can_edit = null;
+		$can_edit = false;
 		if ( $update ) {
 			$can_edit = $this->posts_component->current_user_can_edit_post( $this->post_id );
-		} else {
-			$can_edit = $post_type_obj->cap->edit_posts;
+		} elseif ( $post_type_obj ) {
+			$can_edit = current_user_can( $post_type_obj->cap->edit_posts );
 		}
-
 		if ( ! $can_edit ) {
 			if ( $strict ) {
 				return new WP_Error( 'not_allowed' );
@@ -269,6 +278,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 				return null;
 			}
 		}
+		$post_data['post_type'] = $this->post_type;
 
 		if ( $strict && $update ) {
 			// Check post lock.
@@ -471,7 +481,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	 * @return bool
 	 */
 	public function preview() {
-		$this->posts_component->preview->previewed_posts[ $this->post_id ] = $this;
+		$this->posts_component->preview->previewed_post_settings[ $this->post_id ] = $this;
 		$this->is_previewed = true;
 		return true;
 	}

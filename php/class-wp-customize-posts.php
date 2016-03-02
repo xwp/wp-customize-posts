@@ -36,6 +36,13 @@ final class WP_Customize_Posts {
 	public $update_conflicted_settings = array();
 
 	/**
+	 * Registered post meta.
+	 *
+	 * @var array
+	 */
+	public $registered_post_meta = array();
+
+	/**
 	 * Initial loader.
 	 *
 	 * @access public
@@ -54,13 +61,16 @@ final class WP_Customize_Posts {
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-section.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-dynamic-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-setting.php';
+		require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-setting.php';
+		require_once dirname( __FILE__ ) . '/class-wp-customize-page-template-postmeta-setting.php';
 		require_once ABSPATH . WPINC . '/customize/class-wp-customize-partial.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-field-partial.php';
 
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'customize_controls_init', array( $this, 'enqueue_editor' ) );
 
-		add_action( 'customize_register', array( $this, 'customize_register' ), 20 );
+		add_action( 'customize_register', array( $this, 'register_constructs' ), 20 );
+		add_action( 'init', array( $this, 'register_builtin_meta' ), 100 );
 		add_filter( 'customize_dynamic_setting_args', array( $this, 'filter_customize_dynamic_setting_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_setting_class', array( $this, 'filter_customize_dynamic_setting_class' ), 5, 3 );
 		add_filter( 'customize_save_response', array( $this, 'filter_customize_save_response_for_conflicts' ), 10, 2 );
@@ -121,9 +131,104 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Register section, controls, and settings.
+	 * Register post meta for a given post type.
+	 *
+	 * Please note that a sanitize_callback is intentionally excluded because the
+	 * meta sanitization logic should be re-used with the global register_meta()
+	 * function, which includes a `$sanitize_callback` param.
+	 *
+	 * @see register_meta()
+	 *
+	 * @param string $post_type Post type.
+	 * @param string $meta_key  Meta key.
+	 * @param array  $args      Args.
 	 */
-	public function customize_register() {
+	public function register_post_type_meta( $post_type, $meta_key, $args = array() ) {
+		$args = array_merge(
+			array(
+				'sanitize_value_callback' => null,
+				'setting_class' => 'WP_Customize_Postmeta_Setting',
+			),
+			$args
+		);
+
+		if ( ! empty( $args['sanitize_value_callback'] ) && ! has_filter( "sanitize_post_meta_{$meta_key}", $args['sanitize_value_callback'] ) ) {
+			add_filter( "sanitize_post_meta_{$meta_key}", $args['sanitize_value_callback'] );
+		}
+		if ( ! has_filter( "auth_post_meta_{$meta_key}", array( $this, 'auth_post_meta_callback' ) ) ) {
+			add_filter( "auth_post_meta_{$meta_key}", array( $this, 'auth_post_meta_callback' ), 10, 6 );
+		}
+
+		if ( ! isset( $this->registered_post_meta[ $post_type ] ) ) {
+			$this->registered_post_meta[ $post_type ] = array();
+		}
+		$this->registered_post_meta[ $post_type ][ $meta_key ] = $args;
+	}
+
+	/**
+	 * Allow editing post meta in Customizer if user can edit_post for registered post meta.
+	 *
+	 * @param bool   $allowed  Whether the user can add the post meta. Default false.
+	 * @param string $meta_key The meta key.
+	 * @param int    $post_id  Post ID.
+	 * @param int    $user_id  User ID.
+	 * @return bool Allowed.
+	 */
+	public function auth_post_meta_callback( $allowed, $meta_key, $post_id, $user_id ) {
+		global $wp_customize;
+		if ( $allowed || empty( $wp_customize ) ) {
+			return $allowed;
+		}
+		$post = get_post( $post_id );
+		if ( ! $post ) {
+			return $allowed;
+		}
+		$post_type_object = get_post_type_object( $post->post_type );
+		if ( ! $post_type_object ) {
+			return $allowed;
+		}
+		if ( ! isset( $this->registered_post_meta[ $post->post_type ][ $meta_key ] ) ) {
+			return $allowed;
+		}
+		$allowed = (
+			user_can( $user_id, $this->registered_post_meta[ $post->post_type ][ $meta_key ]['capability'] )
+			&&
+			user_can( $user_id, $post_type_object->cap->edit_post, $post_id )
+		);
+		return $allowed;
+	}
+
+	/**
+	 * Register builtin meta.
+	 *
+	 * Note that this has to be after all post types are registered.
+	 */
+	public function register_builtin_meta() {
+
+		foreach ( get_post_types( array(), 'objects' ) as $post_type_object ) {
+
+			if ( post_type_supports( 'thumbnail', $post_type_object->name ) ) {
+				$this->register_post_type_meta( $post_type_object->name, '_thumbnail_id', array(
+					'sanitize_value_callback' => array( $this, 'sanitize_post_id' ),
+				) );
+			}
+
+			if ( post_type_supports( 'page-attributes', $post_type_object->name ) ) {
+				$this->register_post_type_meta( $post_type_object->name, '_wp_page_template', array(
+					'setting_class' => 'WP_Customize_Page_Template_Postmeta_Setting',
+					'sanitize_value_callback' => array( 'WP_Customize_Page_Template_Postmeta_Setting', 'sanitize_file_path' ),
+				) );
+			}
+		}
+
+		// @todo Do action to allow plugins to register their own meta?
+		// @todo here we need to re-add dynamic settings
+	}
+
+	/**
+	 * Register panels for post types, sections for any pre-registered settings, and any control types needed by JS.
+	 */
+	public function register_constructs() {
 		$this->manager->register_section_type( 'WP_Customize_Post_Section' );
 		$this->manager->register_control_type( 'WP_Customize_Dynamic_Control' );
 
@@ -191,9 +296,21 @@ final class WP_Customize_Posts {
 			}
 			$args['type'] = 'post';
 			$args['transport'] = 'postMessage';
+		} elseif ( preg_match( WP_Customize_Postmeta_Setting::SETTING_ID_PATTERN, $setting_id, $matches ) ) {
+			if ( ! post_type_exists( $matches['post_type'] ) ) {
+				return $args;
+			}
+			if ( ! isset( $this->registered_post_meta[ $matches['post_type'] ][ $matches['meta_key'] ] ) ) {
+				return $args;
+			}
+			if ( false === $args ) {
+				$args = array();
+			}
+			$args['type'] = 'postmeta';
+			$args['transport'] = 'postMessage';
+			$args['registered_post_meta_args'] = $this->registered_post_meta[ $matches['post_type'] ][ $matches['meta_key'] ];
 		}
 
-		// @todo A postmeta type.
 		return $args;
 	}
 
@@ -208,11 +325,17 @@ final class WP_Customize_Posts {
 	 */
 	public function filter_customize_dynamic_setting_class( $class, $setting_id, $args ) {
 		unset( $setting_id );
-		if ( isset( $args['type'] ) && 'post' === $args['type'] ) {
-			$class = 'WP_Customize_Post_Setting';
+		if ( isset( $args['type'] ) ) {
+			if ( 'post' === $args['type'] ) {
+				$class = 'WP_Customize_Post_Setting';
+			} elseif ( 'postmeta' === $args['type'] ) {
+				if ( isset( $args['registered_post_meta_args']['setting_class'] ) ) {
+					$class = $args['registered_post_meta_args']['setting_class'];
+				} else {
+					$class = 'WP_Customize_Postmeta_Setting';
+				}
+			}
 		}
-
-		// @todo A postmeta type.
 		return $class;
 	}
 
@@ -372,5 +495,16 @@ final class WP_Customize_Posts {
 			/** This action is documented in wp-admin/admin-footer.php */
 			do_action( 'admin_footer-post.php' );
 		}
+	}
+
+	/**
+	 * Sanitize a value as a post ID.
+	 *
+	 * @param mixed $value Value.
+	 * @return int Sanitized post ID.
+	 */
+	public function sanitize_post_id( $value ) {
+		$value = intval( $value );
+		return $value;
 	}
 }
