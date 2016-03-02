@@ -317,6 +317,7 @@ final class WP_Customize_Posts {
 				'fieldTitleLabel' => __( 'Title' ),
 				'fieldContentLabel' => __( 'Content' ),
 				'fieldExcerptLabel' => __( 'Excerpt' ),
+				'noTitle' => __( '(no title)' ),
 			),
 		);
 

@@ -32,6 +32,9 @@
 			if ( ! options.params.title ) {
 				options.params.title = api( id ).get().post_title;
 			}
+			if ( ! options.params.title ) {
+				options.params.title = api.Posts.data.l10n.noTitle;
+			}
 
 			section.postFieldControls = {};
 
@@ -42,9 +45,23 @@
 		 * @todo Defer embedding section until panel is expanded?
 		 */
 		ready: function() {
-			var section = this, postTypeObj, control, settingId;
+			var section = this, postTypeObj, control, settingId, sectionContainer, sectionOuterTitleElement, sectionInnerTitleElement, customizeActionElement;
 			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 			settingId = section.id;
+			sectionContainer = section.container.closest( '.accordion-section' );
+			sectionOuterTitleElement = sectionContainer.find( '.accordion-section-title:first' );
+			sectionInnerTitleElement = sectionContainer.find( '.customize-section-title h3' ).first();
+			customizeActionElement = sectionInnerTitleElement.find( '.customize-action' ).first();
+
+			api( settingId ).bind( function( newPostData, oldPostData ) {
+				var title;
+				if ( newPostData.post_title !== oldPostData.post_title ) {
+					title = newPostData.post_title || api.Posts.data.l10n.noTitle;
+					sectionOuterTitleElement.text( title );
+					sectionInnerTitleElement.text( title );
+					sectionInnerTitleElement.prepend( customizeActionElement );
+				}
+			} );
 
 			// @todo If postTypeObj.hierarchical, then allow the sections to be re-ordered by drag and drop (add grabber control).
 
