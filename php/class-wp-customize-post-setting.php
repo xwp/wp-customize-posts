@@ -218,9 +218,11 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			$strict = true;
 		}
 
+		$update = ( $this->post_id > 0 );
+
 		$post_type_obj = get_post_type_object( $this->post_type );
 		$can_edit = null;
-		if ( $this->post_id > 0 ) {
+		if ( $update ) {
 			$can_edit = $this->posts_component->current_user_can_edit_post( $this->post_id );
 		} else {
 			$can_edit = $post_type_obj->cap->edit_posts;
@@ -234,7 +236,15 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			}
 		}
 
-		$update = ( $this->post_id > 0 );
+		// Check post lock when doing strict sanitization (i.e. validation for update).
+		if ( $strict && $update ) {
+			$locked_user = wp_check_post_lock( $this->post_id );
+			if ( $locked_user ) {
+				$user = get_user_by( 'ID', $locked_user );
+				$error_message = sprintf( __( 'Post is currently locked by %s.', 'customize-posts' ), $user->display_name );
+				return new WP_Error( 'post_locked', $error_message );
+			}
+		}
 
 		$post_data = wp_slash( $post_data );
 		$unsanitized_post_data = $post_data;

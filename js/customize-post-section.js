@@ -1,5 +1,5 @@
 /* global wp */
-(function( api ) {
+(function( api, $ ) {
 	'use strict';
 
 	if ( ! api.Posts ) {
@@ -45,15 +45,16 @@
 		 * @todo Defer embedding section until panel is expanded?
 		 */
 		ready: function() {
-			var section = this, postTypeObj, control, settingId, sectionContainer, sectionOuterTitleElement, sectionInnerTitleElement, customizeActionElement;
+			var section = this, postTypeObj, control, setting, sectionContainer, sectionOuterTitleElement,
+				sectionInnerTitleElement, customizeActionElement;
 			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
-			settingId = section.id;
+			setting = api( section.id );
 			sectionContainer = section.container.closest( '.accordion-section' );
 			sectionOuterTitleElement = sectionContainer.find( '.accordion-section-title:first' );
 			sectionInnerTitleElement = sectionContainer.find( '.customize-section-title h3' ).first();
 			customizeActionElement = sectionInnerTitleElement.find( '.customize-action' ).first();
 
-			api( settingId ).bind( function( newPostData, oldPostData ) {
+			api( setting.id ).bind( function( newPostData, oldPostData ) {
 				var title;
 				if ( newPostData.post_title !== oldPostData.post_title ) {
 					title = newPostData.post_title || api.Posts.data.l10n.noTitle;
@@ -62,6 +63,24 @@
 					sectionInnerTitleElement.prepend( customizeActionElement );
 				}
 			} );
+
+			// Inject validation message logic.
+			if ( setting.validationMessage ) {
+				section.validationMessageElement = $( '<div class="customize-setting-validation-message error" aria-live="assertive"></div>' );
+				section.container.find( '.customize-section-title' ).append( section.validationMessageElement );
+				setting.validationMessage.bind( function( message ) {
+					var template = wp.template( 'customize-setting-validation-message' );
+					section.validationMessageElement.empty().append( $.trim(
+						template( { messages: [ message ] } )
+					) );
+					if ( message ) {
+						section.validationMessageElement.slideDown( 'fast' );
+					} else {
+						section.validationMessageElement.slideUp( 'fast' );
+					}
+					section.container.toggleClass( 'customize-setting-invalid', '' !== message );
+				} );
+			}
 
 			// @todo If postTypeObj.hierarchical, then allow the sections to be re-ordered by drag and drop (add grabber control).
 
@@ -75,7 +94,7 @@
 						label: api.Posts.data.l10n.fieldTitleLabel,
 						active: true,
 						settings: {
-							'default': settingId
+							'default': setting.id
 						},
 						field_type: 'text',
 						setting_property: 'post_title'
@@ -86,6 +105,11 @@
 				};
 				section.postFieldControls.post_title = control;
 				api.control.add( control.id, control );
+
+				// Remove the setting from the settingValidationMessages since it is not specific to this field.
+				if ( control.settingValidationMessages ) {
+					control.settingValidationMessages.remove( setting.id );
+				}
 			}
 
 			if ( postTypeObj.supports.editor ) {
@@ -96,7 +120,7 @@
 						label: api.Posts.data.l10n.fieldContentLabel,
 						active: true,
 						settings: {
-							'default': settingId
+							'default': setting.id
 						},
 						field_type: 'textarea',
 						setting_property: 'post_content'
@@ -107,6 +131,11 @@
 				};
 				section.postFieldControls.post_title = control;
 				api.control.add( control.id, control );
+
+				// Remove the setting from the settingValidationMessages since it is not specific to this field.
+				if ( control.settingValidationMessages ) {
+					control.settingValidationMessages.remove( setting.id );
+				}
 			}
 
 			// @todo Let the section title include the post title.
@@ -123,4 +152,4 @@
 		}
 	});
 
-})( wp.customize );
+})( wp.customize, jQuery );
