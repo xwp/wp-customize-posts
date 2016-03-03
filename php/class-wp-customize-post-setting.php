@@ -183,14 +183,11 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	 * @return array Post data.
 	 */
 	public function value() {
-		$post_data = $this->default;
-
 		$post = get_post( $this->post_id );
 		if ( $post ) {
-			$post_data = wp_array_slice_assoc(
-				$post->to_array(),
-				array_keys( $this->default )
-			);
+			$post_data = $this->get_post_data( $post );
+		} else {
+			$post_data = $this->default;
 		}
 
 		if ( $this->is_previewed ) {
@@ -199,6 +196,41 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 
 		$post_data = $this->normalize_post_data( $post_data );
 		return $post_data;
+	}
+
+	/**
+	 * Get the post data to be used in a setting value.
+	 *
+	 * @param WP_Post $post Post.
+	 * @return array
+	 */
+	public function get_post_data( WP_Post $post ) {
+		$post_data = wp_array_slice_assoc(
+			$post->to_array(),
+			array_keys( $this->default )
+		);
+		$post_data = $this->normalize_post_data( $post_data );
+		return $post_data;
+	}
+
+	/**
+	 * Determines whether the incoming post data conflicts with the existing post data.
+	 *
+	 * @param WP_Post $existing_post      Existing post.
+	 * @param array   $incoming_post_data Incoming post data.
+	 *
+	 * @return bool
+	 */
+	protected function is_post_data_conflicted( WP_Post $existing_post, array $incoming_post_data ) {
+		unset( $incoming_post_data['post_modified_gmt'] );
+		unset( $incoming_post_data['post_modified'] );
+		$existing_post_data = $this->get_post_data( $existing_post );
+		foreach ( $incoming_post_data as $field_id => $field_value ) {
+			if ( isset( $existing_post_data[ $field_id ] ) && $field_value !== $existing_post_data[ $field_id ] ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -218,9 +250,11 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			$strict = true;
 		}
 
+		$update = ( $this->post_id > 0 );
+
 		$post_type_obj = get_post_type_object( $this->post_type );
 		$can_edit = null;
-		if ( $this->post_id > 0 ) {
+		if ( $update ) {
 			$can_edit = $this->posts_component->current_user_can_edit_post( $this->post_id );
 		} else {
 			$can_edit = $post_type_obj->cap->edit_posts;
@@ -234,7 +268,39 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			}
 		}
 
-		$update = ( $this->post_id > 0 );
+		if ( $strict && $update ) {
+			// Check post lock.
+			$locked_user = wp_check_post_lock( $this->post_id );
+			if ( $locked_user ) {
+				$user = get_user_by( 'ID', $locked_user );
+				$error_message = sprintf(
+					__( 'Post is currently locked by %s.', 'customize-posts' ),
+					$user ? $user->display_name : __( '(unknown user)', 'customize-posts' )
+				);
+				return new WP_Error( 'post_locked', $error_message );
+			}
+
+			// Check post update conflict.
+			$post = get_post( $this->post_id );
+			$is_update_conflict = (
+				! empty( $post )
+				&&
+				! empty( $post_data['post_modified_gmt'] )
+				&&
+				$post_data['post_modified_gmt'] < $post->post_modified_gmt
+				&&
+				$this->is_post_data_conflicted( $post, $post_data )
+			);
+			if ( $is_update_conflict ) {
+				$user = get_user_by( 'ID', get_post_meta( $this->post_id, '_edit_last', true ) );
+				$error_message = sprintf(
+					__( 'Conflict due to concurrent post update by %s.', 'customize-posts' ),
+					$user ? $user->display_name : __( '(unknown user)', 'customize-posts' )
+				);
+				$this->posts_component->update_conflicted_settings[ $this->id ] = $this;
+				return new WP_Error( 'post_update_conflict', $error_message );
+			}
+		}
 
 		$post_data = wp_slash( $post_data );
 		$unsanitized_post_data = $post_data;

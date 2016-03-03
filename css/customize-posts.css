@@ -4,3 +4,13 @@
 	padding: 12px 15px;
 	border-top: 1px solid #ddd;
 }
+
+.customize-section-title > div.customize-setting-validation-message {
+	border-top: 1px solid #ddd;
+	margin-top: 0;
+	margin-bottom: 0;
+}
+.customize-setting-validation-message .override-post-conflict {
+	margin-left: 1ex;
+	float: right;
+}

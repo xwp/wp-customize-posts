@@ -70,35 +70,41 @@ class WP_Customize_Dynamic_Control extends WP_Customize_Control {
 	 * @access protected
 	 */
 	protected function content_template() {
+		$data = $this->json();
 		?>
-		<# _.defaults( data, <?php echo wp_json_encode( $this->json() ) ?> ); #>
-		<label>
-			<span class="customize-control-title">{{ data.label }}</span>
-			<# if ( data.description ) { #>
-				<span class="description customize-control-description">{{ data.description }}</span>
-			<# } #>
-			<# if ( 'textarea' === data.field_type ) { #>
-				<textarea
-					class="widefat"
-				    rows="5"
-					<# _.each( data.input_attrs, function( value, key ) { #>
-						{{{ key }}}="{{ value }}"
-					<# } ) #>
-					<# if ( data.setting_property ) { #>
-						data-customize-setting-property-link="{{ data.setting_property }}"
-					<# } #>
-					></textarea>
-			<# } else { #>
-				<input type="{{ data.field_type }}"
-					<# _.each( data.input_attrs, function( value, key ) { #>
-						{{{ key }}}="{{ value }}"
-					<# } ) #>
-					<# if ( data.setting_property ) { #>
-						data-customize-setting-property-link="{{ data.setting_property }}"
-					<# } #>
-				/>
-			<# } #>
-		</label>
+		<#
+		_.defaults( data, <?php echo wp_json_encode( $data ) ?> );
+		data.inputId = 'input-' + String( Math.random() );
+		#>
+		<span class="customize-control-title"><label for="{{ data.inputId }}">{{ data.label }}</label></span>
+		<# if ( data.description ) { #>
+			<span class="description customize-control-description">{{ data.description }}</span>
+		<# } #>
+		<# if ( 'textarea' === data.field_type ) { #>
+			<textarea
+				class="widefat"
+			    rows="5"
+			    id="{{ data.inputId }}"
+				<# _.each( data.input_attrs, function( value, key ) { #>
+					{{{ key }}}="{{ value }}"
+				<# } ) #>
+				<# if ( data.setting_property ) { #>
+					data-customize-setting-property-link="{{ data.setting_property }}"
+				<# } #>
+				></textarea>
+		<# } else { #>
+			<input
+				id="{{ data.inputId }}"
+				type="{{ data.field_type }}"
+				<# _.each( data.input_attrs, function( value, key ) { #>
+					{{{ key }}}="{{ value }}"
+				<# } ) #>
+				<# if ( data.setting_property ) { #>
+					data-customize-setting-property-link="{{ data.setting_property }}"
+				<# } #>
+			/>
+		<# } #>
+		<div class="customize-setting-validation-message error" aria-live="assertive"></div>
 		<?php
 	}
 }

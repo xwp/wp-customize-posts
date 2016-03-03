@@ -25,6 +25,13 @@ final class WP_Customize_Posts {
 	public $preview;
 
 	/**
+	 * List of settings that have update conflicts in the current request.
+	 *
+	 * @var WP_Customize_Setting[]
+	 */
+	public $update_conflicted_settings = array();
+
+	/**
 	 * Initial loader.
 	 *
 	 * @access public
@@ -53,6 +60,7 @@ final class WP_Customize_Posts {
 		add_action( 'customize_register', array( $this, 'customize_register' ), 20 );
 		add_filter( 'customize_dynamic_setting_args', array( $this, 'filter_customize_dynamic_setting_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_setting_class', array( $this, 'filter_customize_dynamic_setting_class' ), 5, 3 );
+		add_filter( 'customize_save_response', array( $this, 'filter_customize_save_response_for_conflicts' ), 10, 2 );
 
 		$this->preview = new WP_Customize_Posts_Preview( $this );
 	}
@@ -223,6 +231,26 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Return the latest setting data for conflicted posts.
+	 *
+	 * Note that this uses `WP_Customize_Setting::value()` in a way that assumes
+	 * that the `WP_Customize_Setting::preview()` has not been called, as it not
+	 * called when `WP_Customize_Manager::save()` happens.
+	 *
+	 * @param array $response Response.
+	 * @return array
+	 */
+	public function filter_customize_save_response_for_conflicts( $response ) {
+		if ( ! empty( $this->update_conflicted_settings ) ) {
+			$response['update_conflicted_setting_values'] = array();
+			foreach ( $this->update_conflicted_settings as $setting_id => $setting ) {
+				$response['update_conflicted_setting_values'][ $setting_id ] = $setting->value();
+			}
+		}
+		return $response;
+	}
+
+	/**
 	 * Register scripts for Customize Posts.
 	 *
 	 * @param WP_Scripts $wp_scripts Scripts.
@@ -318,6 +346,8 @@ final class WP_Customize_Posts {
 				'fieldContentLabel' => __( 'Content' ),
 				'fieldExcerptLabel' => __( 'Excerpt' ),
 				'noTitle' => __( '(no title)' ),
+				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
+				'overrideButtonText' => __( 'Override', 'customize-posts' ),
 			),
 		);
 
