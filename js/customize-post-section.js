@@ -178,7 +178,7 @@
 
 			// Detect conflict errors.
 			api.bind( 'error', function( response ) {
-				var theirValue, ourValue, overrideButton;
+				var theirValue, ourValue, overrideButton, wasOverrideButtonAdded = false;
 				if ( ! response.update_conflicted_setting_values ) {
 					return;
 				}
@@ -196,9 +196,13 @@
 					if ( control && control.settingValidationMessages && control.settingValidationMessages.has( control.id ) ) {
 						validationMessage = api.Posts.data.l10n.theirChange.replace( '%s', String( theirFieldValue ) );
 						control.settingValidationMessages( control.id ).set( validationMessage );
-						overrideButton = $( '<button class="button override-post-conflict" type="button"></button>' );
-						overrideButton.text( api.Posts.data.l10n.overrideButtonText );
-						section.validationMessageElement.find( 'li:first' ).prepend( overrideButton );
+
+						if ( ! wasOverrideButtonAdded ) {
+							overrideButton = $( '<button class="button override-post-conflict" type="button"></button>' );
+							overrideButton.text( api.Posts.data.l10n.overrideButtonText );
+							section.validationMessageElement.find( 'li:first' ).prepend( overrideButton );
+							wasOverrideButtonAdded = true;
+						}
 					}
 				} );
 			} );
