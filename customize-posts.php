@@ -29,18 +29,13 @@
  */
 
 /**
- * Determine whether the dependencies are satisified for the plugin.
+ * Determine whether the dependencies are satisfied for the plugin.
  *
  * @return bool
  */
 function customize_posts_dependencies_satisfied() {
-	return (
-		function_exists( 'get_rest_url' )
-		&&
-		apply_filters( 'rest_enabled', true )
-		&&
-		class_exists( 'WP_REST_Posts_Controller' ) // @todo Remove requirement.
-	);
+	$has_required_wp_version = version_compare( str_replace( array( '-src' ), '', $GLOBALS['wp_version'] ), '4.5-beta2', '>=' );
+	return $has_required_wp_version;
 }
 
 /**
@@ -93,7 +88,7 @@ function customize_posts_show_missing_rest_api_admin_notice() {
 	}
 	?>
 	<div class="error">
-		<p><?php esc_html_e( 'The Customize Posts plugin requires the WordPress REST API to be available and enabled, including the WP-API plugin.', 'customize-posts' ); ?></p>
+		<p><?php esc_html_e( 'Customize Posts requires WordPress 4.5-beta2 and should have the Customize Setting Validation plugin active.', 'customize-posts' ); ?></p>
 	</div>
 	<?php
 }
