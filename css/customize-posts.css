@@ -1,3 +1,8 @@
+/* In case Customize Setting Validation is not active */
+div.customize-setting-validation-message.error {
+	display: none;
+}
+
 .customize-posts-panel-notice {
 	color: #555;
 	background: #fff;
