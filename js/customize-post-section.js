@@ -1,4 +1,4 @@
-/* global wp */
+/* global wp, tinyMCE */
 (function( api, $ ) {
 	'use strict';
 
@@ -39,6 +39,8 @@
 			section.postFieldControls = {};
 
 			api.Section.prototype.initialize.call( section, id, options );
+
+			// @todo Upon expand, enable inline editor?
 		},
 
 		/**
@@ -83,63 +85,201 @@
 		 * Set up the post field controls.
 		 */
 		setupControls: function() {
-			var section = this, postTypeObj, control, setting;
+			var section = this, postTypeObj;
 			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
-			setting = api( section.id );
 
 			if ( postTypeObj.supports.title ) {
-				control = new api.controlConstructor.dynamic( section.id + '[post_title]', {
-					params: {
-						section: section.id,
-						priority: 1,
-						label: api.Posts.data.l10n.fieldTitleLabel,
-						active: true,
-						settings: {
-							'default': setting.id
-						},
-						field_type: 'text',
-						setting_property: 'post_title'
-					}
-				} );
-				control.active.validate = function() {
-					return true;
-				};
-				section.postFieldControls.post_title = control;
-				api.control.add( control.id, control );
-
-				// Remove the setting from the settingValidationMessages since it is not specific to this field.
-				if ( control.settingValidationMessages ) {
-					control.settingValidationMessages.remove( setting.id );
-					control.settingValidationMessages.add( control.id, new api.Value( '' ) );
-				}
+				section.addTitleControl();
 			}
-
 			if ( postTypeObj.supports.editor ) {
-				control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
-					params: {
-						section: section.id,
-						priority: 1,
-						label: api.Posts.data.l10n.fieldContentLabel,
-						active: true,
-						settings: {
-							'default': setting.id
-						},
-						field_type: 'textarea',
-						setting_property: 'post_content'
-					}
-				} );
-				control.active.validate = function() {
-					return true;
-				};
-				section.postFieldControls.post_content = control;
-				api.control.add( control.id, control );
-
-				// Remove the setting from the settingValidationMessages since it is not specific to this field.
-				if ( control.settingValidationMessages ) {
-					control.settingValidationMessages.remove( setting.id );
-					control.settingValidationMessages.add( control.id, new api.Value( '' ) );
-				}
+				section.addContentControl();
 			}
+		},
+
+		/**
+		 * Add post title control.
+		 *
+		 * @returns {wp.customize.Control}
+		 */
+		addTitleControl: function() {
+			var section = this, control, setting = api( section.id );
+			control = new api.controlConstructor.dynamic( section.id + '[post_title]', {
+				params: {
+					section: section.id,
+					priority: 1,
+					label: api.Posts.data.l10n.fieldTitleLabel,
+					active: true,
+					settings: {
+						'default': setting.id
+					},
+					field_type: 'text',
+					setting_property: 'post_title'
+				}
+			} );
+
+			// Override preview trying to de-activate control not present in preview context.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.post_title = control;
+			api.control.add( control.id, control );
+
+			// Remove the setting from the settingValidationMessages since it is not specific to this field.
+			if ( control.settingValidationMessages ) {
+				control.settingValidationMessages.remove( setting.id );
+				control.settingValidationMessages.add( control.id, new api.Value( '' ) );
+			}
+			return control;
+		},
+
+		/**
+		 * Add post content control.
+		 *
+		 * @todo It is hacky how the dynamic control is overloaded to connect to the shared TinyMCE editor.
+		 *
+		 * @returns {wp.customize.Control}
+		 */
+		addContentControl: function() {
+			var section = this, control, setting = api( section.id ), editor;
+
+			control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
+				params: {
+					section: section.id,
+					priority: 1,
+					label: api.Posts.data.l10n.fieldContentLabel,
+					active: true,
+					settings: {
+						'default': setting.id
+					},
+					field_type: 'textarea',
+					setting_property: 'post_content'
+				}
+			} );
+			control.editorExpanded = new api.Value( false );
+			control.editorToggleExpandButton = $( '<button type="button" class="button"></button>' );
+			control.updateEditorToggleExpandButtonLabel = function( expanded ) {
+				control.editorToggleExpandButton.text( expanded ? api.Posts.data.l10n.closeEditor : api.Posts.data.l10n.openEditor );
+			};
+			control.updateEditorToggleExpandButtonLabel( control.editorExpanded.get() );
+
+			editor = tinyMCE.get( 'customize-posts-content' );
+
+			/**
+			 * Update the setting value when the editor changes its state.
+			 */
+			control.onVisualEditorChange = function() {
+				var value;
+				if ( control.editorSyncSuspended ) {
+					return;
+				}
+				value = wp.editor.removep( editor.getContent() );
+				control.editorSyncSuspended = true;
+				control.propertyElements[0].set( value );
+				control.editorSyncSuspended = false;
+			};
+
+			/**
+			 * Update the setting value when the editor changes its state.
+			 */
+			control.onTextEditorChange = function() {
+				if ( control.editorSyncSuspended ) {
+					return;
+				}
+				control.editorSyncSuspended = true;
+				control.propertyElements[0].set( $( this ).val() );
+				control.editorSyncSuspended = false;
+			};
+
+			/**
+			 * Update the editor when the setting changes its state.
+			 */
+			setting.bind( function( newPostData, oldPostData ) {
+				if ( control.editorExpanded.get() && ! control.editorSyncSuspended && newPostData.post_content !== oldPostData.post_content ) {
+					control.editorSyncSuspended = true;
+					editor.setContent( newPostData.post_content );
+					control.editorSyncSuspended = false;
+				}
+			} );
+
+			/**
+			 * Update the button text when the expanded state changes;
+			 * toggle editor visibility, and the binding of the editor
+			 * to the post setting.
+			 */
+			control.editorExpanded.bind( function( expanded ) {
+				var textarea = $( '#customize-posts-content' );
+				control.updateEditorToggleExpandButtonLabel( expanded );
+				$( document.body ).toggleClass( 'customize-posts-content-editor-pane-open', expanded );
+
+				if ( expanded ) {
+					editor.setContent( control.propertyElements[0].get() );
+					editor.on( 'input change keyup', control.onVisualEditorChange );
+					textarea.on( 'input', control.onTextEditorChange );
+				} else {
+					editor.off( 'input change keyup', control.onVisualEditorChange );
+					textarea.off( 'input', control.onTextEditorChange );
+				}
+			} );
+
+			/**
+			 * Unlink the editor from this post and collapse the editor when the section is collapsed.
+			 */
+			section.expanded.bind( function( expanded ) {
+				if ( ! expanded ) {
+					control.editorExpanded.set( false );
+				}
+			} );
+
+			/**
+			 * Toggle the editor when clicking the button, focusing on it if it is expanded.
+			 */
+			control.editorToggleExpandButton.on( 'click', function() {
+				control.editorExpanded.set( ! control.editorExpanded() );
+				if ( control.editorExpanded() ) {
+					editor.focus();
+				}
+			} );
+
+			/**
+			 * Expand the editor and focus on it when the post content control is focused.
+			 *
+			 * @param args
+			 */
+			control.focus = function( args ) {
+				var control = this, editor;
+				api.controlConstructor.dynamic.prototype.focus.call( control, args );
+				control.editorExpanded.set( true );
+
+				editor = tinyMCE.get( 'customize-posts-content' );
+				editor.focus();
+			};
+
+			// Override preview trying to de-activate control not present in preview context.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.post_content = control;
+			api.control.add( control.id, control );
+
+			// Inject button in place of textarea.
+			control.deferred.embedded.done( function() {
+				var textarea = control.container.find( 'textarea:first' );
+				textarea.hide();
+				control.editorToggleExpandButton.attr( 'id', textarea.attr( 'id' ) );
+				textarea.attr( 'id', '' );
+				control.container.append( control.editorToggleExpandButton );
+			} );
+
+			// Remove the setting from the settingValidationMessages since it is not specific to this field.
+			if ( control.settingValidationMessages ) {
+				control.settingValidationMessages.remove( setting.id );
+				control.settingValidationMessages.add( control.id, new api.Value( '' ) );
+			}
+			return control;
 		},
 
 		/**

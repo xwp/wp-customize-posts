@@ -50,6 +50,13 @@
 			if ( ! settingId ) {
 				settingId = _.first( partial.settings() );
 			}
+
+			if ( 'post_content' === partial.params.field_id ) {
+
+			}
+
+			// @todo Load inline TinyMCE editor
+
 			api.preview.send( 'focus-control', settingId + '[' + partial.params.field_id + ']' );
 		},
 

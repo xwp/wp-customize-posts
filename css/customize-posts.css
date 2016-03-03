@@ -19,3 +19,51 @@ div.customize-setting-validation-message.error {
 	margin-left: 1ex;
 	float: right;
 }
+
+#customize-posts-content-editor-pane {
+	border-top: solid 1px #ddd;
+	position: absolute;
+	height: 329px;
+	bottom: -330px;
+	right: 0;
+	left: 0;
+	z-index: 20;
+	background: #f1f1f1;
+	display: block;
+	-webkit-transition: bottom 0.2s;
+	transition: bottom 0.2s;
+
+	/* @todo This should have visibility:hidden to ensure accessible when closed. */
+}
+#customize-posts-content-editor-pane .wp-editor-tools {
+	padding-top: 5px;
+	padding-right: 10px;
+}
+#customize-posts-content-editor-pane .wp-media-buttons {
+	padding-left: 5px;
+}
+
+#customize-preview {
+	height: auto;
+}
+
+body.customize-posts-content-editor-pane-open #customize-preview {
+	bottom: 329px;
+}
+body.customize-posts-content-editor-pane-open:not( .mce-fullscreen ) #customize-posts-content-editor-pane {
+	bottom: 0;
+}
+
+body.mce-fullscreen #customize-preview {
+	bottom: 0;
+}
+
+/* @todo Ideally this would include the media buttons in view */
+#wp-customize-posts-content-editor-container div.mce-fullscreen {
+	left: 300px;
+}
+body:not( .customize-posts-content-editor-pane-open ) div.mce-fullscreen {
+	display: none;
+}
+
+/* @todo Mobile support for rich text editor */
