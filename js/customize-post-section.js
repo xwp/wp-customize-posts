@@ -45,16 +45,30 @@
 		 * @todo Defer embedding section until panel is expanded?
 		 */
 		ready: function() {
-			var section = this, postTypeObj, control, setting, sectionContainer, sectionOuterTitleElement,
+			var section = this;
+
+			section.setupTitleUpdating();
+			section.setupSettingValidation();
+			section.setupControls();
+
+			// @todo If postTypeObj.hierarchical, then allow the sections to be re-ordered by drag and drop (add grabber control).
+
+			api.Section.prototype.ready.call( section );
+
+		},
+
+		/**
+		 * Keep the title updated in the UI when the title updates in the setting.
+		 */
+		setupTitleUpdating: function() {
+			var section = this, setting = api( section.id ), sectionContainer, sectionOuterTitleElement,
 				sectionInnerTitleElement, customizeActionElement;
-			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
-			setting = api( section.id );
+
 			sectionContainer = section.container.closest( '.accordion-section' );
 			sectionOuterTitleElement = sectionContainer.find( '.accordion-section-title:first' );
 			sectionInnerTitleElement = sectionContainer.find( '.customize-section-title h3' ).first();
 			customizeActionElement = sectionInnerTitleElement.find( '.customize-action' ).first();
-
-			api( setting.id ).bind( function( newPostData, oldPostData ) {
+			setting.bind( function( newPostData, oldPostData ) {
 				var title;
 				if ( newPostData.post_title !== oldPostData.post_title ) {
 					title = newPostData.post_title || api.Posts.data.l10n.noTitle;
@@ -63,28 +77,15 @@
 					sectionInnerTitleElement.prepend( customizeActionElement );
 				}
 			} );
+		},
 
-			// Inject validation message logic.
-			if ( setting.validationMessage ) {
-				section.validationMessageElement = $( '<div class="customize-setting-validation-message error" aria-live="assertive"></div>' );
-				section.container.find( '.customize-section-title' ).append( section.validationMessageElement );
-				setting.validationMessage.bind( function( message ) {
-					var template = wp.template( 'customize-setting-validation-message' );
-					section.validationMessageElement.empty().append( $.trim(
-						template( { messages: [ message ] } )
-					) );
-					if ( message ) {
-						section.validationMessageElement.slideDown( 'fast' );
-					} else {
-						section.validationMessageElement.slideUp( 'fast' );
-					}
-					section.container.toggleClass( 'customize-setting-invalid', '' !== message );
-				} );
-			}
-
-			// @todo If postTypeObj.hierarchical, then allow the sections to be re-ordered by drag and drop (add grabber control).
-
-			api.Section.prototype.ready.call( section );
+		/**
+		 * Set up the post field controls.
+		 */
+		setupControls: function() {
+			var section = this, postTypeObj, control, setting;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+			setting = api( section.id );
 
 			if ( postTypeObj.supports.title ) {
 				control = new api.controlConstructor.dynamic( section.id + '[post_title]', {
@@ -109,6 +110,7 @@
 				// Remove the setting from the settingValidationMessages since it is not specific to this field.
 				if ( control.settingValidationMessages ) {
 					control.settingValidationMessages.remove( setting.id );
+					control.settingValidationMessages.add( control.id, new api.Value( '' ) );
 				}
 			}
 
@@ -129,16 +131,95 @@
 				control.active.validate = function() {
 					return true;
 				};
-				section.postFieldControls.post_title = control;
+				section.postFieldControls.post_content = control;
 				api.control.add( control.id, control );
 
 				// Remove the setting from the settingValidationMessages since it is not specific to this field.
 				if ( control.settingValidationMessages ) {
 					control.settingValidationMessages.remove( setting.id );
+					control.settingValidationMessages.add( control.id, new api.Value( '' ) );
 				}
 			}
+		},
 
-			// @todo Let the section title include the post title.
+		/**
+		 * Set up setting validation.
+		 */
+		setupSettingValidation: function() {
+			var section = this, setting = api( section.id );
+			if ( ! setting.validationMessage ) {
+				return;
+			}
+
+			section.validationMessageElement = $( '<div class="customize-setting-validation-message error" aria-live="assertive"></div>' );
+			section.container.find( '.customize-section-title' ).append( section.validationMessageElement );
+			setting.validationMessage.bind( function( message ) {
+				var template = wp.template( 'customize-setting-validation-message' );
+				section.validationMessageElement.empty().append( $.trim(
+					template( { messages: [ message ] } )
+				) );
+				if ( message ) {
+					section.validationMessageElement.slideDown( 'fast' );
+				} else {
+					section.validationMessageElement.slideUp( 'fast' );
+				}
+				section.container.toggleClass( 'customize-setting-invalid', '' !== message );
+			} );
+
+			// Dismiss conflict block when clicking on button.
+			section.validationMessageElement.on( 'click', '.override-post-conflict', function( e ) {
+				var ourValue;
+				e.preventDefault();
+				ourValue = _.clone( setting.get() );
+				ourValue.post_modified_gmt = '';
+				setting.set( ourValue );
+				section.resetPostFieldControlSettingValidationMessages();
+			} );
+
+			// Detect conflict errors.
+			api.bind( 'error', function( response ) {
+				var theirValue, ourValue, overrideButton;
+				if ( ! response.update_conflicted_setting_values ) {
+					return;
+				}
+				theirValue = response.update_conflicted_setting_values[ setting.id ];
+				if ( ! theirValue ) {
+					return;
+				}
+				ourValue = setting.get();
+				_.each( theirValue, function( theirFieldValue, fieldId ) {
+					var control, validationMessage;
+					if ( 'post_modified' === fieldId || 'post_modified_gmt' === fieldId || theirFieldValue === ourValue[ fieldId ] ) {
+						return;
+					}
+					control = api.control( setting.id + '[' + fieldId + ']' );
+					if ( control && control.settingValidationMessages && control.settingValidationMessages.has( control.id ) ) {
+						validationMessage = api.Posts.data.l10n.theirChange.replace( '%s', String( theirFieldValue ) );
+						control.settingValidationMessages( control.id ).set( validationMessage );
+						overrideButton = $( '<button class="button override-post-conflict" type="button"></button>' );
+						overrideButton.text( api.Posts.data.l10n.overrideButtonText );
+						section.validationMessageElement.find( 'li:first' ).prepend( overrideButton );
+					}
+				} );
+			} );
+
+			api.bind( 'save', function() {
+				section.resetPostFieldControlSettingValidationMessages();
+			} );
+		},
+
+		/**
+		 * Reset all of the validation messages for all of the post fields in the section.
+		 */
+		resetPostFieldControlSettingValidationMessages: function() {
+			var section = this;
+			_.each( section.postFieldControls, function( postFieldControl ) {
+				if ( postFieldControl.settingValidationMessages ) {
+					postFieldControl.settingValidationMessages.each( function( validationMessage ) {
+						validationMessage.set( '' );
+					} );
+				}
+			} );
 		},
 
 		/**

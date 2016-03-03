@@ -10,3 +10,7 @@
 	margin-top: 0;
 	margin-bottom: 0;
 }
+.customize-setting-validation-message .override-post-conflict {
+	margin-left: 1ex;
+	float: right;
+}
