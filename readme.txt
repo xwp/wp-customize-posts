@@ -1,8 +1,8 @@
 === Customize Posts ===
 Contributors:      xwp, westonruter
 Tags:              customizer, customize, posts, preview, featured-image, page-template
-Requires at least: 4.4
-Tested up to:      4.5-alpha
+Requires at least: 4.5-beta2
+Tested up to:      4.5-beta2
 Stable tag:        trunk
 License:           GPLv2 or later
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
