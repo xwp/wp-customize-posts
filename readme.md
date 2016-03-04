@@ -14,6 +14,8 @@ Edit posts and postmeta in the Customizer. Stop editing your posts/postmeta blin
 
 ## Description ##
 
+*This is a feature plugin intended to implement [#34923](https://core.trac.wordpress.org/ticket/34923): Introduce basic content authorship in the Customize.*
+
 The goal for this plugin is to be able to expose the editing of posts in the Customizer, allowing you to edit post data and postmeta for any number of posts, and preview the changes before saving them for others to see. This plugin was birthed out of the Widget Customizer feature-as-plugin project which was merged into WordPress Core in 3.9: as widgets can now be managed in the Customizer, so too should posts be editable in the Customizer as well.
 
 Did you know that **changing the featured image actually makes the change live even before you save the post**? This is this very surprising/unexpected behavior. The only way to truly preview a change to a featured image is to use something like Customize Posts.
@@ -22,21 +24,28 @@ Likewise, did you know that **changing a page template cannot be previewed from 
 
 Most other changes to metaboxes containing data that gets saved to custom fields (postmeta) also get written when clicking the Preview button. The Customize Posts plugin provides a way to get around this, and also provides a live preview of the changes. Fixing this underlying issue of incorrectly persisting postmeta when doing a preview is captured in [#20299](https://core.trac.wordpress.org/ticket/20299). The current Customize Posts UI for editing postmeta is just a non-user-firendly first stab; future iterations should make it easy to add new controls to manage postmeta, just as metaboxes are added to the post editor.
 
-This project is collaborating with the Front-end Editor project, which is also being re-written to leverage the Customizer as the framework for previewing and persisting changes. See [#20](https://github.com/xwp/wp-customize-posts/issues/20) and [wp-front-end-editor#87](https://github.com/avryl/wp-front-end-editor/issues/87).
-
 **Development of this plugin is done [on GitHub](https://github.com/xwp/wp-customize-posts). Pull requests welcome. Please see [issues](https://github.com/xwp/wp-customize-posts/issues) reported there before going to the [plugin forum](https://wordpress.org/support/plugin/customize-posts).**
 
 This **Customize Posts** plugin is not to be confused with 10up's [**Post Customizer**](https://github.com/10up/Post-Customizer) plugin which is a complimentary effort but seeks to address different use cases. The two plugin projects have [opened a discussion](https://github.com/10up/Post-Customizer/issues/9#issuecomment-43821746) to collaborate where possible.
+### Demo Videos ###
+1) [2016-03-01] Demonstration of hooking into edit post links so that they actually work in the Customizer and expand the section to edit the given post (as opposed to the link doing nothing at all when clicked), as well as shift-clicking on the title and content (needs better discovery UI, see [#27403](https://core.trac.wordpress.org/ticket/27403)):
+
+[![Play video on YouTube](https://i1.ytimg.com/vi/nYfph3NbNCc/hqdefault.jpg)](https://www.youtube.com/watch?v=nYfph3NbNCc)
+
+2) [2016-03-03] Demonstration of integration with [Customize Setting Validation](https://github.com/xwp/wp-customize-setting-validation) ([#34893](https://core.trac.wordpress.org/ticket/34893)) to gracefully handle failures to save due to post locking and concurrent user editing:
+
+[![Play video on YouTube](https://i1.ytimg.com/vi/OUwwTt6FtlQ/hqdefault.jpg)](https://www.youtube.com/watch?v=OUwwTt6FtlQ)
+
+3) [2016-03-04] Demo featuring the WP visual rich text editor (TinyMCE), including the insertion of images from the media library. Post content can be edited in the Customizer and previewed in multiple contexts. For example, this allows you to preview how a Read More tag will appear when the post appears on a post list page, and you can navigate to the single post to continue previewing subsequent paragraphs. You can expand the editor into a full-screen mode to focus on writing and then quickly preview the changes on the site by toggling the editor. You can make changes to as many posts as you want, but none of the changes will go live until you hit Save & Publish: everything is previewed so there is no “save and surprise”.
+
+[![Play video on YouTube](https://i1.ytimg.com/vi/QJsEl0gd7dk/hqdefault.jpg)](https://www.youtube.com/watch?v=QJsEl0gd7dk)
+
 
 ## Screenshots ##
 
-### Edit posts and postmeta in the Customizer to preview them
+### (Old screenshot for v0.2) Edit posts and postmeta in the Customizer to preview them
 
-![Edit posts and postmeta in the Customizer to preview them](assets/screenshot-1.png)
-
-### Customize link is moved to top of admin bar, and is made available to authors and editors in addition to administrators
-
-![Customize link is moved to top of admin bar, and is made available to authors and editors in addition to administrators](assets/screenshot-2.png)
+![(Old screenshot for v0.2) Edit posts and postmeta in the Customizer to preview them](assets/screenshot-1.png)
 
 ## Changelog ##
 
