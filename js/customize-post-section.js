@@ -196,7 +196,7 @@
 			setting.bind( function( newPostData, oldPostData ) {
 				if ( control.editorExpanded.get() && ! control.editorSyncSuspended && newPostData.post_content !== oldPostData.post_content ) {
 					control.editorSyncSuspended = true;
-					editor.setContent( newPostData.post_content );
+					editor.setContent( wp.editor.autop( newPostData.post_content ) );
 					control.editorSyncSuspended = false;
 				}
 			} );
@@ -212,7 +212,7 @@
 				$( document.body ).toggleClass( 'customize-posts-content-editor-pane-open', expanded );
 
 				if ( expanded ) {
-					editor.setContent( control.propertyElements[0].get() );
+					editor.setContent( wp.editor.autop( setting().post_content ) );
 					editor.on( 'input change keyup', control.onVisualEditorChange );
 					textarea.on( 'input', control.onTextEditorChange );
 				} else {
