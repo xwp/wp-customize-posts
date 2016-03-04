@@ -6,6 +6,15 @@
 		api.previewPosts = {};
 	}
 
+	/**
+	 * Prevent shift-clicking from inadvertently causing text selection.
+	 */
+	$( document.body ).on( 'mousedown', function( e ) {
+		if ( e.shiftKey ) {
+			e.preventDefault();
+		}
+	} );
+
 	api.bind( 'preview-ready', function() {
 		api.preview.bind( 'active', function() {
 			var postSettings = {}, idPattern = /^post\[(.+)]\[(-?\d+)]$/;
