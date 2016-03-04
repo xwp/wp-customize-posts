@@ -56,6 +56,7 @@ final class WP_Customize_Posts {
 		add_action( 'wp_default_scripts', array( $this, 'register_scripts' ), 11 );
 		add_action( 'wp_default_styles', array( $this, 'register_styles' ), 11 );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+		add_action( 'customize_controls_init', array( $this, 'enqueue_editor' ) );
 
 		add_action( 'customize_register', array( $this, 'customize_register' ), 20 );
 		add_filter( 'customize_dynamic_setting_args', array( $this, 'filter_customize_dynamic_setting_args' ), 10, 2 );
@@ -348,9 +349,45 @@ final class WP_Customize_Posts {
 				'noTitle' => __( '(no title)' ),
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
 				'overrideButtonText' => __( 'Override', 'customize-posts' ),
+				'openEditor' => __( 'Open Editor', 'customize-posts' ),
+				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
 			),
 		);
 
 		wp_scripts()->add_data( 'customize-posts', 'data', sprintf( 'var _wpCustomizePostsExports = %s;', wp_json_encode( $exports ) ) );
+	}
+
+	/**
+	 * Enqueue a WP Editor instance we can use for rich text editing.
+	 */
+	public function enqueue_editor() {
+		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_editor' ), 0 );
+
+		// @todo These should be included in \_WP_Editors::editor_settings()
+		if ( false === has_action( 'customize_controls_print_footer_scripts', array( '_WP_Editors', 'enqueue_scripts' ) ) ) {
+			add_action( 'customize_controls_print_footer_scripts', array( '_WP_Editors', 'enqueue_scripts' ) );
+		}
+	}
+
+	/**
+	 * Render rich text editor.
+	 */
+	public function render_editor() {
+		echo '<div id="customize-posts-content-editor-pane">';
+
+		// The settings passed in here are derived from those used in edit-form-advanced.php.
+		wp_editor( '', 'customize-posts-content', array(
+			'_content_editor_dfw' => false,
+			'drag_drop_upload' => true,
+			'tabfocus_elements' => 'content-html,save-post',
+			'editor_height' => 200,
+			'tinymce' => array(
+				'resize' => false,
+				'wp_autoresize_on' => false,
+				'add_unload_trigger' => false,
+			),
+		) );
+
+		echo '</div>';
 	}
 }
