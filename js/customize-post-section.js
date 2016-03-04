@@ -39,8 +39,6 @@
 			section.postFieldControls = {};
 
 			api.Section.prototype.initialize.call( section, id, options );
-
-			// @todo Upon expand, enable inline editor?
 		},
 
 		/**
