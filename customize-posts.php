@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Customize Posts
- * Description: Manage posts and postmeta via the Customizer.
+ * Description: Manage posts and postmeta via the Customizer. Works best in conjunction with the <a href="https://wordpress.org/plugins/customize-setting-validation/">Customize Setting Validation</a> plugin.
  * Plugin URI: https://github.com/xwp/wp-customize-posts/
  * Version: 0.3
  * Author: XWP, Weston Ruter
