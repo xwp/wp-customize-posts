@@ -18,7 +18,8 @@
 			fieldTitleLabel: '',
 			fieldContentLabel: '',
 			fieldExcerptLabel: ''
-		}
+		},
+		postIdInput: null
 	};
 	if ( 'undefined' !== typeof _wpCustomizePostsExports ) {
 		_.extend( self.data, _wpCustomizePostsExports );
@@ -48,6 +49,10 @@
 	} );
 
 	api.bind( 'ready', function() {
+		// Add a post_ID input for editor integrations (like Shortcake) to be able to know the post being edited.
+		self.postIdInput = $( '<input type="hidden" id="post_ID" name="post_ID">' );
+		$( 'body' ).append( self.postIdInput );
+
 		api.previewer.bind( 'customized-posts', function( data ) {
 			_.each( data.postSettings, function( settingValue, settingId ) {
 				var section, sectionId, panelId, sectionType, postId, postType, idParts, Constructor, htmlParser;

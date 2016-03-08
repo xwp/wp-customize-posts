@@ -225,7 +225,10 @@
 			 * Unlink the editor from this post and collapse the editor when the section is collapsed.
 			 */
 			section.expanded.bind( function( expanded ) {
-				if ( ! expanded ) {
+				if ( expanded ) {
+					api.Posts.postIdInput.val( section.params.post_id );
+				} else {
+					api.Posts.postIdInput.val( '' );
 					control.editorExpanded.set( false );
 				}
 			} );
