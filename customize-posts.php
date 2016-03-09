@@ -1,15 +1,14 @@
 <?php
 /**
  * Plugin Name: Customize Posts
- * Description: Manage posts and postmeta via the customizer.
- * Version: 0.2.4
- * Author: XWP, Weston Ruter
- * Author URI: https://xwp.co/
+ * Description: Manage posts and postmeta via the Customizer. Works best in conjunction with the <a href="https://wordpress.org/plugins/customize-setting-validation/">Customize Setting Validation</a> plugin.
+ * Plugin URI: https://github.com/xwp/wp-customize-posts/
+ * Version: 0.3.0
+ * Author: XWP
+ * Author URI: https://make.xwp.co/
  * License: GPLv2+
- */
-
-/**
- * Copyright (c) 2015 XWP (https://xwp.co/)
+ *
+ * Copyright (c) 2016 XWP (https://xwp.co/)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License, version 2 or, at
@@ -24,85 +23,75 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ * @package WordPress
+ * @subpackage Customize
  */
 
-function wp_customize_posts_init() {
-	global $wp_customize;
+define( 'CUSTOMIZE_POSTS_VERSION', '0.3.0' );
+
+/**
+ * Determine whether the dependencies are satisfied for the plugin.
+ *
+ * @return bool
+ */
+function customize_posts_dependencies_satisfied() {
+	$has_required_wp_version = version_compare( str_replace( array( '-src' ), '', $GLOBALS['wp_version'] ), '4.5-beta2', '>=' );
+	return $has_required_wp_version;
+}
+
+/**
+ * Bootstrap.
+ *
+ * This will be part of the WP_Customize_Manager::__construct() or another such class constructor in #coremerge.
+ *
+ * @param array                $components   Components.
+ * @param WP_Customize_Manager $wp_customize Manager.
+ * @return array Components.
+ */
+function customize_posts_filter_customize_loaded_components( $components, $wp_customize ) {
 	define( 'CUSTOMIZE_POSTS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 	define( 'CUSTOMIZE_POSTS_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
-	require_once( CUSTOMIZE_POSTS_PLUGIN_PATH . 'php/class-wp-customize-posts.php' );
-	require_once( CUSTOMIZE_POSTS_PLUGIN_PATH . 'php/class-wp-customize-posts-preview.php' );
-	require_once( CUSTOMIZE_POSTS_PLUGIN_PATH . 'php/class-wp-post-edit-customize-control.php' );
-	require_once( CUSTOMIZE_POSTS_PLUGIN_PATH . 'php/class-wp-post-select-customize-control.php' );
-	$wp_customize->posts = new WP_Customize_Posts( $wp_customize );
-}
-add_action( 'customize_register', 'wp_customize_posts_init' );
 
+	if ( customize_posts_dependencies_satisfied() ) {
+		require_once dirname( __FILE__ ) . '/php/class-wp-customize-posts.php';
+		$wp_customize->posts = new WP_Customize_Posts( $wp_customize );
+	}
+
+	return $components;
+}
+add_filter( 'customize_loaded_components', 'customize_posts_filter_customize_loaded_components', 100, 2 );
 
 /**
  * Let users who can edit posts also access the Customizer because there is something for them there.
  *
- * @todo Add Customize link to admin bar, when editing a post, and perhaps in the admin menu
+ * @todo Promote Customize link in admin menu.
  *
  * @see https://core.trac.wordpress.org/ticket/28605
- * @param array $allcaps
- * @param array $caps
- * @param array $args
- *
- * @return array
+ * @param array $allcaps All capabilities.
+ * @param array $caps    Capabilities.
+ * @param array $args    Args.
+ * @return array All capabilities.
  */
-function wp_customize_posts_grant_capability( $allcaps, $caps, $args ) {
-	if ( ! empty( $allcaps['edit_posts'] ) && ! empty( $args ) && 'customize' === $args[0] ) {
+function customize_posts_grant_capability( $allcaps, $caps, $args ) {
+	if ( customize_posts_dependencies_satisfied() && ! empty( $allcaps['edit_posts'] ) && ! empty( $args ) && 'customize' === $args[0] ) {
 		$allcaps = array_merge( $allcaps, array_fill_keys( $caps, true ) );
 	}
 	return $allcaps;
 }
-
-add_filter( 'user_has_cap', 'wp_customize_posts_grant_capability', 10, 3 );
+add_filter( 'user_has_cap', 'customize_posts_grant_capability', 10, 3 );
 
 /**
- * Move the Customize link in the admin bar right after the Edit Post link
- *
- * @todo Factor this out into proper class
- *
- * Modified from Customizer Everywhere plugin: https://github.com/xwp/wp-customizer-everywhere/blob/3a43eef74d31aae209b1105aa0284c1a6326c31d/customizer-everywhere.php#L207-L220
- *
- * @param WP_Admin_Bar $wp_admin_bar Admin bar instance.
- * @action admin_bar_menu
+ * Show error when is not available.
  */
-function wp_customize_posts_admin_bar_menu( $wp_admin_bar ) {
-	if ( ! current_user_can( 'customize' ) ) {
+function customize_posts_show_dependency_error() {
+	if ( customize_posts_dependencies_satisfied() ) {
 		return;
 	}
-	if ( ! $wp_admin_bar->get_node( 'customize' ) ) {
-		// Copied from admin-bar.php.
-		$current_url = ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-		$wp_admin_bar->add_menu( array(
-			'parent' => 'appearance',
-			'id'     => 'customize',
-			'title'  => __( 'Customize' ),
-			'href'   => add_query_arg( 'url', urlencode( $current_url ), wp_customize_url() ),
-			'meta'   => array( 'class' => 'hide-if-no-customize' ),
-		) );
-		add_action( 'wp_before_admin_bar_render', 'wp_customize_support_script' );
-	}
-	$customize_node = $wp_admin_bar->get_node( 'customize' );
-	$wp_admin_bar->remove_node( 'customize' );
-	$customize_node->parent = false;
-	$customize_node->meta['title'] = __( 'View current page in the customizer', 'post-customizer' );
-	$wp_admin_bar->add_node( (array) $customize_node );
+	?>
+	<div class="error">
+		<p><?php esc_html_e( 'Customize Posts requires WordPress 4.5-beta2 and should have the Customize Setting Validation plugin active.', 'customize-posts' ); ?></p>
+	</div>
+	<?php
 }
-
-/**
- * Add the right icon to the Customize
- *
- * @todo Factor this out into proper class
- */
-function wp_customize_posts_admin_bar_init() {
-	if ( ! current_user_can( 'customize' ) ) {
-		return false;
-	}
-	wp_enqueue_style( 'customize-posts-admin-bar', plugin_dir_url( __FILE__ ) . 'css/admin-bar.css', array( 'admin-bar' ) );
-	add_action( 'admin_bar_menu', 'wp_customize_posts_admin_bar_menu', 81 );
-}
-add_action( 'admin_bar_init', 'wp_customize_posts_admin_bar_init' );
+add_action( 'admin_notices', 'customize_posts_show_dependency_error' );

@@ -1,46 +1,69 @@
-.customize-control.customize-control-post_select select {
-	display: block;
-	width: 100%;
-}
-
-.customize-control.customize-control-post_edit textarea,
-.customize-control.customize-control-post_edit select,
-.customize-control.customize-control-post_edit .meta-key {
-	display: block;
-	width: 100%;
-}
-
-.customize-control.customize-control-post_edit .post-meta li {
-	position: relative;
-	margin-left: 0;
-}
-
-.customize-control.customize-control-post_edit .post-meta .meta-key {
-	padding-right: 37px;
-}
-
-.customize-control.customize-control-post_edit .post-meta textarea {
-	display: block;
-	margin-top: 0;
-}
-
-.customize-control.customize-control-post_edit .post-meta .delete-meta {
-	position: absolute;
-	top: 0;
-	right: 0px;
-	width: 35px;
-}
-
-.customize-control.customize-control-post_edit .post-thumbnail label,
-.customize-control.customize-control-post_edit .post-thumbnail img {
-	display: block;
-}
-.customize-control.customize-control-post_edit .post-thumbnail img {
-	cursor: pointer;
-	margin-bottom: 3px;
-}
-
-.customize-control.customize-control-post_edit .post-thumbnail:not(.populated) img,
-.customize-control.customize-control-post_edit .post-thumbnail:not(.populated) .remove-featured-image {
+/* In case Customize Setting Validation is not active */
+div.customize-setting-validation-message.error {
 	display: none;
 }
+
+.customize-posts-panel-notice {
+	color: #555;
+	background: #fff;
+	padding: 12px 15px;
+	border-top: 1px solid #ddd;
+}
+
+.customize-section-title > div.customize-setting-validation-message {
+	border-top: 1px solid #ddd;
+	margin-top: 0;
+	margin-bottom: 0;
+}
+.customize-setting-validation-message .override-post-conflict {
+	margin-left: 1ex;
+	float: right;
+}
+
+#customize-posts-content-editor-pane {
+	border-top: solid 1px #ddd;
+	position: absolute;
+	height: 329px;
+	bottom: -330px;
+	right: 0;
+	left: 0;
+	z-index: 20;
+	background: #f1f1f1;
+	display: block;
+	-webkit-transition: bottom 0.2s;
+	transition: bottom 0.2s;
+
+	/* @todo This should have visibility:hidden to ensure accessible when closed. */
+}
+#customize-posts-content-editor-pane .wp-editor-tools {
+	padding-top: 5px;
+	padding-right: 10px;
+}
+#customize-posts-content-editor-pane .wp-media-buttons {
+	padding-left: 5px;
+}
+
+#customize-preview {
+	height: auto;
+}
+
+body.customize-posts-content-editor-pane-open #customize-preview {
+	bottom: 329px;
+}
+body.customize-posts-content-editor-pane-open:not( .mce-fullscreen ) #customize-posts-content-editor-pane {
+	bottom: 0;
+}
+
+body.mce-fullscreen #customize-preview {
+	bottom: 0;
+}
+
+/* @todo Ideally this would include the media buttons in view */
+#wp-customize-posts-content-editor-container div.mce-fullscreen {
+	left: 300px;
+}
+body:not( .customize-posts-content-editor-pane-open ) div.mce-fullscreen {
+	display: none;
+}
+
+/* @todo Mobile support for rich text editor */

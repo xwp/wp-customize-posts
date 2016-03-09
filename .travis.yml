@@ -5,12 +5,10 @@ language:
     - node_js
 
 php:
-    - 5.4
+    - 5.2
     - 7.0
 
 env:
-    - WP_VERSION=latest WP_MULTISITE=0
-    - WP_VERSION=latest WP_MULTISITE=1
     - WP_VERSION=trunk WP_MULTISITE=0
     - WP_VERSION=trunk WP_MULTISITE=1
 
