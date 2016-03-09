@@ -260,28 +260,28 @@ final class WP_Customize_Posts {
 		$handle = 'customize-base-extensions';
 		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-base-extensions.js';
 		$deps = array( 'customize-base' );
-		$version = null;
+		$version = CUSTOMIZE_POSTS_VERSION;
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
 
 		$handle = 'customize-posts-panel';
 		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-posts-panel.js';
 		$deps = array( 'customize-controls' );
-		$version = null;
+		$version = CUSTOMIZE_POSTS_VERSION;
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
 
 		$handle = 'customize-post-section';
 		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-post-section.js';
 		$deps = array( 'customize-controls' );
-		$version = null;
+		$version = CUSTOMIZE_POSTS_VERSION;
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
 
 		$handle = 'customize-dynamic-control';
 		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-dynamic-control.js';
 		$deps = array( 'customize-controls' );
-		$version = null;
+		$version = CUSTOMIZE_POSTS_VERSION;
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
 
@@ -297,21 +297,21 @@ final class WP_Customize_Posts {
 			'customize-dynamic-control',
 			'underscore',
 		);
-		$version = null;
+		$version = CUSTOMIZE_POSTS_VERSION;
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
 
 		$handle = 'customize-post-field-partial';
 		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-post-field-partial.js';
 		$deps = array( 'customize-selective-refresh' );
-		$version = null;
+		$version = CUSTOMIZE_POSTS_VERSION;
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
 
 		$handle = 'customize-preview-posts';
 		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-preview-posts.js';
 		$deps = array( 'jquery', 'customize-preview', 'customize-post-field-partial' );
-		$version = null;
+		$version = CUSTOMIZE_POSTS_VERSION;
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
 	}
@@ -325,7 +325,7 @@ final class WP_Customize_Posts {
 		$handle = 'customize-posts';
 		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'css/customize-posts.css';
 		$deps = array( 'wp-admin' );
-		$version = null;
+		$version = CUSTOMIZE_POSTS_VERSION;
 		$wp_styles->add( $handle, $src, $deps, $version );
 	}
 

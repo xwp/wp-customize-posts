@@ -3,9 +3,9 @@
  * Plugin Name: Customize Posts
  * Description: Manage posts and postmeta via the Customizer. Works best in conjunction with the <a href="https://wordpress.org/plugins/customize-setting-validation/">Customize Setting Validation</a> plugin.
  * Plugin URI: https://github.com/xwp/wp-customize-posts/
- * Version: 0.3
- * Author: XWP, Weston Ruter
- * Author URI: https://xwp.co/
+ * Version: 0.3.0
+ * Author: XWP
+ * Author URI: https://make.xwp.co/
  * License: GPLv2+
  *
  * Copyright (c) 2016 XWP (https://xwp.co/)
@@ -27,6 +27,8 @@
  * @package WordPress
  * @subpackage Customize
  */
+
+define( 'CUSTOMIZE_POSTS_VERSION', '0.3.0' );
 
 /**
  * Determine whether the dependencies are satisfied for the plugin.
@@ -80,9 +82,9 @@ function customize_posts_grant_capability( $allcaps, $caps, $args ) {
 add_filter( 'user_has_cap', 'customize_posts_grant_capability', 10, 3 );
 
 /**
- * Show error when REST API is not available.
+ * Show error when is not available.
  */
-function customize_posts_show_missing_rest_api_admin_notice() {
+function customize_posts_show_dependency_error() {
 	if ( customize_posts_dependencies_satisfied() ) {
 		return;
 	}
@@ -92,4 +94,4 @@ function customize_posts_show_missing_rest_api_admin_notice() {
 	</div>
 	<?php
 }
-add_action( 'admin_notices', 'customize_posts_show_missing_rest_api_admin_notice' );
+add_action( 'admin_notices', 'customize_posts_show_dependency_error' );
