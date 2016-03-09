@@ -104,11 +104,11 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 
 			if ( ! empty( $post->post_password ) ) {
 				/** This filter is documented in wp-includes/post-template.php */
-				$protected_title_format = apply_filters( 'protected_title_format', __( 'Protected: %s' ), $post );
+				$protected_title_format = apply_filters( 'protected_title_format', __( 'Protected: %s', 'customize-posts' ), $post );
 				$rendered = sprintf( $protected_title_format, $rendered );
 			} elseif ( isset( $post->post_status ) && 'private' === $post->post_status ) {
 				/** This filter is documented in wp-includes/post-template.php */
-				$private_title_format = apply_filters( 'private_title_format', __( 'Private: %s' ), $post );
+				$private_title_format = apply_filters( 'private_title_format', __( 'Private: %s', 'customize-posts' ), $post );
 				$rendered = sprintf( $private_title_format, $rendered );
 			}
 

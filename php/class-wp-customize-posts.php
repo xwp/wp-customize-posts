@@ -342,11 +342,11 @@ final class WP_Customize_Posts {
 			'postTypes' => $this->get_post_types(),
 			'l10n' => array(
 				/* translators: &#9656; is the unicode right-pointing triangle, and %s is the section title in the Customizer */
-				'sectionCustomizeActionTpl' => __( 'Customizing &#9656; %s' ),
-				'fieldTitleLabel' => __( 'Title' ),
-				'fieldContentLabel' => __( 'Content' ),
-				'fieldExcerptLabel' => __( 'Excerpt' ),
-				'noTitle' => __( '(no title)' ),
+				'sectionCustomizeActionTpl' => __( 'Customizing &#9656; %s', 'customize-posts' ),
+				'fieldTitleLabel' => __( 'Title', 'customize-posts' ),
+				'fieldContentLabel' => __( 'Content', 'customize-posts' ),
+				'fieldExcerptLabel' => __( 'Excerpt', 'customize-posts' ),
+				'noTitle' => __( '(no title)', 'customize-posts' ),
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
 				'overrideButtonText' => __( 'Override', 'customize-posts' ),
 				'openEditor' => __( 'Open Editor', 'customize-posts' ),
