@@ -257,36 +257,38 @@ final class WP_Customize_Posts {
 	 * @param WP_Scripts $wp_scripts Scripts.
 	 */
 	public function register_scripts( WP_Scripts $wp_scripts ) {
+		$suffix = ( SCRIPT_DEBUG ? '' : '.min' ) . '.js';
+
 		$handle = 'customize-base-extensions';
-		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-base-extensions.js';
+		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-base-extensions' . $suffix;
 		$deps = array( 'customize-base' );
 		$version = CUSTOMIZE_POSTS_VERSION;
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
 
 		$handle = 'customize-posts-panel';
-		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-posts-panel.js';
+		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-posts-panel' . $suffix;
 		$deps = array( 'customize-controls' );
 		$version = CUSTOMIZE_POSTS_VERSION;
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
 
 		$handle = 'customize-post-section';
-		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-post-section.js';
+		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-post-section' . $suffix;
 		$deps = array( 'customize-controls' );
 		$version = CUSTOMIZE_POSTS_VERSION;
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
 
 		$handle = 'customize-dynamic-control';
-		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-dynamic-control.js';
+		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-dynamic-control' . $suffix;
 		$deps = array( 'customize-controls' );
 		$version = CUSTOMIZE_POSTS_VERSION;
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
 
 		$handle = 'customize-posts';
-		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-posts.js';
+		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-posts' . $suffix;
 		$deps = array(
 			'jquery',
 			'wp-backbone',
@@ -302,14 +304,14 @@ final class WP_Customize_Posts {
 		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
 
 		$handle = 'customize-post-field-partial';
-		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-post-field-partial.js';
+		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-post-field-partial' . $suffix;
 		$deps = array( 'customize-selective-refresh' );
 		$version = CUSTOMIZE_POSTS_VERSION;
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
 
 		$handle = 'customize-preview-posts';
-		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-preview-posts.js';
+		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-preview-posts' . $suffix;
 		$deps = array( 'jquery', 'customize-preview', 'customize-post-field-partial' );
 		$version = CUSTOMIZE_POSTS_VERSION;
 		$in_footer = 1;
@@ -322,8 +324,10 @@ final class WP_Customize_Posts {
 	 * @param WP_Styles $wp_styles Styles.
 	 */
 	public function register_styles( WP_Styles $wp_styles ) {
+		$suffix = ( SCRIPT_DEBUG ? '' : '.min' ) . '.css';
+
 		$handle = 'customize-posts';
-		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'css/customize-posts.css';
+		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'css/customize-posts' . $suffix;
 		$deps = array( 'wp-admin' );
 		$version = CUSTOMIZE_POSTS_VERSION;
 		$wp_styles->add( $handle, $src, $deps, $version );
