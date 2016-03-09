@@ -1,0 +1,14 @@
+.DS_Store
+
+# Grunt
+/build/
+/node_modules/
+npm-debug.log
+
+# Composer
+composer.lock
+/vendor/
+
+# Compiled files
+*.min.js
+*.min.css
