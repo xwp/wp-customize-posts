@@ -13,13 +13,13 @@ Edit posts and postmeta in the Customizer. Stop editing your posts/postmeta blin
 
 *This is a feature plugin intended to implement [#34923](https://core.trac.wordpress.org/ticket/34923): Introduce basic content authorship in the Customize.*
 
-The goal for this plugin is to be able to expose the editing of posts in the Customizer, allowing you to edit post data and postmeta for any number of posts, and preview the changes before saving them for others to see. This plugin was birthed out of the Widget Customizer feature-as-plugin project which was merged into WordPress Core in 3.9: as widgets can now be managed in the Customizer, so too should posts be editable in the Customizer as well.
+The goal for this plugin is to be able to expose the editing of posts and pages in the Customizer, allowing you to edit post data and postmeta for any number of posts, and preview the changes before saving them for others to see. This plugin was birthed out of the Widget Customizer feature-as-plugin project which was merged into WordPress Core: as widgets (in 3.9) and nav menus (4.3) can now be managed in the Customizer, so too should posts and pages be editable in the Customizer as well.
 
 Did you know that **changing the featured image actually makes the change live even before you save the post**? This is this very surprising/unexpected behavior. The only way to truly preview a change to a featured image is to use something like Customize Posts.
 
-Likewise, did you know that **changing a page template cannot be previewed from the post editor?** When you change the selected page template, the change will not show up when you preview the post (see [#11049](https://core.trac.wordpress.org/ticket/11049)). However, in Customize Posts you *can* preview changes to the page template just by changing the dropdown selection, and then you can see what your page would look like with the new template after the preview refreshes.
+Likewise, did you know that **changing a page template cannot be previewed from the post editor?** When you change the selected page template, the change will not show up when you preview the post (see [#11049](https://core.trac.wordpress.org/ticket/11049)). However, in Customize Posts you *can* preview changes to the page template just by changing the dropdown selection, and then you can see what your page would look like with the new template after the preview refreshes. (Note: This ability was removed in the 0.3 rewrite but it will be re-added.)
 
-Most other changes to metaboxes containing data that gets saved to custom fields (postmeta) also get written when clicking the Preview button. The Customize Posts plugin provides a way to get around this, and also provides a live preview of the changes. Fixing this underlying issue of incorrectly persisting postmeta when doing a preview is captured in [#20299](https://core.trac.wordpress.org/ticket/20299). The current Customize Posts UI for editing postmeta is just a non-user-firendly first stab; future iterations should make it easy to add new controls to manage postmeta, just as metaboxes are added to the post editor.
+Most other changes to metaboxes containing data that gets saved to custom fields (postmeta) also get written when clicking the Preview button. The Customize Posts plugin provides a way to get around this, and also provides a live preview of the changes. Fixing this underlying issue of incorrectly persisting postmeta when doing a preview is captured in [#20299](https://core.trac.wordpress.org/ticket/20299). (Custom fields were removed in the complete rewrite in 0.3; postmeta controls will be re-introduced.)
 
 **Development of this plugin is done [on GitHub](https://github.com/xwp/wp-customize-posts). Pull requests welcome. Please see [issues](https://github.com/xwp/wp-customize-posts/issues) reported there before going to the [plugin forum](https://wordpress.org/support/plugin/customize-posts).**
 
@@ -39,11 +39,20 @@ This **Customize Posts** plugin is not to be confused with 10up's [**Post Custom
 
 [youtube https://youtu.be/QJsEl0gd7dk]
 
-== Screenshots ==
+4) [2016-03-05] Opening a draft post in the Customizer to preview title wrapping.
 
-1. (Old screenshot for v0.2) Edit posts and postmeta in the Customizer to preview them
+[youtube https://www.youtube.com/watch?v=sXu2pA42J88]
 
 == Changelog ==
+
+= 0.3.0 =
+* Complete rewrite of plugin.
+* Added: Selective refresh is now used to preview changes to the title and content.
+* Added: A TinyMCE editor is now used to edit content, including initial support for Shortcake.
+* Added: Each post type has a separate panel. Each post is represented by a section within those panels.
+* Added: Edit post links in Customizer preview now open post section.
+* Added: Integration with [Customize Setting Validation](https://github.com/xwp/wp-customize-setting-validation) to show show error message when post locking or version conflict happens.
+* Removed: Postmeta fields (custom fields, page template, featured image) were removed for rewrite but will be re-introduced.
 
 = 0.2.4 =
 Remove shim that implemented the `customize_save_response` filter which was introduced in 4.2. The shim used a slightly different filter name and broke insertion of nav menu items in the Customizer.
