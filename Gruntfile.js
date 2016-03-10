@@ -89,22 +89,11 @@ module.exports = function( grunt ) {
 		copy: {
 			build: {
 				src: [
-					'**',
-					'!.*',
-					'!.*/**',
-					'!.DS_Store',
-					'!build/**',
-					'!composer.json',
-					'!contributing.md',
-					'!dev-lib/**',
-					'!Gruntfile.js',
-					'!node_modules/**',
-					'!npm-debug.log',
-					'!package.json',
-					'!phpcs.ruleset.xml',
-					'!phpunit.xml.dist',
-					'!readme.md',
-					'!tests/**'
+					'js/*.js',
+					'css/*.css',
+					'*.php',
+					'php/*.php',
+					'readme.txt'
 				],
 				dest: 'build',
 				expand: true,
