@@ -357,6 +357,10 @@ final class WP_Customize_Posts {
 				'overrideButtonText' => __( 'Override', 'customize-posts' ),
 				'openEditor' => __( 'Open Editor', 'customize-posts' ),
 				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
+				'keyboardToggle' => array(
+					'mac' => '&#x2318;&#x21E7;E',
+					'pc' => 'Ctrl+Shift+E',
+				),
 			),
 		);
 
