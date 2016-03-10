@@ -143,7 +143,7 @@
 			var section = this, control, setting = api( section.id ), editor;
 
 			// Get shortcut label for Mac or PC
-			var shortcutLabel = navigator.appVersion.indexOf( 'Mac' ) !== - 1 ? api.Posts.data.l10n.keyboardToggle.mac : api.Posts.data.l10n.keyboardToggle.pc;
+			var shortcutLabel = navigator.appVersion.indexOf( 'Mac' ) !== -1 ? api.Posts.data.l10n.keyboardToggle.mac : api.Posts.data.l10n.keyboardToggle.pc;
 
 			control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
 				params: {
@@ -234,7 +234,7 @@
 					api.Posts.postIdInput.val( section.params.post_id );
 
 					/** Respond to Crtl/Cmnd+Shift+E */
-					$( document ).on('customizePostCtrlShiftE', function() {
+					$( document ).on( 'customizePostCtrlShiftE', function() {
 						control.editorExpanded.set( ! control.editorExpanded() );
 						if ( control.editorExpanded() ) {
 							editor.focus();
@@ -246,7 +246,7 @@
 					control.editorExpanded.set( false );
 
 					/** Remove Ctrl/Cmd+Shift+E trigger handler. */
-					$( document ).off('customizePostCtrlShiftE');
+					$( document ).off( 'customizePostCtrlShiftE' );
 				}
 			} );
 
@@ -265,23 +265,23 @@
 			 * Create Ctrl/Cmnd+Shift+E shortcut trigger.
 			 * This adds the `customizePostCtrlShiftE` trigger to the document.
 			 */
-			(function(){
+			( function() {
 
-				var isCtrl = false, // status of control/command key
-					isShift = false, // status of shift key
-					modifier = navigator.appVersion.indexOf( 'Mac' ) !== - 1 ? 91 : 17, // use command (91) for Mac
+				var isCtrl = false, // Status of control/command key
+					isShift = false, // Status of shift key
+					modifier = navigator.appVersion.indexOf( 'Mac' ) !== -1 ? 91 : 17, // use command (91) for Mac
 					customizePostShortcuts = customizePostShortcuts || {};
 
 				customizePostShortcuts.keysUp = function( e ) {
-					isShift = e.which === 16 ? false : isCtrl;
+					isShift = 16 === e.which ? false : isCtrl;
 					isCtrl = e.which === modifier ? false : isCtrl;
 				};
 
 				customizePostShortcuts.keysDown = function( e ) {
-					isShift = e.which === 16 ? true : isCtrl;
+					isShift = 16 === e.which ? true : isCtrl;
 					isCtrl = e.which === modifier ? true : isCtrl;
-					if ( e.which === 69 && isCtrl && isShift ) {
-						$( document ).trigger('customizePostCtrlShiftE');
+					if ( 69 === e.which && isCtrl && isShift ) {
+						$( document ).trigger( 'customizePostCtrlShiftE' );
 					}
 				};
 
@@ -294,11 +294,10 @@
 				/**
 				 * Add keyboard handlers to Editor.
 				 */
-				$(document.getElementById('customize-posts-content_ifr').contentWindow.document).on( 'keyup', customizePostShortcuts.keysUp );
-				$(document.getElementById('customize-posts-content_ifr').contentWindow.document).on( 'keydown', customizePostShortcuts.keysDown );
+				$( document.getElementById( 'customize-posts-content_ifr' ).contentWindow.document ).on( 'keyup', customizePostShortcuts.keysUp );
+				$( document.getElementById( 'customize-posts-content_ifr' ).contentWindow.document ).on( 'keydown', customizePostShortcuts.keysDown );
 
-			})();
-
+			} )();
 
 			/**
 			 * Expand the editor and focus on it when the post content control is focused.
