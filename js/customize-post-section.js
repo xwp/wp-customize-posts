@@ -269,7 +269,7 @@
 
 				var isCtrl = false, // Status of control/command key
 					isShift = false, // Status of shift key
-					modifier = navigator.appVersion.indexOf( 'Mac' ) !== -1 ? 91 : 17, // use command (91) for Mac
+					modifier = navigator.appVersion.indexOf( 'Mac' ) !== -1 ? 91 : 17, // Use command (91) for Mac
 					customizePostShortcuts = customizePostShortcuts || {};
 
 				customizePostShortcuts.keysUp = function( e ) {
