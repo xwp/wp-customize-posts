@@ -1,11 +1,15 @@
 <?php
 /**
- * Customize Posts Class
+ * Customize Posts Component Class
  *
  * Implements post management in the Customizer.
  *
  * @package WordPress
  * @subpackage Customize
+ */
+
+/**
+ * Class WP_Customize_Posts
  */
 final class WP_Customize_Posts {
 
@@ -53,8 +57,6 @@ final class WP_Customize_Posts {
 		require_once ABSPATH . WPINC . '/customize/class-wp-customize-partial.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-field-partial.php';
 
-		add_action( 'wp_default_scripts', array( $this, 'register_scripts' ), 11 );
-		add_action( 'wp_default_styles', array( $this, 'register_styles' ), 11 );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'customize_controls_init', array( $this, 'enqueue_editor' ) );
 
