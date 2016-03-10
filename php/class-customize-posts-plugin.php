@@ -14,14 +14,30 @@
 class Customize_Posts_Plugin {
 
 	/**
+	 * Plugin version.
+	 *
+	 * @var string
+	 */
+	public $version;
+
+	/**
 	 * Plugin constructor.
 	 *
 	 * @access public
 	 */
 	public function __construct() {
+		if ( ! $this->has_required_core_version() ) {
+			add_action( 'admin_notices', array( $this, 'show_core_version_dependency_failure' ) );
+			return;
+		}
+
+		// Parse plugin version.
+		if ( preg_match( '/Version:\s*(\S+)/', file_get_contents( dirname( __FILE__ ) . '/../customize-posts.php' ), $matches ) ) {
+			$this->version = $matches[1];
+		}
+
 		add_action( 'wp_default_scripts', array( $this, 'register_scripts' ), 11 );
 		add_action( 'wp_default_styles', array( $this, 'register_styles' ), 11 );
-		add_action( 'admin_notices', array( $this, 'show_admin_notice' ) );
 		add_filter( 'user_has_cap', array( $this, 'grant_customize_capability' ), 10, 3 );
 		add_filter( 'customize_loaded_components', array( $this, 'filter_customize_loaded_components' ), 100, 2 );
 	}
@@ -31,15 +47,13 @@ class Customize_Posts_Plugin {
 	 *
 	 * @return bool
 	 */
-	function has_required_dependencies() {
+	function has_required_core_version() {
 		$has_required_wp_version = version_compare( str_replace( array( '-src' ), '', $GLOBALS['wp_version'] ), '4.5-beta2', '>=' );
 		return $has_required_wp_version;
 	}
 
 	/**
 	 * Let users who can edit posts also access the Customizer because there is something for them there.
-	 *
-	 * @todo Promote Customize link in admin menu.
 	 *
 	 * @see https://core.trac.wordpress.org/ticket/28605
 	 * @param array $allcaps All capabilities.
@@ -48,7 +62,7 @@ class Customize_Posts_Plugin {
 	 * @return array All capabilities.
 	 */
 	function grant_customize_capability( $allcaps, $caps, $args ) {
-		if ( $this->has_required_dependencies() && ! empty( $allcaps['edit_posts'] ) && ! empty( $args ) && 'customize' === $args[0] ) {
+		if ( ! empty( $allcaps['edit_posts'] ) && ! empty( $args ) && 'customize' === $args[0] ) {
 			$allcaps = array_merge( $allcaps, array_fill_keys( $caps, true ) );
 		}
 		return $allcaps;
@@ -64,21 +78,16 @@ class Customize_Posts_Plugin {
 	 * @return array Components.
 	 */
 	function filter_customize_loaded_components( $components, $wp_customize ) {
-		if ( $this->has_required_dependencies() ) {
-			require_once dirname( __FILE__ ) . '/class-wp-customize-posts.php';
-			$wp_customize->posts = new WP_Customize_Posts( $wp_customize );
-		}
+		require_once dirname( __FILE__ ) . '/class-wp-customize-posts.php';
+		$wp_customize->posts = new WP_Customize_Posts( $wp_customize );
 
 		return $components;
 	}
 
 	/**
-	 * Show error when is not available.
+	 * Show error dependency failure notice.
 	 */
-	function show_admin_notice() {
-		if ( $this->has_required_dependencies() ) {
-			return;
-		}
+	function show_core_version_dependency_failure() {
 		?>
 		<div class="error">
 			<p><?php esc_html_e( 'Customize Posts requires WordPress 4.5-beta2 and should have the Customize Setting Validation plugin active.', 'customize-posts' ); ?></p>
@@ -98,30 +107,26 @@ class Customize_Posts_Plugin {
 		$handle = 'customize-base-extensions';
 		$src = $plugin_dir_url . 'js/customize-base-extensions' . $suffix;
 		$deps = array( 'customize-base' );
-		$version = CUSTOMIZE_POSTS_VERSION;
 		$in_footer = 1;
-		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		$handle = 'customize-posts-panel';
 		$src = $plugin_dir_url . 'js/customize-posts-panel' . $suffix;
 		$deps = array( 'customize-controls' );
-		$version = CUSTOMIZE_POSTS_VERSION;
 		$in_footer = 1;
-		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		$handle = 'customize-post-section';
 		$src = $plugin_dir_url . 'js/customize-post-section' . $suffix;
 		$deps = array( 'customize-controls' );
-		$version = CUSTOMIZE_POSTS_VERSION;
 		$in_footer = 1;
-		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		$handle = 'customize-dynamic-control';
 		$src = $plugin_dir_url . 'js/customize-dynamic-control' . $suffix;
 		$deps = array( 'customize-controls' );
-		$version = CUSTOMIZE_POSTS_VERSION;
 		$in_footer = 1;
-		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		$handle = 'customize-posts';
 		$src = $plugin_dir_url . 'js/customize-posts' . $suffix;
@@ -135,23 +140,20 @@ class Customize_Posts_Plugin {
 			'customize-dynamic-control',
 			'underscore',
 		);
-		$version = CUSTOMIZE_POSTS_VERSION;
 		$in_footer = 1;
-		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		$handle = 'customize-post-field-partial';
 		$src = $plugin_dir_url . 'js/customize-post-field-partial' . $suffix;
 		$deps = array( 'customize-selective-refresh' );
-		$version = CUSTOMIZE_POSTS_VERSION;
 		$in_footer = 1;
-		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		$handle = 'customize-preview-posts';
 		$src = $plugin_dir_url . 'js/customize-preview-posts' . $suffix;
 		$deps = array( 'jquery', 'customize-preview', 'customize-post-field-partial' );
-		$version = CUSTOMIZE_POSTS_VERSION;
 		$in_footer = 1;
-		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 	}
 
 	/**
@@ -166,7 +168,7 @@ class Customize_Posts_Plugin {
 		$handle = 'customize-posts';
 		$src = $plugin_dir_url . 'css/customize-posts' . $suffix;
 		$deps = array( 'wp-admin' );
-		$version = CUSTOMIZE_POSTS_VERSION;
+		$version = $this->version;
 		$wp_styles->add( $handle, $src, $deps, $version );
 	}
 }

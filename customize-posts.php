@@ -28,7 +28,5 @@
  * @subpackage Customize
  */
 
-define( 'CUSTOMIZE_POSTS_VERSION', '0.3.0' );
-
 require_once dirname( __FILE__ ) . '/php/class-customize-posts-plugin.php';
 $GLOBALS['customize_posts_plugin'] = new Customize_Posts_Plugin();
