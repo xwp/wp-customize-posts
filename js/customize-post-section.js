@@ -142,6 +142,9 @@
 		addContentControl: function() {
 			var section = this, control, setting = api( section.id ), editor;
 
+			// Get shortcut label for Mac or PC
+			var shortcutLabel = navigator.appVersion.indexOf( 'Mac' ) !== -1 ? api.Posts.data.l10n.keyboardToggle.mac : api.Posts.data.l10n.keyboardToggle.pc;
+
 			control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
 				params: {
 					section: section.id,
@@ -157,6 +160,8 @@
 			} );
 			control.editorExpanded = new api.Value( false );
 			control.editorToggleExpandButton = $( '<button type="button" class="button"></button>' );
+			/** Create container for shortcut key display */
+			control.editorToggleExpandButtonShortcut = $( '<div style="display: inline-block; padding: 5px;">' + shortcutLabel + '</div>' );
 			control.updateEditorToggleExpandButtonLabel = function( expanded ) {
 				control.editorToggleExpandButton.text( expanded ? api.Posts.data.l10n.closeEditor : api.Posts.data.l10n.openEditor );
 			};
@@ -227,9 +232,21 @@
 			section.expanded.bind( function( expanded ) {
 				if ( expanded ) {
 					api.Posts.postIdInput.val( section.params.post_id );
+
+					/** Respond to Crtl/Cmnd+Shift+E */
+					$( document ).on( 'customizePostCtrlShiftE', function() {
+						control.editorExpanded.set( ! control.editorExpanded() );
+						if ( control.editorExpanded() ) {
+							editor.focus();
+						}
+					});
+
 				} else {
 					api.Posts.postIdInput.val( '' );
 					control.editorExpanded.set( false );
+
+					/** Remove Ctrl/Cmd+Shift+E trigger handler. */
+					$( document ).off( 'customizePostCtrlShiftE' );
 				}
 			} );
 
@@ -242,6 +259,45 @@
 					editor.focus();
 				}
 			} );
+
+
+			/**
+			 * Create Ctrl/Cmnd+Shift+E shortcut trigger.
+			 * This adds the `customizePostCtrlShiftE` trigger to the document.
+			 */
+			( function() {
+
+				var isCtrl = false, // Status of control/command key
+					isShift = false, // Status of shift key
+					modifier = navigator.appVersion.indexOf( 'Mac' ) !== -1 ? 91 : 17, // Use command (91) for Mac
+					customizePostShortcuts = customizePostShortcuts || {};
+
+				customizePostShortcuts.keysUp = function( e ) {
+					isShift = 16 === e.which ? false : isCtrl;
+					isCtrl = e.which === modifier ? false : isCtrl;
+				};
+
+				customizePostShortcuts.keysDown = function( e ) {
+					isShift = 16 === e.which ? true : isCtrl;
+					isCtrl = e.which === modifier ? true : isCtrl;
+					if ( 69 === e.which && isCtrl && isShift ) {
+						$( document ).trigger( 'customizePostCtrlShiftE' );
+					}
+				};
+
+				/**
+				 * Add keyboard handlers to Customizer.
+				 */
+				$( '#customize-controls, #customize-preview' ).on( 'keyup', customizePostShortcuts.keysUp );
+				$( '#customize-controls, #customize-preview' ).on( 'keydown', customizePostShortcuts.keysDown );
+
+				/**
+				 * Add keyboard handlers to Editor.
+				 */
+				$( document.getElementById( 'customize-posts-content_ifr' ).contentWindow.document ).on( 'keyup', customizePostShortcuts.keysUp );
+				$( document.getElementById( 'customize-posts-content_ifr' ).contentWindow.document ).on( 'keydown', customizePostShortcuts.keysDown );
+
+			} )();
 
 			/**
 			 * Expand the editor and focus on it when the post content control is focused.
@@ -273,6 +329,7 @@
 				control.editorToggleExpandButton.attr( 'id', textarea.attr( 'id' ) );
 				textarea.attr( 'id', '' );
 				control.container.append( control.editorToggleExpandButton );
+				control.container.append( control.editorToggleExpandButtonShortcut );
 			} );
 
 			// Remove the setting from the settingValidationMessages since it is not specific to this field.
