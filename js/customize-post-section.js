@@ -233,20 +233,18 @@
 				if ( expanded ) {
 					api.Posts.postIdInput.val( section.params.post_id );
 
-					/** Respond to Crtl/Cmnd+Shift+E */
-					$( document ).on( 'customizePostCtrlShiftE', function() {
-						control.editorExpanded.set( ! control.editorExpanded() );
-						if ( control.editorExpanded() ) {
-							editor.focus();
-						}
-					});
-
+					/* Respond to Crtl/Cmnd+Shift+E */
+					$( document ).on( 'keydown', section.handleEditorToggleShortcutKey );
+					$( api.previewer.targetWindow().document ).on( 'keydown', section.handleEditorToggleShortcutKey );
+					$( editor.getWin().document ).on( 'keydown', control.handleEditorToggleShortcutKey ); // @todo This is not working.
 				} else {
 					api.Posts.postIdInput.val( '' );
 					control.editorExpanded.set( false );
 
-					/** Remove Ctrl/Cmd+Shift+E trigger handler. */
-					$( document ).off( 'customizePostCtrlShiftE' );
+					/* Stop listening to Crtl/Cmnd+Shift+E */
+					$( document ).off( 'keydown', section.handleEditorToggleShortcutKey );
+					$( api.previewer.targetWindow().document ).off( 'keydown', section.handleEditorToggleShortcutKey );
+					$( editor.getWin().document ).off( 'keydown', control.handleEditorToggleShortcutKey ); // @todo This is not working.
 				}
 			} );
 
@@ -260,44 +258,19 @@
 				}
 			} );
 
-
 			/**
-			 * Create Ctrl/Cmnd+Shift+E shortcut trigger.
-			 * This adds the `customizePostCtrlShiftE` trigger to the document.
+			 * Handle toggling of editor via keyboard combo.
+			 *
+			 * @param {jQuery.Event} e
 			 */
-			( function() {
-
-				var isCtrl = false, // Status of control/command key
-					isShift = false, // Status of shift key
-					modifier = navigator.appVersion.indexOf( 'Mac' ) !== -1 ? 91 : 17, // Use command (91) for Mac
-					customizePostShortcuts = customizePostShortcuts || {};
-
-				customizePostShortcuts.keysUp = function( e ) {
-					isShift = 16 === e.which ? false : isCtrl;
-					isCtrl = e.which === modifier ? false : isCtrl;
-				};
-
-				customizePostShortcuts.keysDown = function( e ) {
-					isShift = 16 === e.which ? true : isCtrl;
-					isCtrl = e.which === modifier ? true : isCtrl;
-					if ( 69 === e.which && isCtrl && isShift ) {
-						$( document ).trigger( 'customizePostCtrlShiftE' );
+			section.handleEditorToggleShortcutKey = function( e ) {
+				if ( 69 === e.keyCode /* E */ && e.shiftKey && ( e.metaKey || e.ctrlKey ) ) {
+					control.editorExpanded.set( ! control.editorExpanded() );
+					if ( control.editorExpanded() ) {
+						editor.focus();
 					}
-				};
-
-				/**
-				 * Add keyboard handlers to Customizer.
-				 */
-				$( '#customize-controls, #customize-preview' ).on( 'keyup', customizePostShortcuts.keysUp );
-				$( '#customize-controls, #customize-preview' ).on( 'keydown', customizePostShortcuts.keysDown );
-
-				/**
-				 * Add keyboard handlers to Editor.
-				 */
-				$( document.getElementById( 'customize-posts-content_ifr' ).contentWindow.document ).on( 'keyup', customizePostShortcuts.keysUp );
-				$( document.getElementById( 'customize-posts-content_ifr' ).contentWindow.document ).on( 'keydown', customizePostShortcuts.keysDown );
-
-			} )();
+				}
+			};
 
 			/**
 			 * Expand the editor and focus on it when the post content control is focused.
