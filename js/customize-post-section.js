@@ -1,6 +1,7 @@
 /* global wp, tinyMCE */
 (function( api, $ ) {
 	'use strict';
+	var defaultSectionPriorities = {};
 
 	if ( ! api.Posts ) {
 		api.Posts = {};
@@ -37,6 +38,14 @@
 			}
 
 			section.postFieldControls = {};
+
+			if ( ! options.params.priority ) {
+				if ( ! defaultSectionPriorities[ options.params.post_type ] ) {
+					defaultSectionPriorities[ options.params.post_type ] = api.Section.prototype.defaults.priority;
+				}
+				defaultSectionPriorities[ options.params.post_type ] += 1;
+				options.params.priority = defaultSectionPriorities[ options.params.post_type ];
+			}
 
 			api.Section.prototype.initialize.call( section, id, options );
 		},
