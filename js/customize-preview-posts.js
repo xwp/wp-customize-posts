@@ -15,33 +15,51 @@
 		}
 	} );
 
+	/**
+	 * Ensure that each post setting is added and has corresponding partials.
+	 *
+	 * @param {object} postSettings
+	 */
+	api.previewPosts.handlePostSettings = function( postSettings ) {
+
+		_.each( postSettings, function( value, id ) {
+			var partial;
+
+			if ( ! api.has( id ) ) {
+				api.create( id, value, {
+					id: id
+				} );
+			}
+
+			// Post field partial for post_title.
+			partial = new api.previewPosts.PostFieldPartial( id + '[post_title]', {
+				params: {
+					settings: [ id ]
+				}
+			} );
+			api.selectiveRefresh.partial.add( partial.id, partial );
+
+			// Post field partial for post_content.
+			partial = new api.previewPosts.PostFieldPartial( id + '[post_content]', {
+				params: {
+					settings: [ id ]
+				}
+			} );
+			api.selectiveRefresh.partial.add( partial.id, partial );
+		} );
+
+	};
+
 	api.bind( 'preview-ready', function() {
 		api.preview.bind( 'active', function() {
 			var postSettings = {}, idPattern = /^post\[(.+)]\[(-?\d+)]$/;
 			api.each( function( setting ) {
-				var partial;
-				if ( ! idPattern.test( setting.id ) ) {
-					return;
+				if ( idPattern.test( setting.id ) ) {
+					postSettings[ setting.id ] = setting.get();
 				}
-				postSettings[ setting.id ] = setting.get();
-
-				// Post field partial for post_title.
-				partial = new api.previewPosts.PostFieldPartial( setting.id + '[post_title]', {
-					params: {
-						settings: [ setting.id ]
-					}
-				} );
-				api.selectiveRefresh.partial.add( partial.id, partial );
-
-				// Post field partial for post_content.
-				partial = new api.previewPosts.PostFieldPartial( setting.id + '[post_content]', {
-					params: {
-						settings: [ setting.id ]
-					}
-				} );
-				api.selectiveRefresh.partial.add( partial.id, partial );
 			} );
 
+			api.previewPosts.handlePostSettings( postSettings );
 			api.preview.send( 'customized-posts', _.extend(
 				{},
 				_wpCustomizePreviewPostsData,
@@ -73,6 +91,8 @@
 				data = JSON.parse( data );
 			}
 			if ( data.customize_post_settings ) {
+				api.previewPosts.handlePostSettings( data.customize_post_settings );
+
 				api.preview.send( 'customized-posts', {
 					postSettings: data.customize_post_settings
 				} );
