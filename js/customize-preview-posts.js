@@ -1,4 +1,4 @@
-/*global wp, _wpCustomizePreviewPostsData */
+/*global wp, _wpCustomizePreviewPostsData, JSON */
 ( function( api, $ ) {
 	'use strict';
 
@@ -61,6 +61,22 @@
 					api.preview.send( 'focus-section', settingId );
 				}
 			} );
+		} );
+
+		// Capture post settings sent in Jetpack infinite scroll responses.
+		$( document ).ajaxSuccess( function( e, xhr, ajaxOptions, data ) {
+			var isInfinityScrollResponse = ( 'POST' === ajaxOptions.type && -1 !== ajaxOptions.url.indexOf( 'infinity=scrolling' ) );
+			if ( ! isInfinityScrollResponse ) {
+				return;
+			}
+			if ( 'string' === typeof data ) {
+				data = JSON.parse( data );
+			}
+			if ( data.customize_post_settings ) {
+				api.preview.send( 'customized-posts', {
+					postSettings: data.customize_post_settings
+				} );
+			}
 		} );
 	} );
 
