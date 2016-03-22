@@ -305,6 +305,7 @@ final class WP_Customize_Posts {
 			'drag_drop_upload' => true,
 			'tabfocus_elements' => 'content-html,save-post',
 			'editor_height' => 200,
+			'default_editor' => 'tinymce',
 			'tinymce' => array(
 				'resize' => false,
 				'wp_autoresize_on' => false,
