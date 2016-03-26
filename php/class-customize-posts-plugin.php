@@ -21,6 +21,13 @@ class Customize_Posts_Plugin {
 	public $version;
 
 	/**
+	 * Edit Post Preview.
+	 *
+	 * @var Edit_Post_Preview
+	 */
+	public $edit_post_preview;
+
+	/**
 	 * Plugin constructor.
 	 *
 	 * @access public
@@ -35,6 +42,9 @@ class Customize_Posts_Plugin {
 		if ( preg_match( '/Version:\s*(\S+)/', file_get_contents( dirname( __FILE__ ) . '/../customize-posts.php' ), $matches ) ) {
 			$this->version = $matches[1];
 		}
+
+		require_once dirname( __FILE__ ) . '/class-edit-post-preview.php';
+		$this->edit_post_preview = new Edit_Post_Preview( $this );
 
 		add_action( 'wp_default_scripts', array( $this, 'register_scripts' ), 11 );
 		add_action( 'wp_default_styles', array( $this, 'register_styles' ), 11 );
@@ -154,6 +164,18 @@ class Customize_Posts_Plugin {
 		$deps = array( 'jquery', 'customize-preview', 'customize-post-field-partial' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
+		$handle = 'edit-post-preview-admin';
+		$src = $plugin_dir_url . 'js/edit-post-preview-admin' . $suffix;
+		$deps = array( 'post' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
+		$handle = 'edit-post-preview-customize';
+		$src = $plugin_dir_url . 'js/edit-post-preview-customize' . $suffix;
+		$deps = array( 'customize-controls' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 	}
 
 	/**
@@ -170,5 +192,10 @@ class Customize_Posts_Plugin {
 		$deps = array( 'wp-admin' );
 		$version = $this->version;
 		$wp_styles->add( $handle, $src, $deps, $version );
+
+		$handle = 'edit-post-preview-customize';
+		$src = $plugin_dir_url . 'css/edit-post-preview-customize' . $suffix;
+		$deps = array( 'customize-controls' );
+		$wp_styles->add( $handle, $src, $deps, $this->version );
 	}
 }
