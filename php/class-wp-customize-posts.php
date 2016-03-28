@@ -287,6 +287,9 @@ final class WP_Customize_Posts {
 	public function enqueue_editor() {
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_editor' ), 0 );
 
+		// Note that WP_Customize_Widgets::print_footer_scripts() happens at priority 10.
+		add_action( 'customize_controls_print_footer_scripts', array( $this, 'maybe_do_admin_print_footer_scripts' ), 20 );
+
 		// @todo These should be included in \_WP_Editors::editor_settings()
 		if ( false === has_action( 'customize_controls_print_footer_scripts', array( '_WP_Editors', 'enqueue_scripts' ) ) ) {
 			add_action( 'customize_controls_print_footer_scripts', array( '_WP_Editors', 'enqueue_scripts' ) );
@@ -314,5 +317,29 @@ final class WP_Customize_Posts {
 		) );
 
 		echo '</div>';
+	}
+
+	/**
+	 * Do the admin_print_footer_scripts actions if not done already.
+	 *
+	 * Another possibility here is to opt-in selectively to the desired widgets
+	 * via:
+	 * Shortcode_UI::get_instance()->action_admin_enqueue_scripts();
+	 * Shortcake_Bakery::get_instance()->action_admin_enqueue_scripts();
+	 *
+	 * Note that this action is also done in WP_Customize_Widgets::print_footer_scripts()
+	 * at priority 10, so this method runs at a later priority to ensure the action is
+	 * not done twice.
+	 */
+	public function maybe_do_admin_print_footer_scripts() {
+		if ( ! did_action( 'admin_print_footer_scripts' ) ) {
+			/** This action is documented in wp-admin/admin-footer.php */
+			do_action( 'admin_print_footer_scripts' );
+		}
+
+		if ( ! did_action( 'admin_footer-post.php' ) ) {
+			/** This action is documented in wp-admin/admin-footer.php */
+			do_action( 'admin_footer-post.php' );
+		}
 	}
 }
