@@ -149,7 +149,7 @@
 		 * @returns {wp.customize.Control}
 		 */
 		addContentControl: function() {
-			var section = this, control, setting = api( section.id ), editor;
+			var section = this, control, setting = api( section.id );
 
 			control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
 				params: {
@@ -171,16 +171,15 @@
 			};
 			control.updateEditorToggleExpandButtonLabel( control.editorExpanded.get() );
 
-			editor = tinyMCE.get( 'customize-posts-content' );
-
 			/**
 			 * Update the setting value when the editor changes its state.
 			 */
 			control.onVisualEditorChange = function() {
-				var value;
+				var value, editor;
 				if ( control.editorSyncSuspended ) {
 					return;
 				}
+				editor = tinyMCE.get( 'customize-posts-content' );
 				value = wp.editor.removep( editor.getContent() );
 				control.editorSyncSuspended = true;
 				control.propertyElements[0].set( value );
@@ -203,8 +202,10 @@
 			 * Update the editor when the setting changes its state.
 			 */
 			setting.bind( function( newPostData, oldPostData ) {
+				var editor;
 				if ( control.editorExpanded.get() && ! control.editorSyncSuspended && newPostData.post_content !== oldPostData.post_content ) {
 					control.editorSyncSuspended = true;
+					editor = tinyMCE.get( 'customize-posts-content' );
 					editor.setContent( wp.editor.autop( newPostData.post_content ) );
 					control.editorSyncSuspended = false;
 				}
@@ -216,7 +217,8 @@
 			 * to the post setting.
 			 */
 			control.editorExpanded.bind( function( expanded ) {
-				var textarea = $( '#customize-posts-content' );
+				var editor, textarea = $( '#customize-posts-content' );
+				editor = tinyMCE.get( 'customize-posts-content' );
 				control.updateEditorToggleExpandButtonLabel( expanded );
 				$( document.body ).toggleClass( 'customize-posts-content-editor-pane-open', expanded );
 
@@ -246,6 +248,7 @@
 			 * Toggle the editor when clicking the button, focusing on it if it is expanded.
 			 */
 			control.editorToggleExpandButton.on( 'click', function() {
+				var editor = tinyMCE.get( 'customize-posts-content' );
 				control.editorExpanded.set( ! control.editorExpanded() );
 				if ( control.editorExpanded() ) {
 					editor.focus();
@@ -258,11 +261,9 @@
 			 * @param args
 			 */
 			control.focus = function( args ) {
-				var control = this, editor;
+				var control = this, editor = tinyMCE.get( 'customize-posts-content' );
 				api.controlConstructor.dynamic.prototype.focus.call( control, args );
 				control.editorExpanded.set( true );
-
-				editor = tinyMCE.get( 'customize-posts-content' );
 				editor.focus();
 			};
 
