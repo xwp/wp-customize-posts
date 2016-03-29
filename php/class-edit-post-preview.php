@@ -11,6 +11,9 @@
  */
 class Edit_Post_Preview {
 
+	const PREVIEW_POST_NONCE_ACTION = 'customize_preview_post';
+	const PREVIEW_POST_NONCE_QUERY_VAR = 'customize_preview_post_nonce';
+
 	/**
 	 * Plugin instance.
 	 *
@@ -36,6 +39,15 @@ class Edit_Post_Preview {
 	}
 
 	/**
+	 * Return whether the Customizer post preview should load.
+	 *
+	 * There must be a query var for the previewed_post and a valid nonce must be present.
+	 */
+	public function can_load_customize_post_preview() {
+		return isset( $_GET['previewed_post'] ) && check_ajax_referer( self::PREVIEW_POST_NONCE_ACTION, self::PREVIEW_POST_NONCE_QUERY_VAR, false );
+	}
+
+	/**
 	 * Remove widgets and nav_menus from loaded components if opening in post preview.
 	 *
 	 * Since all panels and sections are hidden aside from the post type panel and
@@ -46,7 +58,7 @@ class Edit_Post_Preview {
 	 * @return array Components.
 	 */
 	public function filter_customize_loaded_component( $components ) {
-		if ( isset( $_GET['previewed_post'] ) ) {
+		if ( $this->can_load_customize_post_preview() ) {
 			foreach ( array( 'widgets', 'nav_menus' ) as $component ) {
 				$i = array_search( $component, $components );
 				if ( false !== $i ) {
@@ -97,6 +109,7 @@ class Edit_Post_Preview {
 				'url' => urlencode( $url ),
 				'previewed_post' => $post->ID,
 				'autofocus[section]' => sprintf( 'post[%s][%d]', $post->post_type, $post->ID ),
+				self::PREVIEW_POST_NONCE_QUERY_VAR => wp_create_nonce( self::PREVIEW_POST_NONCE_ACTION ),
 			),
 			wp_customize_url()
 		);
@@ -114,7 +127,7 @@ class Edit_Post_Preview {
 	 * @param WP_Customize_Manager $wp_customize Manager.
 	 */
 	public function register_previewed_post_setting( WP_Customize_Manager $wp_customize ) {
-		if ( ! isset( $_GET['previewed_post'] ) ) {
+		if ( ! $this->can_load_customize_post_preview() ) {
 			return;
 		}
 		$post = $this->get_previewed_post();
@@ -130,7 +143,7 @@ class Edit_Post_Preview {
 	 * Enqueue scripts for Customizer opened from post edit screen.
 	 */
 	public function enqueue_customize_scripts() {
-		if ( ! isset( $_GET['previewed_post'] ) ) {
+		if ( ! $this->can_load_customize_post_preview() ) {
 			return;
 		}
 		$post = $this->get_previewed_post();
