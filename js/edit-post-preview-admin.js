@@ -53,6 +53,8 @@ var EditPostPreviewAdmin = (function( $ ) {
 		settings[ postSettingId ] = postSettingValue;
 		sessionStorage.setItem( 'previewedCustomizePostSettings[' + postId + ']', JSON.stringify( settings ) );
 
+		wp.customize.Loader.open( self.data.customize_url );
+
 		// Sync changes from the Customizer to the post input fields.
 		wp.customize.Loader.messenger.bind( 'customize-post-settings-data', function( data ) {
 			var editor;
@@ -65,8 +67,6 @@ var EditPostPreviewAdmin = (function( $ ) {
 				$( '#content' ).val( data[ postSettingId ].post_content ).trigger( 'change' );
 			}
 		} );
-
-		wp.customize.Loader.open( self.data.customize_url );
 
 		wp.customize.Loader.settings.browser.mobile = wasMobile;
 	};
