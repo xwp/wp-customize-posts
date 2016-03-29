@@ -28,10 +28,11 @@ class Edit_Post_Preview {
 	 */
 	public function __construct( Customize_Posts_Plugin $plugin ) {
 		$this->plugin = $plugin;
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
 		add_filter( 'customize_loaded_components', array( $this, 'filter_customize_loaded_component' ) );
 		add_action( 'customize_register', array( $this, 'register_previewed_post_setting' ), 15 );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_customize_scripts' ) );
-		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
+		add_action( 'customize_preview_init', array( $this, 'make_auto_draft_status_previewable' ) );
 	}
 
 	/**
@@ -143,5 +144,15 @@ class Edit_Post_Preview {
 		);
 		wp_scripts()->add_data( 'edit-post-preview-customize', 'data', sprintf( 'var _editPostPreviewCustomizeExports = %s;', wp_json_encode( $data ) ) );
 		wp_add_inline_script( 'edit-post-preview-customize', 'EditPostPreviewCustomize.init();', 'after' );
+	}
+
+	/**
+	 * Make the auto-draft status protected so that it can be queried. Props iseulde.
+	 *
+	 * @link https://github.com/iseulde/wp-front-end-editor/blob/bc65aff6a9197aec3a91135e98b033279853ad98/src/class-fee.php#L39-L42
+	 */
+	public function make_auto_draft_status_previewable() {
+		global $wp_post_statuses;
+		$wp_post_statuses['auto-draft']->protected = true;
 	}
 }
