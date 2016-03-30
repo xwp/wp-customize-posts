@@ -71,16 +71,28 @@ final class WP_Customize_Posts {
 	/**
 	 * Get post type objects that can be managed in Customizer.
 	 *
+	 * By default only post types which have show_ui and publicly_queryable as true
+	 * will be included. This can be overridden if an explicit show_in_customizer
+	 * arg is provided when registering the post type.
+	 *
 	 * @return array
 	 */
 	public function get_post_types() {
 		$post_types = array();
-		foreach ( get_post_types( array( 'show_ui' => true ), 'objects' ) as $post_type_object ) {
+		foreach ( get_post_types( array(), 'objects' ) as $post_type_object ) {
 			if ( ! current_user_can( $post_type_object->cap->edit_posts ) ) {
 				continue;
 			}
-			$post_types[ $post_type_object->name ] = clone $post_type_object;
-			$post_types[ $post_type_object->name ]->supports = get_all_post_type_supports( $post_type_object->name );
+
+			$is_included = ( $post_type_object->show_ui && $post_type_object->publicly_queryable );
+			if ( isset( $post_type_object->show_in_customizer ) ) {
+				$is_included = $post_type_object->show_in_customizer;
+			}
+
+			if ( $is_included ) {
+				$post_types[ $post_type_object->name ] = clone $post_type_object;
+				$post_types[ $post_type_object->name ]->supports = get_all_post_type_supports( $post_type_object->name );
+			}
 		}
 
 		// Skip media as special case.
