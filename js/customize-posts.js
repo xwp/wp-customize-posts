@@ -1,4 +1,4 @@
-/*global jQuery, wp, _, _wpCustomizePostsExports */
+/*global jQuery, wp, _, _wpCustomizePostsExports, console */
 
 (function( api, $ ) {
 	'use strict';
@@ -59,11 +59,17 @@
 				idParts = settingId.replace( /]/g, '' ).split( '[' );
 				postType = idParts[1];
 				if ( ! self.data.postTypes[ postType ] ) {
-					throw new Error( 'Unrecognized post type' );
+					if ( 'undefined' !== typeof console && console.error ) {
+						console.error( 'Unrecognized post type: ' + postType );
+					}
+					return;
 				}
 				postId = parseInt( idParts[2], 10 );
 				if ( ! postId ) {
-					throw new Error( 'bad_post_id' );
+					if ( 'undefined' !== typeof console && console.error ) {
+						console.error( 'Bad post id: ' + idParts[2] );
+					}
+					return;
 				}
 
 				if ( ! api.has( settingId ) ) {

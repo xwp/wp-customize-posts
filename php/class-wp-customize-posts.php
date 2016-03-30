@@ -84,7 +84,7 @@ final class WP_Customize_Posts {
 				continue;
 			}
 
-			$is_included = ( $post_type_object->show_ui && $post_type_object->publicly_queryable );
+			$is_included = $post_type_object->show_ui;
 			if ( isset( $post_type_object->show_in_customizer ) ) {
 				$is_included = $post_type_object->show_in_customizer;
 			}
