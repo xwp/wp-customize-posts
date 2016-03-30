@@ -1,0 +1,12 @@
+.customize-section-back {
+	display: none;
+}
+
+#customize-header-actions #save,
+#customize-header-actions #snapshot-save {
+	display: none !important;
+}
+
+#customize-header-actions .customize-controls-close::before {
+	content: "\f341";
+}

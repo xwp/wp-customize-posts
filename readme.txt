@@ -43,6 +43,10 @@ This **Customize Posts** plugin is not to be confused with 10up's [**Post Custom
 
 [youtube https://www.youtube.com/watch?v=sXu2pA42J88]
 
+5) [2016-03-28] Previewing post from Post Edit screen.
+
+[youtube https://www.youtube.com/watch?v=Q62nav1k4gY]
+
 == Changelog ==
 
 = 0.3.0 =
