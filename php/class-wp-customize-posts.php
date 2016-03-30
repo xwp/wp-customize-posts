@@ -1,11 +1,15 @@
 <?php
 /**
- * Customize Posts Class
+ * Customize Posts Component Class
  *
  * Implements post management in the Customizer.
  *
  * @package WordPress
  * @subpackage Customize
+ */
+
+/**
+ * Class WP_Customize_Posts
  */
 final class WP_Customize_Posts {
 
@@ -53,8 +57,6 @@ final class WP_Customize_Posts {
 		require_once ABSPATH . WPINC . '/customize/class-wp-customize-partial.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-field-partial.php';
 
-		add_action( 'wp_default_scripts', array( $this, 'register_scripts' ), 11 );
-		add_action( 'wp_default_styles', array( $this, 'register_styles' ), 11 );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'customize_controls_init', array( $this, 'enqueue_editor' ) );
 
@@ -69,16 +71,28 @@ final class WP_Customize_Posts {
 	/**
 	 * Get post type objects that can be managed in Customizer.
 	 *
+	 * By default only post types which have show_ui and publicly_queryable as true
+	 * will be included. This can be overridden if an explicit show_in_customizer
+	 * arg is provided when registering the post type.
+	 *
 	 * @return array
 	 */
 	public function get_post_types() {
 		$post_types = array();
-		foreach ( get_post_types( array( 'show_ui' => true ), 'objects' ) as $post_type_object ) {
+		foreach ( get_post_types( array(), 'objects' ) as $post_type_object ) {
 			if ( ! current_user_can( $post_type_object->cap->edit_posts ) ) {
 				continue;
 			}
-			$post_types[ $post_type_object->name ] = clone $post_type_object;
-			$post_types[ $post_type_object->name ]->supports = get_all_post_type_supports( $post_type_object->name );
+
+			$is_included = ( $post_type_object->show_ui && $post_type_object->publicly_queryable );
+			if ( isset( $post_type_object->show_in_customizer ) ) {
+				$is_included = $post_type_object->show_in_customizer;
+			}
+
+			if ( $is_included ) {
+				$post_types[ $post_type_object->name ] = clone $post_type_object;
+				$post_types[ $post_type_object->name ]->supports = get_all_post_type_supports( $post_type_object->name );
+			}
 		}
 
 		// Skip media as special case.
@@ -252,84 +266,6 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Register scripts for Customize Posts.
-	 *
-	 * @param WP_Scripts $wp_scripts Scripts.
-	 */
-	public function register_scripts( WP_Scripts $wp_scripts ) {
-		$handle = 'customize-base-extensions';
-		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-base-extensions.js';
-		$deps = array( 'customize-base' );
-		$version = CUSTOMIZE_POSTS_VERSION;
-		$in_footer = 1;
-		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
-
-		$handle = 'customize-posts-panel';
-		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-posts-panel.js';
-		$deps = array( 'customize-controls' );
-		$version = CUSTOMIZE_POSTS_VERSION;
-		$in_footer = 1;
-		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
-
-		$handle = 'customize-post-section';
-		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-post-section.js';
-		$deps = array( 'customize-controls' );
-		$version = CUSTOMIZE_POSTS_VERSION;
-		$in_footer = 1;
-		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
-
-		$handle = 'customize-dynamic-control';
-		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-dynamic-control.js';
-		$deps = array( 'customize-controls' );
-		$version = CUSTOMIZE_POSTS_VERSION;
-		$in_footer = 1;
-		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
-
-		$handle = 'customize-posts';
-		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-posts.js';
-		$deps = array(
-			'jquery',
-			'wp-backbone',
-			'customize-base-extensions',
-			'customize-controls',
-			'customize-posts-panel',
-			'customize-post-section',
-			'customize-dynamic-control',
-			'underscore',
-		);
-		$version = CUSTOMIZE_POSTS_VERSION;
-		$in_footer = 1;
-		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
-
-		$handle = 'customize-post-field-partial';
-		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-post-field-partial.js';
-		$deps = array( 'customize-selective-refresh' );
-		$version = CUSTOMIZE_POSTS_VERSION;
-		$in_footer = 1;
-		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
-
-		$handle = 'customize-preview-posts';
-		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'js/customize-preview-posts.js';
-		$deps = array( 'jquery', 'customize-preview', 'customize-post-field-partial' );
-		$version = CUSTOMIZE_POSTS_VERSION;
-		$in_footer = 1;
-		$wp_scripts->add( $handle, $src, $deps, $version, $in_footer );
-	}
-
-	/**
-	 * Register styles for Customize Posts.
-	 *
-	 * @param WP_Styles $wp_styles Styles.
-	 */
-	public function register_styles( WP_Styles $wp_styles ) {
-		$handle = 'customize-posts';
-		$src = CUSTOMIZE_POSTS_PLUGIN_URL . 'css/customize-posts.css';
-		$deps = array( 'wp-admin' );
-		$version = CUSTOMIZE_POSTS_VERSION;
-		$wp_styles->add( $handle, $src, $deps, $version );
-	}
-
-	/**
 	 * Enqueue scripts and styles for Customize Posts.
 	 */
 	public function enqueue_scripts() {
@@ -342,11 +278,11 @@ final class WP_Customize_Posts {
 			'postTypes' => $this->get_post_types(),
 			'l10n' => array(
 				/* translators: &#9656; is the unicode right-pointing triangle, and %s is the section title in the Customizer */
-				'sectionCustomizeActionTpl' => __( 'Customizing &#9656; %s' ),
-				'fieldTitleLabel' => __( 'Title' ),
-				'fieldContentLabel' => __( 'Content' ),
-				'fieldExcerptLabel' => __( 'Excerpt' ),
-				'noTitle' => __( '(no title)' ),
+				'sectionCustomizeActionTpl' => __( 'Customizing &#9656; %s', 'customize-posts' ),
+				'fieldTitleLabel' => __( 'Title', 'customize-posts' ),
+				'fieldContentLabel' => __( 'Content', 'customize-posts' ),
+				'fieldExcerptLabel' => __( 'Excerpt', 'customize-posts' ),
+				'noTitle' => __( '(no title)', 'customize-posts' ),
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
 				'overrideButtonText' => __( 'Override', 'customize-posts' ),
 				'openEditor' => __( 'Open Editor', 'customize-posts' ),
@@ -362,6 +298,9 @@ final class WP_Customize_Posts {
 	 */
 	public function enqueue_editor() {
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_editor' ), 0 );
+
+		// Note that WP_Customize_Widgets::print_footer_scripts() happens at priority 10.
+		add_action( 'customize_controls_print_footer_scripts', array( $this, 'maybe_do_admin_print_footer_scripts' ), 20 );
 
 		// @todo These should be included in \_WP_Editors::editor_settings()
 		if ( false === has_action( 'customize_controls_print_footer_scripts', array( '_WP_Editors', 'enqueue_scripts' ) ) ) {
@@ -381,6 +320,7 @@ final class WP_Customize_Posts {
 			'drag_drop_upload' => true,
 			'tabfocus_elements' => 'content-html,save-post',
 			'editor_height' => 200,
+			'default_editor' => 'tinymce',
 			'tinymce' => array(
 				'resize' => false,
 				'wp_autoresize_on' => false,
@@ -389,5 +329,29 @@ final class WP_Customize_Posts {
 		) );
 
 		echo '</div>';
+	}
+
+	/**
+	 * Do the admin_print_footer_scripts actions if not done already.
+	 *
+	 * Another possibility here is to opt-in selectively to the desired widgets
+	 * via:
+	 * Shortcode_UI::get_instance()->action_admin_enqueue_scripts();
+	 * Shortcake_Bakery::get_instance()->action_admin_enqueue_scripts();
+	 *
+	 * Note that this action is also done in WP_Customize_Widgets::print_footer_scripts()
+	 * at priority 10, so this method runs at a later priority to ensure the action is
+	 * not done twice.
+	 */
+	public function maybe_do_admin_print_footer_scripts() {
+		if ( ! did_action( 'admin_print_footer_scripts' ) ) {
+			/** This action is documented in wp-admin/admin-footer.php */
+			do_action( 'admin_print_footer_scripts' );
+		}
+
+		if ( ! did_action( 'admin_footer-post.php' ) ) {
+			/** This action is documented in wp-admin/admin-footer.php */
+			do_action( 'admin_footer-post.php' );
+		}
 	}
 }

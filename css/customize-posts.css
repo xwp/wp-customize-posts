@@ -67,3 +67,20 @@ body:not( .customize-posts-content-editor-pane-open ) div.mce-fullscreen {
 }
 
 /* @todo Mobile support for rich text editor */
+
+.wp-customizer #wp-link-backdrop {
+	z-index: 500100; /* originally 100100, but z-index of .wp-full-overlay is 500000 */
+}
+.wp-customizer .ui-autocomplete.wplink-autocomplete {
+	z-index: 500110; /* originally 100110, but z-index of .wp-full-overlay is 500000 */
+}
+.wp-customizer div.mce-inline-toolbar-grp {
+	z-index: 500100; /* originally 100100, but z-index of .wp-full-overlay is 500000 */
+}
+.wp-customizer #wp-link-wrap {
+	z-index: 500105; /* originally 100105, but z-index of .wp-full-overlay is 500000 */
+}
+.wp-customizer #wp_editbtns,
+.wp-customizer #wp_gallerybtns {
+	z-index: 500020; /* originally 100020, but z-index of .wp-full-overlay is 500000 */
+}

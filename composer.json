@@ -1,0 +1,31 @@
+{
+	"name": "xwp/wp-customize-posts",
+	"description": "Manage posts and postmeta via the Customizer.",
+	"version": "0.4.0",
+	"type": "wordpress-plugin",
+	"keywords": [ "customizer", "customize", "posts", "postmeta", "preview", "featured-image", "page-template" ],
+	"homepage": "https://github.com/xwp/wp-customize-posts/",
+	"license": [ "GPL-2.0+" ],
+	"repositories": [
+		{
+			"type": "git",
+			"url": "https://github.com/xwp/wp-customize-posts.git"
+		}
+	],
+	"dist": {
+		"url": "https://downloads.wordpress.org/plugin/customize-posts.zip",
+		"type": "zip"
+	},
+	"require": {
+		"php": ">=5.2.0"
+	},
+	"authors": [
+		{
+			"name": "Weston Ruter",
+			"homepage": "https://weston.ruter.net/"
+		}
+	],
+	"require-dev": {
+		"satooshi/php-coveralls": "dev-master"
+	}
+}

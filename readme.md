@@ -6,11 +6,11 @@ Edit posts and postmeta in the Customizer. Stop editing your posts/postmeta blin
 **Contributors:** [xwp](https://profiles.wordpress.org/xwp), [westonruter](https://profiles.wordpress.org/westonruter)  
 **Tags:** [customizer](https://wordpress.org/plugins/tags/customizer), [customize](https://wordpress.org/plugins/tags/customize), [posts](https://wordpress.org/plugins/tags/posts), [preview](https://wordpress.org/plugins/tags/preview), [featured-image](https://wordpress.org/plugins/tags/featured-image), [page-template](https://wordpress.org/plugins/tags/page-template)  
 **Requires at least:** 4.5-beta2  
-**Tested up to:** 4.5-beta2  
+**Tested up to:** 4.5-RC1  
 **Stable tag:** trunk (master)  
 **License:** [GPLv2 or later](http://www.gnu.org/licenses/gpl-2.0.html)  
 
-[![Build Status](https://travis-ci.org/xwp/wp-customize-posts.svg?branch=master)](https://travis-ci.org/xwp/wp-customize-posts) 
+[![Build Status](https://travis-ci.org/xwp/wp-customize-posts.svg?branch=master)](https://travis-ci.org/xwp/wp-customize-posts) [![Coverage Status](https://coveralls.io/repos/xwp/wp-customize-posts/badge.svg?branch=master)](https://coveralls.io/github/xwp/wp-customize-posts) [![Built with Grunt](https://cdn.gruntjs.com/builtwith.png)](http://gruntjs.com) [![devDependency Status](https://david-dm.org/xwp/wp-customize-posts/dev-status.svg)](https://david-dm.org/xwp/wp-customize-posts#info=devDependencies) 
 
 ## Description ##
 
@@ -44,8 +44,22 @@ This **Customize Posts** plugin is not to be confused with 10up's [**Post Custom
 
 [![Play video on YouTube](https://i1.ytimg.com/vi/sXu2pA42J88/hqdefault.jpg)](https://www.youtube.com/watch?v=sXu2pA42J88)
 
+5) [2016-03-28] Previewing post from Post Edit screen.
+
+[![Play video on YouTube](https://i1.ytimg.com/vi/Q62nav1k4gY/hqdefault.jpg)](https://www.youtube.com/watch?v=Q62nav1k4gY)
+
 
 ## Changelog ##
+
+### 0.4.0 ###
+* Open Customizer to preview and make additional changes when clicking Preview from post edit admin screen (see [video](https://www.youtube.com/watch?v=Q62nav1k4gY)).
+* Introduce `show_in_customizer` arg for `register_post_type()`, and let override condition on `show_ui` and `publicly_queryable` being both true.
+* Fix modals and inline toolbars in TinyMCE editor displayed in Customizer.
+* Fix initialization when TinyMCE does not default to Visual.
+* Complete support for Jetpack Infinite Scroll, ensuring posts are listed in Customizer in order of appearane.
+* Remove dependency on widgets component being loaded.
+* Allow auto-draft posts to be previewed.
+* Add Grunt, contributing.
 
 ### 0.3.0 ###
 * Complete rewrite of plugin.

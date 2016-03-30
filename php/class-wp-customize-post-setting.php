@@ -315,7 +315,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 
 		/** This filter is documented in wp-includes/post.php */
 		if ( $strict && apply_filters( 'wp_insert_post_empty_content', $maybe_empty, $post_data ) ) {
-			return new WP_Error( 'empty_content', __( 'Content, title, and excerpt are empty.' ) );
+			return new WP_Error( 'empty_content', __( 'Content, title, and excerpt are empty.', 'customize-posts' ) );
 		}
 
 		if ( empty( $post_data['post_status'] ) ) {
@@ -368,7 +368,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		$valid_date = wp_checkdate( $mm, $jj, $aa, $post_data['post_date'] );
 		if ( ! $valid_date ) {
 			if ( $strict ) {
-				return new WP_Error( 'invalid_date', __( 'Whoops, the provided date is invalid.' ) );
+				return new WP_Error( 'invalid_date', __( 'Whoops, the provided date is invalid.', 'customize-posts' ) );
 			} else {
 				$post_data['post_date'] = '';
 			}

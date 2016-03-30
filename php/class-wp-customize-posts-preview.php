@@ -53,6 +53,7 @@ final class WP_Customize_Posts_Preview {
 		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
 		add_filter( 'edit_post_link', array( $this, 'filter_edit_post_link' ), 10, 2 );
 		add_filter( 'get_edit_post_link', array( $this, 'filter_get_edit_post_link' ), 10, 2 );
+		add_filter( 'infinite_scroll_results', array( $this, 'filter_infinite_scroll_results' ), 10, 3 );
 	}
 
 	/**
@@ -217,5 +218,23 @@ final class WP_Customize_Posts_Preview {
 
 		$data = sprintf( 'var _wpCustomizePreviewPostsData = %s;', wp_json_encode( $exported ) );
 		wp_scripts()->add_data( 'customize-preview-posts', 'data', $data );
+	}
+
+	/**
+	 * Filter the Infinite Scroll results.
+	 *
+	 * @param array $results Array of Infinite Scroll results.
+	 * @return array $results Results.
+	 */
+	public function filter_infinite_scroll_results( $results ) {
+
+		$results['customize_post_settings'] = array();
+		foreach ( $this->component->manager->settings() as $setting ) {
+			if ( $setting instanceof WP_Customize_Post_Setting ) {
+				$results['customize_post_settings'][ $setting->id ] = $setting->value();
+			}
+		}
+
+		return $results;
 	}
 }

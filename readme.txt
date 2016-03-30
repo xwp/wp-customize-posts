@@ -2,7 +2,7 @@
 Contributors:      xwp, westonruter
 Tags:              customizer, customize, posts, preview, featured-image, page-template
 Requires at least: 4.5-beta2
-Tested up to:      4.5-beta2
+Tested up to:      4.5-RC1
 Stable tag:        trunk
 License:           GPLv2 or later
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -29,21 +29,35 @@ This **Customize Posts** plugin is not to be confused with 10up's [**Post Custom
 
 1) [2016-03-01] Demonstration of hooking into edit post links so that they actually work in the Customizer and expand the section to edit the given post (as opposed to the link doing nothing at all when clicked), as well as shift-clicking on the title and content (needs better discovery UI, see [#27403](https://core.trac.wordpress.org/ticket/27403)):
 
-[youtube https://youtu.be/nYfph3NbNCc]
+[youtube https://www.youtube.com/watch?v=nYfph3NbNCc]
 
 2) [2016-03-03] Demonstration of integration with [Customize Setting Validation](https://github.com/xwp/wp-customize-setting-validation) ([#34893](https://core.trac.wordpress.org/ticket/34893)) to gracefully handle failures to save due to post locking and concurrent user editing:
 
-[youtube https://youtu.be/OUwwTt6FtlQ]
+[youtube https://www.youtube.com/watch?v=OUwwTt6FtlQ]
 
 3) [2016-03-04] Demo featuring the WP visual rich text editor (TinyMCE), including the insertion of images from the media library. Post content can be edited in the Customizer and previewed in multiple contexts. For example, this allows you to preview how a Read More tag will appear when the post appears on a post list page, and you can navigate to the single post to continue previewing subsequent paragraphs. You can expand the editor into a full-screen mode to focus on writing and then quickly preview the changes on the site by toggling the editor. You can make changes to as many posts as you want, but none of the changes will go live until you hit Save & Publish: everything is previewed so there is no “save and surprise”.
 
-[youtube https://youtu.be/QJsEl0gd7dk]
+[youtube https://www.youtube.com/watch?v=QJsEl0gd7dk]
 
 4) [2016-03-05] Opening a draft post in the Customizer to preview title wrapping.
 
 [youtube https://www.youtube.com/watch?v=sXu2pA42J88]
 
+5) [2016-03-28] Previewing post from Post Edit screen.
+
+[youtube https://www.youtube.com/watch?v=Q62nav1k4gY]
+
 == Changelog ==
+
+= 0.4.0 =
+* Open Customizer to preview and make additional changes when clicking Preview from post edit admin screen (see [video](https://www.youtube.com/watch?v=Q62nav1k4gY)).
+* Introduce `show_in_customizer` arg for `register_post_type()`, and let override condition on `show_ui` and `publicly_queryable` being both true.
+* Fix modals and inline toolbars in TinyMCE editor displayed in Customizer.
+* Fix initialization when TinyMCE does not default to Visual.
+* Complete support for Jetpack Infinite Scroll, ensuring posts are listed in Customizer in order of appearane.
+* Remove dependency on widgets component being loaded.
+* Allow auto-draft posts to be previewed.
+* Add Grunt, contributing.
 
 = 0.3.0 =
 * Complete rewrite of plugin.
