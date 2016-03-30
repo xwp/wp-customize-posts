@@ -3,7 +3,7 @@ Contributors:      xwp, westonruter
 Tags:              customizer, customize, posts, preview, featured-image, page-template
 Requires at least: 4.5-beta2
 Tested up to:      4.5-RC1
-Stable tag:        0.4.1
+Stable tag:        0.4.2
 License:           GPLv2 or later
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -48,6 +48,9 @@ This **Customize Posts** plugin is not to be confused with 10up's [**Post Custom
 [youtube https://www.youtube.com/watch?v=Q62nav1k4gY]
 
 == Changelog ==
+
+= 0.4.2 =
+Restore stylesheet erroneously deleted during `grunt deploy`.
 
 = 0.4.1 =
 * Restore editability of pages in the Customizer (remove default condition that a post type have `publicly_queryable` as `true`).
