@@ -114,12 +114,6 @@ class Customize_Posts_Plugin {
 		$suffix = ( SCRIPT_DEBUG ? '' : '.min' ) . '.js';
 		$plugin_dir_url = plugin_dir_url( dirname( __FILE__ ) );
 
-		$handle = 'customize-base-extensions';
-		$src = $plugin_dir_url . 'js/customize-base-extensions' . $suffix;
-		$deps = array( 'customize-base' );
-		$in_footer = 1;
-		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
-
 		$handle = 'customize-posts-panel';
 		$src = $plugin_dir_url . 'js/customize-posts-panel' . $suffix;
 		$deps = array( 'customize-controls' );
@@ -143,7 +137,6 @@ class Customize_Posts_Plugin {
 		$deps = array(
 			'jquery',
 			'wp-backbone',
-			'customize-base-extensions',
 			'customize-controls',
 			'customize-posts-panel',
 			'customize-post-section',
