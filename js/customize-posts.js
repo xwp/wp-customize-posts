@@ -3,15 +3,15 @@
 (function( api, $ ) {
 	'use strict';
 
-	var self;
+	var component;
 
 	if ( ! api.Posts ) {
 		api.Posts = {};
 	}
 
-	self = api.Posts;
+	component = api.Posts;
 
-	self.data = {
+	component.data = {
 		postTypes: {},
 		l10n: {
 			sectionCustomizeActionTpl: '',
@@ -22,17 +22,17 @@
 		postIdInput: null
 	};
 	if ( 'undefined' !== typeof _wpCustomizePostsExports ) {
-		_.extend( self.data, _wpCustomizePostsExports );
+		_.extend( component.data, _wpCustomizePostsExports );
 	}
 
-	api.panelConstructor.posts = self.PostsPanel;
-	api.sectionConstructor.post = self.PostSection;
+	api.panelConstructor.posts = component.PostsPanel;
+	api.sectionConstructor.post = component.PostSection;
 
 	/*
 	 * Create initial post type-specific constructors for panel and sections.
 	 * Note plugins can override the panel and section constructors by making customize-posts a script dependency.
 	 */
-	_.each( self.data.postTypes, function( postType ) {
+	_.each( component.data.postTypes, function( postType ) {
 		var panelType, sectionType;
 		panelType = 'posts[' + postType.name + ']';
 		if ( ! api.panelConstructor[ panelType ] ) {
@@ -50,15 +50,15 @@
 
 	api.bind( 'ready', function() {
 		// Add a post_ID input for editor integrations (like Shortcake) to be able to know the post being edited.
-		self.postIdInput = $( '<input type="hidden" id="post_ID" name="post_ID">' );
-		$( 'body' ).append( self.postIdInput );
+		component.postIdInput = $( '<input type="hidden" id="post_ID" name="post_ID">' );
+		$( 'body' ).append( component.postIdInput );
 
 		api.previewer.bind( 'customized-posts', function( data ) {
 			_.each( data.postSettings, function( settingValue, settingId ) {
 				var section, sectionId, panelId, sectionType, postId, postType, idParts, Constructor, htmlParser;
 				idParts = settingId.replace( /]/g, '' ).split( '[' );
 				postType = idParts[1];
-				if ( ! self.data.postTypes[ postType ] ) {
+				if ( ! component.data.postTypes[ postType ] ) {
 					if ( 'undefined' !== typeof console && console.error ) {
 						console.error( 'Unrecognized post type: ' + postType );
 					}
@@ -90,7 +90,7 @@
 
 				Constructor = api.sectionConstructor[ sectionType ] || api.sectionConstructor.post;
 
-				htmlParser = $( '<div>' ).html( self.data.l10n.sectionCustomizeActionTpl.replace( '%s', api.panel( panelId ).params.title ) );
+				htmlParser = $( '<div>' ).html( component.data.l10n.sectionCustomizeActionTpl.replace( '%s', api.panel( panelId ).params.title ) );
 				section = new Constructor( sectionId, {
 					params: {
 						id: sectionId,

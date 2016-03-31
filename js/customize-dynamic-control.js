@@ -1,4 +1,6 @@
 /* global wp */
+/* eslint consistent-this: [ "error", "control" ] */
+
 (function( api, $ ) {
 	'use strict';
 
