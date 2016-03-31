@@ -19,37 +19,37 @@
 	api.Posts.PostSection = api.Section.extend({
 
 		initialize: function( id, options ) {
-			var section = this;
+			var section = this, args;
 
-			options = options || {};
-			options.params = options.params || {};
-			if ( ! options.params.post_type || ! api.Posts.data.postTypes[ options.params.post_type ] ) {
+			args = options || {};
+			args.params = args.params || {};
+			if ( ! args.params.post_type || ! api.Posts.data.postTypes[ args.params.post_type ] ) {
 				throw new Error( 'Missing post_type' );
 			}
-			if ( _.isNaN( options.params.post_id ) ) {
+			if ( _.isNaN( args.params.post_id ) ) {
 				throw new Error( 'Missing post_id' );
 			}
 			if ( ! api.has( id ) ) {
 				throw new Error( 'No setting id' );
 			}
-			if ( ! options.params.title ) {
-				options.params.title = api( id ).get().post_title;
+			if ( ! args.params.title ) {
+				args.params.title = api( id ).get().post_title;
 			}
-			if ( ! options.params.title ) {
-				options.params.title = api.Posts.data.l10n.noTitle;
+			if ( ! args.params.title ) {
+				args.params.title = api.Posts.data.l10n.noTitle;
 			}
 
 			section.postFieldControls = {};
 
-			if ( ! options.params.priority ) {
-				if ( ! defaultSectionPriorities[ options.params.post_type ] ) {
-					defaultSectionPriorities[ options.params.post_type ] = api.Section.prototype.defaults.priority;
+			if ( ! args.params.priority ) {
+				if ( ! defaultSectionPriorities[ args.params.post_type ] ) {
+					defaultSectionPriorities[ args.params.post_type ] = api.Section.prototype.defaults.priority;
 				}
-				defaultSectionPriorities[ options.params.post_type ] += 1;
-				options.params.priority = defaultSectionPriorities[ options.params.post_type ];
+				defaultSectionPriorities[ args.params.post_type ] += 1;
+				args.params.priority = defaultSectionPriorities[ args.params.post_type ];
 			}
 
-			api.Section.prototype.initialize.call( section, id, options );
+			api.Section.prototype.initialize.call( section, id, args );
 		},
 
 		/**
