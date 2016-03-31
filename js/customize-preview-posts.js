@@ -83,7 +83,7 @@
 
 		// Capture post settings sent in Jetpack infinite scroll responses.
 		$( document ).ajaxSuccess( function( e, xhr, ajaxOptions, data ) {
-			var isInfinityScrollResponse = ( 'POST' === ajaxOptions.type && -1 !== ajaxOptions.url.indexOf( 'infinity=scrolling' ) );
+			var isInfinityScrollResponse = 'POST' === ajaxOptions.type && -1 !== ajaxOptions.url.indexOf( 'infinity=scrolling' );
 			if ( ! isInfinityScrollResponse ) {
 				return;
 			}

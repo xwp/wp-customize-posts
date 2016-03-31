@@ -100,7 +100,7 @@ var EditPostPreviewCustomize = (function( $, api ) {
 	 * @param {wp.customize.Panel} panel
 	 */
 	component.deactivatePanel = function( panel ) {
-		var active = ( 'posts[' + component.data.previewed_post.post_type + ']' === panel.id );
+		var active = 'posts[' + component.data.previewed_post.post_type + ']' === panel.id;
 		panel.active.set( active );
 		panel.active.validate = function() {
 			return active;
@@ -113,7 +113,7 @@ var EditPostPreviewCustomize = (function( $, api ) {
 	 * @param {wp.customize.Section} section
 	 */
 	component.deactivateSection = function( section ) {
-		var active = ( 'post[' + component.data.previewed_post.post_type + '][' + String( component.data.previewed_post.ID ) + ']' === section.id );
+		var active = 'post[' + component.data.previewed_post.post_type + '][' + String( component.data.previewed_post.ID ) + ']' === section.id;
 		section.active.set( active );
 		section.active.validate = function() {
 			return active;

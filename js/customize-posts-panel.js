@@ -39,9 +39,9 @@
 				descriptionContainer.append( noPreviewedPostsNotice );
 
 				shouldShowNotice = function() {
-					return ( 0 === _.filter( panel.sections(), function( section ) {
+					return 0 === _.filter( panel.sections(), function( section ) {
 						return section.active();
-					} ).length );
+					} ).length;
 				};
 
 				/*
@@ -53,7 +53,7 @@
 					noPreviewedPostsNotice.toggle( shouldShowNotice() );
 				});
 				api.bind( 'pane-contents-reflowed', function() {
-					var duration = ( 'resolved' === api.previewer.deferred.active.state() ) ? 'fast' : 0;
+					var duration = 'resolved' === api.previewer.deferred.active.state() ? 'fast' : 0;
 					if ( shouldShowNotice() ) {
 						noPreviewedPostsNotice.slideDown( duration );
 					} else {
