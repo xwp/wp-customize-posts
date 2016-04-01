@@ -121,4 +121,4 @@ var EditPostPreviewCustomize = (function( $, api ) {
 	};
 
 	return component;
-}( jQuery, wp.customize ) );
+})( jQuery, wp.customize );

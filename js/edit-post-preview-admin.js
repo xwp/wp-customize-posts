@@ -97,4 +97,4 @@ var EditPostPreviewAdmin = (function( $ ) {
 	};
 
 	return component;
-}( jQuery ) );
+})( jQuery );
