@@ -84,3 +84,7 @@ body:not( .customize-posts-content-editor-pane-open ) div.mce-fullscreen {
 .wp-customizer #wp_gallerybtns {
 	z-index: 500020; /* originally 100020, but z-index of .wp-full-overlay is 500000 */
 }
+.wp-customizer #TB_overlay,
+.wp-customizer #TB_window {
+	z-index: 500050;
+}
