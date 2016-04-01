@@ -57,10 +57,8 @@ var EditPostPreviewAdmin = (function( $ ) {
 
 		// Sync changes from the Customizer to the post input fields.
 		wp.customize.Loader.messenger.bind( 'customize-post-settings-data', function( data ) {
-			var editor;
 			if ( data[ postSettingId ] ) {
 				$( '#title' ).val( data[ postSettingId ].post_title ).trigger( 'change' );
-				editor = tinymce.get( 'content' );
 				if ( editor ) {
 					editor.setContent( wp.editor.autop( data[ postSettingId ].post_content ) );
 				}

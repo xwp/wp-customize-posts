@@ -263,12 +263,10 @@
 			 * @param args
 			 */
 			control.focus = function( args ) {
-				/* eslint-disable consistent-this */
-				var control = this, editor = tinyMCE.get( 'customize-posts-content' );
+				var editor = tinyMCE.get( 'customize-posts-content' );
 				api.controlConstructor.dynamic.prototype.focus.call( control, args );
 				control.editorExpanded.set( true );
 				editor.focus();
-				/* eslint-enable consistent-this */
 			};
 
 			// Override preview trying to de-activate control not present in preview context.
