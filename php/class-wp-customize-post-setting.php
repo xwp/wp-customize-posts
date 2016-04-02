@@ -253,6 +253,8 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		$update = ( $this->post_id > 0 );
 
 		$post_type_obj = get_post_type_object( $this->post_type );
+		$post_data['post_type'] = $this->post_type;
+
 		$can_edit = null;
 		if ( $update ) {
 			$can_edit = $this->posts_component->current_user_can_edit_post( $this->post_id );
@@ -456,6 +458,8 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		$post_data = wp_unslash( $post_data );
 
 		$post_data = $this->normalize_post_data( $post_data );
+
+		unset( $post_data['post_type'] );
 		return $post_data;
 	}
 
