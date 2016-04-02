@@ -79,7 +79,8 @@ final class WP_Customize_Posts {
 	 */
 	public function get_post_types() {
 		$post_types = array();
-		foreach ( get_post_types( array(), 'objects' ) as $post_type_object ) {
+		$post_type_objects = get_post_types( array(), 'objects' );
+		foreach ( $post_type_objects as $post_type_object ) {
 			if ( ! current_user_can( $post_type_object->cap->edit_posts ) ) {
 				continue;
 			}
@@ -90,8 +91,13 @@ final class WP_Customize_Posts {
 			}
 
 			if ( $is_included ) {
-				$post_types[ $post_type_object->name ] = clone $post_type_object;
-				$post_types[ $post_type_object->name ]->supports = get_all_post_type_supports( $post_type_object->name );
+				$post_type_object = clone $post_type_object;
+				$post_type_object->supports = get_all_post_type_supports( $post_type_object->name );
+
+				// Remove unnecessary properties.
+				unset( $post_type_object->register_meta_box_cb );
+
+				$post_types[ $post_type_object->name ] = $post_type_object;
 			}
 		}
 
@@ -274,8 +280,21 @@ final class WP_Customize_Posts {
 		wp_enqueue_style( 'customize-posts-panel' );
 		wp_enqueue_style( 'customize-post-section' );
 
+		$post_types = array();
+		foreach ( $this->get_post_types() as $post_type => $post_type_obj ) {
+			$post_types[ $post_type ] = wp_array_slice_assoc( (array) $post_type_obj, array(
+				'name',
+				'supports',
+				'labels',
+				'has_archive',
+				'menu_icon',
+				'description',
+				'hierarchical',
+			) );
+		}
+
 		$exports = array(
-			'postTypes' => $this->get_post_types(),
+			'postTypes' => $post_types,
 			'l10n' => array(
 				/* translators: &#9656; is the unicode right-pointing triangle, and %s is the section title in the Customizer */
 				'sectionCustomizeActionTpl' => __( 'Customizing &#9656; %s', 'customize-posts' ),
