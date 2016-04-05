@@ -82,7 +82,7 @@ class WP_Customize_Posts_Panel extends WP_Customize_Panel {
 	public function json() {
 		$data = parent::json();
 		$data['noPostsLoadedMessage'] = sprintf(
-			__( 'There are %s yet displayed in the preview.', 'customize-posts' ),
+			__( 'There aren\'t any %s in the preview.', 'customize-posts' ),
 			get_post_type_object( $this->post_type )->labels->name
 		);
 		$data['post_type'] = $this->post_type;

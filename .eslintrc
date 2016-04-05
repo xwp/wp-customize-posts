@@ -1,0 +1,7 @@
+{
+	"extends": "./dev-lib/.eslintrc",
+
+	"rules": {
+		"complexity": 0
+	}
+}

@@ -3,30 +3,30 @@
 var EditPostPreviewCustomize = (function( $, api ) {
 	'use strict';
 
-	var self = {
+	var component = {
 		data: {
 			previewed_post: null
 		}
 	};
 
 	if ( 'undefined' !== typeof _editPostPreviewCustomizeExports ) {
-		$.extend( self.data, _editPostPreviewCustomizeExports );
+		$.extend( component.data, _editPostPreviewCustomizeExports );
 	}
 
-	self.init = function() {
-		self.populateSettings();
+	component.init = function() {
+		component.populateSettings();
 
 		wp.customize.bind( 'ready', function() {
-			self.ready();
+			component.ready();
 		} );
 	};
 
 	/**
 	 * Populate settings passed from the post edit screen via sessionStorage.
 	 */
-	self.populateSettings = function() {
+	component.populateSettings = function() {
 		var itemId, settings;
-		itemId = 'previewedCustomizePostSettings[' + String( self.data.previewed_post.ID ) + ']';
+		itemId = 'previewedCustomizePostSettings[' + String( component.data.previewed_post.ID ) + ']';
 		settings = sessionStorage.getItem( itemId );
 		if ( ! settings ) {
 			if ( 'undefined' !== typeof console && console.warn ) {
@@ -52,17 +52,17 @@ var EditPostPreviewCustomize = (function( $, api ) {
 	/**
 	 * Set up the UI and passing settings data back to the post edit screen.
 	 */
-	self.ready = function() {
+	component.ready = function() {
 
 		// Prevent 'saved' state from becoming false, since we only want to save from the admin page.
 		wp.customize.state( 'saved' ).set( true ).validate = function() {
 			return true;
 		};
 
-		api.panel.each( self.deactivatePanel );
-		api.panel.bind( 'add', self.deactivatePanel );
-		api.section.each( self.deactivateSection );
-		api.section.bind( 'add', self.deactivateSection );
+		api.panel.each( component.deactivatePanel );
+		api.panel.bind( 'add', component.deactivatePanel );
+		api.section.each( component.deactivateSection );
+		api.section.bind( 'add', component.deactivateSection );
 
 		/*
 		 * Create a postMessage connection with a parent frame,
@@ -70,28 +70,28 @@ var EditPostPreviewCustomize = (function( $, api ) {
 		 *
 		 * @see wp.customize.Loader
 		 */
-		self.parentFrame = new wp.customize.Messenger( {
+		component.parentFrame = new wp.customize.Messenger( {
 			url: wp.customize.settings.url.parent,
 			channel: 'loader'
 		} );
 
 		// @todo Include nonce?
-		self.parentFrame.bind( 'populate-setting', function( setting ) {
+		component.parentFrame.bind( 'populate-setting', function( setting ) {
 			if ( wp.customize.has( setting.id ) ) {
 				wp.customize( setting.id ).set( setting.value );
 			}
 		} );
 
 		// Start listening to changes to the post and postmeta.
-		api( 'post[' + self.data.previewed_post.post_type + '][' + self.data.previewed_post.ID + ']', function( setting ) {
+		api( 'post[' + component.data.previewed_post.post_type + '][' + component.data.previewed_post.ID + ']', function( setting ) {
 			setting.bind( function( data ) {
 				var settings = {};
 				settings[ setting.id ] = data;
-				self.parentFrame.send( 'customize-post-settings-data', settings );
+				component.parentFrame.send( 'customize-post-settings-data', settings );
 			} );
 		} );
 
-		self.parentFrame.send( 'customize-post-preview-ready' );
+		component.parentFrame.send( 'customize-post-preview-ready' );
 	};
 
 	/**
@@ -99,8 +99,8 @@ var EditPostPreviewCustomize = (function( $, api ) {
 	 *
 	 * @param {wp.customize.Panel} panel
 	 */
-	self.deactivatePanel = function( panel ) {
-		var active = ( 'posts[' + self.data.previewed_post.post_type + ']' === panel.id );
+	component.deactivatePanel = function( panel ) {
+		var active = 'posts[' + component.data.previewed_post.post_type + ']' === panel.id;
 		panel.active.set( active );
 		panel.active.validate = function() {
 			return active;
@@ -112,13 +112,13 @@ var EditPostPreviewCustomize = (function( $, api ) {
 	 *
 	 * @param {wp.customize.Section} section
 	 */
-	self.deactivateSection = function( section ) {
-		var active = ( 'post[' + self.data.previewed_post.post_type + '][' + String( self.data.previewed_post.ID ) + ']' === section.id );
+	component.deactivateSection = function( section ) {
+		var active = 'post[' + component.data.previewed_post.post_type + '][' + String( component.data.previewed_post.ID ) + ']' === section.id;
 		section.active.set( active );
 		section.active.validate = function() {
 			return active;
 		};
 	};
 
-	return self;
-}( jQuery, wp.customize ) );
+	return component;
+})( jQuery, wp.customize );

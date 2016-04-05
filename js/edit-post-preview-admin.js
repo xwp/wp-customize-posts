@@ -3,23 +3,23 @@
 var EditPostPreviewAdmin = (function( $ ) {
 	'use strict';
 
-	var self = {
+	var component = {
 		data: {
 			customize_url: null
 		}
 	};
 
 	if ( 'undefined' !== typeof _editPostPreviewAdminExports ) {
-		$.extend( self.data, _editPostPreviewAdminExports );
+		$.extend( component.data, _editPostPreviewAdminExports );
 	}
 
-	self.init = function() {
+	component.init = function() {
 		$( '#post-preview' )
 			.off( 'click.post-preview' )
-			.on( 'click.post-preview', self.onClickPreviewBtn );
+			.on( 'click.post-preview', component.onClickPreviewBtn );
 	};
 
-	self.onClickPreviewBtn = function( event ) {
+	component.onClickPreviewBtn = function( event ) {
 		var $btn = $( this ),
 			postId = $( '#post_ID' ).val(),
 			postType = $( '#post_type' ).val(),
@@ -42,7 +42,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 		wp.customize.Loader.settings.browser.mobile = false;
 
 		// Override default close behavior.
-		wp.customize.Loader.close = self.closeLoader;
+		wp.customize.Loader.close = component.closeLoader;
 
 		// Send the current input fields from the edit post page to the Customizer via sessionStorage.
 		postSettingValue = {
@@ -53,14 +53,12 @@ var EditPostPreviewAdmin = (function( $ ) {
 		settings[ postSettingId ] = postSettingValue;
 		sessionStorage.setItem( 'previewedCustomizePostSettings[' + postId + ']', JSON.stringify( settings ) );
 
-		wp.customize.Loader.open( self.data.customize_url );
+		wp.customize.Loader.open( component.data.customize_url );
 
 		// Sync changes from the Customizer to the post input fields.
 		wp.customize.Loader.messenger.bind( 'customize-post-settings-data', function( data ) {
-			var editor;
 			if ( data[ postSettingId ] ) {
 				$( '#title' ).val( data[ postSettingId ].post_title ).trigger( 'change' );
-				editor = tinymce.get( 'content' );
 				if ( editor ) {
 					editor.setContent( wp.editor.autop( data[ postSettingId ].post_content ) );
 				}
@@ -79,7 +77,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 	 * for this post's settings is synced to the parent frame, the edit post
 	 * screen.
 	 */
-	self.closeLoader = function() {
+	component.closeLoader = function() {
 		if ( ! this.active ) {
 			return;
 		}
@@ -98,5 +96,5 @@ var EditPostPreviewAdmin = (function( $ ) {
 		}
 	};
 
-	return self;
-}( jQuery ) );
+	return component;
+})( jQuery );

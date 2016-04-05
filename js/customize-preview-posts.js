@@ -82,13 +82,15 @@
 		} );
 
 		// Capture post settings sent in Jetpack infinite scroll responses.
-		$( document ).ajaxSuccess( function( e, xhr, ajaxOptions, data ) {
-			var isInfinityScrollResponse = ( 'POST' === ajaxOptions.type && -1 !== ajaxOptions.url.indexOf( 'infinity=scrolling' ) );
+		$( document ).ajaxSuccess( function( e, xhr, ajaxOptions, responseData ) {
+			var data, isInfinityScrollResponse = 'POST' === ajaxOptions.type && -1 !== ajaxOptions.url.indexOf( 'infinity=scrolling' );
 			if ( ! isInfinityScrollResponse ) {
 				return;
 			}
-			if ( 'string' === typeof data ) {
-				data = JSON.parse( data );
+			if ( 'string' === typeof responseData ) {
+				data = JSON.parse( responseData );
+			} else {
+				data = responseData;
 			}
 			if ( data.customize_post_settings ) {
 				api.previewPosts.handlePostSettings( data.customize_post_settings );

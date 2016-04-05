@@ -1,4 +1,6 @@
 /* global wp */
+/* eslint consistent-this: [ "error", "control" ] */
+
 (function( api, $ ) {
 	'use strict';
 
@@ -12,20 +14,20 @@
 	api.DynamicControl = api.Control.extend({
 
 		initialize: function( id, options ) {
-			var control = this;
+			var control = this, args;
 
-			options = options || {};
-			options.params = options.params || {};
-			if ( ! options.params.type ) {
-				options.params.type = 'dynamic';
+			args = options || {};
+			args.params = args.params || {};
+			if ( ! args.params.type ) {
+				args.params.type = 'dynamic';
 			}
-			if ( ! options.params.content ) {
-				options.params.content = $( '<li></li>' );
-				options.params.content.attr( 'id', 'customize-control-' + id.replace( /]/g, '' ).replace( /\[/g, '-' ) );
-				options.params.content.attr( 'class', 'customize-control customize-control-' + options.params.type );
+			if ( ! args.params.content ) {
+				args.params.content = $( '<li></li>' );
+				args.params.content.attr( 'id', 'customize-control-' + id.replace( /]/g, '' ).replace( /\[/g, '-' ) );
+				args.params.content.attr( 'class', 'customize-control customize-control-' + args.params.type );
 			}
 
-			api.Control.prototype.initialize.call( control, id, options );
+			api.Control.prototype.initialize.call( control, id, args );
 			control.propertyElements = [];
 		},
 
