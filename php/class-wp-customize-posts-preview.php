@@ -158,7 +158,7 @@ final class WP_Customize_Posts_Preview {
 	 */
 	function filter_customize_dynamic_partial_class( $partial_class, $partial_id, $partial_args ) {
 		unset( $partial_id );
-		if ( WP_Customize_Post_Field_Partial::TYPE === $partial_args['type'] ) {
+		if ( isset( $partial_args['type'] ) && WP_Customize_Post_Field_Partial::TYPE === $partial_args['type'] ) {
 			$partial_class = 'WP_Customize_Post_Field_Partial';
 		}
 		return $partial_class;
