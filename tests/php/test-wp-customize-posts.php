@@ -145,13 +145,16 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	public function test_set_builtin_post_type_descriptions() {
 		global $wp_post_types;
 
+		$wp_post_types['post']->description = '';
+		$wp_post_types['page']->description = '';
+
 		$this->assertEmpty( $wp_post_types['post']->description );
-		$this->assertEmpty( $wp_post_types['post']->description );
+		$this->assertEmpty( $wp_post_types['page']->description );
 
 		$this->posts->set_builtin_post_type_descriptions();
 
 		$this->assertNotEmpty( $wp_post_types['post']->description );
-		$this->assertNotEmpty( $wp_post_types['post']->description );
+		$this->assertNotEmpty( $wp_post_types['page']->description );
 	}
 
 	/**

@@ -103,9 +103,6 @@ class Test_WP_Customize_Post_Section extends WP_UnitTestCase {
 	 * Test export data to JS.
 	 *
 	 * @see WP_Customize_Post_Section::json()
-	 *
-	 * @runInSeparateProcess
-	 * @preserveGlobalState disabled
 	 */
 	public function test_json() {
 		add_action( 'customize_register', array( $this, 'customize_register' ), 15 );
