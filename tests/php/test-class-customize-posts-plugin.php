@@ -73,10 +73,12 @@ class Test_Customize_Posts_Plugin extends WP_UnitTestCase {
 	 */
 	public function test_construct_admin_notice() {
 		$stub = $this->getMockBuilder( 'Customize_Posts_Plugin' )
+			->setMethods( array( 'has_required_core_version' ) )
 			->getMock();
 
-		$stub->method( 'has_required_core_version' )
-			->willReturn( false );
+		$stub->expects( $this->any() )
+			->method( 'has_required_core_version' )
+			->willReturn( $this->equalTo( false ) );
 
 		$this->assertEquals( 10, has_action( 'admin_notices', array( $stub, 'show_core_version_dependency_failure' ) ) );
 	}

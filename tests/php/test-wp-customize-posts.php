@@ -165,12 +165,13 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->wp_customize->set_preview_url( get_permalink( $this->post_id ) );
 		$posts = new WP_Customize_Posts( $this->wp_customize );
 
-		$stub = $this->getMockBuilder( 'Edit_Post_Preview' )
-			->disableOriginalConstructor()
+		$stub = $this->getMockBuilder( 'Customize_Posts_Plugin' )
+			->setMethods( array( 'has_required_core_version' ) )
 			->getMock();
 
-		$stub->method( 'can_load_customize_post_preview' )
-			->willReturn( true );
+		$stub->expects( $this->any() )
+			->method( 'has_required_core_version' )
+			->willReturn( $this->equalTo( true ) );
 
 		$this->do_customize_boot_actions();
 		foreach ( $posts->get_post_types() as $post_type_object ) {
