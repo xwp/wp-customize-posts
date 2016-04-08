@@ -70,6 +70,9 @@ class Test_Customize_Posts_Plugin extends WP_UnitTestCase {
 	 * Test constructor with admin notice.
 	 *
 	 * @see Customize_Posts_Plugin::__construct()
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
 	 */
 	public function test_construct_admin_notice() {
 		$stub = $this->getMockBuilder( 'Customize_Posts_Plugin' )
