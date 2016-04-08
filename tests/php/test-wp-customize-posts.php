@@ -162,16 +162,9 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	public function test_customize_register() {
 		add_action( 'customize_register', array( $this, 'customize_register' ), 15 );
 		add_action( 'customize_register', array( $this, 'customize_register_after' ), 25 );
+
 		$this->wp_customize->set_preview_url( get_permalink( $this->post_id ) );
 		$posts = new WP_Customize_Posts( $this->wp_customize );
-
-		$stub = $this->getMockBuilder( 'Customize_Posts_Plugin' )
-			->setMethods( array( 'has_required_core_version' ) )
-			->getMock();
-
-		$stub->expects( $this->any() )
-			->method( 'has_required_core_version' )
-			->willReturn( $this->equalTo( true ) );
 
 		$this->do_customize_boot_actions();
 		foreach ( $posts->get_post_types() as $post_type_object ) {

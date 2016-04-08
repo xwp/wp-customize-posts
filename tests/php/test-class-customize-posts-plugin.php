@@ -78,7 +78,7 @@ class Test_Customize_Posts_Plugin extends WP_UnitTestCase {
 
 		$stub->expects( $this->any() )
 			->method( 'has_required_core_version' )
-			->willReturn( $this->equalTo( false ) );
+			->with( $this->equalTo( false ) );
 
 		$this->assertEquals( 10, has_action( 'admin_notices', array( $stub, 'show_core_version_dependency_failure' ) ) );
 	}
