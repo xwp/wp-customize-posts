@@ -84,12 +84,11 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		remove_action( 'after_setup_theme', 'twentysixteen_setup' );
 
 		$_SERVER['REQUEST_METHOD'] = 'POST';
+		$_POST['customized'] = '';
 		do_action( 'setup_theme' );
 		$_REQUEST['nonce'] = wp_create_nonce( 'preview-customize_' . $this->wp_customize->theme()->get_stylesheet() );
 		$_REQUEST['customize_preview_post_nonce'] = wp_create_nonce( 'customize_preview_post' );
 		do_action( 'after_setup_theme' );
-		do_action( 'init' );
-		do_action( 'wp_loaded' );
 		do_action( 'customize_register', $this->wp_customize );
 		$this->wp_customize->customize_preview_init();
 		do_action( 'wp', $GLOBALS['wp'] );
@@ -232,6 +231,10 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertFalse( $posts->current_user_can_edit_post( $this->post_id ) );
 		wp_set_current_user( $this->user_id );
 		$this->assertTrue( $posts->current_user_can_edit_post( $this->post_id ) );
+		$this->assertFalse( $posts->current_user_can_edit_post( false ) );
+		$post = new stdClass();
+		$post->post_type = 'fake';
+		$this->assertFalse( $posts->current_user_can_edit_post( $post ) );
 	}
 
 	/**
@@ -272,19 +275,5 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		ob_end_clean();
 		$this->assertContains( '<div id="customize-posts-content-editor-pane">', $markup );
 		$this->assertContains( 'wp-editor-area', $markup );
-	}
-
-	/**
-	 * Test editor scripts are enqueued.
-	 *
-	 * @see WP_Customize_Posts::maybe_do_admin_print_footer_scripts()
-	 */
-	public function test_maybe_do_admin_print_footer_scripts() {
-		ob_start();
-		$this->posts->maybe_do_admin_print_footer_scripts();
-		$markup = ob_get_contents();
-		ob_end_clean();
-		$this->assertEquals( 1, did_action( 'admin_print_footer_scripts' ) );
-		$this->assertEquals( 1, did_action( 'admin_footer-post.php' ) );
 	}
 }

@@ -65,12 +65,11 @@ class Test_WP_Customize_Post_Section extends WP_UnitTestCase {
 		remove_action( 'after_setup_theme', 'twentysixteen_setup' );
 
 		$_SERVER['REQUEST_METHOD'] = 'POST';
+		$_POST['customized'] = '';
 		do_action( 'setup_theme' );
 		$_REQUEST['nonce'] = wp_create_nonce( 'preview-customize_' . $this->wp_customize->theme()->get_stylesheet() );
 		$_REQUEST['customize_preview_post_nonce'] = wp_create_nonce( 'customize_preview_post' );
 		do_action( 'after_setup_theme' );
-		do_action( 'init' );
-		do_action( 'wp_loaded' );
 		do_action( 'customize_register', $this->wp_customize );
 		$this->wp_customize->customize_preview_init();
 		do_action( 'wp', $GLOBALS['wp'] );

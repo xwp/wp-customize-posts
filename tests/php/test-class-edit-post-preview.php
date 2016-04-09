@@ -132,4 +132,65 @@ class Test_Edit_Post_Preview extends WP_UnitTestCase {
 		$_GET['previewed_post'] = $this->post_id;
 		$this->assertNull( $this->preview->get_previewed_post() );
 	}
+
+	/**
+	 * Test that scripts are not enqueued.
+	 *
+	 * @see Edit_Post_Preview::enqueue_admin_scripts()
+	 */
+	public function test_enqueue_admin_scripts_fails() {
+		$this->preview->enqueue_admin_scripts();
+
+		$this->assertFalse( wp_script_is( 'edit-post-preview-admin', 'enqueued' ) );
+		$this->assertFalse( wp_script_is( 'customize-loader', 'enqueued' ) );
+	}
+
+	/**
+	 * Test that scripts are enqueued.
+	 *
+	 * @see Edit_Post_Preview::enqueue_admin_scripts()
+	 */
+	public function test_enqueue_admin_scripts() {
+		$GLOBALS['post'] = get_post( $this->post_id );
+		set_current_screen( 'post-new.php' );
+
+		$this->preview->enqueue_admin_scripts();
+
+		$this->assertTrue( wp_script_is( 'edit-post-preview-admin', 'enqueued' ) );
+		$this->assertTrue( wp_script_is( 'customize-loader', 'enqueued' ) );
+	}
+
+	/**
+	 * Test that customize scripts are not enqueued.
+	 *
+	 * @see Edit_Post_Preview::enqueue_admin_scripts()
+	 */
+	public function test_enqueue_customize_scripts_fails() {
+		$this->preview->enqueue_customize_scripts();
+		$this->assertFalse( wp_script_is( 'edit-post-preview-customize', 'enqueued' ) );
+		$this->assertFalse( wp_style_is( 'edit-post-preview-customize', 'enqueued' ) );
+
+		$_GET['previewed_post'] = $this->post_id;
+		$_REQUEST['customize_preview_post_nonce'] = wp_create_nonce( 'customize_preview_post' );
+		$this->preview->enqueue_customize_scripts();
+		$this->assertFalse( wp_script_is( 'edit-post-preview-customize', 'enqueued' ) );
+		$this->assertFalse( wp_style_is( 'edit-post-preview-customize', 'enqueued' ) );
+	}
+
+	/**
+	 * Test that customize scripts are enqueued.
+	 *
+	 * @see Edit_Post_Preview::enqueue_admin_scripts()
+	 */
+	public function test_enqueue_customize_scripts() {
+		$GLOBALS['post'] = get_post( $this->post_id );
+		$_GET['previewed_post'] = $this->post_id;
+		$_REQUEST['customize_preview_post_nonce'] = wp_create_nonce( 'customize_preview_post' );
+		set_current_screen( 'post-new.php' );
+
+		$this->preview->enqueue_customize_scripts();
+
+		$this->assertTrue( wp_script_is( 'edit-post-preview-customize', 'enqueued' ) );
+		$this->assertTrue( wp_style_is( 'edit-post-preview-customize', 'enqueued' ) );
+	}
 }

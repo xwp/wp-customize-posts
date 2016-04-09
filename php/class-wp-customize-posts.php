@@ -359,6 +359,8 @@ final class WP_Customize_Posts {
 	 * Note that this action is also done in WP_Customize_Widgets::print_footer_scripts()
 	 * at priority 10, so this method runs at a later priority to ensure the action is
 	 * not done twice.
+	 *
+	 * @codeCoverageIgnore
 	 */
 	public function maybe_do_admin_print_footer_scripts() {
 		if ( ! did_action( 'admin_print_footer_scripts' ) ) {
