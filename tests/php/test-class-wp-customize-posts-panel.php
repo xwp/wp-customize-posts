@@ -35,7 +35,7 @@ class Test_WP_Customize_Posts_Panel extends WP_UnitTestCase {
 		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
 		$GLOBALS['wp_customize'] = new WP_Customize_Manager();
 		$this->wp_customize = $GLOBALS['wp_customize'];
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$this->posts = new WP_Customize_Posts( $this->wp_customize );
 	}
 

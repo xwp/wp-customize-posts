@@ -35,7 +35,7 @@ class Test_WP_Customize_Post_Section extends WP_UnitTestCase {
 		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
 		$GLOBALS['wp_customize'] = new WP_Customize_Manager();
 		$this->wp_customize = $GLOBALS['wp_customize'];
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$this->posts = new WP_Customize_Posts( $this->wp_customize );
 	}
 
@@ -49,6 +49,10 @@ class Test_WP_Customize_Post_Section extends WP_UnitTestCase {
 		$this->posts = null;
 		unset( $GLOBALS['wp_customize'] );
 		unset( $GLOBALS['wp_scripts'] );
+		unset( $_REQUEST['nonce'] );
+		unset( $_REQUEST['customize_preview_post_nonce'] );
+		unset( $_REQUEST['wp_customize'] );
+		unset( $_GET['previewed_post'] );
 		parent::tearDown();
 	}
 

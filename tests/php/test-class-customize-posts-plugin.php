@@ -98,7 +98,7 @@ class Test_Customize_Posts_Plugin extends WP_UnitTestCase {
 	 * @see Customize_Posts_Plugin::grant_customize_capability()
 	 */
 	public function test_grant_customize_capability() {
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'contributor' ) ) );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'contributor' ) ) );
 		$this->assertTrue( current_user_can( 'customize' ) );
 	}
 

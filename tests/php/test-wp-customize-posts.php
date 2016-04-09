@@ -50,7 +50,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$GLOBALS['wp_customize'] = new WP_Customize_Manager();
 		$this->wp_customize = $GLOBALS['wp_customize'];
 
-		$this->user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		$this->user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		$this->post_id = self::factory()->post->create( array(
 			'post_name' => 'Testing',
 			'post_author' => $this->user_id,
@@ -120,7 +120,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 * @see WP_Customize_Posts::get_post_types()
 	 */
 	public function test_get_post_types_fails() {
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
 		register_post_type( 'customize_test', array( 'show_in_customizer' => true ) );
 		$this->assertArrayNotHasKey( 'customize_test', $this->posts->get_post_types() );
 		_unregister_post_type( 'customize_test' );
@@ -227,7 +227,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 * @see WP_Customize_Posts::current_user_can_edit_post()
 	 */
 	public function test_current_user_can_edit_post() {
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'contibutor' ) ) );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'contibutor' ) ) );
 		$posts = new WP_Customize_Posts( $this->wp_customize );
 		$this->assertFalse( $posts->current_user_can_edit_post( $this->post_id ) );
 		wp_set_current_user( $this->user_id );
