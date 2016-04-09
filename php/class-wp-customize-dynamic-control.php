@@ -68,6 +68,7 @@ class WP_Customize_Dynamic_Control extends WP_Customize_Control {
 	 * Render the Underscore template for this control.
 	 *
 	 * @access protected
+	 * @codeCoverageIgnore
 	 */
 	protected function content_template() {
 		$data = $this->json();
