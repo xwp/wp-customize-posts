@@ -70,7 +70,7 @@ final class WP_Customize_Posts {
 		add_action( 'customize_controls_init', array( $this, 'enqueue_editor' ) );
 
 		add_action( 'customize_register', array( $this, 'register_constructs' ), 20 );
-		add_action( 'init', array( $this, 'register_builtin_meta' ), 100 );
+		add_action( 'init', array( $this, 'register_meta' ), 100 );
 		add_filter( 'customize_dynamic_setting_args', array( $this, 'filter_customize_dynamic_setting_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_setting_class', array( $this, 'filter_customize_dynamic_setting_class' ), 5, 3 );
 		add_filter( 'customize_save_response', array( $this, 'filter_customize_save_response_for_conflicts' ), 10, 2 );
@@ -190,8 +190,9 @@ final class WP_Customize_Posts {
 		if ( ! isset( $this->registered_post_meta[ $post->post_type ][ $meta_key ] ) ) {
 			return $allowed;
 		}
+		$registered_post_meta = $this->registered_post_meta[ $post->post_type ][ $meta_key ];
 		$allowed = (
-			user_can( $user_id, $this->registered_post_meta[ $post->post_type ][ $meta_key ]['capability'] )
+			( empty( $registered_post_meta['capability'] ) || user_can( $user_id, $registered_post_meta['capability'] ) )
 			&&
 			user_can( $user_id, $post_type_object->cap->edit_post, $post_id )
 		);
@@ -207,13 +208,13 @@ final class WP_Customize_Posts {
 
 		foreach ( get_post_types( array(), 'objects' ) as $post_type_object ) {
 
-			if ( post_type_supports( 'thumbnail', $post_type_object->name ) ) {
+			if ( post_type_supports( $post_type_object->name, 'thumbnail' ) ) {
 				$this->register_post_type_meta( $post_type_object->name, '_thumbnail_id', array(
 					'sanitize_value_callback' => array( $this, 'sanitize_post_id' ),
 				) );
 			}
 
-			if ( post_type_supports( 'page-attributes', $post_type_object->name ) ) {
+			if ( post_type_supports( $post_type_object->name, 'page-attributes' ) ) {
 				$this->register_post_type_meta( $post_type_object->name, '_wp_page_template', array(
 					'setting_class' => 'WP_Customize_Page_Template_Postmeta_Setting',
 					'sanitize_value_callback' => array( 'WP_Customize_Page_Template_Postmeta_Setting', 'sanitize_file_path' ),
@@ -221,8 +222,12 @@ final class WP_Customize_Posts {
 			}
 		}
 
-		// @todo Do action to allow plugins to register their own meta?
-		// @todo here we need to re-add dynamic settings
+		/**
+		 * Allow plugins to register meta.
+		 *
+		 * @param WP_Customize_Posts $this
+		 */
+		do_action( 'customize_posts_register_meta', $this );
 	}
 
 	/**

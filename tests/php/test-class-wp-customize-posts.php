@@ -70,6 +70,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 */
 	function tearDown() {
 		$this->wp_customize = null;
+		unset( $_POST['customized'] );
 		unset( $GLOBALS['wp_customize'] );
 		unset( $GLOBALS['wp_scripts'] );
 		parent::tearDown();
@@ -78,22 +79,22 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	/**
 	 * Do Customizer boot actions.
 	 */
-	function do_customize_boot_actions() {
+	function do_customize_boot_actions( $customized = array() ) {
 		// Remove actions that call add_theme_support( 'title-tag' ).
 		remove_action( 'after_setup_theme', 'twentyfifteen_setup' );
 		remove_action( 'after_setup_theme', 'twentysixteen_setup' );
 
-		$_SERVER['REQUEST_METHOD'] = 'POST';
-		$_POST['customized'] = '';
-		do_action( 'setup_theme' );
-		$_REQUEST['nonce'] = wp_create_nonce( 'preview-customize_' . $this->wp_customize->theme()->get_stylesheet() );
-		$_REQUEST['customize_preview_post_nonce'] = wp_create_nonce( 'customize_preview_post' );
-		do_action( 'after_setup_theme' );
-		do_action( 'customize_register', $this->wp_customize );
-		$this->wp_customize->customize_preview_init();
-		do_action( 'wp', $GLOBALS['wp'] );
 		$_REQUEST['wp_customize'] = 'on';
+		$_SERVER['REQUEST_METHOD'] = 'POST';
+		$_REQUEST['nonce'] = wp_create_nonce( 'preview-customize_' . $this->wp_customize->theme()->get_stylesheet() );
+		$_POST['customized'] = wp_slash( wp_json_encode( $customized ) );
+		$_REQUEST['customize_preview_post_nonce'] = wp_create_nonce( 'customize_preview_post' );
 		$_GET['previewed_post'] = $this->post_id;
+		do_action( 'setup_theme' );
+		do_action( 'after_setup_theme' );
+		do_action( 'init' );
+		do_action( 'wp_loaded' );
+		do_action( 'wp', $GLOBALS['wp'] );
 	}
 
 	/**
@@ -107,6 +108,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertEquals( 10, has_action( 'customize_controls_enqueue_scripts', array( $posts, 'enqueue_scripts' ) ) );
 		$this->assertEquals( 10, has_action( 'customize_controls_init', array( $posts, 'enqueue_editor' ) ) );
 		$this->assertEquals( 20, has_action( 'customize_register', array( $posts, 'register_constructs' ) ) );
+		$this->assertEquals( 100, has_action( 'init', array( $posts, 'register_meta' ) ) );
 		$this->assertEquals( 10, has_action( 'customize_dynamic_setting_args', array( $posts, 'filter_customize_dynamic_setting_args' ) ) );
 		$this->assertEquals( 5, has_action( 'customize_dynamic_setting_class', array( $posts, 'filter_customize_dynamic_setting_class' ) ) );
 		$this->assertEquals( 10, has_action( 'customize_save_response', array( $posts, 'filter_customize_save_response_for_conflicts' ) ) );
@@ -157,11 +159,54 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test register_post_type_meta().
+	 *
+	 * @see WP_Customize_Posts::register_post_type_meta()
+	 */
+	public function test_register_post_type_meta() {
+		$this->markTestIncomplete();
+	}
+
+	/**
+	 * Test auth_post_meta_callback().
+	 *
+	 * @see WP_Customize_Posts::auth_post_meta_callback()
+	 */
+	public function test_auth_post_meta_callback() {
+		$this->markTestIncomplete();
+	}
+
+	/**
+	 * Test register_meta().
+	 *
+	 * @see WP_Customize_Posts::register_meta()
+	 */
+	public function test_register_meta() {
+
+		// Make sure _thumbnail_id is recognized.
+		$attachment_id = self::factory()->attachment->create_object( 'featured-image.jpg', $this->post_id, array(
+			'post_mime_type' => 'image/jpeg',
+			'post_type' => 'attachment',
+			'post_title' => 'Featured image!',
+			'post_status' => 'inherit',
+		) );
+		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $this->post_id ), '_thumbnail_id' );
+
+		$this->do_customize_boot_actions( array(
+			$setting_id => $attachment_id,
+		) );
+
+		$setting = $this->wp_customize->get_setting( $setting_id );
+
+		$this->assertNotEmpty( $setting );
+	}
+
+	/**
 	 * Test that section, controls, and settings are registered.
 	 *
-	 * @see WP_Customize_Posts::customize_register()
+	 * @see WP_Customize_Posts::register_constructs()
 	 */
-	public function test_customize_register() {
+	public function test_register_constructs() {
 		add_action( 'customize_register', array( $this, 'customize_register' ), 15 );
 		add_action( 'customize_register', array( $this, 'customize_register_after' ), 25 );
 

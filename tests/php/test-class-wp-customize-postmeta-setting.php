@@ -48,6 +48,7 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 	function tearDown() {
 		unset( $GLOBALS['wp_customize'] );
 		unset( $GLOBALS['wp_scripts'] );
+		unset( $_POST['customized'] );
 		parent::tearDown();
 	}
 
@@ -57,8 +58,8 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 	function do_customize_boot_actions() {
 		$_SERVER['REQUEST_METHOD'] = 'POST';
 		$_REQUEST['wp_customize'] = 'on';
-		do_action( 'setup_theme' );
 		$_REQUEST['nonce'] = wp_create_nonce( 'preview-customize_' . $this->manager->theme()->get_stylesheet() );
+		do_action( 'setup_theme' );
 		do_action( 'after_setup_theme' );
 		do_action( 'init' );
 		do_action( 'wp_loaded' );
@@ -261,6 +262,7 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 		update_post_meta( $post_id, $meta_key, wp_slash( $initial_meta_value ) );
 		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $post_id ), $meta_key );
 		$previewed_meta_value = 'goodnightmoon@example.com';
+		$_POST['customized'] = wp_slash( wp_json_encode( array( $setting_id => $previewed_meta_value ) ) );
 		$this->manager->set_post_value( $setting_id, $previewed_meta_value );
 		$this->do_customize_boot_actions();
 
@@ -285,6 +287,7 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 		update_post_meta( $post_id, $meta_key, wp_slash( $initial_meta_value ) );
 		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $post_id ), $meta_key );
 		$override_meta_value = 'goodnightmoon@example.com';
+		$_POST['customized'] = wp_slash( wp_json_encode( array( $setting_id => $override_meta_value ) ) );
 		$this->manager->set_post_value( $setting_id, $override_meta_value );
 		$this->do_customize_boot_actions();
 
