@@ -75,7 +75,7 @@ class Edit_Post_Preview {
 	 * @return WP_Post|null
 	 */
 	public function get_previewed_post() {
-		if ( function_exists( 'get_current_screen' ) && 'post' === get_current_screen()->base ) {
+		if ( function_exists( 'get_current_screen' ) && get_current_screen() && 'post' === get_current_screen()->base ) {
 			$post = get_post();
 		} elseif ( is_preview() ) {
 			$post = get_post();
@@ -97,7 +97,7 @@ class Edit_Post_Preview {
 	 * Enqueue scripts for post edit screen.
 	 */
 	public function enqueue_admin_scripts() {
-		if ( ! function_exists( 'get_current_screen' ) || 'post' !== get_current_screen()->base ) {
+		if ( ! function_exists( 'get_current_screen' ) || ! get_current_screen() || 'post' !== get_current_screen()->base ) {
 			return;
 		}
 		wp_enqueue_script( 'edit-post-preview-admin' );
