@@ -46,10 +46,6 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 */
 	public function setUp() {
 		parent::setUp();
-		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
-		$GLOBALS['wp_customize'] = new WP_Customize_Manager();
-		$this->wp_customize = $GLOBALS['wp_customize'];
-
 		$this->user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		$this->post_id = self::factory()->post->create( array(
 			'post_name' => 'Testing',
@@ -57,6 +53,10 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		) );
 
 		wp_set_current_user( $this->user_id );
+
+		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
+		$GLOBALS['wp_customize'] = new WP_Customize_Manager();
+		$this->wp_customize = $GLOBALS['wp_customize'];
 
 		if ( isset( $this->wp_customize->posts ) ) {
 			$this->posts = $this->wp_customize->posts;
