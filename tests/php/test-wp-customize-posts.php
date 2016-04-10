@@ -106,7 +106,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 
 		$this->assertEquals( 10, has_action( 'customize_controls_enqueue_scripts', array( $posts, 'enqueue_scripts' ) ) );
 		$this->assertEquals( 10, has_action( 'customize_controls_init', array( $posts, 'enqueue_editor' ) ) );
-		$this->assertEquals( 20, has_action( 'customize_register', array( $posts, 'customize_register' ) ) );
+		$this->assertEquals( 20, has_action( 'customize_register', array( $posts, 'register_constructs' ) ) );
 		$this->assertEquals( 10, has_action( 'customize_dynamic_setting_args', array( $posts, 'filter_customize_dynamic_setting_args' ) ) );
 		$this->assertEquals( 5, has_action( 'customize_dynamic_setting_class', array( $posts, 'filter_customize_dynamic_setting_class' ) ) );
 		$this->assertEquals( 10, has_action( 'customize_save_response', array( $posts, 'filter_customize_save_response_for_conflicts' ) ) );

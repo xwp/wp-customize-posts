@@ -199,11 +199,11 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Register builtin meta.
+	 * Register post meta for the post types.
 	 *
 	 * Note that this has to be after all post types are registered.
 	 */
-	public function register_builtin_meta() {
+	public function register_meta() {
 
 		foreach ( get_post_types( array(), 'objects' ) as $post_type_object ) {
 
