@@ -276,4 +276,16 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertContains( '<div id="customize-posts-content-editor-pane">', $markup );
 		$this->assertContains( 'wp-editor-area', $markup );
 	}
+
+	/**
+	 * Test sanitize_post_id method.
+	 *
+	 * @see WP_Customize_Posts::sanitize_post_id()
+	 */
+	public function test_sanitize_post_id() {
+		$this->assertEquals( 2, $this->posts->sanitize_post_id( '2' ) );
+		$this->assertEquals( 10, $this->posts->sanitize_post_id( '10k' ) );
+		$this->assertEquals( 0, $this->posts->sanitize_post_id( 'no' ) );
+		$this->assertEquals( -2, $this->posts->sanitize_post_id( '-2' ) );
+	}
 }
