@@ -154,7 +154,7 @@ final class WP_Customize_Posts {
 			$needs_section = (
 				$setting instanceof WP_Customize_Post_Setting
 				&&
-				! $this->manager->get_control( $setting->id )
+				! $this->manager->get_section( $setting->id )
 			);
 			if ( $needs_section ) {
 
@@ -277,8 +277,6 @@ final class WP_Customize_Posts {
 	public function enqueue_scripts() {
 		wp_enqueue_script( 'customize-posts' );
 		wp_enqueue_style( 'customize-posts' );
-		wp_enqueue_style( 'customize-posts-panel' );
-		wp_enqueue_style( 'customize-post-section' );
 
 		$post_types = array();
 		foreach ( $this->get_post_types() as $post_type => $post_type_obj ) {
@@ -361,6 +359,8 @@ final class WP_Customize_Posts {
 	 * Note that this action is also done in WP_Customize_Widgets::print_footer_scripts()
 	 * at priority 10, so this method runs at a later priority to ensure the action is
 	 * not done twice.
+	 *
+	 * @codeCoverageIgnore
 	 */
 	public function maybe_do_admin_print_footer_scripts() {
 		if ( ! did_action( 'admin_print_footer_scripts' ) ) {

@@ -28,5 +28,6 @@
  * @subpackage Customize
  */
 
+// @codeCoverageIgnoreStart
 require_once dirname( __FILE__ ) . '/php/class-customize-posts-plugin.php';
-$GLOBALS['customize_posts_plugin'] = new Customize_Posts_Plugin();
+$GLOBALS['customize_posts_plugin'] = new Customize_Posts_Plugin(); // @codeCoverageIgnoreEnd
