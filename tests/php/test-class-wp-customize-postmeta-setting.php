@@ -34,7 +34,7 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
 		$this->plugin = new Customize_Posts_Plugin();
 		// @codingStandardsIgnoreStart
-		$GLOBALS['wp_customize'] = new \WP_Customize_Manager();
+		$GLOBALS['wp_customize'] = new WP_Customize_Manager();
 		// @codingStandardsIgnoreStop
 		$this->manager = $GLOBALS['wp_customize'];
 

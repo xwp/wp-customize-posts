@@ -55,7 +55,9 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		wp_set_current_user( $this->user_id );
 
 		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
+		// @codingStandardsIgnoreStart
 		$GLOBALS['wp_customize'] = new WP_Customize_Manager();
+		// @codingStandardsIgnoreStop
 		$this->wp_customize = $GLOBALS['wp_customize'];
 
 		if ( isset( $this->wp_customize->posts ) ) {
@@ -78,6 +80,8 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 
 	/**
 	 * Do Customizer boot actions.
+	 *
+	 * @param array $customized Post values.
 	 */
 	function do_customize_boot_actions( $customized = array() ) {
 		// Remove actions that call add_theme_support( 'title-tag' ).
