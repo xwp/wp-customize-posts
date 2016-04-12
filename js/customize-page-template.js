@@ -7,8 +7,7 @@ var CustomizePageTemplate = (function( api ) {
 	var component = {
 		data: {
 			l10n: {
-				controlLabel: '',
-				defaultTemplateName: ''
+				controlLabel: ''
 			},
 			defaultPageTemplateChoices: {}
 		}
@@ -53,11 +52,14 @@ var CustomizePageTemplate = (function( api ) {
 		}
 
 		controlId = section.id + '[page_template]';
-		settingId = section.id;
+		settingId = 'postmeta[' + section.params.post_type + '][' + String( section.params.post_id ) + '][_wp_page_template]';
 
 		if ( api.control.has( controlId ) ) {
 			return api.control( controlId );
 		}
+
+		// @todo We need to create the setting!
+		// @todo We need to get the postmeta sent from the preview!
 
 		control = new api.controlConstructor.dynamic( controlId, {
 			params: {
@@ -69,7 +71,10 @@ var CustomizePageTemplate = (function( api ) {
 					'default': settingId
 				},
 				field_type: 'select',
-				choices: component.data.defaultPageTemplateChoices
+				choices: component.data.defaultPageTemplateChoices,
+				input_attrs: {
+					'data-customize-setting-link': settingId
+				}
 			}
 		} );
 
