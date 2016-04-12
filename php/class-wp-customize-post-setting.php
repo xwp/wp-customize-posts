@@ -86,9 +86,6 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		}
 		$args['post_id'] = intval( $matches['post_id'] );
 		$args['post_type'] = $matches['post_type'];
-		if ( ! isset( $args['sanitize_callback'] ) ) {
-			$args['sanitize_callback'] = array( $this, 'sanitize' );
-		}
 		$post_type_obj = get_post_type_object( $args['post_type'] );
 		if ( ! $post_type_obj ) {
 			throw new Exception( 'Unrecognized post type: ' . $args['post_type'] );
