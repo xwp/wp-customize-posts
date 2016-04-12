@@ -169,6 +169,12 @@ class Customize_Posts_Plugin {
 		$deps = array( 'customize-controls' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
+		$handle = 'customize-page-template';
+		$src = $plugin_dir_url . 'js/customize-page-template' . $suffix;
+		$deps = array( 'customize-controls', 'customize-posts' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 	}
 
 	/**

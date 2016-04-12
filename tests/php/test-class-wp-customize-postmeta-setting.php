@@ -217,6 +217,8 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 	 * @see WP_Customize_Page_Template_Postmeta_Setting::sanitize()
 	 */
 	function test_sanitize_page_template_setting() {
+		$this->markTestSkipped( 'Class is gone: WP_Customize_Page_Template_Postmeta_Setting' );
+
 		switch_theme( 'twentytwelve' );
 
 		$post_id = $this->factory()->post->create( array( 'post_type' => 'post') );
