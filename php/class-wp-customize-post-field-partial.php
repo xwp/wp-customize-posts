@@ -125,6 +125,11 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 			/** This filter is documented in wp-includes/post-template.php */
 			$rendered = apply_filters( 'the_content', $rendered );
 			$rendered = str_replace( ']]>', ']]&gt;', $rendered );
+		} else if ( 'post_excerpt' === $partial->field_id ) {
+			$rendered = get_the_excerpt();
+
+			/** This filter is documented in wp-includes/post-template.php */
+			$rendered = apply_filters( 'the_excerpt', $rendered );
 		}
 
 		wp_reset_postdata();
