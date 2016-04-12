@@ -54,11 +54,22 @@ class WP_Customize_Page_Template_Controller {
 		$handle = 'customize-page-template';
 		wp_enqueue_script( $handle );
 		wp_add_inline_script( $handle, 'CustomizePageTemplate.init()' );
+
+		$choices = array();
+		$choices[] = array(
+			'value' => 'default',
+			'text' => __( '(Default)', 'customize-posts' ),
+		);
+		foreach ( wp_get_theme()->get_page_templates() as $template_file => $template_name ) {
+			$choices[] = array(
+				'text' => $template_name,
+				'value' => $template_file,
+			);
+		}
 		$exports = array(
-			'defaultPageTemplateChoices' => wp_get_theme()->get_page_templates(),
+			'defaultPageTemplateChoices' => $choices,
 			'l10n' => array(
 				'controlLabel' => __( 'Page Template', 'customize-posts' ),
-				'defaultTemplateName' => __( '(Default)', 'customize-posts' ),
 			),
 		);
 		wp_scripts()->add_data(

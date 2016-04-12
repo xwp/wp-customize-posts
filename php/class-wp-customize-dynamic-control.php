@@ -102,8 +102,14 @@ class WP_Customize_Dynamic_Control extends WP_Customize_Control {
 					data-customize-setting-property-link="{{ data.setting_property }}"
 				<# } #>
 				>
-				<# _.each( data.choices, function( value, label ) { #>
-					<option value="{{ value }}">{{ label }}</option>
+				<# _.each( data.choices, function( value, text ) { #>
+					<#
+					if ( _.isObject( value ) && ! _.isUndefined( value.text ) && ! _.isUndefined( value.value ) ) {
+						text = value.text;
+						value = value.value;
+					}
+					#>
+					<option value="{{ value }}">{{ text }}</option>
 				<# } ); #>
 			</select>
 		<# } else { #>
