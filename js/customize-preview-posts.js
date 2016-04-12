@@ -46,6 +46,14 @@
 				}
 			} );
 			api.selectiveRefresh.partial.add( partial.id, partial );
+
+			// Post field partial for post_author.
+			partial = new api.previewPosts.PostFieldPartial( id + '[post_author]', {
+				params: {
+					settings: [ id ]
+				}
+			} );
+			api.selectiveRefresh.partial.add( partial.id, partial );
 		} );
 
 	};

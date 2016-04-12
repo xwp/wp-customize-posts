@@ -125,6 +125,8 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 			/** This filter is documented in wp-includes/post-template.php */
 			$rendered = apply_filters( 'the_content', $rendered );
 			$rendered = str_replace( ']]>', ']]&gt;', $rendered );
+		} else if ( 'post_author' === $partial->field_id ) {
+			$rendered = false; // @todo Template part refresh.
 		}
 
 		wp_reset_postdata();
