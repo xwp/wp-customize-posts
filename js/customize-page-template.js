@@ -7,7 +7,8 @@ var CustomizePageTemplate = (function( api ) {
 	var component = {
 		data: {
 			l10n: {
-				controlLabel: ''
+				controlLabel: '',
+				defaultTemplateName: ''
 			},
 			defaultPageTemplateChoices: {}
 		}

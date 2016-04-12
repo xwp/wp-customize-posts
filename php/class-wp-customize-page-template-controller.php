@@ -58,6 +58,7 @@ class WP_Customize_Page_Template_Controller {
 			'defaultPageTemplateChoices' => wp_get_theme()->get_page_templates(),
 			'l10n' => array(
 				'controlLabel' => __( 'Page Template', 'customize-posts' ),
+				'defaultTemplateName' => __( '(Default)', 'customize-posts' ),
 			),
 		);
 		wp_scripts()->add_data(
