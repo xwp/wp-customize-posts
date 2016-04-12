@@ -9,43 +9,28 @@
 /**
  * Class WP_Customize_Page_Template
  */
-class WP_Customize_Page_Template_Controller {
-
-	const META_KEY = '_wp_page_template';
+class WP_Customize_Page_Template_Controller extends WP_Customize_Postmeta_Controller {
 
 	/**
-	 * WP_Customize_Posts instance.
+	 * Meta key.
 	 *
-	 * @access public
-	 * @var WP_Customize_Posts
+	 * @var string
 	 */
-	public $posts_component;
+	public $meta_key = '_wp_page_template';
 
 	/**
-	 * WP_Customize_Page_Template_Controller constructor.
+	 * Post type support for the postmeta.
 	 *
-	 * @param WP_Customize_Posts $component Posts component.
+	 * @var string
 	 */
-	public function __construct( WP_Customize_Posts $component ) {
-		$this->posts_component = $component;
-		add_action( 'customize_posts_register_meta', array( $this, 'register_meta' ) );
-		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
-	}
+	public $post_type_supports = 'page-attributes';
 
 	/**
-	 * Register meta.
+	 * Setting transport.
+	 *
+	 * @var string
 	 */
-	public function register_meta() {
-		register_meta( 'post', self::META_KEY, array( $this, 'sanitize_file_path' ) );
-
-		foreach ( get_post_types( array(), 'objects' ) as $post_type_object ) {
-			if ( post_type_supports( $post_type_object->name, 'page-attributes' ) ) {
-				$this->posts_component->register_post_type_meta( $post_type_object->name, self::META_KEY, array(
-					'sanitize_callback' => array( $this, 'sanitize_setting' ),
-				) );
-			}
-		}
-	}
+	public $setting_transport = 'refresh';
 
 	/**
 	 * Enqueue scripts.
@@ -80,12 +65,14 @@ class WP_Customize_Page_Template_Controller {
 	}
 
 	/**
-	 * Apply rudimentary sanitization of a file path.
+	 * Apply rudimentary sanitization of a file path for a generic setting instance.
+	 *
+	 * @see sanitize_meta()
 	 *
 	 * @param string $raw_path Path.
 	 * @return string Path.
 	 */
-	public function sanitize_file_path( $raw_path ) {
+	public function sanitize_value( $raw_path ) {
 		$path = $raw_path;
 		$special_chars = array( '..', './', chr( 0 ) );
 		$path = str_replace( $special_chars, '', $path );
@@ -94,7 +81,7 @@ class WP_Customize_Page_Template_Controller {
 	}
 
 	/**
-	 * Sanitize (and validate) an input.
+	 * Sanitize (and validate) an input for a specific setting instance.
 	 *
 	 * @see update_metadata()
 	 *

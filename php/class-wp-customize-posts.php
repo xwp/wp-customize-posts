@@ -68,6 +68,7 @@ final class WP_Customize_Posts {
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-section.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-dynamic-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-setting.php';
+		require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-controller.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-setting.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-page-template-controller.php';
 		require_once ABSPATH . WPINC . '/customize/class-wp-customize-partial.php';
@@ -148,21 +149,28 @@ final class WP_Customize_Posts {
 	 *
 	 * @see register_meta()
 	 *
-	 * @param string $post_type Post type.
-	 * @param string $meta_key  Meta key.
-	 * @param array  $args      Args.
+	 * @param string $post_type    Post type.
+	 * @param string $meta_key     Meta key.
+	 * @param array  $setting_args Args.
 	 */
-	public function register_post_type_meta( $post_type, $meta_key, $args = array() ) {
-		$args = array_merge(
+	public function register_post_type_meta( $post_type, $meta_key, $setting_args = array() ) {
+		$setting_args = array_merge(
 			array(
+				'capability' => null,
+				'theme_supports' => null,
+				'default' => null,
+				'transport' => null,
+				'sanitize_callback' => null,
+				'sanitize_js_callback' => null,
+
 				'sanitize_value_callback' => null,
 				'setting_class' => 'WP_Customize_Postmeta_Setting',
 			),
-			$args
+			$setting_args
 		);
 
-		if ( ! empty( $args['sanitize_value_callback'] ) && ! has_filter( "sanitize_post_meta_{$meta_key}", $args['sanitize_value_callback'] ) ) {
-			add_filter( "sanitize_post_meta_{$meta_key}", $args['sanitize_value_callback'] );
+		if ( ! empty( $setting_args['sanitize_value_callback'] ) && ! has_filter( "sanitize_post_meta_{$meta_key}", $setting_args['sanitize_value_callback'] ) ) {
+			add_filter( "sanitize_post_meta_{$meta_key}", $setting_args['sanitize_value_callback'] );
 		}
 		if ( ! has_filter( "auth_post_meta_{$meta_key}", array( $this, 'auth_post_meta_callback' ) ) ) {
 			add_filter( "auth_post_meta_{$meta_key}", array( $this, 'auth_post_meta_callback' ), 10, 6 );
@@ -171,7 +179,15 @@ final class WP_Customize_Posts {
 		if ( ! isset( $this->registered_post_meta[ $post_type ] ) ) {
 			$this->registered_post_meta[ $post_type ] = array();
 		}
-		$this->registered_post_meta[ $post_type ][ $meta_key ] = $args;
+
+		// Filter out null values, aka array_filter with ! is_null.
+		foreach ( array_keys( $setting_args ) as $key => $value ) {
+			if ( is_null( $value ) ) {
+				unset( $setting_args[ $key ] );
+			}
+		}
+
+		$this->registered_post_meta[ $post_type ][ $meta_key ] = $setting_args;
 	}
 
 	/**
@@ -309,12 +325,19 @@ final class WP_Customize_Posts {
 			if ( ! isset( $this->registered_post_meta[ $matches['post_type'] ][ $matches['meta_key'] ] ) ) {
 				return $args;
 			}
+			$registered = $this->registered_post_meta[ $matches['post_type'] ][ $matches['meta_key'] ];
+			if ( isset( $registered['theme_supports'] ) && ! current_theme_supports( $registered['theme_supports'] ) ) {
+				// We don't really need this because theme_supports will already filter it out of being exported.
+				return $args;
+			}
 			if ( false === $args ) {
 				$args = array();
 			}
+			$args = array_merge(
+				$args,
+				$registered
+			);
 			$args['type'] = 'postmeta';
-			$args['transport'] = 'postMessage';
-			$args['registered_post_meta_args'] = $this->registered_post_meta[ $matches['post_type'] ][ $matches['meta_key'] ];
 		}
 
 		return $args;
@@ -335,8 +358,8 @@ final class WP_Customize_Posts {
 			if ( 'post' === $args['type'] ) {
 				$class = 'WP_Customize_Post_Setting';
 			} elseif ( 'postmeta' === $args['type'] ) {
-				if ( isset( $args['registered_post_meta_args']['setting_class'] ) ) {
-					$class = $args['registered_post_meta_args']['setting_class'];
+				if ( isset( $args['setting_class'] ) ) {
+					$class = $args['setting_class'];
 				} else {
 					$class = 'WP_Customize_Postmeta_Setting';
 				}
