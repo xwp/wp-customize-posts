@@ -79,12 +79,13 @@ var CustomizePageTemplate = (function( api ) {
 		} );
 
 		/**
-		 * Make sure that control only appears if there are page templates.
+		 * Make sure that control only appears if there are page templates (other than 'default').
 		 *
 		 * @returns {boolean}
 		 */
 		control.active.validate = function() {
-			return _.size( this.params.choices ) > 0;
+			var defaultSize = 1;
+			return _.size( this.params.choices ) > defaultSize;
 		};
 
 		// Register.
