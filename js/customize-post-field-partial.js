@@ -21,7 +21,7 @@
 		 * @inheritdoc
 		 */
 		initialize: function( id, options ) {
-			var partial = this, args, matches, baseSelector, idPattern = /^post\[(.+?)]\[(-?\d+)]\[(.+?)]$/;
+			var partial = this, args, matches, baseSelector, idPattern = /^post\[(.+?)]\[(-?\d+)]\[(.+?)](?:\[(.+?)])?$/;
 
 			args = options || {};
 			args.params = args.params || {};
@@ -32,6 +32,7 @@
 			args.params.post_type = matches[1];
 			args.params.post_id = parseInt( matches[2], 10 );
 			args.params.field_id = matches[3];
+			args.params.placement = matches[4] || '';
 
 			if ( ! args.params.selector ) {
 				baseSelector = '.hentry.post-' + String( args.params.post_id ) + '.type-' + args.params.post_type;
@@ -40,7 +41,11 @@
 				} else if ( 'post_content' === args.params.field_id ) {
 					args.params.selector = baseSelector + ' .entry-content';
 				} else if ( 'post_author' === args.params.field_id ) {
-					args.params.selector = baseSelector; // Template part refresh.
+					if ( 'author-bio' === args.params.placement ) {
+						args.params.selector = baseSelector + ' .author-info';
+					} else if ( 'byline' === args.params.placement ) {
+						args.params.selector = baseSelector + ' .byline a.fn';
+					}
 				}
 			}
 			api.selectiveRefresh.Partial.prototype.initialize.call( partial, id, args );

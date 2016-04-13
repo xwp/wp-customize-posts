@@ -47,10 +47,22 @@
 			} );
 			api.selectiveRefresh.partial.add( partial.id, partial );
 
-			// Post field partial for post_author.
-			partial = new api.previewPosts.PostFieldPartial( id + '[post_author]', {
+			// Post field partial for post_author author-bio.
+			partial = new api.previewPosts.PostFieldPartial( id + '[post_author][author-bio]', {
 				params: {
-					settings: [ id ]
+					settings: [ id ],
+					containerInclusive: true,
+					fallbackRefresh: false
+				}
+			} );
+			api.selectiveRefresh.partial.add( partial.id, partial );
+
+			// Post field partial for post_author byline.
+			partial = new api.previewPosts.PostFieldPartial( id + '[post_author][byline]', {
+				params: {
+					settings: [ id ],
+					containerInclusive: true,
+					fallbackRefresh: false
 				}
 			} );
 			api.selectiveRefresh.partial.add( partial.id, partial );

@@ -11,7 +11,7 @@
  */
 class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 
-	const ID_PATTERN = '/^post\[(?P<post_type>[^\]]+)\]\[(?P<post_id>-?\d+)\]\[(?P<field_id>[^\]]+)\]$/';
+	const ID_PATTERN = '/^post\[(?P<post_type>[^\]]+)\]\[(?P<post_id>-?\d+)\]\[(?P<field_id>[^\]]+)\](?:\[(?P<placement>[^\]]+)\])?$/';
 
 	const TYPE = 'post_field';
 
@@ -47,6 +47,13 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 	public $field_id;
 
 	/**
+	 * Partial placement that this setting is related to.
+	 *
+	 * @var string
+	 */
+	public $placement;
+
+	/**
 	 * Constructor.
 	 *
 	 * @inheritdoc
@@ -72,11 +79,22 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 			$args['settings'] = array( sprintf( 'post[%s][%d]', $matches['post_type'], $matches['post_id'] ) );
 		}
 
-		parent::__construct( $component, $id, $args );
-
 		$this->post_id = intval( $matches['post_id'] );
 		$this->post_type = $matches['post_type'];
 		$this->field_id = $matches['field_id'];
+		$this->placement = isset( $matches['placement'] ) ? $matches['placement'] : '';
+
+		if ( ! empty( $this->placement ) ) {
+			if ( ! isset( $args['container_inclusive'] ) ) {
+				$args['container_inclusive'] = true;
+			}
+
+			if ( ! isset( $args['fallback_refresh'] ) ) {
+				$args['fallback_refresh'] = false;
+			}
+		}
+
+		parent::__construct( $component, $id, $args );
 	}
 
 	/**
@@ -126,7 +144,21 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 			$rendered = apply_filters( 'the_content', $rendered );
 			$rendered = str_replace( ']]>', ']]&gt;', $rendered );
 		} else if ( 'post_author' === $partial->field_id ) {
-			$rendered = false; // @todo Template part refresh.
+			if ( 'author-bio' === $partial->placement && is_singular() && get_the_author_meta( 'description' ) ) {
+				if ( '' !== locate_template( 'author-bio.php' ) ) {
+					ob_start();
+					get_template_part( 'author-bio' );
+					$rendered = ob_get_contents();
+					ob_end_clean();
+				} else {
+					$rendered = false;
+				}
+			} else if ( 'byline' === $partial->placement && ( is_singular() || is_multi_author() ) ) {
+				$rendered = sprintf( '<a class="url fn n" href="%1$s">%2$s</a>',
+					esc_url( get_author_posts_url( get_the_author_meta( 'ID', $post->post_author ) ) ),
+					get_the_author_meta( 'display_name', $post->post_author )
+				);
+			}
 		}
 
 		wp_reset_postdata();
@@ -143,6 +175,7 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 		$data['post_type'] = $this->post_type;
 		$data['post_id'] = $this->post_id;
 		$data['field_id'] = $this->field_id;
+		$data['placement'] = $this->placement;
 		return $data;
 	}
 }
