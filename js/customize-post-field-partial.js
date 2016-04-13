@@ -39,6 +39,8 @@
 					args.params.selector = baseSelector + ' .entry-title';
 				} else if ( 'post_content' === args.params.field_id ) {
 					args.params.selector = baseSelector + ' .entry-content';
+				} else if ( 'post_excerpt' === args.params.field_id ) {
+					args.params.selector = baseSelector + ' .entry-summary';
 				}
 			}
 			api.selectiveRefresh.Partial.prototype.initialize.call( partial, id, args );

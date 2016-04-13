@@ -47,7 +47,8 @@ var EditPostPreviewAdmin = (function( $ ) {
 		// Send the current input fields from the edit post page to the Customizer via sessionStorage.
 		postSettingValue = {
 			post_title: $( '#title' ).val(),
-			post_content: editor && ! editor.isHidden() ? wp.editor.removep( editor.getContent() ) : $( '#content' ).val()
+			post_content: editor && ! editor.isHidden() ? wp.editor.removep( editor.getContent() ) : $( '#content' ).val(),
+			post_excerpt: $( '#excerpt' ).val()
 		};
 		postSettingId = 'post[' + postType + '][' + postId + ']';
 		settings[ postSettingId ] = postSettingValue;
@@ -63,6 +64,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 					editor.setContent( wp.editor.autop( data[ postSettingId ].post_content ) );
 				}
 				$( '#content' ).val( data[ postSettingId ].post_content ).trigger( 'change' );
+				$( '#excerpt' ).val( data[ postSettingId ].post_excerpt ).trigger( 'change' );
 			}
 		} );
 
