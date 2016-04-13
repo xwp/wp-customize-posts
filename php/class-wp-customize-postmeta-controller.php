@@ -55,6 +55,13 @@ abstract class WP_Customize_Postmeta_Controller {
 	public $setting_transport = 'postMessage';
 
 	/**
+	 * Setting default value.
+	 *
+	 * @var string
+	 */
+	public $default = '';
+
+	/**
 	 * WP_Customize_Page_Template_Controller constructor.
 	 *
 	 * @throws Exception If meta_key is missing.
@@ -97,6 +104,7 @@ abstract class WP_Customize_Postmeta_Controller {
 					'sanitize_callback' => array( $this, 'sanitize_setting' ),
 					'transport' => $this->setting_transport,
 					'theme_supports' => $this->theme_supports,
+					'default' => $this->default,
 				);
 				$this->posts_component->register_post_type_meta( $post_type, $this->meta_key, $setting_args );
 			}

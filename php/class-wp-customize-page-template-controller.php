@@ -33,6 +33,13 @@ class WP_Customize_Page_Template_Controller extends WP_Customize_Postmeta_Contro
 	public $setting_transport = 'refresh';
 
 	/**
+	 * Default value.
+	 *
+	 * @var string
+	 */
+	public $default = 'default';
+
+	/**
 	 * Enqueue scripts.
 	 */
 	public function enqueue_scripts() {
