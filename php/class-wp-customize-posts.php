@@ -377,6 +377,32 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Get the author choices array.
+	 *
+	 * @return array
+	 */
+	public function get_author_choices() {
+		$choices = array();
+		$query_args = array(
+			'orderby' => 'display_name',
+			'who' => 'authors',
+			'fields' => array( 'ID', 'user_login', 'display_name' ),
+		);
+		$users = get_users( $query_args );
+
+		if ( ! empty( $users ) ) {
+			foreach ( (array) $users as $user ) {
+				$choices[] = array(
+					'value' => (int) $user->ID,
+					'text'  => sprintf( _x( '%1$s (%2$s)', 'user dropdown', 'customize-posts' ), $user->display_name, $user->user_login ),
+				);
+			}
+		}
+
+		return $choices;
+	}
+
+	/**
 	 * Return whether current user can edit supplied post.
 	 *
 	 * @param WP_Post|int $post Post.
@@ -439,12 +465,14 @@ final class WP_Customize_Posts {
 
 		$exports = array(
 			'postTypes' => $post_types,
+			'authorChoices' => $this->get_author_choices(),
 			'l10n' => array(
 				/* translators: &#9656; is the unicode right-pointing triangle, and %s is the section title in the Customizer */
 				'sectionCustomizeActionTpl' => __( 'Customizing &#9656; %s', 'customize-posts' ),
 				'fieldTitleLabel' => __( 'Title', 'customize-posts' ),
 				'fieldContentLabel' => __( 'Content', 'customize-posts' ),
 				'fieldExcerptLabel' => __( 'Excerpt', 'customize-posts' ),
+				'fieldAuthorLabel' => __( 'Author', 'customize-posts' ),
 				'noTitle' => __( '(no title)', 'customize-posts' ),
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
 				'overrideButtonText' => __( 'Override', 'customize-posts' ),
