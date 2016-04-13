@@ -65,7 +65,7 @@
 			}
 
 			if ( 'post' === setting.type ) {
-				component.handlePostSetting( id );
+				component.addPostSection( id );
 			}
 		} );
 	};
@@ -75,7 +75,7 @@
 	 *
 	 * @param {string} id
 	 */
-	component.handlePostSetting = function( id ) {
+	component.addPostSection = function( id ) {
 		var section, sectionId, panelId, sectionType, postId, postType, idParts, Constructor, htmlParser;
 		idParts = id.replace( /]/g, '' ).split( '[' );
 		postType = idParts[1];

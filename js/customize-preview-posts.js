@@ -20,7 +20,7 @@
 	 *
 	 * @param {object} settings
 	 */
-	api.previewPosts.handleSettings = function( settings ) {
+	api.previewPosts.addPartials = function( settings ) {
 
 		_.each( settings, function( setting, id ) {
 			var partial;
@@ -76,7 +76,7 @@
 				};
 			} );
 
-			api.previewPosts.handleSettings( settings );
+			api.previewPosts.addPartials( settings );
 
 			api.preview.send( 'customized-posts', {
 				isPostPreview: _wpCustomizePreviewPostsData.isPostPreview,
@@ -110,7 +110,7 @@
 				data = responseData;
 			}
 			if ( data.customize_post_settings ) {
-				api.previewPosts.handleSettings( data.customize_post_settings || {} );
+				api.previewPosts.addPartials( data.customize_post_settings );
 
 				api.preview.send( 'customized-posts', {
 					settings: data.customize_post_settings
