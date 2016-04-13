@@ -171,10 +171,6 @@ final class WP_Customize_Posts {
 			add_filter( "auth_post_meta_{$meta_key}", array( $this, 'auth_post_meta_callback' ), 10, 6 );
 		}
 
-		if ( ! isset( $this->registered_post_meta[ $post_type ] ) ) {
-			$this->registered_post_meta[ $post_type ] = array();
-		}
-
 		// Filter out null values, aka array_filter with ! is_null.
 		foreach ( array_keys( $setting_args ) as $key => $value ) {
 			if ( is_null( $value ) ) {
@@ -182,6 +178,9 @@ final class WP_Customize_Posts {
 			}
 		}
 
+		if ( ! isset( $this->registered_post_meta[ $post_type ] ) ) {
+			$this->registered_post_meta[ $post_type ] = array();
+		}
 		$this->registered_post_meta[ $post_type ][ $meta_key ] = $setting_args;
 	}
 

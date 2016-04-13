@@ -146,6 +146,15 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 		// @todo How would $strict validation get passed into the sanitize callback?
 		$meta_value = sanitize_meta( $meta_key, $meta_value, $meta_type );
 
+		/**
+		 * Filter a Customize setting value in form.
+		 *
+		 * @param mixed                $meta_value  Value of the setting.
+		 * @param WP_Customize_Setting $this        WP_Customize_Setting instance.
+		 * @param bool                 $strict      Whether validation is being done. This is part of the proposed patch in in #34893.
+		 */
+		$meta_value = apply_filters( "customize_sanitize_{$this->id}", $meta_value, $this, $strict );
+
 		/** This filter is documented in wp-includes/meta.php */
 		$check = apply_filters( "update_{$meta_type}_metadata", null, $object_id, $meta_key, $meta_value, $prev_value );
 		if ( null !== $check ) {
