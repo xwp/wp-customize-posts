@@ -162,16 +162,11 @@ final class WP_Customize_Posts {
 				'transport' => null,
 				'sanitize_callback' => null,
 				'sanitize_js_callback' => null,
-
-				'sanitize_value_callback' => null,
 				'setting_class' => 'WP_Customize_Postmeta_Setting',
 			),
 			$setting_args
 		);
 
-		if ( ! empty( $setting_args['sanitize_value_callback'] ) && ! has_filter( "sanitize_post_meta_{$meta_key}", $setting_args['sanitize_value_callback'] ) ) {
-			add_filter( "sanitize_post_meta_{$meta_key}", $setting_args['sanitize_value_callback'] );
-		}
 		if ( ! has_filter( "auth_post_meta_{$meta_key}", array( $this, 'auth_post_meta_callback' ) ) ) {
 			add_filter( "auth_post_meta_{$meta_key}", array( $this, 'auth_post_meta_callback' ), 10, 6 );
 		}

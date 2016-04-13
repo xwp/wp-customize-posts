@@ -95,11 +95,6 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 		} elseif ( ! isset( $args['capability'] ) ) {
 			$args['capability'] = $post_type_obj->cap->edit_posts;
 		}
-
-		if ( ! has_filter( 'sanitize_post_meta_' . $args['meta_key'] ) ) {
-			throw new Exception( sprintf( 'Missing `sanitize_post_meta_%1$s` filter. Failure to add required sanitize_callback via register_meta() for "%1$s". The sanitize_meta() function is utilized.', $args['meta_key'] ) );
-		}
-
 		parent::__construct( $manager, $id, $args );
 	}
 

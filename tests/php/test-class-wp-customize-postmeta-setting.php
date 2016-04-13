@@ -78,23 +78,6 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 	/**
 	 * @see WP_Customize_Postmeta_Setting::__construct()
 	 */
-	function test_construct_lacking_sanitize_filter() {
-		$post_id = $this->factory()->post->create( array( 'post_type' => 'post') );
-		$meta_key = 'email_address';
-		$setting_id = sprintf( 'postmeta[post][%d][%s]', $post_id, $meta_key );
-		$exception = null;
-		try {
-			new WP_Customize_Postmeta_Setting( $this->manager, $setting_id );
-		} catch ( Exception $e ) {
-			$exception = $e;
-		}
-		$this->assertInstanceOf( 'Exception', $exception );
-		$this->assertContains( 'Missing `sanitize_post_meta_email_address` filter', $exception->getMessage() );
-	}
-
-	/**
-	 * @see WP_Customize_Postmeta_Setting::__construct()
-	 */
 	function test_construct_for_unprivileged_user() {
 		$subscriber_id = $this->factory()->user->create( array( 'role' => 'subscriber' ) );
 		$post_id = $this->factory()->post->create( array( 'post_type' => 'post') );
