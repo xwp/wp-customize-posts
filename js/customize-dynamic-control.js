@@ -31,7 +31,50 @@
 			control.propertyElements = [];
 		},
 
-		_setUpSettingProperty: function() {
+		/**
+		 * Add bidirectional data binding links between inputs and the setting(s).
+		 *
+		 * This is copied from wp.customize.Control.prototype.initialize(). It
+		 * should be changed in Core to be applied once the control is embedded.
+		 *
+		 * @private
+		 */
+		_setUpSettingRootLinks: function() {
+			var control, nodes, radios;
+			control = this;
+			nodes = control.container.find( '[data-customize-setting-link]' );
+			radios = {};
+
+			nodes.each( function() {
+				var node = $( this ),
+					name;
+
+				if ( node.is( ':radio' ) ) {
+					name = node.prop( 'name' );
+					if ( radios[ name ] ) {
+						return;
+					}
+
+					radios[ name ] = true;
+					node = nodes.filter( '[name="' + name + '"]' );
+				}
+
+				api( node.data( 'customizeSettingLink' ), function( setting ) {
+					var element = new api.Element( node );
+					control.elements.push( element );
+					element.sync( setting );
+					element.set( setting() );
+				});
+			});
+
+		},
+
+		/**
+		 * Add bidirectional data binding links between inputs and the setting properties.
+		 *
+		 * @private
+		 */
+		_setUpSettingPropertyLinks: function() {
 			var control = this, nodes, radios;
 			if ( ! control.params.setting_property || ! control.setting ) {
 				return;
@@ -82,7 +125,8 @@
 		ready: function() {
 			var control = this;
 
-			control._setUpSettingProperty();
+			control._setUpSettingRootLinks();
+			control._setUpSettingPropertyLinks();
 
 			api.Control.prototype.ready.call( control );
 
