@@ -51,8 +51,8 @@ var CustomizePageTemplate = (function( api ) {
 			return null;
 		}
 
-		controlId = section.id + '[page_template]';
 		settingId = 'postmeta[' + section.params.post_type + '][' + String( section.params.post_id ) + '][_wp_page_template]';
+		controlId = settingId;
 
 		if ( api.control.has( controlId ) ) {
 			return api.control( controlId );
