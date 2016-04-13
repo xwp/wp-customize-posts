@@ -52,10 +52,16 @@
 
 	api.bind( 'preview-ready', function() {
 		api.preview.bind( 'active', function() {
-			var postSettings = {}, idPattern = /^post\[(.+)]\[(-?\d+)]$/;
+			var postSettings = {}, postMetaSettings = {}, postIdPattern, postMetaIdPattern;
+
+			postIdPattern = /^post\[(.+)]\[(-?\d+)]$/;
+			postMetaIdPattern = /^postmeta\[(.+)]\[(-?\d+)]\[(.+?)]$/;
+
 			api.each( function( setting ) {
-				if ( idPattern.test( setting.id ) ) {
+				if ( postIdPattern.test( setting.id ) ) {
 					postSettings[ setting.id ] = setting.get();
+				} else if ( postMetaIdPattern.test( setting.id ) ) {
+					postMetaSettings[ setting.id ] = setting.get();
 				}
 			} );
 
@@ -64,7 +70,8 @@
 				{},
 				_wpCustomizePreviewPostsData,
 				{
-					postSettings: postSettings
+					postSettings: postSettings,
+					postMetaSettings: postMetaSettings
 				}
 			) );
 

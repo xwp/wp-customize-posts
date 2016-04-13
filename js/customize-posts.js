@@ -54,6 +54,18 @@
 	 * @param {object} data
 	 */
 	component.receiveCustomizedPosts = function( data ) {
+		_.each( data.postMetaSettings, function( settingValue, settingId ) {
+
+			// @todo We need to pass the transports from the preview, or have a registery of what the transports should be.
+			if ( ! api.has( settingId ) ) {
+				api.create( settingId, settingId, settingValue, {
+					transport: 'refresh', // 'postMessage', // @todo Let this be postMessage
+					previewer: api.previewer,
+					dirty: false
+				} );
+			}
+		} );
+
 		_.each( data.postSettings, function( settingValue, settingId ) {
 			var section, sectionId, panelId, sectionType, postId, postType, idParts, Constructor, htmlParser;
 			idParts = settingId.replace( /]/g, '' ).split( '[' );
@@ -73,6 +85,8 @@
 			}
 
 			if ( ! api.has( settingId ) ) {
+
+				// @todo We need to pass the transports from the preview, or have a registery of what the transports should be.
 				api.create( settingId, settingId, settingValue, {
 					transport: 'postMessage', // @todo Let this be postMessage
 					previewer: api.previewer,

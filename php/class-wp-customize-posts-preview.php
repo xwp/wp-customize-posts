@@ -57,7 +57,8 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'customize_dynamic_partial_class', array( $this, 'filter_customize_dynamic_partial_class' ), 10, 3 );
 		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_add_dynamic_post_settings_and_preview' ), 1000 );
-		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_metadata' ), 1000, 4 );
+		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_preview' ), 1000, 4 );
+		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_add_dynamic_postmeta_settings' ), 1000, 4 );
 		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
 		add_filter( 'edit_post_link', array( $this, 'filter_edit_post_link' ), 10, 2 );
 		add_filter( 'get_edit_post_link', array( $this, 'filter_get_edit_post_link' ), 10, 2 );
@@ -132,7 +133,39 @@ final class WP_Customize_Posts_Preview {
 	}
 
 	/**
-	 * Filter postmeta to inject customized post values.
+	 * Filter postmeta to dynamically add postmeta settings.
+	 *
+	 * @param null|array|string $value     The value get_metadata() should return - a single metadata value, or an array of values.
+	 * @param int               $object_id Object ID.
+	 * @param string            $meta_key  Meta key.
+	 * @return mixed Value.
+	 */
+	public function filter_get_post_meta_to_add_dynamic_postmeta_settings( $value, $object_id, $meta_key ) {
+		$post = get_post( $object_id );
+		if ( ! isset( $this->component->registered_post_meta[ $post->post_type ] ) ) {
+			return $value;
+		}
+
+		if ( '' === $meta_key ) {
+			$meta_keys = array_keys( $value );
+		} else {
+			$meta_keys = array( $meta_key );
+		}
+
+		$setting_ids = array();
+		foreach ( $meta_keys as $key ) {
+			if ( isset( $this->component->registered_post_meta[ $post->post_type ][ $key ] ) ) {
+				error_log( $key );
+				$setting_ids[] = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $key );
+			}
+		}
+		$this->component->manager->add_dynamic_settings( $setting_ids );
+
+		return $value;
+	}
+
+	/**
+	 * Filter postmeta to inject customized post meta values.
 	 *
 	 * @param null|array|string $value     The value get_metadata() should return - a single metadata value, or an array of values.
 	 * @param int               $object_id Object ID.
@@ -140,7 +173,7 @@ final class WP_Customize_Posts_Preview {
 	 * @param bool              $single    Whether to return only the first value of the specified $meta_key.
 	 * @return mixed Value.
 	 */
-	public function filter_get_post_metadata( $value, $object_id, $meta_key, $single ) {
+	public function filter_get_post_meta_to_preview( $value, $object_id, $meta_key, $single ) {
 		static $is_recursing = false;
 		$should_short_circuit = (
 			$is_recursing
