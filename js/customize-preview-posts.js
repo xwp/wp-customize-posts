@@ -18,74 +18,72 @@
 	/**
 	 * Ensure that each post setting is added and has corresponding partials.
 	 *
-	 * @param {object} postSettings
+	 * @param {object} settings
 	 */
-	api.previewPosts.handlePostSettings = function( postSettings ) {
+	api.previewPosts.handleSettings = function( settings ) {
 
-		_.each( postSettings, function( value, id ) {
+		_.each( settings, function( setting, id ) {
 			var partial;
 
 			if ( ! api.has( id ) ) {
-				api.create( id, value, {
+				api.create( id, setting.value, {
 					id: id
 				} );
 			}
 
-			// Post field partial for post_title.
-			partial = new api.previewPosts.PostFieldPartial( id + '[post_title]', {
-				params: {
-					settings: [ id ]
-				}
-			} );
-			api.selectiveRefresh.partial.add( partial.id, partial );
+			if ( 'post' === setting.type ) {
 
-			// Post field partial for post_content.
-			partial = new api.previewPosts.PostFieldPartial( id + '[post_content]', {
-				params: {
-					settings: [ id ]
-				}
-			} );
-			api.selectiveRefresh.partial.add( partial.id, partial );
+				// Post field partial for post_title.
+				partial = new api.previewPosts.PostFieldPartial( id + '[post_title]', {
+					params: {
+						settings: [ id ]
+					}
+				} );
+				api.selectiveRefresh.partial.add( partial.id, partial );
+
+				// Post field partial for post_content.
+				partial = new api.previewPosts.PostFieldPartial( id + '[post_content]', {
+					params: {
+						settings: [ id ]
+					}
+				} );
+				api.selectiveRefresh.partial.add( partial.id, partial );
+
+			} else if ( 'postmeta' === setting.type ) {
+
+				// @todo Handle _thumbnail_id.
+			}
+
+			// @todo Trigger event for plugins and postmeta controllers.
 		} );
 
 	};
 
-	/**
-	 * Ensure that each post meta setting is added and has corresponding partials.
-	 *
-	 * @todo param for postMetaSettings
-	 */
-	api.previewPosts.handlePostMetaSettings = function() {
-
-		// @todo Handle _thumbnail_id.
-	};
-
 	api.bind( 'preview-ready', function() {
 		api.preview.bind( 'active', function() {
-			var postSettings = {}, postMetaSettings = {}, postIdPattern, postMetaIdPattern;
-
-			postIdPattern = /^post\[(.+)]\[(-?\d+)]$/;
-			postMetaIdPattern = /^postmeta\[(.+)]\[(-?\d+)]\[(.+?)]$/;
+			var settings = {};
 
 			api.each( function( setting ) {
-				if ( postIdPattern.test( setting.id ) ) {
-					postSettings[ setting.id ] = setting.get();
-				} else if ( postMetaIdPattern.test( setting.id ) ) {
-					postMetaSettings[ setting.id ] = setting.get();
+				var settingProperties = _wpCustomizePreviewPostsData.settingProperties[ setting.id ];
+				if ( ! settingProperties ) {
+					return;
 				}
+				settings[ setting.id ] = {
+					value: setting.get(),
+					dirty: Boolean( api.settings._dirty[ setting.id ] ),
+					type: settingProperties.type,
+					transport: settingProperties.transport
+				};
 			} );
 
-			api.previewPosts.handlePostSettings( postSettings );
-			api.previewPosts.handlePostMetaSettings( postMetaSettings );
+			api.previewPosts.handleSettings( settings );
 
-			api.preview.send( 'customized-posts', _.extend(
-				{},
-				_wpCustomizePreviewPostsData,
-				{
-					postSettings: postSettings,
-					postMetaSettings: postMetaSettings
-				}
-			) );
+			api.preview.send( 'customized-posts', {
+				isPostPreview: _wpCustomizePreviewPostsData.isPostPreview,
+				isSingular: _wpCustomizePreviewPostsData.isSingular,
+				queriedPostId: _wpCustomizePreviewPostsData.queriedPostId,
+				settings: settings
+			} );
 
 			/**
 			 * Focus on the post section in the Customizer pane when clicking an edit-post-link.
@@ -111,13 +109,11 @@
 			} else {
 				data = responseData;
 			}
-			if ( data.customize_post_settings || data.customize_postmeta_settings ) {
-				api.previewPosts.handlePostSettings( data.customize_post_settings || {} );
-				api.previewPosts.handlePostMetaSettings( data.customize_postmeta_settings || {} );
+			if ( data.customize_post_settings ) {
+				api.previewPosts.handleSettings( data.customize_post_settings || {} );
 
 				api.preview.send( 'customized-posts', {
-					postSettings: data.customize_post_settings || {},
-					postMetaSettings: data.customize_postmeta_settings || {}
+					settings: data.customize_post_settings
 				} );
 			}
 		} );

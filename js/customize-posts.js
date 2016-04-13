@@ -53,70 +53,68 @@
 	 *
 	 * @param {object} data
 	 */
-	component.receiveCustomizedPosts = function( data ) {
-		_.each( data.postMetaSettings, function( settingValue, settingId ) {
+	component.receivePreviewData = function( data ) {
+		_.each( data.settings, function( setting, id ) {
 
-			// @todo We need to pass the transports from the preview, or have a registery of what the transports should be.
-			if ( ! api.has( settingId ) ) {
-				api.create( settingId, settingId, settingValue, {
-					transport: 'refresh', // 'postMessage', // @todo Let this be postMessage
+			if ( ! api.has( id ) ) {
+				api.create( id, id, setting.value, {
+					transport: setting.transport,
 					previewer: api.previewer,
-					dirty: false
-				} );
-			}
-		} );
-
-		_.each( data.postSettings, function( settingValue, settingId ) {
-			var section, sectionId, panelId, sectionType, postId, postType, idParts, Constructor, htmlParser;
-			idParts = settingId.replace( /]/g, '' ).split( '[' );
-			postType = idParts[1];
-			if ( ! component.data.postTypes[ postType ] ) {
-				if ( 'undefined' !== typeof console && console.error ) {
-					console.error( 'Unrecognized post type: ' + postType );
-				}
-				return;
-			}
-			postId = parseInt( idParts[2], 10 );
-			if ( ! postId ) {
-				if ( 'undefined' !== typeof console && console.error ) {
-					console.error( 'Bad post id: ' + idParts[2] );
-				}
-				return;
-			}
-
-			if ( ! api.has( settingId ) ) {
-
-				// @todo We need to pass the transports from the preview, or have a registery of what the transports should be.
-				api.create( settingId, settingId, settingValue, {
-					transport: 'postMessage', // @todo Let this be postMessage
-					previewer: api.previewer,
-					dirty: false
+					dirty: setting.dirty
 				} );
 			}
 
-			sectionType = 'post[' + postType + ']';
-			panelId = 'posts[' + postType + ']';
-			sectionId = settingId;
-
-			if ( api.section.has( sectionId ) ) {
-				return;
+			if ( 'post' === setting.type ) {
+				component.handlePostSetting( id );
 			}
-
-			Constructor = api.sectionConstructor[ sectionType ] || api.sectionConstructor.post;
-
-			htmlParser = $( '<div>' ).html( component.data.l10n.sectionCustomizeActionTpl.replace( '%s', api.panel( panelId ).params.title ) );
-			section = new Constructor( sectionId, {
-				params: {
-					id: sectionId,
-					panel: panelId,
-					post_type: postType,
-					post_id: postId,
-					active: true,
-					customizeAction: htmlParser.text()
-				}
-			});
-			api.section.add( sectionId, section );
 		} );
+	};
+
+	/**
+	 * Handle adding post setting.
+	 *
+	 * @param {string} id
+	 */
+	component.handlePostSetting = function( id ) {
+		var section, sectionId, panelId, sectionType, postId, postType, idParts, Constructor, htmlParser;
+		idParts = id.replace( /]/g, '' ).split( '[' );
+		postType = idParts[1];
+		if ( ! component.data.postTypes[ postType ] ) {
+			if ( 'undefined' !== typeof console && console.error ) {
+				console.error( 'Unrecognized post type: ' + postType );
+			}
+			return;
+		}
+		postId = parseInt( idParts[2], 10 );
+		if ( ! postId ) {
+			if ( 'undefined' !== typeof console && console.error ) {
+				console.error( 'Bad post id: ' + idParts[2] );
+			}
+			return;
+		}
+
+		sectionType = 'post[' + postType + ']';
+		panelId = 'posts[' + postType + ']';
+		sectionId = id;
+
+		if ( api.section.has( sectionId ) ) {
+			return;
+		}
+
+		Constructor = api.sectionConstructor[ sectionType ] || api.sectionConstructor.post;
+
+		htmlParser = $( '<div>' ).html( component.data.l10n.sectionCustomizeActionTpl.replace( '%s', api.panel( panelId ).params.title ) );
+		section = new Constructor( sectionId, {
+			params: {
+				id: sectionId,
+				panel: panelId,
+				post_type: postType,
+				post_id: postId,
+				active: true,
+				customizeAction: htmlParser.text()
+			}
+		});
+		api.section.add( sectionId, section );
 	};
 
 	api.bind( 'ready', function() {
@@ -125,7 +123,7 @@
 		component.postIdInput = $( '<input type="hidden" id="post_ID" name="post_ID">' );
 		$( 'body' ).append( component.postIdInput );
 
-		api.previewer.bind( 'customized-posts', component.receiveCustomizedPosts );
+		api.previewer.bind( 'customized-posts', component.receivePreviewData );
 
 		/**
 		 * Focus on the section requested from the preview.

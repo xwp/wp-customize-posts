@@ -322,10 +322,26 @@ final class WP_Customize_Posts_Preview {
 			$queried_post_id = get_queried_object_id();
 		}
 
+		$setting_properties = array();
+		foreach ( $this->component->manager->settings() as $setting ) {
+			if ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting ) {
+				if ( ! $setting->check_capabilities() ) {
+					continue;
+				}
+
+				// Note that the value and dirty properties are already exported in wp.customize.settings.
+				$setting_properties[ $setting->id ] = array(
+					'transport' => $setting->transport,
+					'type' => $setting->type,
+				);
+			}
+		}
+
 		$exported = array(
 			'isPostPreview' => is_preview(),
 			'isSingular' => is_singular(),
 			'queriedPostId' => $queried_post_id,
+			'settingProperties' => $setting_properties,
 		);
 
 		$data = sprintf( 'var _wpCustomizePreviewPostsData = %s;', wp_json_encode( $exported ) );
@@ -341,15 +357,17 @@ final class WP_Customize_Posts_Preview {
 	public function filter_infinite_scroll_results( $results ) {
 
 		$results['customize_post_settings'] = array();
-		$results['customize_postmeta_settings'] = array();
 		foreach ( $this->component->manager->settings() as $setting ) {
 			if ( ! $setting->check_capabilities() ) {
 				continue;
 			}
-			if ( $setting instanceof WP_Customize_Post_Setting ) {
-				$results['customize_post_settings'][ $setting->id ] = $setting->value();
-			} elseif ( $setting instanceof WP_Customize_Postmeta_Setting ) {
-				$results['customize_postmeta_settings'][ $setting->id ] = $setting->value();
+			if ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting ) {
+				$results['customize_post_settings'][ $setting->id ] = array(
+					'value' => $setting->value(),
+					'transport' => $setting->transport,
+					'dirty' => $setting->dirty,
+					'type' => $setting->type,
+				);
 			}
 		}
 
