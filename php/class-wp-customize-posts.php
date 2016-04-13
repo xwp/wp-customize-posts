@@ -394,7 +394,7 @@ final class WP_Customize_Posts {
 			foreach ( (array) $users as $user ) {
 				$choices[] = array(
 					'value' => (int) $user->ID,
-					'text'  => sprintf( _x( '%1$s (%2$s)', 'user dropdown', 'customize-posts' ), $user->display_name, $user->user_login ),
+					'text'  => esc_html( sprintf( _x( '%1$s (%2$s)', 'user dropdown', 'customize-posts' ), $user->display_name, $user->user_login ) ),
 				);
 			}
 		}
