@@ -85,7 +85,7 @@ var CustomizePageTemplate = (function( api ) {
 		 */
 		control.active.validate = function() {
 			var defaultSize = 1;
-			return _.size( this.params.choices ) > defaultSize;
+			return _.size( control.params.choices ) > defaultSize;
 		};
 
 		// Register.
