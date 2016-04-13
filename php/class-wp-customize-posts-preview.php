@@ -341,9 +341,15 @@ final class WP_Customize_Posts_Preview {
 	public function filter_infinite_scroll_results( $results ) {
 
 		$results['customize_post_settings'] = array();
+		$results['customize_postmeta_settings'] = array();
 		foreach ( $this->component->manager->settings() as $setting ) {
-			if ( $setting instanceof WP_Customize_Post_Setting && $setting->check_capabilities() ) {
+			if ( ! $setting->check_capabilities() ) {
+				continue;
+			}
+			if ( $setting instanceof WP_Customize_Post_Setting ) {
 				$results['customize_post_settings'][ $setting->id ] = $setting->value();
+			} elseif ( $setting instanceof WP_Customize_Postmeta_Setting ) {
+				$results['customize_postmeta_settings'][ $setting->id ] = $setting->value();
 			}
 		}
 

@@ -50,6 +50,16 @@
 
 	};
 
+	/**
+	 * Ensure that each post meta setting is added and has corresponding partials.
+	 *
+	 * @todo param for postMetaSettings
+	 */
+	api.previewPosts.handlePostMetaSettings = function() {
+
+		// @todo Handle _thumbnail_id.
+	};
+
 	api.bind( 'preview-ready', function() {
 		api.preview.bind( 'active', function() {
 			var postSettings = {}, postMetaSettings = {}, postIdPattern, postMetaIdPattern;
@@ -66,6 +76,8 @@
 			} );
 
 			api.previewPosts.handlePostSettings( postSettings );
+			api.previewPosts.handlePostMetaSettings( postMetaSettings );
+
 			api.preview.send( 'customized-posts', _.extend(
 				{},
 				_wpCustomizePreviewPostsData,
@@ -99,11 +111,13 @@
 			} else {
 				data = responseData;
 			}
-			if ( data.customize_post_settings ) {
-				api.previewPosts.handlePostSettings( data.customize_post_settings );
+			if ( data.customize_post_settings || data.customize_postmeta_settings ) {
+				api.previewPosts.handlePostSettings( data.customize_post_settings || {} );
+				api.previewPosts.handlePostMetaSettings( data.customize_postmeta_settings || {} );
 
 				api.preview.send( 'customized-posts', {
-					postSettings: data.customize_post_settings
+					postSettings: data.customize_post_settings || {},
+					postMetaSettings: data.customize_postmeta_settings || {}
 				} );
 			}
 		} );
