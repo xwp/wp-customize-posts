@@ -165,10 +165,12 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	/**
 	 * Test register_post_type_meta().
 	 *
-	 * @see WP_Customize_Posts::register_post_type_meta()
+	 * @see WP_Customize_Posts::register_meta()
 	 */
-	public function test_register_post_type_meta() {
-		$this->markTestIncomplete();
+	public function test_register_meta() {
+		$count = did_action( 'customize_posts_register_meta' );
+		do_action( 'init' );
+		$this->assertEquals( $count + 1, did_action( 'customize_posts_register_meta' ) );
 	}
 
 	/**
@@ -181,28 +183,39 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test register_meta().
+	 * Test register_post_type_meta().
 	 *
-	 * @see WP_Customize_Posts::register_meta()
+	 * @see WP_Customize_Posts::register_post_type_meta()
 	 */
-	public function test_register_meta() {
+	public function test_register_post_type_meta() {
+		add_theme_support( 'timezoning' );
 
-		// Make sure _thumbnail_id is recognized.
-		$attachment_id = self::factory()->attachment->create_object( 'featured-image.jpg', $this->post_id, array(
-			'post_mime_type' => 'image/jpeg',
-			'post_type' => 'attachment',
-			'post_title' => 'Featured image!',
-			'post_status' => 'inherit',
-		) );
-		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $this->post_id ), '_thumbnail_id' );
+		$args = array(
+			'capability' => 'manage_options',
+			'theme_supports' => 'timezoning',
+			'default' => 'TZ',
+			'transport' => 'postMessage',
+			'sanitize_callback' => 'sanitize_key',
+			'sanitize_js_callback' => 'sanitize_key',
+			'setting_class' => 'WP_Customize_Postmeta_Setting',
+		);
+		$this->posts->register_post_type_meta( 'post', 'timezone', $args );
 
+		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $this->post_id ), 'timezone' );
 		$this->do_customize_boot_actions( array(
-			$setting_id => $attachment_id,
+			$setting_id => 'PDT',
 		) );
 
 		$setting = $this->wp_customize->get_setting( $setting_id );
 
 		$this->assertNotEmpty( $setting );
+		$this->assertEquals( $args['capability'], $setting->capability );
+		$this->assertEquals( $args['theme_supports'], $setting->theme_supports );
+		$this->assertEquals( $args['default'], $setting->default );
+		$this->assertEquals( $args['transport'], $setting->transport );
+		$this->assertEquals( $args['sanitize_callback'], $setting->sanitize_callback );
+		$this->assertEquals( $args['sanitize_js_callback'], $setting->sanitize_js_callback );
+		$this->assertInstanceOf( $args['setting_class'], $setting );
 	}
 
 	/**

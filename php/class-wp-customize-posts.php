@@ -225,14 +225,6 @@ final class WP_Customize_Posts {
 	 */
 	public function register_meta() {
 
-		foreach ( get_post_types( array(), 'objects' ) as $post_type_object ) {
-
-			if ( post_type_supports( $post_type_object->name, 'thumbnail' ) ) {
-				register_meta( 'post', '_thumbnail_id', array( $this, 'sanitize_post_id' ) );
-				$this->register_post_type_meta( $post_type_object->name, '_thumbnail_id' );
-			}
-		}
-
 		/**
 		 * Allow plugins to register meta.
 		 *

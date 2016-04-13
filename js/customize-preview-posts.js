@@ -68,10 +68,6 @@
 					}
 				} );
 				api.selectiveRefresh.partial.add( partial.id, partial );
-
-			} else if ( 'postmeta' === setting.type ) {
-
-				// @todo Handle _thumbnail_id.
 			}
 
 			// @todo Trigger event for plugins and postmeta controllers.

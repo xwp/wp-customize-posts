@@ -58,9 +58,6 @@ var CustomizePageTemplate = (function( api ) {
 			return api.control( controlId );
 		}
 
-		// @todo We need to create the setting!
-		// @todo We need to get the postmeta sent from the preview!
-
 		control = new api.controlConstructor.dynamic( controlId, {
 			params: {
 				section: section.id,
