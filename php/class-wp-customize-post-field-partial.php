@@ -137,13 +137,13 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 			if ( ! is_single() ) {
 				$rendered = sprintf( '<a href="%s" rel="bookmark">%s</a>', esc_url( get_permalink( $post->ID ) ), $rendered );
 			}
-		} else if ( 'post_content' === $partial->field_id ) {
+		} elseif ( $partial instanceof WP_Customize_Post_Field_Partial && 'post_content' === $partial->field_id ) {
 			$rendered = get_the_content();
 
 			/** This filter is documented in wp-includes/post-template.php */
 			$rendered = apply_filters( 'the_content', $rendered );
 			$rendered = str_replace( ']]>', ']]&gt;', $rendered );
-		} else if ( 'post_author' === $partial->field_id ) {
+		} elseif ( 'post_author' === $partial->field_id ) {
 			if ( 'author-bio' === $partial->placement && is_singular() && get_the_author_meta( 'description' ) ) {
 				if ( '' !== locate_template( 'author-bio.php' ) ) {
 					ob_start();
@@ -153,7 +153,7 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 				} else {
 					$rendered = false;
 				}
-			} else if ( 'byline' === $partial->placement && ( is_singular() || is_multi_author() ) ) {
+			} elseif ( 'byline' === $partial->placement && ( is_singular() || is_multi_author() ) ) {
 				$rendered = sprintf( '<a class="url fn n" href="%1$s">%2$s</a>',
 					esc_url( get_author_posts_url( get_the_author_meta( 'ID', $post->post_author ) ) ),
 					get_the_author_meta( 'display_name', $post->post_author )
