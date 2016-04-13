@@ -49,6 +49,14 @@
 				} );
 				api.selectiveRefresh.partial.add( partial.id, partial );
 
+				// Post field partial for post_excerpt.
+				partial = new api.previewPosts.PostFieldPartial( id + '[post_excerpt]', {
+					params: {
+						settings: [ id ]
+					}
+				} );
+				api.selectiveRefresh.partial.add( partial.id, partial );
+
 				// Post field partial for post_author author-bio.
 				partial = new api.previewPosts.PostFieldPartial( id + '[post_author][author-bio]', {
 					params: {

@@ -48,6 +48,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 		postSettingValue = {
 			post_title: $( '#title' ).val(),
 			post_content: editor && ! editor.isHidden() ? wp.editor.removep( editor.getContent() ) : $( '#content' ).val(),
+			post_excerpt: $( '#excerpt' ).val(),
 			post_author: $( '#post_author_override' ).val()
 		};
 		postSettingId = 'post[' + postType + '][' + postId + ']';
@@ -64,6 +65,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 					editor.setContent( wp.editor.autop( data[ postSettingId ].post_content ) );
 				}
 				$( '#content' ).val( data[ postSettingId ].post_content ).trigger( 'change' );
+				$( '#excerpt' ).val( data[ postSettingId ].post_excerpt ).trigger( 'change' );
 				$( '#post_author_override' ).val( data[ postSettingId ].post_author ).trigger( 'change' );
 			}
 		} );

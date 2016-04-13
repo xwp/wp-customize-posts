@@ -103,6 +103,9 @@
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
 			}
+			if ( postTypeObj.supports.excerpt ) {
+				section.addExcerptControl();
+			}
 			if ( postTypeObj.supports.author ) {
 				section.addAuthorControl();
 			}
@@ -289,6 +292,44 @@
 				textarea.attr( 'id', '' );
 				control.container.append( control.editorToggleExpandButton );
 			} );
+
+			// Remove the setting from the settingValidationMessages since it is not specific to this field.
+			if ( control.settingValidationMessages ) {
+				control.settingValidationMessages.remove( setting.id );
+				control.settingValidationMessages.add( control.id, new api.Value( '' ) );
+			}
+			return control;
+		},
+
+		/**
+		 * Add post excerpt control.
+		 *
+		 * @returns {wp.customize.Control}
+		 */
+		addExcerptControl: function() {
+			var section = this, control, setting = api( section.id );
+			control = new api.controlConstructor.dynamic( section.id + '[post_excerpt]', {
+				params: {
+					section: section.id,
+					priority: 1,
+					label: api.Posts.data.l10n.fieldExcerptLabel,
+					active: true,
+					settings: {
+						'default': setting.id
+					},
+					field_type: 'textarea',
+					setting_property: 'post_excerpt'
+				}
+			} );
+
+			// Override preview trying to de-activate control not present in preview context.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.post_excerpt = control;
+			api.control.add( control.id, control );
 
 			// Remove the setting from the settingValidationMessages since it is not specific to this field.
 			if ( control.settingValidationMessages ) {
