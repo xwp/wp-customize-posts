@@ -103,7 +103,8 @@ class Edit_Post_Preview {
 		wp_enqueue_script( 'edit-post-preview-admin' );
 		$post = $this->get_previewed_post();
 
-		$url = get_preview_post_link( $post, array(), home_url( '?preview=true&p=' . $post->ID ) );
+		$id_param = ( 'page' === $post->post_type ) ? 'page_id' : 'p';
+		$url = get_preview_post_link( $post, array(), home_url( '?preview=true&' . $id_param . '=' . $post->ID ) );
 		$customize_url = add_query_arg(
 			array(
 				'url' => urlencode( $url ),
