@@ -78,6 +78,55 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 	/**
 	 * @see WP_Customize_Postmeta_Setting::__construct()
 	 */
+	function test_construct_exceptions() {
+		// Test illegal setting id.
+		$exception = null;
+		try {
+			new WP_Customize_Postmeta_Setting( $this->manager, 'bad' );
+		} catch ( Exception $e ) {
+			$exception = $e;
+		}
+		$this->assertInstanceOf( 'Exception', $exception );
+		$this->assertContains( 'Illegal setting id', $exception->getMessage() );
+
+		// Test unrecognized post type.
+		$bad_post_id = $this->factory()->post->create( array( 'post_type' => 'unknown' ) );
+		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $bad_post_id ), 'bad' );
+		try {
+			new WP_Customize_Postmeta_Setting( $this->manager, $setting_id );
+		} catch ( Exception $e ) {
+			$exception = $e;
+		}
+		$this->assertInstanceOf( 'Exception', $exception );
+		$this->assertContains( 'Unrecognized post type', $exception->getMessage() );
+
+		// Test posts component is not created.
+		unset( $this->manager->posts );
+		$post_id = $this->factory()->post->create( array( 'post_type' => 'post' ) );
+		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $post_id ), 'test' );
+		try {
+			new WP_Customize_Postmeta_Setting( $this->manager, $setting_id );
+		} catch ( Exception $e ) {
+			$exception = $e;
+		}
+		$this->manager->posts = $this->posts;
+		$this->assertInstanceOf( 'Exception', $exception );
+		$this->assertContains( 'Posts component not instantiated', $exception->getMessage() );
+	}
+
+	/**
+	 * @see WP_Customize_Postmeta_Setting::__construct()
+	 */
+	function test_construct_insert() {
+		$post_id = -123;
+		$setting_id = sprintf( 'postmeta[post][%d][food]', $post_id );
+		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id );
+		$this->assertTrue( current_user_can( $setting->capability ) );
+	}
+
+	/**
+	 * @see WP_Customize_Postmeta_Setting::__construct()
+	 */
 	function test_construct_for_unprivileged_user() {
 		$subscriber_id = $this->factory()->user->create( array( 'role' => 'subscriber' ) );
 		$post_id = $this->factory()->post->create( array( 'post_type' => 'post') );

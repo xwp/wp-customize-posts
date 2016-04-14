@@ -90,7 +90,7 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 		} elseif ( $post_type_obj ) {
 			$can_edit = current_user_can( $post_type_obj->cap->edit_posts );
 		}
-		if ( $can_edit ) {
+		if ( $can_edit && $update ) {
 			$can_edit = current_user_can( 'edit_post_meta', $args['post_id'], $args['meta_key'] );
 		}
 		if ( ! $can_edit ) {
