@@ -157,7 +157,7 @@ final class WP_Customize_Posts {
 		);
 
 		if ( ! has_filter( "auth_post_meta_{$meta_key}", array( $this, 'auth_post_meta_callback' ) ) ) {
-			add_filter( "auth_post_meta_{$meta_key}", array( $this, 'auth_post_meta_callback' ), 10, 6 );
+			add_filter( "auth_post_meta_{$meta_key}", array( $this, 'auth_post_meta_callback' ), 10, 4 );
 		}
 
 		// Filter out null values, aka array_filter with ! is_null.

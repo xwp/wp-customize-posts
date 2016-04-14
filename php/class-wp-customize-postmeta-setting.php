@@ -58,6 +58,8 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 	/**
 	 * WP_Customize_Post_Setting constructor.
 	 *
+	 * @access public
+	 *
 	 * @param WP_Customize_Manager $manager Manager.
 	 * @param string               $id      Setting ID.
 	 * @param array                $args    Setting args.
@@ -102,6 +104,8 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 	/**
 	 * Get setting ID for a given postmeta.
 	 *
+	 * @access public
+	 *
 	 * @param WP_Post $post     Post.
 	 * @param string  $meta_key Meta key.
 	 * @return string Setting ID.
@@ -112,6 +116,8 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 
 	/**
 	 * Return a post's setting value.
+	 *
+	 * @access public
 	 *
 	 * @return mixed Meta value.
 	 */
@@ -130,6 +136,7 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 	 * Sanitize (and validate) an input.
 	 *
 	 * @see update_metadata()
+	 * @access public
 	 *
 	 * @param string $meta_value The value to sanitize.
 	 * @param bool   $strict     Whether validation is being done. This is part of the proposed patch in in #34893.
@@ -177,6 +184,8 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 	 *
 	 * Note that the previewing logic is handled by WP_Customize_Posts_Preview.
 	 *
+	 * @access public
+	 *
 	 * @return bool
 	 */
 	public function preview() {
@@ -194,6 +203,8 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 
 	/**
 	 * Update the post.
+	 *
+	 * @access public
 	 *
 	 * @param string $meta_value The value to update.
 	 * @return bool The result of saving the value.
