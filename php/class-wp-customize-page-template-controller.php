@@ -1,13 +1,13 @@
 <?php
 /**
- * Customize Page Template Class
+ * Customize Page Template Controller Class
  *
  * @package WordPress
  * @subpackage Customize
  */
 
 /**
- * Class WP_Customize_Page_Template
+ * Class WP_Customize_Page_Template_Controller
  */
 class WP_Customize_Page_Template_Controller extends WP_Customize_Postmeta_Controller {
 
