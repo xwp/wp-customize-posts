@@ -236,6 +236,22 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 		$this->assertEquals( $meta_value2, $setting->value() );
 	}
 
+
+	/**
+	 * @see WP_Customize_Postmeta_Setting::value()
+	 */
+	function test_default_value() {
+		$post_id = $this->factory()->post->create( array( 'post_type' => 'post') );
+		$meta_key = 'email_address';
+		$setting_id =  WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $post_id ), $meta_key );
+		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id, array(
+			'default' => 'the_default',
+		) );
+		$this->assertEquals( $setting->default, $setting->value() );
+		update_post_meta( $post_id, $meta_key, 'the_non_default' );
+		$this->assertNotEquals( $setting->default, $setting->value() );
+	}
+
 	/**
 	 * @see WP_Customize_Postmeta_Setting::preview()
 	 */

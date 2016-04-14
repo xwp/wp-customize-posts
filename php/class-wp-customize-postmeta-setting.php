@@ -120,6 +120,9 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 		$object_id = $this->post_id;
 		$single = true;
 		$value = get_post_meta( $object_id, $meta_key, $single );
+		if ( '' === $value ) {
+			$value = $this->default;
+		}
 		return $value;
 	}
 
