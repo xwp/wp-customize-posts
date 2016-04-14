@@ -87,11 +87,20 @@ var EditPostPreviewCustomize = (function( $, api ) {
 			setting.bind( function( data ) {
 				var settings = {};
 				settings[ setting.id ] = data;
-				component.parentFrame.send( 'customize-post-settings-data', settings );
+				component.sendSettingsToEditPostScreen( settings );
 			} );
 		} );
 
 		component.parentFrame.send( 'customize-post-preview-ready' );
+	};
+
+	/**
+	 * Send settings to edit post screen.
+	 *
+	 * @param {object} settings
+	 */
+	component.sendSettingsToEditPostScreen = function( settings ) {
+		component.parentFrame.send( 'customize-post-settings-data', settings );
 	};
 
 	/**

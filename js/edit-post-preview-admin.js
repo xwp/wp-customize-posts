@@ -53,6 +53,10 @@ var EditPostPreviewAdmin = (function( $ ) {
 		};
 		postSettingId = 'post[' + postType + '][' + postId + ']';
 		settings[ postSettingId ] = postSettingValue;
+
+		// Allow plugins to inject additional settings to preview.
+		wp.customize.trigger( 'settings-from-edit-post-screen', settings );
+
 		sessionStorage.setItem( 'previewedCustomizePostSettings[' + postId + ']', JSON.stringify( settings ) );
 
 		wp.customize.Loader.open( component.data.customize_url );
@@ -68,9 +72,25 @@ var EditPostPreviewAdmin = (function( $ ) {
 				$( '#excerpt' ).val( data[ postSettingId ].post_excerpt ).trigger( 'change' );
 				$( '#post_author_override' ).val( data[ postSettingId ].post_author ).trigger( 'change' );
 			}
+
+			// Let plugins handle updates.
+			wp.customize.trigger( 'settings-from-customizer', data );
 		} );
 
 		wp.customize.Loader.settings.browser.mobile = wasMobile;
+	};
+
+	/**
+	 * Get postmeta setting ID for the given metaKey on the current page being edited.
+	 *
+	 * @param {string} metaKey Meta key.
+	 * @returns {string} Setting ID.
+	 */
+	component.getPostMetaSettingId = function( metaKey ) {
+		var postId, postType;
+		postId = $( '#post_ID' ).val();
+		postType = $( '#post_type' ).val();
+		return 'postmeta[' + postType + '][' + postId + '][' + metaKey + ']';
 	};
 
 	/**

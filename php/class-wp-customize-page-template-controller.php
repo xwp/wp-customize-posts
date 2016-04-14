@@ -40,9 +40,9 @@ class WP_Customize_Page_Template_Controller extends WP_Customize_Postmeta_Contro
 	public $default = 'default';
 
 	/**
-	 * Enqueue scripts.
+	 * Enqueue customize scripts.
 	 */
-	public function enqueue_scripts() {
+	public function enqueue_customize_scripts() {
 		$handle = 'customize-page-template';
 		wp_enqueue_script( $handle );
 		wp_add_inline_script( $handle, 'CustomizePageTemplate.init()' );
@@ -58,6 +58,13 @@ class WP_Customize_Page_Template_Controller extends WP_Customize_Postmeta_Contro
 			'data',
 			sprintf( 'var _wpCustomizePageTemplateExports = %s', wp_json_encode( $exports ) )
 		);
+	}
+
+	/**
+	 * Enqueue edit post scripts.
+	 */
+	public function enqueue_edit_post_scripts() {
+		wp_enqueue_script( 'edit-post-preview-admin-page-template' );
 	}
 
 	/**

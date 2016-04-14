@@ -12,14 +12,6 @@
 abstract class WP_Customize_Postmeta_Controller {
 
 	/**
-	 * WP_Customize_Posts instance.
-	 *
-	 * @access public
-	 * @var WP_Customize_Posts
-	 */
-	public $posts_component;
-
-	/**
 	 * Meta key.
 	 *
 	 * @var string
@@ -66,11 +58,9 @@ abstract class WP_Customize_Postmeta_Controller {
 	 *
 	 * @throws Exception If meta_key is missing.
 	 *
-	 * @param WP_Customize_Posts $component Posts component.
-	 * @param array              $args      Args.
+	 * @param array $args Args.
 	 */
-	public function __construct( WP_Customize_Posts $component, $args = array() ) {
-		$this->posts_component = $component;
+	public function __construct( $args = array() ) {
 		$keys = array_keys( get_object_vars( $this ) );
 		foreach ( $keys as $key ) {
 			if ( isset( $args[ $key ] ) ) {
@@ -83,13 +73,16 @@ abstract class WP_Customize_Postmeta_Controller {
 		}
 
 		add_action( 'customize_posts_register_meta', array( $this, 'register_meta' ) );
-		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_customize_scripts' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
 	}
 
 	/**
 	 * Register meta.
+	 *
+	 * @param WP_Customize_Posts $posts_component Component.
 	 */
-	public function register_meta() {
+	public function register_meta( WP_Customize_Posts $posts_component ) {
 
 		// Short-circuit if theme support is not present.
 		if ( isset( $this->theme_supports ) && ! current_theme_supports( $this->theme_supports ) ) {
@@ -106,15 +99,29 @@ abstract class WP_Customize_Postmeta_Controller {
 					'theme_supports' => $this->theme_supports,
 					'default' => $this->default,
 				);
-				$this->posts_component->register_post_type_meta( $post_type, $this->meta_key, $setting_args );
+				$posts_component->register_post_type_meta( $post_type, $this->meta_key, $setting_args );
 			}
 		}
 	}
 
 	/**
-	 * Enqueue scripts.
+	 * Enqueue customize scripts.
 	 */
-	abstract public function enqueue_scripts();
+	abstract public function enqueue_customize_scripts();
+
+	/**
+	 * Enqueue admin scripts.
+	 */
+	public function enqueue_admin_scripts() {
+		if ( function_exists( 'get_current_screen' ) && get_current_screen() && 'post' === get_current_screen()->base ) {
+			$this->enqueue_edit_post_scripts();
+		}
+	}
+
+	/**
+	 * Enqueue edit post scripts.
+	 */
+	public function enqueue_edit_post_scripts() {}
 
 	/**
 	 * Sanitize a meta value.

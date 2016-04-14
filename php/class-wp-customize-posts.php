@@ -43,13 +43,6 @@ final class WP_Customize_Posts {
 	public $registered_post_meta = array();
 
 	/**
-	 * Page template controller.
-	 *
-	 * @var WP_Customize_Page_Template_Controller
-	 */
-	public $page_template_controller;
-
-	/**
 	 * Initial loader.
 	 *
 	 * @access public
@@ -68,9 +61,7 @@ final class WP_Customize_Posts {
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-section.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-dynamic-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-setting.php';
-		require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-controller.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-setting.php';
-		require_once dirname( __FILE__ ) . '/class-wp-customize-page-template-controller.php';
 		require_once ABSPATH . WPINC . '/customize/class-wp-customize-partial.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-field-partial.php';
 
@@ -84,8 +75,6 @@ final class WP_Customize_Posts {
 		add_filter( 'customize_save_response', array( $this, 'filter_customize_save_response_for_conflicts' ), 10, 2 );
 
 		$this->preview = new WP_Customize_Posts_Preview( $this );
-
-		$this->page_template_controller = new WP_Customize_Page_Template_Controller( $this );
 	}
 
 	/**
