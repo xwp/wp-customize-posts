@@ -42,7 +42,7 @@ var CustomizePageTemplate = (function( api ) {
 	 * @returns {wp.customize.Control|null} The control.
 	 */
 	component.addControl = function( section ) {
-		var supports, control, controlId, settingId;
+		var supports, control, controlId, settingId, isActiveCallback;
 		if ( ! section.extended( api.Posts.PostSection ) ) {
 			return null;
 		}
@@ -80,10 +80,12 @@ var CustomizePageTemplate = (function( api ) {
 		 *
 		 * @returns {boolean}
 		 */
-		control.active.validate = function() {
+		isActiveCallback = function() {
 			var defaultSize = 1;
 			return _.size( control.params.choices ) > defaultSize;
 		};
+		control.active.set( isActiveCallback() );
+		control.active.validate = isActiveCallback;
 
 		// Register.
 		api.control.add( control.id, control );
