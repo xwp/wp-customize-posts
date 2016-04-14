@@ -1,13 +1,13 @@
 <?php
 /**
- * Customize Post Setting class.
+ * Customize Postmeta Setting class.
  *
  * @package WordPress
  * @subpackage Customize
  */
 
 /**
- * Class WP_Customize_Post_Setting
+ * Class WP_Customize_Postmeta_Setting
  */
 class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 
