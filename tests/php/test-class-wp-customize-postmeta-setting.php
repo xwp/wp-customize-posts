@@ -1,8 +1,9 @@
 <?php
 /**
- * Tests for WP_Customize_Postmeta_Setting and WP_Customize_Page_Template_Postmeta_Setting.
+ * Tests for WP_Customize_Postmeta_Setting.
  *
  * @package WordPress
+ * @subpackage Customize
  */
 
 /**

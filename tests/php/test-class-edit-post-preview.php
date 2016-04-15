@@ -1,13 +1,13 @@
 <?php
 /**
- * Edir Posts Preview
+ * Tests for Edit_Post_Preview.
  *
  * @package WordPress
  * @subpackage Customize
  */
 
 /**
- * Class Edit_Post_Preview
+ * Class Test_Edit_Post_Preview
  */
 class Test_Edit_Post_Preview extends WP_UnitTestCase {
 

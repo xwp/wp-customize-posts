@@ -1,13 +1,13 @@
 <?php
 /**
- * WP Customize Post Section
+ * Tests for WP_Customize_Post_Section.
  *
  * @package WordPress
  * @subpackage Customize
  */
 
 /**
- * Class WP_Customize_Post_Section
+ * Class Test_WP_Customize_Post_Section
  */
 class Test_WP_Customize_Post_Section extends WP_UnitTestCase {
 

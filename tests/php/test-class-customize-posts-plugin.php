@@ -1,6 +1,6 @@
 <?php
 /**
- * Customize Posts Plugin
+ * Tests for Customize_Posts_Plugin.
  *
  * @package WordPress
  * @subpackage Customize
