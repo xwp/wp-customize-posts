@@ -13,7 +13,6 @@
 		var pageTemplateSettingId = EditPostPreviewAdmin.getPostMetaSettingId( '_wp_page_template' );
 		if ( 'undefined' !== typeof settings[ pageTemplateSettingId ] ) {
 			$( '#page_template' ).val( settings[ pageTemplateSettingId ] ).trigger( 'change' );
-
 		}
 	} );
 

@@ -54,7 +54,7 @@ abstract class WP_Customize_Postmeta_Controller {
 	public $default = '';
 
 	/**
-	 * WP_Customize_Page_Template_Controller constructor.
+	 * WP_Customize_Postmeta_Controller constructor.
 	 *
 	 * @throws Exception If meta_key is missing.
 	 *
