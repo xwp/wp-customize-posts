@@ -243,6 +243,20 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	}
 
 	/**
+	 * Filter to status for comments & pingbacks.
+	 *
+	 * @param bool        $open    Whether the current post is open.
+	 * @param int|WP_Post $post_id The post ID or WP_Post object.
+	 * @return bool
+	 */
+	public function status_closed( $open, $post_id ) {
+		if ( ( $post_id instanceof WP_Post && $this->post_id === $post_id->ID ) || $this->post_id === $post_id ) {
+			$open = false;
+		}
+		return $open;
+	}
+
+	/**
 	 * Sanitize (and validate) an input.
 	 *
 	 * @see wp_insert_post()
@@ -422,11 +436,27 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			}
 		}
 
+		// Hide the comment form.
+		if ( 'closed' === $post_data['comment_status'] ) {
+			add_filter( 'comments_open', array( $this, 'status_closed' ), 10, 2 );
+		}
+
+		// Ping status.
+		if ( empty( $post_data['ping_status'] ) ) {
+			if ( $update ) {
+				$post_data['ping_status'] = 'closed';
+			} else {
+				$post_data['ping_status'] = get_default_comment_status( $this->post_type, 'pingback' );
+			}
+		}
+
+		// Hide the pingbacks.
+		if ( 'closed' === $post_data['ping_status'] ) {
+			add_filter( 'pings_open', array( $this, 'status_closed' ), 10, 2 );
+		}
+
 		if ( empty( $post_data['post_author'] ) || ( ! current_user_can( $post_type_obj->cap->edit_others_posts ) && intval( $post_data['post_author'] ) !== get_current_user_id() ) ) {
 			$post_data['post_author'] = get_current_user_id();
-		}
-		if ( empty( $post_data['ping_status'] ) ) {
-			$post_data['ping_status'] = get_default_comment_status( $this->post_type, 'pingback' );
 		}
 		if ( empty( $post_data['menu_order'] ) ) {
 			$post_data['menu_order'] = 0;

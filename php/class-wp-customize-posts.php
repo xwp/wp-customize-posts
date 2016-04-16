@@ -453,6 +453,12 @@ final class WP_Customize_Posts {
 				'fieldTitleLabel' => __( 'Title', 'customize-posts' ),
 				'fieldContentLabel' => __( 'Content', 'customize-posts' ),
 				'fieldExcerptLabel' => __( 'Excerpt', 'customize-posts' ),
+				'fieldCommentsLabel' => __( 'Allow comments.', 'customize-posts' ),
+				'fieldTrackbacksLabel' => sprintf(
+					/* translators: %s: Codex URL */
+					__( 'Allow <a href="%s">trackbacks and pingbacks</a> on this page.' ),
+					'https://codex.wordpress.org/Introduction_to_Blogging#Managing_Comments'
+				),
 				'fieldAuthorLabel' => __( 'Author', 'customize-posts' ),
 				'noTitle' => __( '(no title)', 'customize-posts' ),
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),

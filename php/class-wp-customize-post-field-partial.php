@@ -148,6 +148,20 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 
 			/** This filter is documented in wp-includes/post-template.php */
 			$rendered = apply_filters( 'the_excerpt', $rendered );
+		} else if ( ( 'comment_status' === $partial->field_id && 'comments-area' === $this->placement && is_singular() ) || 'ping_status' === $partial->field_id ) {
+			ob_start();
+			comments_template();
+			$rendered = ob_get_contents();
+			ob_end_clean();
+		} else if ( 'comment_status' === $partial->field_id && 'comments-link' === $this->placement && ! is_single() && ! post_password_required() && comments_open() ) {
+			ob_start();
+			/* translators: %s: post title */
+			comments_popup_link( sprintf( __( 'Leave a comment<span class="screen-reader-text"> on %s</span>', 'customize-posts' ), get_the_title() ) );
+			$link = ob_get_contents();
+			ob_end_clean();
+			if ( ! empty( $link ) ) {
+				$rendered = '<span class="comments-link">' . $link . '</span>';
+			}
 		} elseif ( 'post_author' === $this->field_id ) {
 			if ( 'author-bio' === $this->placement && is_singular() && get_the_author_meta( 'description' ) ) {
 				if ( '' !== locate_template( 'author-bio.php' ) ) {

@@ -77,52 +77,71 @@ class WP_Customize_Dynamic_Control extends WP_Customize_Control {
 		_.defaults( data, <?php echo wp_json_encode( $data ) ?> );
 		data.input_id = 'input-' + String( Math.random() );
 		#>
-		<span class="customize-control-title"><label for="{{ data.input_id }}">{{ data.label }}</label></span>
-		<# if ( data.description ) { #>
-			<span class="description customize-control-description">{{ data.description }}</span>
-		<# } #>
-		<# if ( 'textarea' === data.field_type ) { #>
-			<textarea
-				class="widefat"
-				rows="5"
-				id="{{ data.input_id }}"
-				<# _.each( data.input_attrs, function( value, key ) { #>
-					{{{ key }}}="{{ value }}"
-				<# } ) #>
-				<# if ( data.setting_property ) { #>
-					data-customize-setting-property-link="{{ data.setting_property }}"
+		<# if ( 'checkbox' === data.field_type ) { #>
+			<label for="{{ data.input_id }}">
+				<input
+					id="{{ data.input_id }}"
+					type="{{ data.field_type }}"
+					<# _.each( data.input_attrs, function( value, key ) { #>
+						{{{ key }}}="{{ value }}"
+					<# } ) #>
+					<# if ( data.setting_property ) { #>
+						data-customize-setting-property-link="{{ data.setting_property }}"
+					<# } #>
+				/>
+				{{{ data.label }}}
+				<# if ( data.description ) { #>
+					<span class="description customize-control-description">{{ data.description }}</span>
 				<# } #>
-				></textarea>
-		<# } else if ( 'select' === data.field_type ) { #>
-			<select id="{{ data.input_id }}"
-				<# _.each( data.input_attrs, function( value, key ) { #>
-					{{{ key }}}="{{ value }}"
-				<# } ) #>
-				<# if ( data.setting_property ) { #>
-					data-customize-setting-property-link="{{ data.setting_property }}"
-				<# } #>
-				>
-				<# _.each( data.choices, function( value, text ) { #>
-					<#
-					if ( _.isObject( value ) && ! _.isUndefined( value.text ) && ! _.isUndefined( value.value ) ) {
-						text = value.text;
-						value = value.value;
-					}
-					#>
-					<option value="{{ value }}">{{ text }}</option>
-				<# } ); #>
-			</select>
+			</label>
 		<# } else { #>
-			<input
-				id="{{ data.input_id }}"
-				type="{{ data.field_type }}"
-				<# _.each( data.input_attrs, function( value, key ) { #>
-					{{{ key }}}="{{ value }}"
-				<# } ) #>
-				<# if ( data.setting_property ) { #>
-					data-customize-setting-property-link="{{ data.setting_property }}"
-				<# } #>
-			/>
+			<span class="customize-control-title"><label for="{{ data.input_id }}">{{ data.label }}</label></span>
+			<# if ( data.description ) { #>
+				<span class="description customize-control-description">{{ data.description }}</span>
+			<# } #>
+			<# if ( 'textarea' === data.field_type ) { #>
+				<textarea
+					class="widefat"
+					rows="5"
+					id="{{ data.input_id }}"
+					<# _.each( data.input_attrs, function( value, key ) { #>
+						{{{ key }}}="{{ value }}"
+					<# } ) #>
+					<# if ( data.setting_property ) { #>
+						data-customize-setting-property-link="{{ data.setting_property }}"
+					<# } #>
+					></textarea>
+			<# } else if ( 'select' === data.field_type ) { #>
+				<select id="{{ data.input_id }}"
+					<# _.each( data.input_attrs, function( value, key ) { #>
+						{{{ key }}}="{{ value }}"
+					<# } ) #>
+					<# if ( data.setting_property ) { #>
+						data-customize-setting-property-link="{{ data.setting_property }}"
+					<# } #>
+					>
+					<# _.each( data.choices, function( choice ) { #>
+						<#
+						if ( _.isObject( choice ) && ! _.isUndefined( choice.text ) && ! _.isUndefined( choice.value ) ) {
+							text = choice.text;
+							value = choice.value;
+						}
+						#>
+						<option value="{{ value }}">{{ text }}</option>
+					<# } ); #>
+				</select>
+			<# } else { #>
+				<input
+					id="{{ data.input_id }}"
+					type="{{ data.field_type }}"
+					<# _.each( data.input_attrs, function( value, key ) { #>
+						{{{ key }}}="{{ value }}"
+					<# } ) #>
+					<# if ( data.setting_property ) { #>
+						data-customize-setting-property-link="{{ data.setting_property }}"
+					<# } #>
+				/>
+			<# } #>
 		<# } #>
 		<div class="customize-setting-validation-message error" aria-live="assertive"></div>
 		<?php

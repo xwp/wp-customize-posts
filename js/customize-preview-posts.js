@@ -57,6 +57,34 @@
 				} );
 				api.selectiveRefresh.partial.add( partial.id, partial );
 
+				// Post field partial for comment_status comments-area.
+				partial = new api.previewPosts.PostFieldPartial( id + '[comment_status][comments-area]', {
+					params: {
+						settings: [ id ],
+						containerInclusive: true,
+						fallbackRefresh: false
+					}
+				} );
+				api.selectiveRefresh.partial.add( partial.id, partial );
+
+				// Post field partial for comment_status comments-link.
+				partial = new api.previewPosts.PostFieldPartial( id + '[comment_status][comments-link]', {
+					params: {
+						settings: [ id ],
+						containerInclusive: true,
+						fallbackRefresh: false
+					}
+				} );
+				api.selectiveRefresh.partial.add( partial.id, partial );
+
+				// Post field partial for ping_status.
+				partial = new api.previewPosts.PostFieldPartial( id + '[ping_status]', {
+					params: {
+						settings: [ id ]
+					}
+				} );
+				api.selectiveRefresh.partial.add( partial.id, partial );
+
 				// Post field partial for post_author author-bio.
 				partial = new api.previewPosts.PostFieldPartial( id + '[post_author][author-bio]', {
 					params: {
