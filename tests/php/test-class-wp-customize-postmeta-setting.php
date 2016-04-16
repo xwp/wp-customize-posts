@@ -248,17 +248,19 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 
 	/**
 	 * @see WP_Customize_Page_Template_Postmeta_Setting::sanitize()
+	 *
+	 * @todo Move this into a separate test class.
 	 */
 	function test_sanitize_page_template_setting() {
-		$this->markTestSkipped( 'Class is gone: WP_Customize_Page_Template_Postmeta_Setting' );
-
 		switch_theme( 'twentytwelve' );
 
 		$post_id = $this->factory()->post->create( array( 'post_type' => 'post') );
 		$meta_key = '_wp_page_template';
-		register_meta( 'post', $meta_key, array( 'WP_Customize_Page_Template_Postmeta_Setting', 'sanitize_file_path' ) );
+		register_meta( 'post', $meta_key, array( $this->plugin->page_template_controller, 'sanitize_value' ) );
 		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $post_id ), $meta_key );
-		$setting = new WP_Customize_Page_Template_Postmeta_Setting( $this->manager, $setting_id );
+		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id, array(
+			'sanitize_callback' => array( $this->plugin->page_template_controller, 'sanitize_setting' )
+		) );
 
 		$this->assertEquals( 'default', $setting->sanitize( 'default' ) );
 		$this->assertNull( $setting->sanitize( 'bad-template.php' ) );
@@ -325,10 +327,13 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 		$this->assertEquals( $previewed_meta_value, $meta_value );
 		$meta_values = get_post_meta( $post_id, $meta_key, false );
 		$this->assertEquals( array( $previewed_meta_value ), $meta_values );
+
+		$this->assertTrue( $setting->preview() );
+		$this->assertEquals( $previewed_meta_value, $setting->value() );
 	}
 
 	/**
-	 * @see WP_Customize_Postmeta_Setting::save()
+	 * @see WP_Customize_Postmeta_Setting::update()
 	 */
 	function test_save() {
 		$post_id = $this->factory()->post->create( array( 'post_type' => 'post') );
@@ -350,5 +355,15 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 		$this->assertEquals( $override_meta_value, $setting->value() );
 		$meta_value = get_post_meta( $post_id, $meta_key, true );
 		$this->assertEquals( $override_meta_value, $meta_value );
+	}
+
+	/**
+	 * @see WP_Customize_Postmeta_Setting::update()
+	 */
+	function test_update_for_insert() {
+		$setting_id = sprintf( 'postmeta[post][%d][food]', -123 );
+		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id );
+		$this->manager->set_post_value( $setting_id, 'bard' );
+		$setting->save();
 	}
 }
