@@ -223,7 +223,7 @@ final class WP_Customize_Posts_Preview {
 			$is_recursing = false;
 
 			foreach ( $this->previewed_postmeta_settings[ $object_id ] as $postmeta_setting ) {
-				if ( ! array_key_exists( $post_values, $postmeta_setting->id ) || ! $postmeta_setting->check_capabilities() ) {
+				if ( ! array_key_exists( $postmeta_setting->id, $post_values ) || ! $postmeta_setting->check_capabilities() ) {
 					continue;
 				}
 				$meta_value = $postmeta_setting->post_value();
