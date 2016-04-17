@@ -307,7 +307,11 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$post = get_post( $this->post_id );
 		$this->assertFalse( $preview->filter_customize_dynamic_partial_args( false, 'no' ) );
 
-		$partial_id = sprintf( 'post[%s][%d][%s]', $post->post_type, $post->ID, 'post_author' );
+		$partial_id = sprintf( 'post[%s][%d][%s]', 'badtype', 123, 'post_author' );
+		$args = $preview->filter_customize_dynamic_partial_args( false, $partial_id );
+		$this->assertFalse( $args );
+
+		$partial_id = sprintf( 'post[%s][%d][%s][%s]', $post->post_type, $post->ID, 'post_author', 'footer' );
 		$args = $preview->filter_customize_dynamic_partial_args( false, $partial_id );
 		$this->assertInternalType( 'array', $args );
 		$this->assertEquals( WP_Customize_Post_Field_Partial::TYPE, $args['type'] );
@@ -374,7 +378,9 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	 */
 	public function test_export_preview_data() {
 		$handle = 'customize-preview-posts';
-		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
+		$preview = $this->posts_component->preview;
+		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $this->post_id ) );
+		$postmeta_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $this->post_id ), 'foo' );
 
 		$preview->export_preview_data();
 		$this->assertNotEmpty( preg_match( '/var\s*_wpCustomizePreviewPostsData\s*=\s*(?P<json>{.+});/', wp_scripts()->get_data( $handle, 'data' ), $matches ) );
@@ -398,16 +404,32 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertFalse( $data['isPostPreview'] );
 		$this->assertEquals( $this->post_id, $data['queriedPostId'] );
 
+		update_post_meta( $this->post_id, 'foo', 'bar' );
+		$this->posts_component->register_post_type_meta( 'post', 'foo' );
+		$this->do_customize_boot_actions();
 		query_posts( array( 'p' => $this->post_id, 'preview' => true ) );
+		$this->assertNotEmpty( get_post_meta( $this->post_id, 'foo', true ) );
 		$preview->export_preview_data();
 		$this->assertNotEmpty( preg_match( '/var\s*_wpCustomizePreviewPostsData\s*=\s*(?P<json>{.+});/', wp_scripts()->get_data( $handle, 'data' ), $matches ) );
 		$data = json_decode( $matches['json'], true );
 		$this->assertTrue( $data['isSingular'] );
 		$this->assertTrue( $data['isPostPreview'] );
 		$this->assertEquals( $this->post_id, $data['queriedPostId'] );
+		$this->assertNotEmpty( $data['settingProperties'] );
+		$this->assertArrayHasKey( $post_setting_id, $data['settingProperties'] );
+		$this->assertArrayHasKey( $postmeta_setting_id, $data['settingProperties'] );
+		foreach ( $data['settingProperties'] as $setting_id => $setting_props ) {
+			$this->assertArrayHasKey( 'transport', $setting_props );
+			$this->assertArrayHasKey( 'type', $setting_props );
+		}
+		$this->assertEquals( 'postmeta', $data['settingProperties'][ $postmeta_setting_id ]['type'] );
+		$this->assertEquals( 'post', $data['settingProperties'][ $post_setting_id ]['type'] );
 
-		// @todo check settingProperties
-
+		wp_set_current_user( 0 );
+		$preview->export_preview_data();
+		$this->assertNotEmpty( preg_match( '/var\s*_wpCustomizePreviewPostsData\s*=\s*(?P<json>{.+});/', wp_scripts()->get_data( $handle, 'data' ), $matches ) );
+		$data = json_decode( $matches['json'], true );
+		$this->assertEmpty( $data['settingProperties'] );
 	}
 
 	/**
@@ -416,6 +438,34 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	 * @see WP_Customize_Posts_Preview::filter_infinite_scroll_results()
 	 */
 	public function test_filter_infinite_scroll_results() {
-		$this->markTestIncomplete( __METHOD__ );
+		$preview = $this->posts_component->preview;
+		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $this->post_id ) );
+		$postmeta_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $this->post_id ), 'foo' );
+		query_posts( 'p=' . $this->post_id );
+		update_post_meta( $this->post_id, 'foo', 'bar' );
+		$this->posts_component->register_post_type_meta( 'post', 'foo' );
+		$this->do_customize_boot_actions();
+		$this->assertNotEmpty( get_post_meta( $this->post_id, 'foo' ) );
+
+		wp_set_current_user( 0 );
+		$results = $preview->filter_infinite_scroll_results( array() );
+		$this->assertArrayHasKey( 'customize_post_settings', $results );
+		$this->assertEmpty( $results['customize_post_settings'] );
+
+		wp_set_current_user( $this->user_id );
+		$results = $preview->filter_infinite_scroll_results( array() );
+		$this->assertArrayHasKey( 'customize_post_settings', $results );
+		$this->assertNotEmpty( $results['customize_post_settings'] );
+
+		$this->assertArrayHasKey( $post_setting_id, $results['customize_post_settings'] );
+		$this->assertArrayHasKey( $postmeta_setting_id, $results['customize_post_settings'] );
+		foreach ( $results['customize_post_settings'] as $setting ) {
+			$this->assertArrayHasKey( 'value', $setting );
+			$this->assertArrayHasKey( 'transport', $setting );
+			$this->assertArrayHasKey( 'dirty', $setting );
+			$this->assertArrayHasKey( 'type', $setting );
+		}
+		$this->assertEquals( 'postmeta', $results['customize_post_settings'][ $postmeta_setting_id ]['type'] );
+		$this->assertEquals( 'post', $results['customize_post_settings'][ $post_setting_id ]['type'] );
 	}
 }
