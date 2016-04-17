@@ -155,7 +155,6 @@ final class WP_Customize_Posts_Preview {
 		$setting_ids = array();
 		foreach ( $meta_keys as $key ) {
 			if ( isset( $this->component->registered_post_meta[ $post->post_type ][ $key ] ) ) {
-				error_log( $key );
 				$setting_ids[] = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $key );
 			}
 		}
@@ -183,9 +182,17 @@ final class WP_Customize_Posts_Preview {
 			||
 			// Abort if the post has no meta previewed.
 			! isset( $this->previewed_postmeta_settings[ $object_id ] )
+			||
+			( '' !== $meta_key && ! isset( $this->previewed_postmeta_settings[ $object_id ][ $meta_key ] ) )
 		);
 		if ( $should_short_circuit ) {
-			return $single ? $value : array( $value );
+			if ( is_null( $value ) ) {
+				return null;
+			} elseif ( ! $single && ! is_array( $value ) ) {
+				return array( $value );
+			} else {
+				return $value;
+			}
 		}
 
 		/**
@@ -197,12 +204,6 @@ final class WP_Customize_Posts_Preview {
 		$post_values = $this->component->manager->unsanitized_post_values();
 
 		if ( '' !== $meta_key ) {
-
-			// Abort if this meta is not previewed meta for this post.
-			if ( ! isset( $this->previewed_postmeta_settings[ $object_id ][ $meta_key ] ) ) {
-				return $single ? $value : array( $value );
-			}
-
 			$postmeta_setting = $this->previewed_postmeta_settings[ $object_id ][ $meta_key ];
 			$can_preview = (
 				$postmeta_setting
@@ -223,16 +224,14 @@ final class WP_Customize_Posts_Preview {
 			$is_recursing = false;
 
 			foreach ( $this->previewed_postmeta_settings[ $object_id ] as $postmeta_setting ) {
-				if ( ! array_key_exists( $post_values, $postmeta_setting->id ) || ! $postmeta_setting->check_capabilities() ) {
+				if ( ! array_key_exists( $postmeta_setting->id, $post_values ) || ! $postmeta_setting->check_capabilities() ) {
 					continue;
 				}
 				$meta_value = $postmeta_setting->post_value();
 				$meta_value = maybe_serialize( $meta_value );
-				if ( $single ) {
-					$meta_values[ $postmeta_setting->meta_key ] = $meta_value;
-				} else {
-					$meta_values[ $postmeta_setting->meta_key ] = array( $meta_value );
-				}
+
+				// Note that $single has no effect when $meta_key is ''.
+				$meta_values[ $postmeta_setting->meta_key ] = array( $meta_value );
 			}
 			return $meta_values;
 		}
@@ -241,8 +240,8 @@ final class WP_Customize_Posts_Preview {
 	/**
 	 * Recognize partials for posts appearing in preview.
 	 *
-	 * @param array  $args Partial args.
-	 * @param string $id   Partial ID.
+	 * @param false|array $args Partial args.
+	 * @param string      $id   Partial ID.
 	 *
 	 * @return array|false
 	 */

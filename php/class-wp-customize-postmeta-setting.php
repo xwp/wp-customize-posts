@@ -65,7 +65,7 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 	 * @param array                $args    Setting args.
 	 * @throws Exception If the ID is in an invalid format.
 	 */
-	public function __construct( $manager, $id, $args = array() ) {
+	public function __construct( WP_Customize_Manager $manager, $id, $args = array() ) {
 		if ( ! preg_match( self::SETTING_ID_PATTERN, $id, $matches ) ) {
 			throw new Exception( 'Illegal setting id: ' . $id );
 		}

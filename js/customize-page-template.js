@@ -54,14 +54,16 @@ var CustomizePageTemplate = (function( api ) {
 		settingId = 'postmeta[' + section.params.post_type + '][' + String( section.params.post_id ) + '][_wp_page_template]';
 		controlId = settingId;
 
-		// Send the updated page template to the post edit screen when it is changed.
-		api( settingId, function( setting ) {
-			setting.bind( function( pageTemplate ) {
-				var settings = {};
-				settings[ settingId ] = pageTemplate;
-				EditPostPreviewCustomize.sendSettingsToEditPostScreen( settings );
+		// If in page preview, send the updated page template to the post edit screen when it is changed.
+		if ( 'undefined' !== typeof EditPostPreviewCustomize ) {
+			api( settingId, function( setting ) {
+				setting.bind( function( pageTemplate ) {
+					var settings = {};
+					settings[ settingId ] = pageTemplate;
+					EditPostPreviewCustomize.sendSettingsToEditPostScreen( settings );
+				} );
 			} );
-		} );
+		}
 
 		if ( api.control.has( controlId ) ) {
 			return api.control( controlId );

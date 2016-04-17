@@ -179,7 +179,20 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 * @see WP_Customize_Posts::auth_post_meta_callback()
 	 */
 	public function test_auth_post_meta_callback() {
-		$this->markTestIncomplete();
+		$posts_component = $this->posts;
+		unset( $GLOBALS['wp_customize'] );
+		$this->assertFalse( $posts_component->auth_post_meta_callback( false, 'foo', $this->post_id, $this->user_id ) );
+		$GLOBALS['wp_customize'] = $posts_component->manager;
+
+		$this->assertFalse( $posts_component->auth_post_meta_callback( false, 'foo', -123, $this->user_id ) );
+
+		$unknown_post_id = $this->factory()->post->create( array( 'post_type' => 'unknown' ) );
+		$this->assertFalse( $posts_component->auth_post_meta_callback( false, 'foo', $unknown_post_id, $this->user_id ) );
+
+		$this->assertFalse( $posts_component->auth_post_meta_callback( false, 'foo', $this->post_id, $this->user_id ) );
+
+		$posts_component->register_post_type_meta( 'post', 'foo' );
+		$this->assertTrue( $posts_component->auth_post_meta_callback( false, 'foo', $this->post_id, $this->user_id ) );
 	}
 
 	/**

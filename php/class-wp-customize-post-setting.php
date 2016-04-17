@@ -80,7 +80,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	 * @param array                $args    Setting args.
 	 * @throws Exception If the ID is in an invalid format.
 	 */
-	public function __construct( $manager, $id, $args = array() ) {
+	public function __construct( WP_Customize_Manager $manager, $id, $args = array() ) {
 		if ( ! preg_match( self::SETTING_ID_PATTERN, $id, $matches ) ) {
 			throw new Exception( 'Illegal setting id: ' . $id );
 		}
@@ -137,15 +137,13 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		if ( ! $this->posts_component->current_user_can_edit_post( $post ) ) {
 			return false;
 		}
+		if ( $post->ID !== $this->post_id ) {
+			return false;
+		}
 		if ( ! isset( $this->posts_component->preview->previewed_post_settings[ $post->ID ] ) ) {
 			return false;
 		}
-		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
-		$setting = $this->posts_component->manager->get_setting( $setting_id );
-		if ( ! $setting || ! ( $setting instanceof WP_Customize_Post_Setting ) ) {
-			return false;
-		}
-		$post_value = $setting->post_value( null );
+		$post_value = $this->post_value( null );
 		if ( ! is_array( $post_value ) ) {
 			return false;
 		}
@@ -180,8 +178,12 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		 * For some reason WordPress stores newlines in DB as CRLF when saving via
 		 * the WP Admin, but normally a textarea just represents newlines as LF.
 		 */
-		$post_data['post_content'] = preg_replace( '/\r\n/', "\n", $post_data['post_content'] );
-		$post_data['post_excerpt'] = preg_replace( '/\r\n/', "\n", $post_data['post_excerpt'] );
+		if ( isset( $post_data['post_content'] ) ) {
+			$post_data['post_content'] = preg_replace( '/\r\n/', "\n", $post_data['post_content'] );
+		}
+		if ( isset( $post_data['post_excerpt'] ) ) {
+			$post_data['post_excerpt'] = preg_replace( '/\r\n/', "\n", $post_data['post_excerpt'] );
+		}
 
 		return $post_data;
 	}
@@ -261,12 +263,14 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	 *
 	 * @see wp_insert_post()
 	 *
-	 * @param string $post_data   The value to sanitize.
-	 * @param bool   $strict      Whether validation is being done. This is part of the proposed patch in in #34893.
-	 * @return string|array|null Null if an input isn't valid, otherwise the sanitized value.
+	 * @param array $post_data   The value to sanitize.
+	 * @param bool  $strict      Whether validation is being done. This is part of the proposed patch in in #34893.
+	 * @return string|array|null|WP_Error Null if an input isn't valid, otherwise the sanitized value. WP_Error returned if `$strict`.
 	 */
 	public function sanitize( $post_data, $strict = false ) {
 		global $wpdb;
+
+		$post_data = array_merge( $this->default, $post_data );
 
 		// The customize_validate_settings action is part of the Customize Setting Validation plugin.
 		if ( ! $strict && doing_action( 'customize_validate_settings' ) ) {
@@ -274,20 +278,17 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		}
 
 		$update = ( $this->post_id > 0 );
-
 		$post_type_obj = get_post_type_object( $this->post_type );
-		$can_edit = false;
-		if ( $update ) {
-			$can_edit = $this->posts_component->current_user_can_edit_post( $this->post_id );
-		} elseif ( $post_type_obj ) {
-			$can_edit = current_user_can( $post_type_obj->cap->edit_posts );
-		}
-		if ( ! $can_edit ) {
+		if ( ! $this->check_capabilities() ) {
 			if ( $strict ) {
 				return new WP_Error( 'not_allowed' );
 			} else {
 				return null;
 			}
+		}
+
+		if ( $strict && ! empty( $post_data['post_type'] ) && $post_data['post_type'] !== $this->post_type ) {
+			return new WP_Error( 'bad_post_type' );
 		}
 		$post_data['post_type'] = $this->post_type;
 
@@ -344,7 +345,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		if ( empty( $post_data['post_status'] ) ) {
 			$post_data['post_status'] = 'draft';
 		}
-		if ( 'attachment' === $this->post_type && ! in_array( $post_data, array( 'inherit', 'private', 'trash' ), true ) ) {
+		if ( 'attachment' === $this->post_type && ! in_array( $post_data['post_status'], array( 'inherit', 'private', 'trash' ), true ) ) {
 			$post_data['post_status'] = 'inherit';
 		}
 

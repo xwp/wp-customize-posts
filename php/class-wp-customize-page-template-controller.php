@@ -45,7 +45,7 @@ class WP_Customize_Page_Template_Controller extends WP_Customize_Postmeta_Contro
 	public function enqueue_customize_scripts() {
 		$handle = 'customize-page-template';
 		wp_enqueue_script( $handle );
-		wp_add_inline_script( $handle, 'CustomizePageTemplate.init()' );
+		wp_add_inline_script( $handle, 'CustomizePageTemplate.init();' );
 
 		$exports = array(
 			'defaultPageTemplateChoices' => $this->get_page_template_choices(),
@@ -56,7 +56,7 @@ class WP_Customize_Page_Template_Controller extends WP_Customize_Postmeta_Contro
 		wp_scripts()->add_data(
 			$handle,
 			'data',
-			sprintf( 'var _wpCustomizePageTemplateExports = %s', wp_json_encode( $exports ) )
+			sprintf( 'var _wpCustomizePageTemplateExports = %s;', wp_json_encode( $exports ) )
 		);
 	}
 
@@ -99,7 +99,7 @@ class WP_Customize_Page_Template_Controller extends WP_Customize_Postmeta_Contro
 		$path = $raw_path;
 		$special_chars = array( '..', './', chr( 0 ) );
 		$path = str_replace( $special_chars, '', $path );
-		$path = ltrim( $path, '/' );
+		$path = trim( $path, '/' );
 		return $path;
 	}
 

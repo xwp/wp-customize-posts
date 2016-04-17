@@ -63,7 +63,7 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 	 * @param string                         $id        Control ID.
 	 * @param array                          $args      Optional. Arguments to override class property defaults.
 	 */
-	public function __construct( WP_Customize_Selective_Refresh $component, $id, array $args ) {
+	public function __construct( WP_Customize_Selective_Refresh $component, $id, array $args = array() ) {
 		if ( ! preg_match( self::ID_PATTERN, $id, $matches ) ) {
 			throw new Exception( 'Bad ID format' );
 		}
@@ -79,16 +79,15 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 			$args['settings'] = array( sprintf( 'post[%s][%d]', $matches['post_type'], $matches['post_id'] ) );
 		}
 
-		$this->post_id = intval( $matches['post_id'] );
-		$this->post_type = $matches['post_type'];
-		$this->field_id = $matches['field_id'];
-		$this->placement = isset( $matches['placement'] ) ? $matches['placement'] : '';
+		$args['post_id'] = intval( $matches['post_id'] );
+		$args['post_type'] = $matches['post_type'];
+		$args['field_id'] = $matches['field_id'];
+		$args['placement'] = isset( $matches['placement'] ) ? $matches['placement'] : '';
 
-		if ( ! empty( $this->placement ) ) {
+		if ( ! empty( $args['placement'] ) ) {
 			if ( ! isset( $args['container_inclusive'] ) ) {
 				$args['container_inclusive'] = true;
 			}
-
 			if ( ! isset( $args['fallback_refresh'] ) ) {
 				$args['fallback_refresh'] = false;
 			}
@@ -108,11 +107,9 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 	public function render_callback( WP_Customize_Partial $partial, $context = array() ) {
 		unset( $context );
 		$rendered = null;
-		assert( $partial === $this );
-
 		$post = get_post( $this->post_id );
 		if ( ! $post ) {
-			return null;
+			return false;
 		}
 
 		$GLOBALS['post'] = $post; // WPCS: override global ok.
@@ -143,7 +140,7 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 			/** This filter is documented in wp-includes/post-template.php */
 			$rendered = apply_filters( 'the_content', $rendered );
 			$rendered = str_replace( ']]>', ']]&gt;', $rendered );
-		} else if ( 'post_excerpt' === $partial->field_id ) {
+		} elseif ( 'post_excerpt' === $partial->field_id ) {
 			$rendered = get_the_excerpt();
 
 			/** This filter is documented in wp-includes/post-template.php */
