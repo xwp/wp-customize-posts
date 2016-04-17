@@ -11,7 +11,7 @@
  */
 class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 
-	const ID_PATTERN = '/^post\[(?P<post_type>[^\]]+)\]\[(?P<post_id>-?\d+)\]\[(?P<field_id>[^\]]+)\]$/';
+	const ID_PATTERN = '/^post\[(?P<post_type>[^\]]+)\]\[(?P<post_id>-?\d+)\]\[(?P<field_id>[^\]]+)\](?:\[(?P<placement>[^\]]+)\])?$/';
 
 	const TYPE = 'post_field';
 
@@ -47,6 +47,13 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 	public $field_id;
 
 	/**
+	 * Partial placement that this setting is related to.
+	 *
+	 * @var string
+	 */
+	public $placement;
+
+	/**
 	 * Constructor.
 	 *
 	 * @inheritdoc
@@ -56,7 +63,7 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 	 * @param string                         $id        Control ID.
 	 * @param array                          $args      Optional. Arguments to override class property defaults.
 	 */
-	public function __construct( WP_Customize_Selective_Refresh $component, $id, array $args ) {
+	public function __construct( WP_Customize_Selective_Refresh $component, $id, array $args = array() ) {
 		if ( ! preg_match( self::ID_PATTERN, $id, $matches ) ) {
 			throw new Exception( 'Bad ID format' );
 		}
@@ -72,11 +79,21 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 			$args['settings'] = array( sprintf( 'post[%s][%d]', $matches['post_type'], $matches['post_id'] ) );
 		}
 
-		parent::__construct( $component, $id, $args );
+		$args['post_id'] = intval( $matches['post_id'] );
+		$args['post_type'] = $matches['post_type'];
+		$args['field_id'] = $matches['field_id'];
+		$args['placement'] = isset( $matches['placement'] ) ? $matches['placement'] : '';
 
-		$this->post_id = intval( $matches['post_id'] );
-		$this->post_type = $matches['post_type'];
-		$this->field_id = $matches['field_id'];
+		if ( ! empty( $args['placement'] ) ) {
+			if ( ! isset( $args['container_inclusive'] ) ) {
+				$args['container_inclusive'] = true;
+			}
+			if ( ! isset( $args['fallback_refresh'] ) ) {
+				$args['fallback_refresh'] = false;
+			}
+		}
+
+		parent::__construct( $component, $id, $args );
 	}
 
 	/**
@@ -90,11 +107,9 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 	public function render_callback( WP_Customize_Partial $partial, $context = array() ) {
 		unset( $context );
 		$rendered = null;
-		assert( $partial === $this );
-
 		$post = get_post( $this->post_id );
 		if ( ! $post ) {
-			return null;
+			return false;
 		}
 
 		$GLOBALS['post'] = $post; // WPCS: override global ok.
@@ -119,17 +134,33 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 			if ( ! is_single() ) {
 				$rendered = sprintf( '<a href="%s" rel="bookmark">%s</a>', esc_url( get_permalink( $post->ID ) ), $rendered );
 			}
-		} else if ( 'post_content' === $partial->field_id ) {
+		} elseif ( 'post_content' === $this->field_id ) {
 			$rendered = get_the_content();
 
 			/** This filter is documented in wp-includes/post-template.php */
 			$rendered = apply_filters( 'the_content', $rendered );
 			$rendered = str_replace( ']]>', ']]&gt;', $rendered );
-		} else if ( 'post_excerpt' === $partial->field_id ) {
+		} elseif ( 'post_excerpt' === $partial->field_id ) {
 			$rendered = get_the_excerpt();
 
 			/** This filter is documented in wp-includes/post-template.php */
 			$rendered = apply_filters( 'the_excerpt', $rendered );
+		} elseif ( 'post_author' === $this->field_id ) {
+			if ( 'author-bio' === $this->placement && is_singular() && get_the_author_meta( 'description' ) ) {
+				if ( '' !== locate_template( 'author-bio.php' ) ) {
+					ob_start();
+					get_template_part( 'author-bio' );
+					$rendered = ob_get_contents();
+					ob_end_clean();
+				} else {
+					$rendered = false;
+				}
+			} elseif ( 'byline' === $this->placement && ( is_singular() || is_multi_author() ) ) {
+				$rendered = sprintf( '<a class="url fn n" href="%1$s">%2$s</a>',
+					esc_url( get_author_posts_url( get_the_author_meta( 'ID', $post->post_author ) ) ),
+					get_the_author_meta( 'display_name', $post->post_author )
+				);
+			}
 		}
 
 		wp_reset_postdata();
@@ -146,6 +177,7 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 		$data['post_type'] = $this->post_type;
 		$data['post_id'] = $this->post_id;
 		$data['field_id'] = $this->field_id;
+		$data['placement'] = $this->placement;
 		return $data;
 	}
 }

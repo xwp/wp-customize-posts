@@ -28,6 +28,13 @@ class Customize_Posts_Plugin {
 	public $edit_post_preview;
 
 	/**
+	 * Page template controller.
+	 *
+	 * @var WP_Customize_Page_Template_Controller
+	 */
+	public $page_template_controller;
+
+	/**
 	 * Plugin constructor.
 	 *
 	 * @access public
@@ -50,6 +57,10 @@ class Customize_Posts_Plugin {
 		add_action( 'wp_default_styles', array( $this, 'register_styles' ), 11 );
 		add_filter( 'user_has_cap', array( $this, 'grant_customize_capability' ), 10, 3 );
 		add_filter( 'customize_loaded_components', array( $this, 'filter_customize_loaded_components' ), 100, 2 );
+
+		require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-controller.php';
+		require_once dirname( __FILE__ ) . '/class-wp-customize-page-template-controller.php';
+		$this->page_template_controller = new WP_Customize_Page_Template_Controller();
 	}
 
 	/**
@@ -167,6 +178,18 @@ class Customize_Posts_Plugin {
 		$handle = 'edit-post-preview-customize';
 		$src = $plugin_dir_url . 'js/edit-post-preview-customize' . $suffix;
 		$deps = array( 'customize-controls' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
+		$handle = 'customize-page-template';
+		$src = $plugin_dir_url . 'js/customize-page-template' . $suffix;
+		$deps = array( 'customize-controls', 'customize-posts' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
+		$handle = 'edit-post-preview-admin-page-template';
+		$src = $plugin_dir_url . 'js/edit-post-preview-admin-page-template' . $suffix;
+		$deps = array( 'edit-post-preview-admin' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 	}

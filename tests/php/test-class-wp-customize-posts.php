@@ -46,10 +46,6 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 */
 	public function setUp() {
 		parent::setUp();
-		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
-		$GLOBALS['wp_customize'] = new WP_Customize_Manager();
-		$this->wp_customize = $GLOBALS['wp_customize'];
-
 		$this->user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		$this->post_id = self::factory()->post->create( array(
 			'post_name' => 'Testing',
@@ -57,6 +53,12 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		) );
 
 		wp_set_current_user( $this->user_id );
+
+		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
+		// @codingStandardsIgnoreStart
+		$GLOBALS['wp_customize'] = new WP_Customize_Manager();
+		// @codingStandardsIgnoreStop
+		$this->wp_customize = $GLOBALS['wp_customize'];
 
 		if ( isset( $this->wp_customize->posts ) ) {
 			$this->posts = $this->wp_customize->posts;
@@ -70,6 +72,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 */
 	function tearDown() {
 		$this->wp_customize = null;
+		unset( $_POST['customized'] );
 		unset( $GLOBALS['wp_customize'] );
 		unset( $GLOBALS['wp_scripts'] );
 		parent::tearDown();
@@ -77,23 +80,25 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 
 	/**
 	 * Do Customizer boot actions.
+	 *
+	 * @param array $customized Post values.
 	 */
-	function do_customize_boot_actions() {
+	function do_customize_boot_actions( $customized = array() ) {
 		// Remove actions that call add_theme_support( 'title-tag' ).
 		remove_action( 'after_setup_theme', 'twentyfifteen_setup' );
 		remove_action( 'after_setup_theme', 'twentysixteen_setup' );
 
-		$_SERVER['REQUEST_METHOD'] = 'POST';
-		$_POST['customized'] = '';
-		do_action( 'setup_theme' );
-		$_REQUEST['nonce'] = wp_create_nonce( 'preview-customize_' . $this->wp_customize->theme()->get_stylesheet() );
-		$_REQUEST['customize_preview_post_nonce'] = wp_create_nonce( 'customize_preview_post' );
-		do_action( 'after_setup_theme' );
-		do_action( 'customize_register', $this->wp_customize );
-		$this->wp_customize->customize_preview_init();
-		do_action( 'wp', $GLOBALS['wp'] );
 		$_REQUEST['wp_customize'] = 'on';
+		$_SERVER['REQUEST_METHOD'] = 'POST';
+		$_REQUEST['nonce'] = wp_create_nonce( 'preview-customize_' . $this->wp_customize->theme()->get_stylesheet() );
+		$_POST['customized'] = wp_slash( wp_json_encode( $customized ) );
+		$_REQUEST['customize_preview_post_nonce'] = wp_create_nonce( 'customize_preview_post' );
 		$_GET['previewed_post'] = $this->post_id;
+		do_action( 'setup_theme' );
+		do_action( 'after_setup_theme' );
+		do_action( 'init' );
+		do_action( 'wp_loaded' );
+		do_action( 'wp', $GLOBALS['wp'] );
 	}
 
 	/**
@@ -106,7 +111,8 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 
 		$this->assertEquals( 10, has_action( 'customize_controls_enqueue_scripts', array( $posts, 'enqueue_scripts' ) ) );
 		$this->assertEquals( 10, has_action( 'customize_controls_init', array( $posts, 'enqueue_editor' ) ) );
-		$this->assertEquals( 20, has_action( 'customize_register', array( $posts, 'customize_register' ) ) );
+		$this->assertEquals( 20, has_action( 'customize_register', array( $posts, 'register_constructs' ) ) );
+		$this->assertEquals( 100, has_action( 'init', array( $posts, 'register_meta' ) ) );
 		$this->assertEquals( 10, has_action( 'customize_dynamic_setting_args', array( $posts, 'filter_customize_dynamic_setting_args' ) ) );
 		$this->assertEquals( 5, has_action( 'customize_dynamic_setting_class', array( $posts, 'filter_customize_dynamic_setting_class' ) ) );
 		$this->assertEquals( 10, has_action( 'customize_save_response', array( $posts, 'filter_customize_save_response_for_conflicts' ) ) );
@@ -157,11 +163,80 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test register_post_type_meta().
+	 *
+	 * @see WP_Customize_Posts::register_meta()
+	 */
+	public function test_register_meta() {
+		$count = did_action( 'customize_posts_register_meta' );
+		do_action( 'init' );
+		$this->assertEquals( $count + 1, did_action( 'customize_posts_register_meta' ) );
+	}
+
+	/**
+	 * Test auth_post_meta_callback().
+	 *
+	 * @see WP_Customize_Posts::auth_post_meta_callback()
+	 */
+	public function test_auth_post_meta_callback() {
+		$posts_component = $this->posts;
+		unset( $GLOBALS['wp_customize'] );
+		$this->assertFalse( $posts_component->auth_post_meta_callback( false, 'foo', $this->post_id, $this->user_id ) );
+		$GLOBALS['wp_customize'] = $posts_component->manager;
+
+		$this->assertFalse( $posts_component->auth_post_meta_callback( false, 'foo', -123, $this->user_id ) );
+
+		$unknown_post_id = $this->factory()->post->create( array( 'post_type' => 'unknown' ) );
+		$this->assertFalse( $posts_component->auth_post_meta_callback( false, 'foo', $unknown_post_id, $this->user_id ) );
+
+		$this->assertFalse( $posts_component->auth_post_meta_callback( false, 'foo', $this->post_id, $this->user_id ) );
+
+		$posts_component->register_post_type_meta( 'post', 'foo' );
+		$this->assertTrue( $posts_component->auth_post_meta_callback( false, 'foo', $this->post_id, $this->user_id ) );
+	}
+
+	/**
+	 * Test register_post_type_meta().
+	 *
+	 * @see WP_Customize_Posts::register_post_type_meta()
+	 */
+	public function test_register_post_type_meta() {
+		add_theme_support( 'timezoning' );
+
+		$args = array(
+			'capability' => 'manage_options',
+			'theme_supports' => 'timezoning',
+			'default' => 'TZ',
+			'transport' => 'postMessage',
+			'sanitize_callback' => 'sanitize_key',
+			'sanitize_js_callback' => 'sanitize_key',
+			'setting_class' => 'WP_Customize_Postmeta_Setting',
+		);
+		$this->posts->register_post_type_meta( 'post', 'timezone', $args );
+
+		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $this->post_id ), 'timezone' );
+		$this->do_customize_boot_actions( array(
+			$setting_id => 'PDT',
+		) );
+
+		$setting = $this->wp_customize->get_setting( $setting_id );
+
+		$this->assertNotEmpty( $setting );
+		$this->assertEquals( $args['capability'], $setting->capability );
+		$this->assertEquals( $args['theme_supports'], $setting->theme_supports );
+		$this->assertEquals( $args['default'], $setting->default );
+		$this->assertEquals( $args['transport'], $setting->transport );
+		$this->assertEquals( $args['sanitize_callback'], $setting->sanitize_callback );
+		$this->assertEquals( $args['sanitize_js_callback'], $setting->sanitize_js_callback );
+		$this->assertInstanceOf( $args['setting_class'], $setting );
+	}
+
+	/**
 	 * Test that section, controls, and settings are registered.
 	 *
-	 * @see WP_Customize_Posts::customize_register()
+	 * @see WP_Customize_Posts::register_constructs()
 	 */
-	public function test_customize_register() {
+	public function test_register_constructs() {
 		add_action( 'customize_register', array( $this, 'customize_register' ), 15 );
 		add_action( 'customize_register', array( $this, 'customize_register_after' ), 25 );
 
@@ -275,5 +350,17 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		ob_end_clean();
 		$this->assertContains( '<div id="customize-posts-content-editor-pane">', $markup );
 		$this->assertContains( 'wp-editor-area', $markup );
+	}
+
+	/**
+	 * Test sanitize_post_id method.
+	 *
+	 * @see WP_Customize_Posts::sanitize_post_id()
+	 */
+	public function test_sanitize_post_id() {
+		$this->assertEquals( 2, $this->posts->sanitize_post_id( '2' ) );
+		$this->assertEquals( 10, $this->posts->sanitize_post_id( '10k' ) );
+		$this->assertEquals( 0, $this->posts->sanitize_post_id( 'no' ) );
+		$this->assertEquals( -2, $this->posts->sanitize_post_id( '-2' ) );
 	}
 }

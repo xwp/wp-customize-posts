@@ -1,6 +1,6 @@
 <?php
 /**
- * Customize Posts Plugin
+ * Tests for Customize_Posts_Plugin.
  *
  * @package WordPress
  * @subpackage Customize
@@ -141,6 +141,7 @@ class Test_Customize_Posts_Plugin extends WP_UnitTestCase {
 		$this->assertTrue( wp_script_is( 'customize-preview-posts', 'registered' ) );
 		$this->assertTrue( wp_script_is( 'edit-post-preview-admin', 'registered' ) );
 		$this->assertTrue( wp_script_is( 'edit-post-preview-customize', 'registered' ) );
+		$this->assertTrue( wp_script_is( 'customize-page-template', 'registered' ) );
 	}
 
 	/**

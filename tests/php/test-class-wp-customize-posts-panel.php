@@ -1,13 +1,13 @@
 <?php
 /**
- * WP Customize Posts Panel
+ * Tests for WP_Customize_Posts_Panel.
  *
  * @package WordPress
  * @subpackage Customize
  */
 
 /**
- * Class WP_Customize_Posts_Panel
+ * Class Test_WP_Customize_Posts_Panel
  */
 class Test_WP_Customize_Posts_Panel extends WP_UnitTestCase {
 

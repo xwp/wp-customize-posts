@@ -1,13 +1,13 @@
 <?php
 /**
- * WP Customize Dynamic Control
+ * Tests for WP_Customize_Dynamic_Control.
  *
  * @package WordPress
  * @subpackage Customize
  */
 
 /**
- * Class WP_Customize_Dynamic_Control
+ * Class Test_WP_Customize_Dynamic_Control
  */
 class Test_WP_Customize_Dynamic_Control extends WP_UnitTestCase {
 

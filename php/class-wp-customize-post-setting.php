@@ -80,15 +80,12 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	 * @param array                $args    Setting args.
 	 * @throws Exception If the ID is in an invalid format.
 	 */
-	public function __construct( $manager, $id, $args = array() ) {
+	public function __construct( WP_Customize_Manager $manager, $id, $args = array() ) {
 		if ( ! preg_match( self::SETTING_ID_PATTERN, $id, $matches ) ) {
 			throw new Exception( 'Illegal setting id: ' . $id );
 		}
 		$args['post_id'] = intval( $matches['post_id'] );
 		$args['post_type'] = $matches['post_type'];
-		if ( ! isset( $args['sanitize_callback'] ) ) {
-			$args['sanitize_callback'] = array( $this, 'sanitize' );
-		}
 		$post_type_obj = get_post_type_object( $args['post_type'] );
 		if ( ! $post_type_obj ) {
 			throw new Exception( 'Unrecognized post type: ' . $args['post_type'] );
@@ -97,9 +94,21 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			throw new Exception( 'Posts component not instantiated.' );
 		}
 		$this->posts_component = $manager->posts;
+		$update = $args['post_id'] > 0;
+		$post_type_obj = get_post_type_object( $args['post_type'] );
 
-		// Warning: the update() callback must check the cap on the specific post when update happens.
-		$args['capability'] = $post_type_obj->cap->edit_posts; // Note that the edit_post cap has already been checked in the current_user_can_edit_post() method.
+		// Determine capability for editing this.
+		$can_edit = false;
+		if ( $update ) {
+			$can_edit = $this->posts_component->current_user_can_edit_post( $args['post_id'] );
+		} elseif ( $post_type_obj ) {
+			$can_edit = current_user_can( $post_type_obj->cap->edit_posts );
+		}
+		if ( $can_edit ) {
+			$args['capability'] = $post_type_obj->cap->edit_posts;
+		} else {
+			$args['capability'] = 'do_not_allow';
+		}
 
 		parent::__construct( $manager, $id, $args );
 
@@ -128,15 +137,13 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		if ( ! $this->posts_component->current_user_can_edit_post( $post ) ) {
 			return false;
 		}
-		if ( ! isset( $this->posts_component->preview->previewed_posts[ $post->ID ] ) ) {
+		if ( $post->ID !== $this->post_id ) {
 			return false;
 		}
-		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
-		$setting = $this->posts_component->manager->get_setting( $setting_id );
-		if ( ! $setting || ! ( $setting instanceof WP_Customize_Post_Setting ) ) {
+		if ( ! isset( $this->posts_component->preview->previewed_post_settings[ $post->ID ] ) ) {
 			return false;
 		}
-		$post_value = $setting->post_value( null );
+		$post_value = $this->post_value( null );
 		if ( ! is_array( $post_value ) ) {
 			return false;
 		}
@@ -171,8 +178,12 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		 * For some reason WordPress stores newlines in DB as CRLF when saving via
 		 * the WP Admin, but normally a textarea just represents newlines as LF.
 		 */
-		$post_data['post_content'] = preg_replace( '/\r\n/', "\n", $post_data['post_content'] );
-		$post_data['post_excerpt'] = preg_replace( '/\r\n/', "\n", $post_data['post_excerpt'] );
+		if ( isset( $post_data['post_content'] ) ) {
+			$post_data['post_content'] = preg_replace( '/\r\n/', "\n", $post_data['post_content'] );
+		}
+		if ( isset( $post_data['post_excerpt'] ) ) {
+			$post_data['post_excerpt'] = preg_replace( '/\r\n/', "\n", $post_data['post_excerpt'] );
+		}
 
 		return $post_data;
 	}
@@ -191,7 +202,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		}
 
 		if ( $this->is_previewed ) {
-			$post_data = array_merge( $post_data, $this->post_value() );
+			$post_data = array_merge( $post_data, $this->post_value( array() ) );
 		}
 
 		$post_data = $this->normalize_post_data( $post_data );
@@ -238,12 +249,14 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	 *
 	 * @see wp_insert_post()
 	 *
-	 * @param string $post_data   The value to sanitize.
-	 * @param bool   $strict      Whether validation is being done. This is part of the proposed patch in in #34893.
-	 * @return string|array|null Null if an input isn't valid, otherwise the sanitized value.
+	 * @param array $post_data   The value to sanitize.
+	 * @param bool  $strict      Whether validation is being done. This is part of the proposed patch in in #34893.
+	 * @return string|array|null|WP_Error Null if an input isn't valid, otherwise the sanitized value. WP_Error returned if `$strict`.
 	 */
 	public function sanitize( $post_data, $strict = false ) {
 		global $wpdb;
+
+		$post_data = array_merge( $this->default, $post_data );
 
 		// The customize_validate_settings action is part of the Customize Setting Validation plugin.
 		if ( ! $strict && doing_action( 'customize_validate_settings' ) ) {
@@ -251,24 +264,19 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		}
 
 		$update = ( $this->post_id > 0 );
-
 		$post_type_obj = get_post_type_object( $this->post_type );
-		$post_data['post_type'] = $this->post_type;
-
-		$can_edit = null;
-		if ( $update ) {
-			$can_edit = $this->posts_component->current_user_can_edit_post( $this->post_id );
-		} else {
-			$can_edit = $post_type_obj->cap->edit_posts;
-		}
-
-		if ( ! $can_edit ) {
+		if ( ! $this->check_capabilities() ) {
 			if ( $strict ) {
 				return new WP_Error( 'not_allowed' );
 			} else {
 				return null;
 			}
 		}
+
+		if ( $strict && ! empty( $post_data['post_type'] ) && $post_data['post_type'] !== $this->post_type ) {
+			return new WP_Error( 'bad_post_type' );
+		}
+		$post_data['post_type'] = $this->post_type;
 
 		if ( $strict && $update ) {
 			// Check post lock.
@@ -323,7 +331,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		if ( empty( $post_data['post_status'] ) ) {
 			$post_data['post_status'] = 'draft';
 		}
-		if ( 'attachment' === $this->post_type && ! in_array( $post_data, array( 'inherit', 'private', 'trash' ), true ) ) {
+		if ( 'attachment' === $this->post_type && ! in_array( $post_data['post_status'], array( 'inherit', 'private', 'trash' ), true ) ) {
 			$post_data['post_status'] = 'inherit';
 		}
 
@@ -471,7 +479,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	 * @return bool
 	 */
 	public function preview() {
-		$this->posts_component->preview->previewed_posts[ $this->post_id ] = $this;
+		$this->posts_component->preview->previewed_post_settings[ $this->post_id ] = $this;
 		$this->is_previewed = true;
 		return true;
 	}

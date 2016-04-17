@@ -18,63 +18,96 @@
 	/**
 	 * Ensure that each post setting is added and has corresponding partials.
 	 *
-	 * @param {object} postSettings
+	 * @param {object} settings
 	 */
-	api.previewPosts.handlePostSettings = function( postSettings ) {
+	api.previewPosts.addPartials = function( settings ) {
 
-		_.each( postSettings, function( value, id ) {
+		_.each( settings, function( setting, id ) {
 			var partial;
 
 			if ( ! api.has( id ) ) {
-				api.create( id, value, {
+				api.create( id, setting.value, {
 					id: id
 				} );
 			}
 
-			// Post field partial for post_title.
-			partial = new api.previewPosts.PostFieldPartial( id + '[post_title]', {
-				params: {
-					settings: [ id ]
-				}
-			} );
-			api.selectiveRefresh.partial.add( partial.id, partial );
+			if ( 'post' === setting.type ) {
 
-			// Post field partial for post_content.
-			partial = new api.previewPosts.PostFieldPartial( id + '[post_content]', {
-				params: {
-					settings: [ id ]
-				}
-			} );
-			api.selectiveRefresh.partial.add( partial.id, partial );
+				// Post field partial for post_title.
+				partial = new api.previewPosts.PostFieldPartial( id + '[post_title]', {
+					params: {
+						settings: [ id ]
+					}
+				} );
+				api.selectiveRefresh.partial.add( partial.id, partial );
 
-			// Post field partial for post_excerpt.
-			partial = new api.previewPosts.PostFieldPartial( id + '[post_excerpt]', {
-				params: {
-					settings: [ id ]
-				}
-			} );
-			api.selectiveRefresh.partial.add( partial.id, partial );
+				// Post field partial for post_content.
+				partial = new api.previewPosts.PostFieldPartial( id + '[post_content]', {
+					params: {
+						settings: [ id ]
+					}
+				} );
+				api.selectiveRefresh.partial.add( partial.id, partial );
+
+				// Post field partial for post_excerpt.
+				partial = new api.previewPosts.PostFieldPartial( id + '[post_excerpt]', {
+					params: {
+						settings: [ id ]
+					}
+				} );
+				api.selectiveRefresh.partial.add( partial.id, partial );
+
+				// Post field partial for post_author author-bio.
+				partial = new api.previewPosts.PostFieldPartial( id + '[post_author][author-bio]', {
+					params: {
+						settings: [ id ],
+						containerInclusive: true,
+						fallbackRefresh: false
+					}
+				} );
+				api.selectiveRefresh.partial.add( partial.id, partial );
+
+				// Post field partial for post_author byline.
+				partial = new api.previewPosts.PostFieldPartial( id + '[post_author][byline]', {
+					params: {
+						settings: [ id ],
+						containerInclusive: true,
+						fallbackRefresh: false
+					}
+				} );
+				api.selectiveRefresh.partial.add( partial.id, partial );
+			}
+
+			// @todo Trigger event for plugins and postmeta controllers.
 		} );
 
 	};
 
 	api.bind( 'preview-ready', function() {
 		api.preview.bind( 'active', function() {
-			var postSettings = {}, idPattern = /^post\[(.+)]\[(-?\d+)]$/;
+			var settings = {};
+
 			api.each( function( setting ) {
-				if ( idPattern.test( setting.id ) ) {
-					postSettings[ setting.id ] = setting.get();
+				var settingProperties = _wpCustomizePreviewPostsData.settingProperties[ setting.id ];
+				if ( ! settingProperties ) {
+					return;
 				}
+				settings[ setting.id ] = {
+					value: setting.get(),
+					dirty: Boolean( api.settings._dirty[ setting.id ] ),
+					type: settingProperties.type,
+					transport: settingProperties.transport
+				};
 			} );
 
-			api.previewPosts.handlePostSettings( postSettings );
-			api.preview.send( 'customized-posts', _.extend(
-				{},
-				_wpCustomizePreviewPostsData,
-				{
-					postSettings: postSettings
-				}
-			) );
+			api.previewPosts.addPartials( settings );
+
+			api.preview.send( 'customized-posts', {
+				isPostPreview: _wpCustomizePreviewPostsData.isPostPreview,
+				isSingular: _wpCustomizePreviewPostsData.isSingular,
+				queriedPostId: _wpCustomizePreviewPostsData.queriedPostId,
+				settings: settings
+			} );
 
 			/**
 			 * Focus on the post section in the Customizer pane when clicking an edit-post-link.
@@ -101,10 +134,10 @@
 				data = responseData;
 			}
 			if ( data.customize_post_settings ) {
-				api.previewPosts.handlePostSettings( data.customize_post_settings );
+				api.previewPosts.addPartials( data.customize_post_settings );
 
 				api.preview.send( 'customized-posts', {
-					postSettings: data.customize_post_settings
+					settings: data.customize_post_settings
 				} );
 			}
 		} );

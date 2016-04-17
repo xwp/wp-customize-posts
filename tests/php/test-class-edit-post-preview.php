@@ -1,13 +1,13 @@
 <?php
 /**
- * Edir Posts Preview
+ * Tests for Edit_Post_Preview.
  *
  * @package WordPress
  * @subpackage Customize
  */
 
 /**
- * Class Edit_Post_Preview
+ * Class Test_Edit_Post_Preview
  */
 class Test_Edit_Post_Preview extends WP_UnitTestCase {
 
@@ -54,6 +54,9 @@ class Test_Edit_Post_Preview extends WP_UnitTestCase {
 	 * @inheritdoc
 	 */
 	function tearDown() {
+		unset( $GLOBALS['current_screen'] );
+		unset( $GLOBALS['taxnow'] );
+		unset( $GLOBALS['typenow'] );
 		unset( $GLOBALS['screen'] );
 		unset( $GLOBALS['post'] );
 		unset( $_REQUEST['customize_preview_post_nonce'] );
@@ -171,7 +174,8 @@ class Test_Edit_Post_Preview extends WP_UnitTestCase {
 		$this->assertFalse( wp_style_is( 'edit-post-preview-customize', 'enqueued' ) );
 
 		$_GET['previewed_post'] = $this->post_id;
-		$_REQUEST['customize_preview_post_nonce'] = wp_create_nonce( 'customize_preview_post' );
+		$_REQUEST[ Edit_Post_Preview::PREVIEW_POST_NONCE_QUERY_VAR ] = 'bad';
+		$this->assertFalse( $this->preview->can_load_customize_post_preview() );
 		$this->preview->enqueue_customize_scripts();
 		$this->assertFalse( wp_script_is( 'edit-post-preview-customize', 'enqueued' ) );
 		$this->assertFalse( wp_style_is( 'edit-post-preview-customize', 'enqueued' ) );
@@ -182,7 +186,7 @@ class Test_Edit_Post_Preview extends WP_UnitTestCase {
 	 *
 	 * @see Edit_Post_Preview::enqueue_admin_scripts()
 	 */
-	public function test_enqueue_customize_scripts() {
+	public function test_enqueue_customize_scripts_success() {
 		$GLOBALS['post'] = get_post( $this->post_id );
 		$_GET['previewed_post'] = $this->post_id;
 		$_REQUEST['customize_preview_post_nonce'] = wp_create_nonce( 'customize_preview_post' );

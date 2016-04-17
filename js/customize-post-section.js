@@ -106,6 +106,9 @@
 			if ( postTypeObj.supports.excerpt ) {
 				section.addExcerptControl();
 			}
+			if ( postTypeObj.supports.author ) {
+				section.addAuthorControl();
+			}
 		},
 
 		/**
@@ -326,6 +329,45 @@
 
 			// Register.
 			section.postFieldControls.post_excerpt = control;
+			api.control.add( control.id, control );
+
+			// Remove the setting from the settingValidationMessages since it is not specific to this field.
+			if ( control.settingValidationMessages ) {
+				control.settingValidationMessages.remove( setting.id );
+				control.settingValidationMessages.add( control.id, new api.Value( '' ) );
+			}
+			return control;
+		},
+
+		/**
+		 * Add post author control.
+		 *
+		 * @returns {wp.customize.Control}
+		 */
+		addAuthorControl: function() {
+			var section = this, control, setting = api( section.id );
+			control = new api.controlConstructor.dynamic( section.id + '[post_author]', {
+				params: {
+					section: section.id,
+					priority: 1,
+					label: api.Posts.data.l10n.fieldAuthorLabel,
+					active: true,
+					settings: {
+						'default': setting.id
+					},
+					field_type: 'select',
+					setting_property: 'post_author',
+					choices: api.Posts.data.authorChoices
+				}
+			} );
+
+			// Override preview trying to de-activate control not present in preview context.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.post_author = control;
 			api.control.add( control.id, control );
 
 			// Remove the setting from the settingValidationMessages since it is not specific to this field.
