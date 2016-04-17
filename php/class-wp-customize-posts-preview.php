@@ -182,9 +182,17 @@ final class WP_Customize_Posts_Preview {
 			||
 			// Abort if the post has no meta previewed.
 			! isset( $this->previewed_postmeta_settings[ $object_id ] )
+			||
+			( '' !== $meta_key && ! isset( $this->previewed_postmeta_settings[ $object_id ][ $meta_key ] ) )
 		);
 		if ( $should_short_circuit ) {
-			return $single ? $value : array( $value );
+			if ( is_null( $value ) ) {
+				return null;
+			} elseif ( ! $single && ! is_array( $value ) ) {
+				return array( $value );
+			} else {
+				return $value;
+			}
 		}
 
 		/**
@@ -196,12 +204,6 @@ final class WP_Customize_Posts_Preview {
 		$post_values = $this->component->manager->unsanitized_post_values();
 
 		if ( '' !== $meta_key ) {
-
-			// Abort if this meta is not previewed meta for this post.
-			if ( ! isset( $this->previewed_postmeta_settings[ $object_id ][ $meta_key ] ) ) {
-				return $single ? $value : array( $value );
-			}
-
 			$postmeta_setting = $this->previewed_postmeta_settings[ $object_id ][ $meta_key ];
 			$can_preview = (
 				$postmeta_setting
@@ -227,11 +229,9 @@ final class WP_Customize_Posts_Preview {
 				}
 				$meta_value = $postmeta_setting->post_value();
 				$meta_value = maybe_serialize( $meta_value );
-				if ( $single ) {
-					$meta_values[ $postmeta_setting->meta_key ] = $meta_value;
-				} else {
-					$meta_values[ $postmeta_setting->meta_key ] = array( $meta_value );
-				}
+
+				// Note that $single has no effect when $meta_key is ''.
+				$meta_values[ $postmeta_setting->meta_key ] = array( $meta_value );
 			}
 			return $meta_values;
 		}
@@ -240,8 +240,8 @@ final class WP_Customize_Posts_Preview {
 	/**
 	 * Recognize partials for posts appearing in preview.
 	 *
-	 * @param array  $args Partial args.
-	 * @param string $id   Partial ID.
+	 * @param false|array $args Partial args.
+	 * @param string      $id   Partial ID.
 	 *
 	 * @return array|false
 	 */

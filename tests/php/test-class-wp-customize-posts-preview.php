@@ -236,7 +236,65 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	 * @see WP_Customize_Posts_Preview::filter_get_post_meta_to_preview()
 	 */
 	public function test_filter_get_post_meta_to_preview() {
-		$this->markTestIncomplete( __METHOD__ );
+		$preview = $this->posts_component->preview;
+		$meta_key = 'foo_key';
+		$original_meta_value = array( 'original_value' => 1 );
+		$preview_meta_value = array( 'override_value'=> 2  );
+		update_post_meta( $this->post_id, $meta_key, $original_meta_value );
+		$this->assertEquals(
+			get_post_meta( $this->post_id, '', true ),
+			get_post_meta( $this->post_id, '', false )
+		);
+		$meta_values = get_post_meta( $this->post_id, '', false );
+		$this->assertEquals( array( maybe_serialize( $original_meta_value ) ), $meta_values[ $meta_key ] );
+		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $this->post_id ), $meta_key );
+		$other_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $this->post_id ), 'other' );
+		$this->posts_component->register_post_type_meta( 'post', $meta_key );
+		$this->posts_component->register_post_type_meta( 'post', 'other' );
+		$preview->filter_get_post_meta_to_add_dynamic_postmeta_settings( null, $this->post_id, 'other' );
+		$other_setting = $this->posts_component->manager->get_setting( $other_setting_id );
+		$this->assertNotEmpty( $other_setting );
+		$this->posts_component->manager->set_post_value( $other_setting_id, 'other' );
+		$other_setting->preview();
+
+		// Test short circuiting
+		$this->assertEquals( 'foo_val', $preview->filter_get_post_meta_to_preview( 'foo_val', $this->post_id, $meta_key, true ) );
+		$this->assertEquals( array( 'foo_val' ), $preview->filter_get_post_meta_to_preview( 'foo_val', $this->post_id, $meta_key, false ) );
+		$this->assertEquals( null, $preview->filter_get_post_meta_to_preview( null, $this->post_id, $meta_key, true ) );
+		$preview->filter_get_post_meta_to_add_dynamic_postmeta_settings( null, $this->post_id, $meta_key );
+
+		// Test non-preview without post value.
+		$setting = $this->posts_component->manager->get_setting( $setting_id );
+		$this->assertNotEmpty( $setting );
+		$this->assertNull( $preview->filter_get_post_meta_to_preview( null, $this->post_id, $meta_key, true ) );
+		$this->assertNull( $preview->filter_get_post_meta_to_preview( null, $this->post_id, $meta_key, false ) );
+		$this->assertEquals( array( 'test' ), $preview->filter_get_post_meta_to_preview( 'test', $this->post_id, $meta_key, false ) );
+		$this->assertEquals( 'test', $preview->filter_get_post_meta_to_preview( 'test', $this->post_id, $meta_key, true ) );
+
+		// Test preview without post value.
+		$setting->preview();
+		wp_set_current_user( 0 );
+		$this->assertNull( $preview->filter_get_post_meta_to_preview( null, $this->post_id, $meta_key, true ) );
+		$meta_values = $preview->filter_get_post_meta_to_preview( null, $this->post_id, '', true );
+		$this->assertArrayHasKey( $meta_key, $meta_values );
+		$this->assertEquals( array( maybe_serialize( $original_meta_value ) ), $meta_values[ $meta_key ] );
+		wp_set_current_user( $this->user_id );
+		$this->assertNull( $preview->filter_get_post_meta_to_preview( null, $this->post_id, $meta_key, true ) );
+		$meta_values = $preview->filter_get_post_meta_to_preview( null, $this->post_id, '', true );
+		$this->assertEquals( array( maybe_serialize( $original_meta_value ) ), $meta_values[ $meta_key ] );
+
+		// Test with post value.
+		$this->posts_component->manager->set_post_value( $setting_id, $preview_meta_value );
+		wp_set_current_user( 0 );
+		$this->assertNull( $preview->filter_get_post_meta_to_preview( null, $this->post_id, $meta_key, true ) );
+		$meta_values = $preview->filter_get_post_meta_to_preview( null, $this->post_id, '', true );
+		$this->assertArrayHasKey( $meta_key, $meta_values );
+		$this->assertEquals( array( maybe_serialize( $original_meta_value ) ), $meta_values[ $meta_key ] );
+
+		wp_set_current_user( $this->user_id );
+		$this->assertEquals( $preview_meta_value, $preview->filter_get_post_meta_to_preview( null, $this->post_id, $meta_key, true ) );
+		$meta_values = $preview->filter_get_post_meta_to_preview( null, $this->post_id, '', true );
+		$this->assertEquals( array( maybe_serialize( $preview_meta_value ) ), $meta_values[ $meta_key ] );
 	}
 
 	/**
@@ -245,7 +303,18 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	 * @see WP_Customize_Posts_Preview::filter_customize_dynamic_partial_args()
 	 */
 	public function test_filter_customize_dynamic_partial_args() {
-		$this->markTestIncomplete( __METHOD__ );
+		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
+		$post = get_post( $this->post_id );
+		$this->assertFalse( $preview->filter_customize_dynamic_partial_args( false, 'no' ) );
+
+		$partial_id = sprintf( 'post[%s][%d][%s]', $post->post_type, $post->ID, 'post_author' );
+		$args = $preview->filter_customize_dynamic_partial_args( false, $partial_id );
+		$this->assertInternalType( 'array', $args );
+		$this->assertEquals( WP_Customize_Post_Field_Partial::TYPE, $args['type'] );
+
+		$args = $preview->filter_customize_dynamic_partial_args( array( 'other' => 'one' ), $partial_id );
+		$this->assertEquals( WP_Customize_Post_Field_Partial::TYPE, $args['type'] );
+		$this->assertEquals( 'one', $args['other'] );
 	}
 
 	/**
@@ -254,7 +323,14 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	 * @see WP_Customize_Posts_Preview::filter_customize_dynamic_partial_class()
 	 */
 	public function test_filter_customize_dynamic_partial_class() {
-		$this->markTestIncomplete( __METHOD__ );
+		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
+		$post = get_post( $this->post_id );
+		$partial_id = sprintf( 'post[%s][%d][%s]', $post->post_type, $post->ID, 'post_author' );
+		$class = $preview->filter_customize_dynamic_partial_class( 'WP_Customize_Partial', $partial_id, array( 'type' => 'default' ) );
+		$this->assertEquals( 'WP_Customize_Partial', $class );
+
+		$class = $preview->filter_customize_dynamic_partial_class( 'WP_Customize_Partial', $partial_id, array( 'type' => 'post_field' ) );
+		$this->assertEquals( 'WP_Customize_Post_Field_Partial', $class );
 	}
 
 	/**
@@ -263,7 +339,20 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	 * @see WP_Customize_Posts_Preview::filter_get_edit_post_link()
 	 */
 	public function test_filter_get_edit_post_link() {
-		$this->markTestIncomplete( __METHOD__ );
+		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
+
+		$edit_post_link = home_url( '?edit-me' );
+
+		wp_set_current_user( 0 );
+		$this->assertNull( $preview->filter_get_edit_post_link( $edit_post_link, -1 ) );
+		$this->assertNull( $preview->filter_get_edit_post_link( $edit_post_link, $this->post_id ) );
+
+		wp_set_current_user( $this->user_id );
+		$this->assertNull( $preview->filter_get_edit_post_link( $edit_post_link, $this->post_id ) );
+
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $this->post_id ) );
+		$preview->component->manager->add_setting( new WP_Customize_Post_Setting( $preview->component->manager, $setting_id ) );
+		$this->assertEquals( $edit_post_link, $preview->filter_get_edit_post_link( $edit_post_link, $this->post_id ) );
 	}
 
 	/**
@@ -272,7 +361,10 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	 * @see WP_Customize_Posts_Preview::filter_edit_post_link()
 	 */
 	public function test_filter_edit_post_link() {
-		$this->markTestIncomplete( __METHOD__ );
+		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
+		$link = '<a class="edit-me" href="' . esc_url( home_url( '?edit-me' ) ) . '">Edit</a>';
+		$contained = sprintf( ' data-customize-post-setting-id="%s"', WP_Customize_Post_Setting::get_post_setting_id( get_post( $this->post_id ) ) );
+		$this->assertContains( $contained, $preview->filter_edit_post_link( $link, $this->post_id ) );
 	}
 
 	/**
@@ -281,7 +373,41 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	 * @see WP_Customize_Posts_Preview::export_preview_data()
 	 */
 	public function test_export_preview_data() {
-		$this->markTestIncomplete( __METHOD__ );
+		$handle = 'customize-preview-posts';
+		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
+
+		$preview->export_preview_data();
+		$this->assertNotEmpty( preg_match( '/var\s*_wpCustomizePreviewPostsData\s*=\s*(?P<json>{.+});/', wp_scripts()->get_data( $handle, 'data' ), $matches ) );
+		$data = json_decode( $matches['json'], true );
+		$this->assertInternalType( 'array', $data );
+		$this->assertArrayHasKey( 'isPostPreview', $data );
+		$this->assertArrayHasKey( 'isSingular', $data );
+		$this->assertArrayHasKey( 'queriedPostId', $data );
+		$this->assertArrayHasKey( 'settingProperties', $data );
+
+		$this->assertFalse( $data['isPostPreview'] );
+		$this->assertFalse( $data['isSingular'] );
+		$this->assertEmpty( $data['queriedPostId'] );
+		$this->assertEmpty( $data['settingProperties'] );
+
+		query_posts( 'p=' . $this->post_id );
+		$preview->export_preview_data();
+		$this->assertNotEmpty( preg_match( '/var\s*_wpCustomizePreviewPostsData\s*=\s*(?P<json>{.+});/', wp_scripts()->get_data( $handle, 'data' ), $matches ) );
+		$data = json_decode( $matches['json'], true );
+		$this->assertTrue( $data['isSingular'] );
+		$this->assertFalse( $data['isPostPreview'] );
+		$this->assertEquals( $this->post_id, $data['queriedPostId'] );
+
+		query_posts( array( 'p' => $this->post_id, 'preview' => true ) );
+		$preview->export_preview_data();
+		$this->assertNotEmpty( preg_match( '/var\s*_wpCustomizePreviewPostsData\s*=\s*(?P<json>{.+});/', wp_scripts()->get_data( $handle, 'data' ), $matches ) );
+		$data = json_decode( $matches['json'], true );
+		$this->assertTrue( $data['isSingular'] );
+		$this->assertTrue( $data['isPostPreview'] );
+		$this->assertEquals( $this->post_id, $data['queriedPostId'] );
+
+		// @todo check settingProperties
+
 	}
 
 	/**
