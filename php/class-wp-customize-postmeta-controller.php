@@ -26,6 +26,15 @@ abstract class WP_Customize_Postmeta_Controller {
 	public $theme_supports;
 
 	/**
+	 * Post types for which the meta should be registered.
+	 *
+	 * This will be intersected with the post types matching post_type_supports.
+	 *
+	 * @var array
+	 */
+	public $post_types = array();
+
+	/**
 	 * Post type support for the postmeta.
 	 *
 	 * @var string
@@ -81,27 +90,37 @@ abstract class WP_Customize_Postmeta_Controller {
 	 * Register meta.
 	 *
 	 * @param WP_Customize_Posts $posts_component Component.
+	 * @return int The number of post types for which the meta was registered.
 	 */
 	public function register_meta( WP_Customize_Posts $posts_component ) {
 
 		// Short-circuit if theme support is not present.
 		if ( isset( $this->theme_supports ) && ! current_theme_supports( $this->theme_supports ) ) {
-			return;
+			return 0;
 		}
 
+		$count = 0;
 		register_meta( 'post', $this->meta_key, array( $this, 'sanitize_value' ) );
 
-		if ( ! empty( $this->post_type_supports ) ) {
-			foreach ( get_post_types_by_support( $this->post_type_supports ) as $post_type ) {
-				$setting_args = array(
-					'sanitize_callback' => array( $this, 'sanitize_setting' ),
-					'transport' => $this->setting_transport,
-					'theme_supports' => $this->theme_supports,
-					'default' => $this->default,
-				);
-				$posts_component->register_post_type_meta( $post_type, $this->meta_key, $setting_args );
-			}
+		if ( ! empty( $this->post_types ) && ! empty( $this->post_type_supports ) ) {
+			$post_types = array_intersect( $this->post_types, get_post_types_by_support( $this->post_type_supports ) );
+		} elseif ( ! empty( $this->post_type_supports ) ) {
+			$post_types = get_post_types_by_support( $this->post_type_supports );
+		} else {
+			$post_types = $this->post_types;
 		}
+
+		foreach ( $post_types as $post_type ) {
+			$setting_args = array(
+				'sanitize_callback' => array( $this, 'sanitize_setting' ),
+				'transport' => $this->setting_transport,
+				'theme_supports' => $this->theme_supports,
+				'default' => $this->default,
+			);
+			$posts_component->register_post_type_meta( $post_type, $this->meta_key, $setting_args );
+			$count += 1;
+		}
+		return $count;
 	}
 
 	/**
