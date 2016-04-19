@@ -52,7 +52,7 @@ class WP_Customize_Post_Discussion_Fields_Control extends WP_Customize_Dynamic_C
 					data-off-value="closed"
 					data-customize-setting-property-link="comment_status"
 				/>
-				<?php esc_html_e( 'Allow comments.', 'customize-posts' ) ?>
+				<?php esc_html_e( 'Allow comments.', 'customize-posts' ); ?>
 			</label>
 			</p>
 		<# } #>
@@ -69,13 +69,7 @@ class WP_Customize_Post_Discussion_Fields_Control extends WP_Customize_Dynamic_C
 					data-off-value="closed"
 					data-customize-setting-property-link="ping_status"
 				/>
-				<?php
-					echo sprintf(
-						/* translators: %s: Codex URL */
-						__( 'Allow <a href="%s">trackbacks and pingbacks</a> on this page.', 'customize-posts' ),
-						'https://codex.wordpress.org/Introduction_to_Blogging#Managing_Comments'
-					); // WPCS: xss ok.
-				?>
+				<?php esc_html_e( 'Allow trackbacks and pingbacks on this page.', 'customize-posts' ); ?>
 			</label>
 			</p>
 		<# } #>
