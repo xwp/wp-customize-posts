@@ -84,7 +84,7 @@
 					if ( ! this.params.fallbackRefresh && 0 === this.placements().length && ! api.previewPosts.data.isSingular ) {
 						api.selectiveRefresh.requestFullRefresh();
 					} else {
-						api.previewPosts.PostFieldPartial.refresh.call( this );
+						api.previewPosts.PostFieldPartial.prototype.refresh.call( this );
 					}
 				};
 				api.selectiveRefresh.partial.add( partial.id, partial );
