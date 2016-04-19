@@ -130,11 +130,8 @@
 			if ( postTypeObj.supports.excerpt ) {
 				section.addExcerptControl();
 			}
-			if ( postTypeObj.supports.comments ) {
-				section.addCommentsControl();
-			}
-			if ( postTypeObj.supports.trackbacks ) {
-				section.addTrackbacksControl();
+			if ( postTypeObj.supports.comments || postTypeObj.supports.trackbacks ) {
+				section.addDiscussionFieldsControl();
 			}
 			if ( postTypeObj.supports.author ) {
 				section.addAuthorControl();
@@ -370,27 +367,23 @@
 		},
 
 		/**
-		 * Add comments control.
+		 * Add discussion fields (comments and ping status fields) control.
 		 *
 		 * @returns {wp.customize.Control}
 		 */
-		addCommentsControl: function() {
-			var section = this, control, setting = api( section.id );
-			control = new api.controlConstructor.dynamic( section.id + '[comment_status]', {
+		addDiscussionFieldsControl: function() {
+			var section = this, postTypeObj, control, setting = api( section.id );
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+			control = new api.controlConstructor.post_discussion_fields( section.id + '[discussion_fields]', {
 				params: {
 					section: section.id,
 					priority: 1,
-					label: api.Posts.data.l10n.fieldCommentsLabel,
+					label: api.Posts.data.l10n.fieldDiscussionLabel,
 					active: true,
 					settings: {
 						'default': setting.id
 					},
-					input_attrs: {
-						'data-on-value': 'open',
-						'data-off-value': 'closed'
-					},
-					field_type: 'checkbox',
-					setting_property: 'comment_status'
+					post_type_supports: postTypeObj.supports
 				}
 			} );
 
@@ -400,49 +393,7 @@
 			};
 
 			// Register.
-			section.postFieldControls.comment_status = control;
-			api.control.add( control.id, control );
-
-			// Remove the setting from the settingValidationMessages since it is not specific to this field.
-			if ( control.settingValidationMessages ) {
-				control.settingValidationMessages.remove( setting.id );
-				control.settingValidationMessages.add( control.id, new api.Value( '' ) );
-			}
-			return control;
-		},
-
-		/**
-		 * Add trackbacks control.
-		 *
-		 * @returns {wp.customize.Control}
-		 */
-		addTrackbacksControl: function() {
-			var section = this, control, setting = api( section.id );
-			control = new api.controlConstructor.dynamic( section.id + '[ping_status]', {
-				params: {
-					section: section.id,
-					priority: 1,
-					label: api.Posts.data.l10n.fieldTrackbacksLabel,
-					active: true,
-					settings: {
-						'default': setting.id
-					},
-					input_attrs: {
-						'data-on-value': 'open',
-						'data-off-value': 'closed'
-					},
-					field_type: 'checkbox',
-					setting_property: 'ping_status'
-				}
-			} );
-
-			// Override preview trying to de-activate control not present in preview context.
-			control.active.validate = function() {
-				return true;
-			};
-
-			// Register.
-			section.postFieldControls.ping_status = control;
+			section.postFieldControls.post_discussion_fields = control;
 			api.control.add( control.id, control );
 
 			// Remove the setting from the settingValidationMessages since it is not specific to this field.

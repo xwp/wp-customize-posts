@@ -60,6 +60,7 @@ final class WP_Customize_Posts {
 		require_once dirname( __FILE__ ) . '/class-wp-customize-posts-panel.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-section.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-dynamic-control.php';
+		require_once dirname( __FILE__ ) . '/class-wp-customize-post-discussion-fields-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-setting.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-setting.php';
 		require_once ABSPATH . WPINC . '/customize/class-wp-customize-partial.php';
@@ -228,6 +229,7 @@ final class WP_Customize_Posts {
 	public function register_constructs() {
 		$this->manager->register_section_type( 'WP_Customize_Post_Section' );
 		$this->manager->register_control_type( 'WP_Customize_Dynamic_Control' );
+		$this->manager->register_control_type( 'WP_Customize_Post_Discussion_Fields_Control' );
 
 		$panel_priority = 900; // Before widgets.
 
@@ -453,12 +455,7 @@ final class WP_Customize_Posts {
 				'fieldTitleLabel' => __( 'Title', 'customize-posts' ),
 				'fieldContentLabel' => __( 'Content', 'customize-posts' ),
 				'fieldExcerptLabel' => __( 'Excerpt', 'customize-posts' ),
-				'fieldCommentsLabel' => __( 'Allow comments.', 'customize-posts' ),
-				'fieldTrackbacksLabel' => sprintf(
-					/* translators: %s: Codex URL */
-					__( 'Allow <a href="%s">trackbacks and pingbacks</a> on this page.' ),
-					'https://codex.wordpress.org/Introduction_to_Blogging#Managing_Comments'
-				),
+				'fieldDiscussionLabel' => __( 'Discussion', 'customize-posts' ),
 				'fieldAuthorLabel' => __( 'Author', 'customize-posts' ),
 				'noTitle' => __( '(no title)', 'customize-posts' ),
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),

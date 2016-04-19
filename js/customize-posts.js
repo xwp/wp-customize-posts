@@ -28,6 +28,14 @@
 	api.panelConstructor.posts = component.PostsPanel;
 	api.sectionConstructor.post = component.PostSection;
 
+	api.controlConstructor.post_discussion_fields = api.controlConstructor.dynamic.extend({
+		initialize: function( id, args ) {
+			args.params.type = 'post_discussion_fields';
+			args.params.field_type = 'checkbox';
+			api.controlConstructor.dynamic.prototype.initialize.call( this, id, args );
+		}
+	});
+
 	/*
 	 * Create initial post type-specific constructors for panel and sections.
 	 * Note plugins can override the panel and section constructors by making customize-posts a script dependency.
