@@ -3,11 +3,35 @@
 
 (function( api, $ ) {
 	'use strict';
-	var defaultSectionPriorities = {};
+	var defaultSectionPriorities = {}, checkboxSynchronizerUpdate, checkboxSynchronizerRefresh;
 
 	if ( ! api.Posts ) {
 		api.Posts = {};
 	}
+
+	/*
+	 * Extend the checkbox synchronizer to support an on/off value instead of boolean.
+	 */
+	checkboxSynchronizerUpdate = api.Element.synchronizer.checkbox.update;
+	checkboxSynchronizerRefresh = api.Element.synchronizer.checkbox.refresh;
+	_.extend( api.Element.synchronizer.checkbox, {
+		update: function( to ) {
+			var value;
+			if ( ! _.isUndefined( this.element.data( 'on-value' ) ) && ! _.isUndefined( this.element.data( 'off-value' ) ) ) {
+				value = to === this.element.data( 'on-value' );
+			} else {
+				value = to;
+			}
+			checkboxSynchronizerUpdate.call( this, value );
+		},
+		refresh: function() {
+			if ( ! _.isUndefined( this.element.data( 'on-value' ) ) && ! _.isUndefined( this.element.data( 'off-value' ) ) ) {
+				return this.element.prop( 'checked' ) ? this.element.data( 'on-value' ) : this.element.data( 'off-value' );
+			} else {
+				return checkboxSynchronizerRefresh.call( this );
+			}
+		}
+	} );
 
 	/**
 	 * A section for managing a post.
@@ -361,6 +385,10 @@
 					settings: {
 						'default': setting.id
 					},
+					input_attrs: {
+						'data-on-value': 'open',
+						'data-off-value': 'closed'
+					},
 					field_type: 'checkbox',
 					setting_property: 'comment_status'
 				}
@@ -398,6 +426,10 @@
 					active: true,
 					settings: {
 						'default': setting.id
+					},
+					input_attrs: {
+						'data-on-value': 'open',
+						'data-off-value': 'closed'
 					},
 					field_type: 'checkbox',
 					setting_property: 'ping_status'
