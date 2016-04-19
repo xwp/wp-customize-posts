@@ -157,7 +157,7 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 			} else {
 				$rendered = '';
 			}
-		} else if ( 'comment_status' === $partial->field_id && 'comments-link' === $this->placement && ! is_single() && ! post_password_required() && comments_open() ) {
+		} else if ( 'comment_status' === $partial->field_id && 'comments-link' === $this->placement && ! is_single() && ! post_password_required() && ( comments_open() || get_comments_number() ) ) {
 			ob_start();
 			/* translators: %s: post title */
 			comments_popup_link( sprintf( __( 'Leave a comment<span class="screen-reader-text"> on %s</span>', 'customize-posts' ), get_the_title() ) );
