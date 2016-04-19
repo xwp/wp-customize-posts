@@ -5,6 +5,9 @@
 	if ( ! api.previewPosts ) {
 		api.previewPosts = {};
 	}
+	if ( ! api.previewPosts.data ) {
+		api.previewPosts.data = {};
+	}
 
 	/**
 	 * Prevent shift-clicking from inadvertently causing text selection.
@@ -115,8 +118,10 @@
 		api.preview.bind( 'active', function() {
 			var settings = {};
 
+			_.extend( api.previewPosts.data, _wpCustomizePreviewPostsData );
+
 			api.each( function( setting ) {
-				var settingProperties = _wpCustomizePreviewPostsData.settingProperties[ setting.id ];
+				var settingProperties = api.previewPosts.data.settingProperties[ setting.id ];
 				if ( ! settingProperties ) {
 					return;
 				}
@@ -131,9 +136,9 @@
 			api.previewPosts.addPartials( settings );
 
 			api.preview.send( 'customized-posts', {
-				isPostPreview: _wpCustomizePreviewPostsData.isPostPreview,
-				isSingular: _wpCustomizePreviewPostsData.isSingular,
-				queriedPostId: _wpCustomizePreviewPostsData.queriedPostId,
+				isPostPreview: api.previewPosts.data.isPostPreview,
+				isSingular: api.previewPosts.data.isSingular,
+				queriedPostId: api.previewPosts.data.queriedPostId,
 				settings: settings
 			} );
 
