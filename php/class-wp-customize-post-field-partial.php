@@ -90,9 +90,6 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 			}
 			if ( ! isset( $args['fallback_refresh'] ) ) {
 				$args['fallback_refresh'] = false;
-				if ( 'comments-area' === $args['placement'] && is_singular() ) {
-					//$args['fallback_refresh'] = true;
-				}
 			}
 		}
 
