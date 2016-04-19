@@ -148,7 +148,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_title]', {
 				params: {
 					section: section.id,
-					priority: 1,
+					priority: 10,
 					label: api.Posts.data.l10n.fieldTitleLabel,
 					active: true,
 					settings: {
@@ -189,7 +189,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
 				params: {
 					section: section.id,
-					priority: 1,
+					priority: 20,
 					label: api.Posts.data.l10n.fieldContentLabel,
 					active: true,
 					settings: {
@@ -338,7 +338,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_excerpt]', {
 				params: {
 					section: section.id,
-					priority: 1,
+					priority: 30,
 					label: api.Posts.data.l10n.fieldExcerptLabel,
 					active: true,
 					settings: {
@@ -377,7 +377,7 @@
 			control = new api.controlConstructor.post_discussion_fields( section.id + '[discussion_fields]', {
 				params: {
 					section: section.id,
-					priority: 1,
+					priority: 40,
 					label: api.Posts.data.l10n.fieldDiscussionLabel,
 					active: true,
 					settings: {
@@ -414,7 +414,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_author]', {
 				params: {
 					section: section.id,
-					priority: 1,
+					priority: 50,
 					label: api.Posts.data.l10n.fieldAuthorLabel,
 					active: true,
 					settings: {
