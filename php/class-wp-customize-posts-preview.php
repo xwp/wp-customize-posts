@@ -147,7 +147,7 @@ final class WP_Customize_Posts_Preview {
 		if ( isset( $this->previewed_post_settings[ $post_id ] ) ) {
 			$setting = $this->previewed_post_settings[ $post_id ];
 			$post_data = $setting->value();
-			$open = $post_data['comment_status'];
+			$open = 'open' === $post_data['comment_status'];
 		}
 		return $open;
 	}
@@ -165,7 +165,7 @@ final class WP_Customize_Posts_Preview {
 		if ( isset( $this->previewed_post_settings[ $post_id ] ) ) {
 			$setting = $this->previewed_post_settings[ $post_id ];
 			$post_data = $setting->value();
-			$open = $post_data['ping_status'];
+			$open = 'open' === $post_data['ping_status'];
 		}
 		return $open;
 	}
