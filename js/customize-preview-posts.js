@@ -80,6 +80,13 @@
 						fallbackRefresh: false
 					}
 				} );
+				partial.fallback = function() {
+					if ( ! this.params.fallbackRefresh && 0 === this.placements().length ) {
+						api.selectiveRefresh.requestFullRefresh();
+					} else {
+						api.previewPosts.PostFieldPartial.refresh.call( this );
+					}
+				};
 				api.selectiveRefresh.partial.add( partial.id, partial );
 
 				// Post field partial for ping_status.
