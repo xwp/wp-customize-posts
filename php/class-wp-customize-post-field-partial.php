@@ -148,12 +148,16 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 
 			/** This filter is documented in wp-includes/post-template.php */
 			$rendered = apply_filters( 'the_excerpt', $rendered );
-		} else if ( ( 'comment_status' === $partial->field_id && 'comments-area' === $this->placement && is_singular() ) || 'ping_status' === $partial->field_id ) {
-			ob_start();
-			comments_template();
-			$rendered = ob_get_contents();
-			ob_end_clean();
-		} else if ( 'comment_status' === $partial->field_id && 'comments-link' === $this->placement && ! is_single() && ! post_password_required() && 'open' === $post->comment_status ) {
+		} else if ( ( 'comment_status' === $partial->field_id && 'comments-area' === $this->placement ) || ( 'ping_status' === $partial->field_id ) && is_singular() ) {
+			if ( comments_open() || get_comments_number() ) {
+				ob_start();
+				comments_template();
+				$rendered = ob_get_contents();
+				ob_end_clean();
+			} else {
+				$rendered = '';
+			}
+		} else if ( 'comment_status' === $partial->field_id && 'comments-link' === $this->placement && ! is_single() && ! post_password_required() && comments_open() ) {
 			ob_start();
 			/* translators: %s: post title */
 			comments_popup_link( sprintf( __( 'Leave a comment<span class="screen-reader-text"> on %s</span>', 'customize-posts' ), get_the_title() ) );

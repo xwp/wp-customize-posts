@@ -61,14 +61,16 @@
 				api.selectiveRefresh.partial.add( partial.id, partial );
 
 				// Post field partial for comment_status comments-area.
-				partial = new api.previewPosts.PostFieldPartial( id + '[comment_status][comments-area]', {
-					params: {
-						settings: [ id ],
-						containerInclusive: true,
-						fallbackRefresh: true
-					}
-				} );
-				api.selectiveRefresh.partial.add( partial.id, partial );
+				if ( api.previewPosts.data.isSingular ) {
+					partial = new api.previewPosts.PostFieldPartial( id + '[comment_status][comments-area]', {
+						params: {
+							settings: [ id ],
+							containerInclusive: true,
+							fallbackRefresh: true
+						}
+					} );
+					api.selectiveRefresh.partial.add( partial.id, partial );
+				}
 
 				// Post field partial for comment_status comments-link.
 				partial = new api.previewPosts.PostFieldPartial( id + '[comment_status][comments-link]', {
