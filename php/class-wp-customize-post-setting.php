@@ -437,11 +437,6 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			}
 		}
 
-		// Hide the comment form.
-		if ( 'closed' === $post_data['comment_status'] ) {
-			add_filter( 'comments_open', array( $this, 'status_closed' ), 10, 2 );
-		}
-
 		// Ping status.
 		if ( empty( $post_data['ping_status'] ) ) {
 			if ( $update ) {
@@ -449,11 +444,6 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			} else {
 				$post_data['ping_status'] = get_default_comment_status( $this->post_type, 'pingback' );
 			}
-		}
-
-		// Hide the pingbacks.
-		if ( 'closed' === $post_data['ping_status'] ) {
-			add_filter( 'pings_open', array( $this, 'status_closed' ), 10, 2 );
 		}
 
 		if ( empty( $post_data['post_author'] ) || ( ! current_user_can( $post_type_obj->cap->edit_others_posts ) && intval( $post_data['post_author'] ) !== get_current_user_id() ) ) {

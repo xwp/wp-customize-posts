@@ -22,7 +22,7 @@ final class WP_Customize_Posts_Preview {
 	public $component;
 
 	/**
-	 * Previewed post settings by ID.
+	 * Previewed post settings by post ID.
 	 *
 	 * @var WP_Customize_Post_Setting[]
 	 */
@@ -57,6 +57,8 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'customize_dynamic_partial_class', array( $this, 'filter_customize_dynamic_partial_class' ), 10, 3 );
 		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_add_dynamic_post_settings_and_preview' ), 1000 );
+		add_filter( 'comments_open', array( $this, 'filter_preview_comments_open' ), 10, 2 );
+		add_filter( 'pings_open', array( $this, 'filter_preview_pings_open' ), 10, 2 );
 		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_preview' ), 1000, 4 );
 		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_add_dynamic_postmeta_settings' ), 1000, 4 );
 		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
@@ -130,6 +132,42 @@ final class WP_Customize_Posts_Preview {
 			}
 		}
 		return $posts;
+	}
+
+	/**
+	 * Filter the comments open for a previewed post.
+	 *
+	 * @param bool        $open Pings status.
+	 * @param int|WP_Post $post Post.
+	 *
+	 * @return bool Whether the comments are open.
+	 */
+	public function filter_preview_comments_open( $open, $post ) {
+		$post_id = ( $post instanceof WP_Post ? $post->ID : $post );
+		if ( isset( $this->previewed_post_settings[ $post_id ] ) ) {
+			$setting = $this->previewed_post_settings[ $post_id ];
+			$post_data = $setting->value();
+			$open = $post_data['comment_status'];
+		}
+		return $open;
+	}
+
+	/**
+	 * Filter the pings open for a previewed post.
+	 *
+	 * @param bool        $open Pings status.
+	 * @param int|WP_Post $post Post.
+	 *
+	 * @return bool Whether the pings are open.
+	 */
+	public function filter_preview_pings_open( $open, $post ) {
+		$post_id = ( $post instanceof WP_Post ? $post->ID : $post );
+		if ( isset( $this->previewed_post_settings[ $post_id ] ) ) {
+			$setting = $this->previewed_post_settings[ $post_id ];
+			$post_data = $setting->value();
+			$open = $post_data['ping_status'];
+		}
+		return $open;
 	}
 
 	/**
