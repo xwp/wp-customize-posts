@@ -90,6 +90,9 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 			}
 			if ( ! isset( $args['fallback_refresh'] ) ) {
 				$args['fallback_refresh'] = false;
+				if ( 'comments-area' === $args['placement'] && is_singular() ) {
+					//$args['fallback_refresh'] = true;
+				}
 			}
 		}
 
@@ -150,7 +153,7 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 			comments_template();
 			$rendered = ob_get_contents();
 			ob_end_clean();
-		} else if ( 'comment_status' === $partial->field_id && 'comments-link' === $this->placement && ! is_single() && ! post_password_required() && comments_open() ) {
+		} else if ( 'comment_status' === $partial->field_id && 'comments-link' === $this->placement && ! is_single() && ! post_password_required() && 'open' === $post->comment_status ) {
 			ob_start();
 			/* translators: %s: post title */
 			comments_popup_link( sprintf( __( 'Leave a comment<span class="screen-reader-text"> on %s</span>', 'customize-posts' ), get_the_title() ) );

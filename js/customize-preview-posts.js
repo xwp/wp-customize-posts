@@ -65,7 +65,7 @@
 					params: {
 						settings: [ id ],
 						containerInclusive: true,
-						fallbackRefresh: false
+						fallbackRefresh: true
 					}
 				} );
 				api.selectiveRefresh.partial.add( partial.id, partial );
@@ -83,7 +83,9 @@
 				// Post field partial for ping_status.
 				partial = new api.previewPosts.PostFieldPartial( id + '[ping_status]', {
 					params: {
-						settings: [ id ]
+						settings: [ id ],
+						containerInclusive: true,
+						fallbackRefresh: false
 					}
 				} );
 				api.selectiveRefresh.partial.add( partial.id, partial );
