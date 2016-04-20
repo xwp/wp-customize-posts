@@ -479,7 +479,11 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	 * @return bool
 	 */
 	public function preview() {
+		if ( $this->is_previewed ) {
+			return true;
+		}
 		$this->posts_component->preview->previewed_post_settings[ $this->post_id ] = $this;
+		$this->posts_component->preview->add_preview_filters();
 		$this->is_previewed = true;
 		return true;
 	}

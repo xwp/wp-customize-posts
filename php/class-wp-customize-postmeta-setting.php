@@ -197,6 +197,7 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 			$this->posts_component->preview->previewed_postmeta_settings[ $this->post_id ] = array();
 		}
 		$this->posts_component->preview->previewed_postmeta_settings[ $this->post_id ][ $this->meta_key ] = $this;
+		$this->posts_component->preview->add_preview_filters();
 		$this->is_previewed = true;
 		return true;
 	}
