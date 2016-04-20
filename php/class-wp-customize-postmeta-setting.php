@@ -205,7 +205,9 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 	/**
 	 * Update the post.
 	 *
-	 * @access public
+	 * Please note that the capability check will have already been done.
+	 *
+	 * @see WP_Customize_Setting::save()
 	 *
 	 * @param string $meta_value The value to update.
 	 * @return bool The result of saving the value.

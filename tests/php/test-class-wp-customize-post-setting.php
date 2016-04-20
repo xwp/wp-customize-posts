@@ -302,18 +302,6 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	 *
 	 * @see WP_Customize_Post_Setting::sanitize()
 	 */
-	public function test_sanitize_unauthorized() {
-		$setting = $this->create_post_setting();
-		wp_set_current_user( 0 );
-		$this->assertNull( $setting->sanitize( array( 'post_title' => '' ), false ) );
-		$this->assertInstanceOf( 'WP_Error', $setting->sanitize( array( 'post_title' => '' ), true ) );
-	}
-
-	/**
-	 * Test sanitize().
-	 *
-	 * @see WP_Customize_Post_Setting::sanitize()
-	 */
 	public function test_sanitize_empty_content() {
 		$setting = $this->create_post_setting();
 		$error = $setting->sanitize( array( 'post_title' => '', 'post_content' => '' ), true );

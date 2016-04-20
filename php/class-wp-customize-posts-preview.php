@@ -81,6 +81,7 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_preview_settings' ), 1000 );
 		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
 		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_preview' ), 1000, 4 );
+		$this->has_preview_filters = true;
 		return true;
 	}
 
@@ -111,7 +112,7 @@ final class WP_Customize_Posts_Preview {
 
 		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
 		$setting = $this->component->manager->get_setting( $setting_id );
-		if ( $setting instanceof WP_Customize_Post_Setting && $setting->check_capabilities() ) {
+		if ( $setting instanceof WP_Customize_Post_Setting ) {
 			$prevent_setup_postdata_recursion = true;
 			$setting->override_post_data( $post );
 			setup_postdata( $post );
@@ -127,11 +128,6 @@ final class WP_Customize_Posts_Preview {
 	 */
 	public function filter_the_posts_to_add_dynamic_post_settings_and_sections( array $posts ) {
 		foreach ( $posts as &$post ) {
-
-			if ( ! $this->component->current_user_can_edit_post( $post ) ) {
-				continue;
-			}
-
 			$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
 			$this->component->manager->add_dynamic_settings( array( $post_setting_id ) );
 			$setting = $this->component->manager->get_setting( $post_setting_id );
@@ -239,8 +235,6 @@ final class WP_Customize_Posts_Preview {
 			$can_preview = (
 				$postmeta_setting
 				&&
-				$postmeta_setting->check_capabilities()
-				&&
 				array_key_exists( $postmeta_setting->id, $post_values )
 			);
 			if ( $can_preview ) {
@@ -255,7 +249,7 @@ final class WP_Customize_Posts_Preview {
 			$is_recursing = false;
 
 			foreach ( $this->previewed_postmeta_settings[ $object_id ] as $postmeta_setting ) {
-				if ( ! array_key_exists( $postmeta_setting->id, $post_values ) || ! $postmeta_setting->check_capabilities() ) {
+				if ( ! array_key_exists( $postmeta_setting->id, $post_values ) ) {
 					continue;
 				}
 				$meta_value = $postmeta_setting->post_value();
