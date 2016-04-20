@@ -286,10 +286,6 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 			'post_author' => $this->user_id,
 		);
 		$setting = $this->create_post_setting( $post_arr );
-//		$post = get_post( $this->factory()->post->create( $post_arr ) );
-//		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
-//		$setting = new WP_Customize_Post_Setting( $this->wp_customize, $setting_id );
-
 		$post_data = $setting->get_post_data( get_post( $setting->post_id ) );
 		$this->assertEqualSets( array_keys( $post_data ), array_keys( $setting->default ) );
 		$this->assertEquals( $post_arr['post_author'], $post_data['post_author'] );
