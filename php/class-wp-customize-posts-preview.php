@@ -147,9 +147,9 @@ final class WP_Customize_Posts_Preview {
 		}
 
 		if ( '' === $meta_key ) {
-			if ( NULL !== $value ) {
+			if ( null !== $value ) {
 				$meta_keys = array_keys( $value );
-			} else  {
+			} else {
 				$meta_keys = array();
 			}
 		} else {
