@@ -147,15 +147,21 @@ final class WP_Customize_Posts_Preview {
 		}
 
 		if ( '' === $meta_key ) {
-			$meta_keys = array_keys( $value );
+			if ( null !== $value ) {
+				$meta_keys = array_keys( $value );
+			} else {
+				$meta_keys = array();
+			}
 		} else {
 			$meta_keys = array( $meta_key );
 		}
 
 		$setting_ids = array();
-		foreach ( $meta_keys as $key ) {
-			if ( isset( $this->component->registered_post_meta[ $post->post_type ][ $key ] ) ) {
-				$setting_ids[] = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $key );
+		if ( ! empty( $meta_keys ) ) {
+			foreach ( $meta_keys as $key ) {
+				if ( isset( $this->component->registered_post_meta[ $post->post_type ][ $key ] ) ) {
+					$setting_ids[] = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $key );
+				}
 			}
 		}
 		$this->component->manager->add_dynamic_settings( $setting_ids );
