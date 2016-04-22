@@ -62,7 +62,8 @@ final class WP_Customize_Posts_Preview {
 		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
 		add_filter( 'edit_post_link', array( $this, 'filter_edit_post_link' ), 10, 2 );
 		add_filter( 'get_edit_post_link', array( $this, 'filter_get_edit_post_link' ), 10, 2 );
-		add_filter( 'infinite_scroll_results', array( $this, 'filter_infinite_scroll_results' ), 10, 3 );
+		add_filter( 'infinite_scroll_results', array( $this, 'export_registered_settings' ), 10 );
+		add_filter( 'customize_render_partials_response', array( $this, 'export_registered_settings' ), 10 );
 	}
 
 	/**
@@ -354,12 +355,14 @@ final class WP_Customize_Posts_Preview {
 	}
 
 	/**
-	 * Filter the Infinite Scroll results.
+	 * Amend an array with all of the registered post and postmeta settings.
+	 *
+	 * Filter for the Partial Render and Infinite Scroll results.
 	 *
 	 * @param array $results Array of Infinite Scroll results.
 	 * @return array $results Results.
 	 */
-	public function filter_infinite_scroll_results( $results ) {
+	public function export_registered_settings( $results ) {
 
 		$results['customize_post_settings'] = array();
 		foreach ( $this->component->manager->settings() as $setting ) {

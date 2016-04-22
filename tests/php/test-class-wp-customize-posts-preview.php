@@ -131,7 +131,8 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertEquals( 10, has_action( 'wp_footer', array( $preview, 'export_preview_data' ) ) );
 		$this->assertEquals( 10, has_filter( 'edit_post_link', array( $preview, 'filter_edit_post_link' ) ) );
 		$this->assertEquals( 10, has_filter( 'get_edit_post_link', array( $preview, 'filter_get_edit_post_link' ) ) );
-		$this->assertEquals( 10, has_filter( 'infinite_scroll_results', array( $preview, 'filter_infinite_scroll_results' ) ) );
+		$this->assertEquals( 10, has_filter( 'infinite_scroll_results', array( $preview, 'export_registered_settings' ) ) );
+		$this->assertEquals( 10, has_filter( 'customize_render_partials_response', array( $preview, 'export_registered_settings' ) ) );
 	}
 
 	/**
@@ -433,11 +434,11 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test filter_infinite_scroll_results().
+	 * Test export_registered_settings().
 	 *
-	 * @see WP_Customize_Posts_Preview::filter_infinite_scroll_results()
+	 * @see WP_Customize_Posts_Preview::export_registered_settings()
 	 */
-	public function test_filter_infinite_scroll_results() {
+	public function test_export_registered_settings() {
 		$preview = $this->posts_component->preview;
 		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $this->post_id ) );
 		$postmeta_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $this->post_id ), 'foo' );
@@ -448,12 +449,12 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertNotEmpty( get_post_meta( $this->post_id, 'foo' ) );
 
 		wp_set_current_user( 0 );
-		$results = $preview->filter_infinite_scroll_results( array() );
+		$results = $preview->export_registered_settings( array() );
 		$this->assertArrayHasKey( 'customize_post_settings', $results );
 		$this->assertEmpty( $results['customize_post_settings'] );
 
 		wp_set_current_user( $this->user_id );
-		$results = $preview->filter_infinite_scroll_results( array() );
+		$results = $preview->export_registered_settings( array() );
 		$this->assertArrayHasKey( 'customize_post_settings', $results );
 		$this->assertNotEmpty( $results['customize_post_settings'] );
 
