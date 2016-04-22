@@ -80,7 +80,21 @@
 
 			// @todo Trigger event for plugins and postmeta controllers.
 		} );
+	};
 
+	/**
+	 * Add settings.
+	 *
+	 * Creates the settings, their associated partials, and sends them to the pane.
+	 *
+	 * @param {object} settings - Settings keyed by ID.
+	 */
+	api.previewPosts.addSettings = function addSettings( settings ) {
+		api.previewPosts.addPartials( settings );
+
+		api.preview.send( 'customized-posts', {
+			settings: settings
+		} );
 	};
 
 	api.bind( 'preview-ready', function() {
@@ -122,6 +136,12 @@
 			} );
 		} );
 
+		api.selectiveRefresh.bind( 'render-partials-response', function( data ) {
+			if ( data.customize_post_settings ) {
+				api.previewPosts.addSettings( data.customize_post_settings );
+			}
+		} );
+
 		// Capture post settings sent in Jetpack infinite scroll responses.
 		$( document ).ajaxSuccess( function( e, xhr, ajaxOptions, responseData ) {
 			var data, isInfinityScrollResponse = 'POST' === ajaxOptions.type && -1 !== ajaxOptions.url.indexOf( 'infinity=scrolling' );
@@ -134,11 +154,7 @@
 				data = responseData;
 			}
 			if ( data.customize_post_settings ) {
-				api.previewPosts.addPartials( data.customize_post_settings );
-
-				api.preview.send( 'customized-posts', {
-					settings: data.customize_post_settings
-				} );
+				api.previewPosts.addSettings( data.customize_post_settings );
 			}
 		} );
 	} );
