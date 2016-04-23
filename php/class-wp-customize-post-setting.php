@@ -245,20 +245,6 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	}
 
 	/**
-	 * Filter to status for comments & pingbacks.
-	 *
-	 * @param bool        $open    Whether the current post is open.
-	 * @param int|WP_Post $post_id The post ID or WP_Post object.
-	 * @return bool
-	 */
-	public function status_closed( $open, $post_id ) {
-		if ( ( $post_id instanceof WP_Post && $this->post_id === $post_id->ID ) || $this->post_id === $post_id ) {
-			$open = false;
-		}
-		return $open;
-	}
-
-	/**
 	 * Sanitize (and validate) an input.
 	 *
 	 * @see wp_insert_post()
