@@ -237,6 +237,9 @@
 				} else {
 					editor.off( 'input change keyup', control.onVisualEditorChange );
 					textarea.off( 'input', control.onTextEditorChange );
+
+					// Cancel link and force a click event to exit fullscreen & kitchen sink mode.
+					editor.execCommand( 'wp_link_cancel' );
 					$( '.mce-active' ).click();
 				}
 			} );
