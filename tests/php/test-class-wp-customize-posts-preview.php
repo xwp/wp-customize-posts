@@ -124,14 +124,28 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertEquals( 10, has_action( 'wp_enqueue_scripts', array( $preview, 'enqueue_scripts' ) ) );
 		$this->assertEquals( 10, has_filter( 'customize_dynamic_partial_args', array( $preview, 'filter_customize_dynamic_partial_args' ) ) );
 		$this->assertEquals( 10, has_filter( 'customize_dynamic_partial_class', array( $preview, 'filter_customize_dynamic_partial_class' ) ) );
-		$this->assertEquals( 10, has_action( 'the_post', array( $preview, 'preview_setup_postdata' ) ) );
-		$this->assertEquals( 1000, has_filter( 'the_posts', array( $preview, 'filter_the_posts_to_add_dynamic_post_settings_and_preview' ) ) );
-		$this->assertEquals( 1000, has_filter( 'get_post_metadata', array( $preview, 'filter_get_post_meta_to_preview' ) ) );
+
+		$this->assertEquals( 1000, has_filter( 'the_posts', array( $preview, 'filter_the_posts_to_add_dynamic_post_settings_and_sections' ) ) );
 		$this->assertEquals( 1000, has_filter( 'get_post_metadata', array( $preview, 'filter_get_post_meta_to_add_dynamic_postmeta_settings' ) ) );
 		$this->assertEquals( 10, has_action( 'wp_footer', array( $preview, 'export_preview_data' ) ) );
 		$this->assertEquals( 10, has_filter( 'edit_post_link', array( $preview, 'filter_edit_post_link' ) ) );
 		$this->assertEquals( 10, has_filter( 'get_edit_post_link', array( $preview, 'filter_get_edit_post_link' ) ) );
-		$this->assertEquals( 10, has_filter( 'infinite_scroll_results', array( $preview, 'filter_infinite_scroll_results' ) ) );
+		$this->assertEquals( 10, has_filter( 'infinite_scroll_results', array( $preview, 'export_registered_settings' ) ) );
+		$this->assertEquals( 10, has_filter( 'customize_render_partials_response', array( $preview, 'export_registered_settings' ) ) );
+	}
+
+	/**
+	 * Test add_preview_filters().
+	 *
+	 * @see WP_Customize_Posts_Preview::add_preview_filters()
+	 */
+	public function test_add_preview_filters() {
+		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
+		$this->assertTrue( $preview->add_preview_filters() );
+		$this->assertEquals( 10, has_action( 'the_post', array( $preview, 'preview_setup_postdata' ) ) );
+		$this->assertEquals( 1000, has_filter( 'the_posts', array( $preview, 'filter_the_posts_to_preview_settings' ) ) );
+		$this->assertEquals( 1000, has_filter( 'get_post_metadata', array( $preview, 'filter_get_post_meta_to_preview' ) ) );
+		$this->assertFalse( $preview->add_preview_filters() );
 	}
 
 	/**
@@ -174,11 +188,11 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test filter_the_posts_to_add_dynamic_post_settings_and_preview().
+	 * Test filter_the_posts_to_add_dynamic_post_settings_and_sections().
 	 *
-	 * @see WP_Customize_Posts_Preview::filter_the_posts_to_add_dynamic_post_settings_and_preview()
+	 * @see WP_Customize_Posts_Preview::filter_the_posts_to_add_dynamic_post_settings_and_sections()
 	 */
-	public function test_filter_the_posts_to_add_dynamic_post_settings_and_preview() {
+	public function filter_the_posts_to_add_dynamic_post_settings_and_sections() {
 		$post = get_post( $this->post_id );
 		$original_post_content = $post->post_content;
 		$input_posts = array( $post );
@@ -196,13 +210,13 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$section_id = sprintf( 'post[%s][%d]', $post->post_type, $post->ID );
 
 		wp_set_current_user( 0 );
-		$filtered_posts = $preview->filter_the_posts_to_add_dynamic_post_settings_and_preview( $input_posts );
+		$filtered_posts = $preview->filter_the_posts_to_add_dynamic_post_settings_and_sections( $input_posts );
 		$section = $this->posts_component->manager->get_section( $section_id );
 		$this->assertEmpty( $section );
 		$this->assertEquals( $original_post_content, $filtered_posts[0]->post_content );
 
 		wp_set_current_user( $this->user_id );
-		$filtered_posts = $preview->filter_the_posts_to_add_dynamic_post_settings_and_preview( $input_posts );
+		$filtered_posts = $preview->filter_the_posts_to_add_dynamic_post_settings_and_sections( $input_posts );
 		$section = $this->posts_component->manager->get_section( $section_id );
 		$this->assertNotEmpty( $section );
 		$this->assertNotEquals( $original_post_content, $filtered_posts[0]->post_content );
@@ -313,12 +327,6 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 
 		// Test with post value.
 		$this->posts_component->manager->set_post_value( $setting_id, $preview_meta_value );
-		wp_set_current_user( 0 );
-		$this->assertNull( $preview->filter_get_post_meta_to_preview( null, $this->post_id, $meta_key, true ) );
-		$meta_values = $preview->filter_get_post_meta_to_preview( null, $this->post_id, '', true );
-		$this->assertArrayHasKey( $meta_key, $meta_values );
-		$this->assertEquals( array( maybe_serialize( $original_meta_value ) ), $meta_values[ $meta_key ] );
-
 		wp_set_current_user( $this->user_id );
 		$this->assertEquals( $preview_meta_value, $preview->filter_get_post_meta_to_preview( null, $this->post_id, $meta_key, true ) );
 		$meta_values = $preview->filter_get_post_meta_to_preview( null, $this->post_id, '', true );
@@ -461,11 +469,11 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test filter_infinite_scroll_results().
+	 * Test export_registered_settings().
 	 *
-	 * @see WP_Customize_Posts_Preview::filter_infinite_scroll_results()
+	 * @see WP_Customize_Posts_Preview::export_registered_settings()
 	 */
-	public function test_filter_infinite_scroll_results() {
+	public function test_export_registered_settings() {
 		$preview = $this->posts_component->preview;
 		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $this->post_id ) );
 		$postmeta_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $this->post_id ), 'foo' );
@@ -476,12 +484,12 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertNotEmpty( get_post_meta( $this->post_id, 'foo' ) );
 
 		wp_set_current_user( 0 );
-		$results = $preview->filter_infinite_scroll_results( array() );
+		$results = $preview->export_registered_settings( array() );
 		$this->assertArrayHasKey( 'customize_post_settings', $results );
 		$this->assertEmpty( $results['customize_post_settings'] );
 
 		wp_set_current_user( $this->user_id );
-		$results = $preview->filter_infinite_scroll_results( array() );
+		$results = $preview->export_registered_settings( array() );
 		$this->assertArrayHasKey( 'customize_post_settings', $results );
 		$this->assertNotEmpty( $results['customize_post_settings'] );
 

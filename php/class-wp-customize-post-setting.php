@@ -134,9 +134,6 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	 * @return bool False if the post data did not apply.
 	 */
 	public function override_post_data( WP_Post &$post ) {
-		if ( ! $this->posts_component->current_user_can_edit_post( $post ) ) {
-			return false;
-		}
 		if ( $post->ID !== $this->post_id ) {
 			return false;
 		}
@@ -265,13 +262,6 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 
 		$update = ( $this->post_id > 0 );
 		$post_type_obj = get_post_type_object( $this->post_type );
-		if ( ! $this->check_capabilities() ) {
-			if ( $strict ) {
-				return new WP_Error( 'not_allowed' );
-			} else {
-				return null;
-			}
-		}
 
 		if ( $strict && ! empty( $post_data['post_type'] ) && $post_data['post_type'] !== $this->post_type ) {
 			return new WP_Error( 'bad_post_type' );
@@ -485,13 +475,21 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	 * @return bool
 	 */
 	public function preview() {
+		if ( $this->is_previewed ) {
+			return true;
+		}
 		$this->posts_component->preview->previewed_post_settings[ $this->post_id ] = $this;
+		$this->posts_component->preview->add_preview_filters();
 		$this->is_previewed = true;
 		return true;
 	}
 
 	/**
 	 * Update the post.
+	 *
+	 * Please note that the capability check will have already been done.
+	 *
+	 * @see WP_Customize_Setting::save()
 	 *
 	 * @param string $data The value to update.
 	 * @return bool The result of saving the value.
