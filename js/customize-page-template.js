@@ -1,4 +1,4 @@
-/* global module, EditPostPreviewCustomize, wp, _, _wpCustomizePageTemplateExports */
+/* global module, EditPostPreviewCustomize, wp, _ */
 /* exported CustomizePageTemplate */
 
 var CustomizePageTemplate = (function( api ) {
@@ -15,10 +15,12 @@ var CustomizePageTemplate = (function( api ) {
 
 	/**
 	 * Init component.
+	 *
+	 * @param {object} [configData]
 	 */
-	component.init = function() {
-		if ( 'undefined' !== typeof _wpCustomizePageTemplateExports ) {
-			_.extend( component.data, _wpCustomizePageTemplateExports );
+	component.init = function( configData ) {
+		if ( 'undefined' !== typeof configData ) {
+			_.extend( component.data, configData );
 		}
 		component.extendSections();
 	};
@@ -57,9 +59,9 @@ var CustomizePageTemplate = (function( api ) {
 		// If in page preview, send the updated page template to the post edit screen when it is changed.
 		if ( 'undefined' !== typeof EditPostPreviewCustomize ) {
 			api( settingId, function( setting ) {
-				setting.bind( function( pageTemplate ) {
+				setting.bind( function( value ) {
 					var settings = {};
-					settings[ settingId ] = pageTemplate;
+					settings[ settingId ] = value;
 					EditPostPreviewCustomize.sendSettingsToEditPostScreen( settings );
 				} );
 			} );

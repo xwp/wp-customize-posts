@@ -449,6 +449,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$preview = $this->posts_component->preview;
 		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $this->post_id ) );
 		$postmeta_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $this->post_id ), 'foo' );
+		$preview->customize_preview_init();
 		query_posts( 'p=' . $this->post_id );
 		update_post_meta( $this->post_id, 'foo', 'bar' );
 		$this->posts_component->register_post_type_meta( 'post', 'foo' );

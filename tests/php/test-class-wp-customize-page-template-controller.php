@@ -79,8 +79,8 @@ class Test_WP_Customize_Page_Template_Controller extends WP_UnitTestCase {
 		$controller->enqueue_customize_scripts();
 		$this->assertTrue( wp_script_is( $handle, 'enqueued' ) );
 
-		$data = wp_scripts()->get_data( $handle, 'data' );
-		$this->assertNotEmpty( preg_match( '/var _wpCustomizePageTemplateExports = ({.*});/',  $data, $matches ) );
+		$data = wp_scripts()->get_data( $handle, 'after' );
+		$this->assertNotEmpty( preg_match( '/({.*})/', join( '', $data ), $matches ) );
 		$exported = json_decode( $matches[1], true );
 		$this->assertInternalType( 'array', $exported );
 		$this->assertArrayHasKey( 'defaultPageTemplateChoices', $exported );
@@ -89,7 +89,7 @@ class Test_WP_Customize_Page_Template_Controller extends WP_UnitTestCase {
 
 		$after = wp_scripts()->get_data( $handle, 'after' );
 		$this->assertInternalType( 'array', $after );
-		$this->assertContains( 'CustomizePageTemplate.init()', array_pop( $after ) );
+		$this->assertContains( 'CustomizePageTemplate.init(', array_pop( $after ) );
 	}
 
 	/**
