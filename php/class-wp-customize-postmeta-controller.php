@@ -113,6 +113,7 @@ abstract class WP_Customize_Postmeta_Controller {
 		foreach ( $post_types as $post_type ) {
 			$setting_args = array(
 				'sanitize_callback' => array( $this, 'sanitize_setting' ),
+				'sanitize_js_callback' => array( $this, 'js_value' ),
 				'transport' => $this->setting_transport,
 				'theme_supports' => $this->theme_supports,
 				'default' => $this->default,
@@ -159,6 +160,8 @@ abstract class WP_Customize_Postmeta_Controller {
 	/**
 	 * Sanitize (and validate) an input.
 	 *
+	 * Callback for `customize_sanitize_post_meta_{$meta_key}` filter.
+	 *
 	 * @see update_metadata()
 	 *
 	 * @param string                        $meta_value The value to sanitize.
@@ -168,6 +171,20 @@ abstract class WP_Customize_Postmeta_Controller {
 	 */
 	public function sanitize_setting( $meta_value, WP_Customize_Postmeta_Setting $setting, $strict = false ) {
 		unset( $setting, $strict );
+		return $meta_value;
+	}
+
+	/**
+	 * Callback to format a Customize setting value for use in JavaScript.
+	 *
+	 * Callback for `customize_sanitize_js_post_meta_{$meta_key}` filter.
+	 *
+	 * @param mixed                         $meta_value The setting value.
+	 * @param WP_Customize_Postmeta_Setting $setting    Setting instance.
+	 * @return mixed Formatted value.
+	 */
+	public function js_value( $meta_value, WP_Customize_Postmeta_Setting $setting ) {
+		unset( $setting );
 		return $meta_value;
 	}
 }
