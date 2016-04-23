@@ -1,0 +1,136 @@
+/* global module, EditPostPreviewCustomize, wp, _ */
+/* exported CustomizeFeaturedImage */
+
+var CustomizeFeaturedImage = (function( api ) {
+	'use strict';
+
+	var component = {
+		data: {
+			l10n: {
+				default_button_labels: {}
+			}
+		}
+	};
+
+	/**
+	 * Init component.
+	 *
+	 * @param {object} [configData]
+	 */
+	component.init = function( configData ) {
+		if ( 'undefined' !== typeof configData ) {
+			_.extend( component.data, configData );
+		}
+		component.extendSections();
+	};
+
+	/**
+	 * Extend existing sections and future sections added with the page template control.
+	 */
+	component.extendSections = function() {
+		api.section.each( function( section ) {
+			component.addControl( section );
+		} );
+		api.section.bind( 'add', function( section ) {
+			component.addControl( section );
+		} );
+	};
+
+	/**
+	 * Add the page template control to the given section.
+	 *
+	 * @param {wp.customize.Section} section
+	 * @returns {wp.customize.Control|null} The control.
+	 */
+	component.addControl = function( section ) {
+		var control, controlId, settingId, postTypeObj, originalValidate;
+		if ( ! section.extended( api.Posts.PostSection ) ) {
+			return null;
+		}
+		postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+		if ( ! postTypeObj.supports.thumbnail ) {
+			return null;
+		}
+
+		settingId = 'postmeta[' + section.params.post_type + '][' + String( section.params.post_id ) + '][_thumbnail_id]';
+		controlId = settingId;
+
+		if ( api.control.has( controlId ) ) {
+			return api.control( controlId );
+		}
+
+		// If in page preview, send the updated page template to the post edit screen when it is changed.
+		if ( 'undefined' !== typeof EditPostPreviewCustomize ) {
+			api( settingId, function( setting ) {
+				setting.bind( function( value ) {
+					var settings = {};
+					settings[ settingId ] = value;
+					EditPostPreviewCustomize.sendSettingsToEditPostScreen( settings );
+				} );
+			} );
+		}
+
+		/*
+		 * When a featured image is removed from a media control, normally its
+		 * value is set to an empty string. There is no way to differentiate
+		 * between an empty string value and an unpopulated postmeta setting,
+		 * since get_post_meta() returns an empty string for postmeta that don't
+		 * exist. So this forces a value to be sanitized as a discrete -1 value.
+		 */
+		api( settingId, function( setting ) {
+			originalValidate = setting.validate;
+			setting.validate = function validateSetting( value ) {
+				var attachmentId = value;
+				if ( '' === attachmentId ) {
+					attachmentId = -1;
+				}
+				originalValidate.call( this, attachmentId );
+				return attachmentId;
+			};
+		} );
+
+		control = new api.MediaControl( controlId, {
+			params: {
+				section: section.id,
+				priority: 1,
+				label: postTypeObj.labels.featured_image,
+				button_labels: {
+					change: component.data.l10n.default_button_labels.change,
+					'default': component.data.l10n.default_button_labels['default'],
+					placeholder: component.data.l10n.default_button_labels.placeholder,
+					remove: component.data.l10n.default_button_labels.remove, /* Or postTypeObj.labels.remove_featured_image, if more room? */
+					select: component.data.l10n.default_button_labels.select, /* Or postTypeObj.labels.set_featured_image, if more room? */
+					frame_button: postTypeObj.labels.use_featured_image,
+					frame_title: postTypeObj.labels.featured_image
+				},
+				active: true,
+				canUpload: true,
+				content: '<li class="customize-control customize-control-media"></li>',
+				description: '',
+				mime_type: 'image',
+				settings: {
+					'default': settingId
+				},
+				type: 'media',
+				'default': 'foood'
+			}
+		} );
+
+		control.active.set( true );
+		control.active.validate = function() {
+			return true;
+		};
+
+		// Register.
+		api.control.add( control.id, control );
+
+		return control;
+	};
+
+	if ( 'undefined' !== typeof module ) {
+		module.exports = component;
+	}
+
+	return component;
+
+})( wp.customize );

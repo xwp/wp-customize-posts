@@ -35,6 +35,13 @@ class Customize_Posts_Plugin {
 	public $page_template_controller;
 
 	/**
+	 * Page template controller.
+	 *
+	 * @var WP_Customize_Featured_Image_Controller
+	 */
+	public $featured_image_controller;
+
+	/**
 	 * Plugin constructor.
 	 *
 	 * @access public
@@ -60,7 +67,9 @@ class Customize_Posts_Plugin {
 
 		require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-controller.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-page-template-controller.php';
+		require_once dirname( __FILE__ ) . '/class-wp-customize-featured-image-controller.php';
 		$this->page_template_controller = new WP_Customize_Page_Template_Controller();
+		$this->featured_image_controller = new WP_Customize_Featured_Image_Controller();
 	}
 
 	/**
@@ -190,6 +199,7 @@ class Customize_Posts_Plugin {
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
+		// Page templates.
 		$handle = 'customize-page-template';
 		$src = $plugin_dir_url . 'js/customize-page-template' . $suffix;
 		$deps = array( 'customize-controls', 'customize-posts' );
@@ -198,6 +208,19 @@ class Customize_Posts_Plugin {
 
 		$handle = 'edit-post-preview-admin-page-template';
 		$src = $plugin_dir_url . 'js/edit-post-preview-admin-page-template' . $suffix;
+		$deps = array( 'edit-post-preview-admin' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
+		// Featured images.
+		$handle = 'customize-featured-image';
+		$src = $plugin_dir_url . 'js/customize-featured-image' . $suffix;
+		$deps = array( 'customize-controls', 'customize-posts' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
+		$handle = 'edit-post-preview-admin-featured-image';
+		$src = $plugin_dir_url . 'js/edit-post-preview-admin-featured-image' . $suffix;
 		$deps = array( 'edit-post-preview-admin' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
