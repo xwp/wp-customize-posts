@@ -33,7 +33,7 @@ class Edit_Post_Preview {
 		$this->plugin = $plugin;
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
 		add_filter( 'customize_loaded_components', array( $this, 'filter_customize_loaded_component' ) );
-		add_action( 'customize_register', array( $this, 'register_previewed_post_setting' ), 15 );
+		add_action( 'customize_controls_init', array( $this, 'remove_static_controls_and_sections' ), 100 );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_customize_scripts' ) );
 		add_action( 'customize_preview_init', array( $this, 'make_auto_draft_status_previewable' ) );
 	}
@@ -123,21 +123,26 @@ class Edit_Post_Preview {
 	}
 
 	/**
-	 * Register the setting for the previewed post.
+	 * Remove all statically-registered sections and controls.
 	 *
-	 * @param WP_Customize_Manager $wp_customize Manager.
+	 * The post sections and the controls inside of them will be created dynamically.
+	 * Anything construct other than the previewed post's panel should be removed.
 	 */
-	public function register_previewed_post_setting( WP_Customize_Manager $wp_customize ) {
+	public function remove_static_controls_and_sections() {
 		if ( ! $this->can_load_customize_post_preview() ) {
 			return;
 		}
-		$post = $this->get_previewed_post();
-		if ( ! $post ) {
+
+		global $wp_customize;
+		if ( empty( $wp_customize ) ) {
 			return;
 		}
-
-		$setting_id = sprintf( 'post[%s][%d]', $post->post_type, $post->ID );
-		$wp_customize->add_setting( $setting_id );
+		foreach ( $wp_customize->controls() as $control ) {
+			$wp_customize->remove_control( $control->id );
+		}
+		foreach ( $wp_customize->sections() as $section ) {
+			$wp_customize->remove_section( $section->id );
+		}
 	}
 
 	/**
