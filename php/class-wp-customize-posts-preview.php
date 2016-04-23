@@ -36,6 +36,14 @@ final class WP_Customize_Posts_Preview {
 	public $previewed_postmeta_settings = array();
 
 	/**
+	 * Whether the preview filters have been added.
+	 *
+	 * @see WP_Customize_Posts_Preview::add_preview_filters()
+	 * @var bool
+	 */
+	protected $has_preview_filters = false;
+
+	/**
 	 * Initial loader.
 	 *
 	 * @access public
@@ -55,15 +63,27 @@ final class WP_Customize_Posts_Preview {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_filter( 'customize_dynamic_partial_args', array( $this, 'filter_customize_dynamic_partial_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_partial_class', array( $this, 'filter_customize_dynamic_partial_class' ), 10, 3 );
-		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
-		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_add_dynamic_post_settings_and_preview' ), 1000 );
-		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_preview' ), 1000, 4 );
+		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_add_dynamic_post_settings_and_sections' ), 1000 );
 		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_add_dynamic_postmeta_settings' ), 1000, 4 );
 		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
 		add_filter( 'edit_post_link', array( $this, 'filter_edit_post_link' ), 10, 2 );
 		add_filter( 'get_edit_post_link', array( $this, 'filter_get_edit_post_link' ), 10, 2 );
 		add_filter( 'infinite_scroll_results', array( $this, 'export_registered_settings' ), 10 );
 		add_filter( 'customize_render_partials_response', array( $this, 'export_registered_settings' ), 10 );
+	}
+
+	/**
+	 * Add preview filters for post and postmeta settings.
+	 */
+	public function add_preview_filters() {
+		if ( $this->has_preview_filters ) {
+			return false;
+		}
+		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_preview_settings' ), 1000 );
+		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
+		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_preview' ), 1000, 4 );
+		$this->has_preview_filters = true;
+		return true;
 	}
 
 	/**
@@ -93,7 +113,7 @@ final class WP_Customize_Posts_Preview {
 
 		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
 		$setting = $this->component->manager->get_setting( $setting_id );
-		if ( $setting instanceof WP_Customize_Post_Setting && $setting->check_capabilities() ) {
+		if ( $setting instanceof WP_Customize_Post_Setting ) {
 			$prevent_setup_postdata_recursion = true;
 			$setting->override_post_data( $post );
 			setup_postdata( $post );
@@ -102,18 +122,13 @@ final class WP_Customize_Posts_Preview {
 	}
 
 	/**
-	 * Create dynamic post setting for posts queried in the page, and apply changes to any dirty settings.
+	 * Create dynamic post settings and sections for posts queried in the page.
 	 *
 	 * @param array $posts Posts.
 	 * @return array
 	 */
-	public function filter_the_posts_to_add_dynamic_post_settings_and_preview( array $posts ) {
+	public function filter_the_posts_to_add_dynamic_post_settings_and_sections( array $posts ) {
 		foreach ( $posts as &$post ) {
-
-			if ( ! $this->component->current_user_can_edit_post( $post ) ) {
-				continue;
-			}
-
 			$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
 			$this->component->manager->add_dynamic_settings( array( $post_setting_id ) );
 			$setting = $this->component->manager->get_setting( $post_setting_id );
@@ -124,9 +139,21 @@ final class WP_Customize_Posts_Preview {
 				) );
 				$this->component->manager->add_section( $section );
 			}
+		}
+		return $posts;
+	}
 
+	/**
+	 * Override post data for previewed settings.
+	 *
+	 * @param array $posts Posts.
+	 * @return array
+	 */
+	public function filter_the_posts_to_preview_settings( array $posts ) {
+		foreach ( $posts as &$post ) {
+			$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
 			$setting = $this->component->manager->get_setting( $post_setting_id );
-			if ( $setting instanceof WP_Customize_Post_Setting ) {
+			if ( $setting instanceof WP_Customize_Post_Setting && isset( $this->previewed_post_settings[ $post->ID ] ) ) {
 				$setting->override_post_data( $post );
 			}
 		}
@@ -215,8 +242,6 @@ final class WP_Customize_Posts_Preview {
 			$can_preview = (
 				$postmeta_setting
 				&&
-				$postmeta_setting->check_capabilities()
-				&&
 				array_key_exists( $postmeta_setting->id, $post_values )
 			);
 			if ( $can_preview ) {
@@ -231,7 +256,7 @@ final class WP_Customize_Posts_Preview {
 			$is_recursing = false;
 
 			foreach ( $this->previewed_postmeta_settings[ $object_id ] as $postmeta_setting ) {
-				if ( ! array_key_exists( $postmeta_setting->id, $post_values ) || ! $postmeta_setting->check_capabilities() ) {
+				if ( ! array_key_exists( $postmeta_setting->id, $post_values ) ) {
 					continue;
 				}
 				$meta_value = $postmeta_setting->post_value();

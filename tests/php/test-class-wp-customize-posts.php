@@ -120,18 +120,6 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test that show_in_customizer being set with missing perms excludes the post type.
-	 *
-	 * @see WP_Customize_Posts::get_post_types()
-	 */
-	public function test_get_post_types_fails() {
-		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
-		register_post_type( 'customize_test', array( 'show_in_customizer' => true ) );
-		$this->assertArrayNotHasKey( 'customize_test', $this->posts->get_post_types() );
-		_unregister_post_type( 'customize_test' );
-	}
-
-	/**
 	 * Test that show_in_customizer being set includes the post type.
 	 *
 	 * @see WP_Customize_Posts::get_post_types()

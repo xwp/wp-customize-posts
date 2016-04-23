@@ -52,10 +52,6 @@ final class WP_Customize_Posts {
 	public function __construct( WP_Customize_Manager $manager ) {
 		$this->manager = $manager;
 
-		if ( ! current_user_can( 'edit_posts' ) ) {
-			return;
-		}
-
 		require_once dirname( __FILE__ ) . '/class-wp-customize-posts-preview.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-posts-panel.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-section.php';
@@ -90,10 +86,6 @@ final class WP_Customize_Posts {
 		$post_types = array();
 		$post_type_objects = get_post_types( array(), 'objects' );
 		foreach ( $post_type_objects as $post_type_object ) {
-			if ( ! current_user_can( $post_type_object->cap->edit_posts ) ) {
-				continue;
-			}
-
 			$is_included = $post_type_object->show_ui;
 			if ( isset( $post_type_object->show_in_customizer ) ) {
 				$is_included = $post_type_object->show_in_customizer;
@@ -433,6 +425,10 @@ final class WP_Customize_Posts {
 
 		$post_types = array();
 		foreach ( $this->get_post_types() as $post_type => $post_type_obj ) {
+			if ( ! current_user_can( $post_type_obj->cap->edit_posts ) ) {
+				continue;
+			}
+
 			$post_types[ $post_type ] = wp_array_slice_assoc( (array) $post_type_obj, array(
 				'name',
 				'supports',
