@@ -237,6 +237,7 @@
 				} else {
 					editor.off( 'input change keyup', control.onVisualEditorChange );
 					textarea.off( 'input', control.onTextEditorChange );
+					$( '.mce-active' ).click();
 				}
 			} );
 
