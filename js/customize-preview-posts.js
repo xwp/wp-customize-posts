@@ -104,7 +104,7 @@
 					params: {
 						settings: [ id ],
 						containerInclusive: true,
-						fallbackRefresh: false
+						fallbackRefresh: true
 					}
 				} );
 				api.selectiveRefresh.partial.add( partial.id, partial );
