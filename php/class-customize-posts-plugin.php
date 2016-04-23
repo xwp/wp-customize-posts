@@ -125,6 +125,12 @@ class Customize_Posts_Plugin {
 		$suffix = ( SCRIPT_DEBUG ? '' : '.min' ) . '.js';
 		$plugin_dir_url = plugin_dir_url( dirname( __FILE__ ) );
 
+		$handle = 'customize-controls-patched-36521';
+		$src = $plugin_dir_url . 'js/customize-controls-patched-36521' . $suffix;
+		$deps = array( 'customize-controls' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
 		$handle = 'customize-posts-panel';
 		$src = $plugin_dir_url . 'js/customize-posts-panel' . $suffix;
 		$deps = array( 'customize-controls' );
@@ -154,6 +160,9 @@ class Customize_Posts_Plugin {
 			'customize-dynamic-control',
 			'underscore',
 		);
+		if ( version_compare( str_replace( array( '-src' ), '', $GLOBALS['wp_version'] ), '4.6-beta1', '<' ) ) {
+			$deps[] = 'customize-controls-patched-36521';
+		}
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
