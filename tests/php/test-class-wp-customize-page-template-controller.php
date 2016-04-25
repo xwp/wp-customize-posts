@@ -147,10 +147,10 @@ class Test_WP_Customize_Page_Template_Controller extends WP_UnitTestCase {
 		$setting = new WP_Customize_Postmeta_Setting( $this->wp_customize, $setting_id );
 
 		$value = 'default';
-		$this->assertEquals( $value, $controller->sanitize_setting( $value, $setting ), false );
+		$this->assertEquals( $value, $controller->sanitize_setting( $value, $setting, false ) );
 
 		$value = 'page-templates/full-width.php';
-		$this->assertEquals( $value, $controller->sanitize_setting( $value, $setting ), false );
+		$this->assertEquals( $value, $controller->sanitize_setting( $value, $setting, false ) );
 
 		$value = '../page-templates/bad.php';
 		$this->assertNull( $controller->sanitize_setting( $value, $setting, false ) );

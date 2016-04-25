@@ -49,6 +49,13 @@ abstract class WP_Customize_Postmeta_Controller {
 	public $sanitize_callback;
 
 	/**
+	 * Sanitize JS setting value callback (aka JSON export).
+	 *
+	 * @var callable
+	 */
+	public $sanitize_js_callback;
+
+	/**
 	 * Setting transport.
 	 *
 	 * @var string
@@ -79,6 +86,13 @@ abstract class WP_Customize_Postmeta_Controller {
 
 		if ( empty( $this->meta_key ) ) {
 			throw new Exception( 'Missing meta_key' );
+		}
+
+		if ( ! isset( $this->sanitize_callback ) ) {
+			$this->sanitize_callback = array( $this, 'sanitize_setting' );
+		}
+		if ( ! isset( $this->sanitize_js_callback ) ) {
+			$this->sanitize_js_callback = array( $this, 'js_value' );
 		}
 
 		add_action( 'customize_posts_register_meta', array( $this, 'register_meta' ) );
@@ -112,8 +126,8 @@ abstract class WP_Customize_Postmeta_Controller {
 
 		foreach ( $post_types as $post_type ) {
 			$setting_args = array(
-				'sanitize_callback' => array( $this, 'sanitize_setting' ),
-				'sanitize_js_callback' => array( $this, 'js_value' ),
+				'sanitize_callback' => $this->sanitize_callback,
+				'sanitize_js_callback' => $this->sanitize_js_callback,
 				'transport' => $this->setting_transport,
 				'theme_supports' => $this->theme_supports,
 				'default' => $this->default,

@@ -85,7 +85,8 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 		$this->assertNull( $stub->theme_supports );
 		$this->assertEmpty( $stub->post_types );
 		$this->assertNull( $stub->post_type_supports );
-		$this->assertNull( $stub->sanitize_callback );
+		$this->assertEquals( array( $stub, 'sanitize_setting' ), $stub->sanitize_callback );
+		$this->assertEquals( array( $stub, 'js_value' ), $stub->sanitize_js_callback );
 		$this->assertEquals( 'postMessage', $stub->setting_transport );
 		$this->assertEquals( '', $stub->default );
 	}
@@ -102,6 +103,7 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 			'post_types' => array( 'post', 'page' ),
 			'post_type_supports' => 'editor',
 			'sanitize_callback' => 'sanitize_text_field',
+			'sanitize_js_callback' => 'intval',
 			'setting_transport' => 'refresh',
 			'default' => 'Hello world!',
 		);
@@ -217,9 +219,10 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test sanitize_setting().
+	 * Test sanitize_setting() and js_value().
 	 *
 	 * @see WP_Customize_Postmeta_Controller::sanitize_setting()
+	 * @see WP_Customize_Postmeta_Controller::js_value()
 	 */
 	public function test_sanitize_setting() {
 		$args = array(
@@ -236,6 +239,7 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 		$values = array( 'hi', 123, array( 'foo' => 'bar' ) );
 		foreach( $values as $value ) {
 			$this->assertEquals( $value, $stub->sanitize_setting( $value, $setting ) );
+			$this->assertEquals( $value, $stub->js_value( $value, $setting ) );
 		}
 	}
 }
