@@ -201,6 +201,24 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test register_meta().
+	 *
+	 * @see WP_Customize_Postmeta_Controller::enqueue_admin_scripts()
+	 */
+	public function test_enqueue_admin_scripts() {
+		$args = array(
+			'meta_key' => 'foo',
+			'post_types' => array( 'post', 'page' ),
+			'post_type_supports' => 'editor',
+		);
+		/** @var WP_Customize_Postmeta_Controller $stub */
+		$stub = $this->getMockForAbstractClass( 'WP_Customize_Postmeta_Controller', array( $args ) );
+
+		// @todo Set the current screen to post, and check that it gets called.
+		$stub->enqueue_admin_scripts();
+	}
+
+	/**
 	 * Test sanitize_value().
 	 *
 	 * @see WP_Customize_Postmeta_Controller::sanitize_value()

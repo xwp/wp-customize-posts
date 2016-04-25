@@ -106,7 +106,7 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 		$json = ! empty( $_REQUEST['json'] ); // New-style request.
 
 		$post_id = intval( $_POST['post_id'] );
-		if ( ! current_user_can( 'edit_post', $post_id ) || ! get_post( $post_id ) ) {
+		if ( ! current_user_can( 'edit_post', $post_id ) || ! get_post( $post_id ) || empty( $_POST['thumbnail_id'] ) ) {
 			wp_die( -1 );
 		}
 		if ( $json ) {
@@ -136,24 +136,25 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	 * Handle saving a featured image from the post edit screen.
 	 *
 	 * @param int $post_id Post ID.
+	 * @return int|bool True on success, false on failure.
 	 */
 	public function handle_save_post_thumbnail_id( $post_id ) {
 		$nonce_action = 'set_post_thumbnail-' . $post_id;
 		if ( ! check_ajax_referer( $nonce_action, self::EDIT_POST_SCREEN_UPDATE_NONCE_ARG_NAME, false ) ) {
-			return;
+			return false;
 		}
 		if ( ! current_user_can( 'edit_post', $post_id ) ) {
-			return;
+			return false;
 		}
 		if ( ! isset( $_POST[ $this->meta_key ] ) ) {
-			return;
+			return false;
 		}
 		$attachment_id = wp_unslash( $_POST[ $this->meta_key ] );
 		$attachment_id = $this->sanitize_value( $attachment_id );
 		if ( -1 === $attachment_id ) {
-			delete_post_thumbnail( $post_id );
+			return delete_post_thumbnail( $post_id );
 		} elseif ( $attachment_id > 0 ) {
-			set_post_thumbnail( $post_id, $attachment_id );
+			return (bool) set_post_thumbnail( $post_id, $attachment_id );
 		}
 	}
 
@@ -194,7 +195,6 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 		add_filter( 'post_thumbnail_html', array( $this, 'filter_post_thumbnail_html' ), 10, 5 );
 		add_action( 'wp_footer', array( $this, 'add_partials' ) );
 		add_filter( 'customize_dynamic_partial_args', array( $this, 'filter_customize_dynamic_partial_args' ), 10, 2 );
-		// @todo Register partial for each _thumbnail_id postmeta setting on server? Or do it on the client?
 	}
 
 	/**
@@ -287,10 +287,18 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	 */
 	public function render_post_thumbnail_partial( WP_Customize_Partial $partial, $context = array() ) {
 		$setting = $partial->component->manager->get_setting( $partial->primary_setting );
+		$rendered = null;
 		if ( $setting instanceof WP_Customize_Postmeta_Setting ) {
-			return get_the_post_thumbnail( $setting->post_id, $context['size'], $context['attr'] );
+			$context = array_merge(
+				array(
+					'size' => 'post-thumbnail',
+					'attr' => '',
+				),
+				$context
+			);
+			$rendered = get_the_post_thumbnail( $setting->post_id, $context['size'], $context['attr'] );
 		}
-		return null;
+		return $rendered;
 	}
 
 	/**
