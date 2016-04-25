@@ -74,7 +74,7 @@ var CustomizePageTemplate = (function( api ) {
 		control = new api.controlConstructor.dynamic( controlId, {
 			params: {
 				section: section.id,
-				priority: 1,
+				priority: 40,
 				label: component.data.l10n.controlLabel,
 				active: true,
 				settings: {

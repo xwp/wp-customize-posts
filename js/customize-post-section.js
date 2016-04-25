@@ -377,7 +377,7 @@
 			control = new api.controlConstructor.post_discussion_fields( section.id + '[discussion_fields]', {
 				params: {
 					section: section.id,
-					priority: 40,
+					priority: 60,
 					label: api.Posts.data.l10n.fieldDiscussionLabel,
 					active: true,
 					settings: {
@@ -414,7 +414,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_author]', {
 				params: {
 					section: section.id,
-					priority: 50,
+					priority: 70,
 					label: api.Posts.data.l10n.fieldAuthorLabel,
 					active: true,
 					settings: {

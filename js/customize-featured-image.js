@@ -92,7 +92,7 @@ var CustomizeFeaturedImage = (function( api ) {
 		control = new api.MediaControl( controlId, {
 			params: {
 				section: section.id,
-				priority: 1,
+				priority: 50,
 				label: postTypeObj.labels.featured_image,
 				button_labels: {
 					change: component.data.l10n.default_button_labels.change,
