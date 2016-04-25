@@ -43,7 +43,7 @@ var CustomizeFeaturedImage = (function( api ) {
 	 * @returns {wp.customize.Control|null} The control.
 	 */
 	component.addControl = function( section ) {
-		var control, controlId, settingId, postTypeObj, originalValidate;
+		var control, controlId, settingId, postTypeObj, originalValidate, originalInitFrame;
 		if ( ! section.extended( api.Posts.PostSection ) ) {
 			return null;
 		}
@@ -116,8 +116,29 @@ var CustomizeFeaturedImage = (function( api ) {
 			}
 		} );
 
+		originalInitFrame = control.initFrame;
+
+		/**
+		 * Initialize the media frame and preselect
+		 *
+		 * @todo The wp.customize.MediaControl should do this in core.
+		 */
+		control.initFrame = function initFrameAndSetInitialSelection() {
+			originalInitFrame.call( this );
+			control.frame.on( 'open', function() {
+				var selection = control.frame.state().get( 'selection' );
+				if ( control.params.attachment && control.params.attachment.id ) {
+
+					// @todo This should also pre-check the images in the media library grid.
+					selection.reset( [ control.params.attachment ] );
+				} else {
+					selection.reset( [] );
+				}
+			} );
+		};
+
 		control.active.set( true );
-		control.active.validate = function() {
+		control.active.validate = function validateForcingTrue() {
 			return true;
 		};
 

@@ -6,6 +6,8 @@
 	/**
 	 * Patched ready method for MediaControl. Remove once fix in #36521 is available.
 	 *
+	 * @see FeaturedImage.updateSelection()
+	 *
 	 * @link https://core.trac.wordpress.org/ticket/36521
 	 */
 	api.MediaControl.prototype.ready = function() {
