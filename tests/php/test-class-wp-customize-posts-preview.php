@@ -223,6 +223,34 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test filter_preview_comments_open().
+	 *
+	 * @see WP_Customize_Posts_Preview::filter_preview_comments_open()
+	 */
+	public function test_filter_preview_comments_open() {
+		$post = get_post( $this->factory()->post->create() );
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+		$setting = new WP_Customize_Post_Setting( $this->wp_customize, $setting_id );
+		$preview = new WP_Customize_Posts_Preview( $setting->posts_component );
+		$preview->previewed_post_settings[ $post->ID ] = $setting;
+		$this->assertTrue( $preview->filter_preview_comments_open( false, $post ) );
+	}
+
+	/**
+	 * Test filter_preview_pings_open().
+	 *
+	 * @see WP_Customize_Posts_Preview::filter_preview_pings_open()
+	 */
+	public function test_filter_preview_pings_open() {
+		$post = get_post( $this->factory()->post->create() );
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+		$setting = new WP_Customize_Post_Setting( $this->wp_customize, $setting_id );
+		$preview = new WP_Customize_Posts_Preview( $setting->posts_component );
+		$preview->previewed_post_settings[ $post->ID ] = $setting;
+		$this->assertTrue( $preview->filter_preview_pings_open( false, $post ) );
+	}
+
+	/**
 	 * Test filter_get_post_meta_to_add_dynamic_postmeta_settings().
 	 *
 	 * @see WP_Customize_Posts_Preview::filter_get_post_meta_to_add_dynamic_postmeta_settings()

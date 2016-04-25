@@ -413,11 +413,17 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			}
 		}
 
+		// Ping status.
+		if ( empty( $post_data['ping_status'] ) ) {
+			if ( $update ) {
+				$post_data['ping_status'] = 'closed';
+			} else {
+				$post_data['ping_status'] = get_default_comment_status( $this->post_type, 'pingback' );
+			}
+		}
+
 		if ( empty( $post_data['post_author'] ) || ( ! current_user_can( $post_type_obj->cap->edit_others_posts ) && intval( $post_data['post_author'] ) !== get_current_user_id() ) ) {
 			$post_data['post_author'] = get_current_user_id();
-		}
-		if ( empty( $post_data['ping_status'] ) ) {
-			$post_data['ping_status'] = get_default_comment_status( $this->post_type, 'pingback' );
 		}
 		if ( empty( $post_data['menu_order'] ) ) {
 			$post_data['menu_order'] = 0;

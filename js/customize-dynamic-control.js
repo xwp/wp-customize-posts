@@ -76,7 +76,7 @@
 		 */
 		_setUpSettingPropertyLinks: function() {
 			var control = this, nodes, radios;
-			if ( ! control.params.setting_property || ! control.setting ) {
+			if ( ! control.setting ) {
 				return;
 			}
 

@@ -5,6 +5,9 @@
 	if ( ! api.previewPosts ) {
 		api.previewPosts = {};
 	}
+	if ( ! api.previewPosts.data ) {
+		api.previewPosts.data = {};
+	}
 
 	/**
 	 * Prevent shift-clicking from inadvertently causing text selection.
@@ -57,12 +60,51 @@
 				} );
 				api.selectiveRefresh.partial.add( partial.id, partial );
 
+				// Post field partial for comment_status comments-area.
+				if ( api.previewPosts.data.isSingular ) {
+					partial = new api.previewPosts.PostFieldPartial( id + '[comment_status][comments-area]', {
+						params: {
+							settings: [ id ],
+							containerInclusive: true,
+							fallbackRefresh: true
+						}
+					} );
+					api.selectiveRefresh.partial.add( partial.id, partial );
+				}
+
+				// Post field partial for comment_status comments-link.
+				partial = new api.previewPosts.PostFieldPartial( id + '[comment_status][comments-link]', {
+					params: {
+						settings: [ id ],
+						containerInclusive: true,
+						fallbackRefresh: false
+					}
+				} );
+				partial.fallback = function() {
+					if ( ! this.params.fallbackRefresh && 0 === this.placements().length && ! api.previewPosts.data.isSingular ) {
+						api.selectiveRefresh.requestFullRefresh();
+					} else {
+						api.previewPosts.PostFieldPartial.prototype.refresh.call( this );
+					}
+				};
+				api.selectiveRefresh.partial.add( partial.id, partial );
+
+				// Post field partial for ping_status.
+				partial = new api.previewPosts.PostFieldPartial( id + '[ping_status]', {
+					params: {
+						settings: [ id ],
+						containerInclusive: true,
+						fallbackRefresh: false
+					}
+				} );
+				api.selectiveRefresh.partial.add( partial.id, partial );
+
 				// Post field partial for post_author author-bio.
 				partial = new api.previewPosts.PostFieldPartial( id + '[post_author][author-bio]', {
 					params: {
 						settings: [ id ],
 						containerInclusive: true,
-						fallbackRefresh: false
+						fallbackRefresh: true
 					}
 				} );
 				api.selectiveRefresh.partial.add( partial.id, partial );
@@ -101,8 +143,10 @@
 		api.preview.bind( 'active', function() {
 			var settings = {};
 
+			_.extend( api.previewPosts.data, _wpCustomizePreviewPostsData );
+
 			api.each( function( setting ) {
-				var settingProperties = _wpCustomizePreviewPostsData.settingProperties[ setting.id ];
+				var settingProperties = api.previewPosts.data.settingProperties[ setting.id ];
 				if ( ! settingProperties ) {
 					return;
 				}
@@ -117,9 +161,9 @@
 			api.previewPosts.addPartials( settings );
 
 			api.preview.send( 'customized-posts', {
-				isPostPreview: _wpCustomizePreviewPostsData.isPostPreview,
-				isSingular: _wpCustomizePreviewPostsData.isSingular,
-				queriedPostId: _wpCustomizePreviewPostsData.queriedPostId,
+				isPostPreview: api.previewPosts.data.isPostPreview,
+				isSingular: api.previewPosts.data.isSingular,
+				queriedPostId: api.previewPosts.data.queriedPostId,
 				settings: settings
 			} );
 
