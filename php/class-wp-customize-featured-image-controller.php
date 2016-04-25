@@ -41,7 +41,7 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	 *
 	 * @var string
 	 */
-	public $setting_transport = 'refresh';
+	public $setting_transport = 'postMessage';
 
 	/**
 	 * Default value.
@@ -58,6 +58,7 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	public function __construct( array $args = array() ) {
 		parent::__construct( $args );
 		$this->override_default_edit_post_screen_functionality();
+		add_action( 'customize_register', array( $this, 'setup_selective_refresh' ) );
 	}
 
 	/**
@@ -184,6 +185,112 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 			esc_attr( wp_create_nonce( 'set_post_thumbnail-' . $post_id ) )
 		);
 		return $content;
+	}
+
+	/**
+	 * Set up selective refresh.
+	 */
+	public function setup_selective_refresh() {
+		add_filter( 'post_thumbnail_html', array( $this, 'filter_post_thumbnail_html' ), 10, 5 );
+		add_action( 'wp_footer', array( $this, 'add_partials' ) );
+		add_filter( 'customize_dynamic_partial_args', array( $this, 'filter_customize_dynamic_partial_args' ), 10, 2 );
+		// @todo Register partial for each _thumbnail_id postmeta setting on server? Or do it on the client?
+	}
+
+	/**
+	 * Add partials for the featured image.
+	 *
+	 * @global WP_Customize_Manager $wp_customize
+	 *
+	 * @return array List of WP_Customize_Partial instances added.
+	 */
+	public function add_partials() {
+		global $wp_customize;
+		if ( empty( $wp_customize ) || empty( $wp_customize->selective_refresh ) ) {
+			return array();
+		}
+		$partials = array();
+
+		foreach ( $wp_customize->settings() as $setting ) {
+			if ( $setting instanceof WP_Customize_Postmeta_Setting && $this->meta_key === $setting->meta_key ) {
+				$partial_id = $setting->id;
+				$partial_args = array(); // Note this is populated via WP_Customize_Featured_Image_Controller::filter_customize_dynamic_partial_args().
+				$partials[] = $wp_customize->selective_refresh->add_partial( $partial_id, $partial_args );
+			}
+		}
+
+		return $partials;
+	}
+
+	/**
+	 * Recognize post thumbnail partials.
+	 *
+	 * For a dynamic partial to be registered, this filter must be employed
+	 * to override the default false value with an array of args to pass to
+	 * the WP_Customize_Partial constructor.
+	 *
+	 * @param false|array $partial_args The arguments to the WP_Customize_Partial constructor.
+	 * @param string      $partial_id   ID for dynamic partial.
+	 * @return false|array Partial args or false if not a match.
+	 */
+	public function filter_customize_dynamic_partial_args( $partial_args, $partial_id ) {
+		if ( preg_match( WP_Customize_Postmeta_Setting::SETTING_ID_PATTERN, $partial_id, $matches ) && $matches['meta_key'] === $this->meta_key ) {
+			if ( false === $partial_args ) {
+				$partial_args = array();
+			}
+			$setting_id = $partial_id;
+			$partial_args['render_callback'] = array( $this, 'render_post_thumbnail_partial' );
+			$partial_args['settings'] = array( $setting_id );
+			$partial_args['container_inclusive'] = true;
+			$partial_args['selector'] = '[data-customize-partial-id="' . $partial_id . '"]';
+		}
+		return $partial_args;
+	}
+
+	/**
+	 * Filter the post thumbnail HTML.
+	 *
+	 * @param string       $html              The post thumbnail HTML.
+	 * @param int          $post_id           The post ID.
+	 * @param string       $post_thumbnail_id The post thumbnail ID.
+	 * @param string|array $size              The post thumbnail size. Image size or array of width and height
+	 *                                        values (in that order). Default 'post-thumbnail'.
+	 * @param string       $attr              Query string of attributes.
+	 * @return string HTML.
+	 */
+	public function filter_post_thumbnail_html( $html, $post_id, $post_thumbnail_id, $size, $attr ) {
+		unset( $post_thumbnail_id );
+
+		$attr = wp_parse_args( $attr );
+		unset( $attr['alt'] );
+
+		$context = array(
+			'post_id' => $post_id,
+			'size' => $size,
+			'attr' => $attr,
+		);
+		$replacement = '$1';
+		$post = get_post( $post_id );
+		$partial_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $this->meta_key );
+		$replacement .= sprintf( ' data-customize-partial-id="%s" ', esc_attr( $partial_id ) );
+		$replacement .= sprintf( ' data-customize-partial-placement-context="%s" ', esc_attr( wp_json_encode( $context ) ) );
+		$html = preg_replace( '#(<\w+)#', $replacement, $html, 1 );
+		return $html;
+	}
+
+	/**
+	 * Render post thumbnail partial.
+	 *
+	 * @param WP_Customize_Partial $partial Partial.
+	 * @param array                $context Context.
+	 * @return string|null
+	 */
+	public function render_post_thumbnail_partial( WP_Customize_Partial $partial, $context = array() ) {
+		$setting = $partial->component->manager->get_setting( $partial->primary_setting );
+		if ( $setting instanceof WP_Customize_Postmeta_Setting ) {
+			return get_the_post_thumbnail( $setting->post_id, $context['size'], $context['attr'] );
+		}
+		return null;
 	}
 
 	/**
