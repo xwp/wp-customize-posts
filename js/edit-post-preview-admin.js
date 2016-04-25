@@ -49,6 +49,8 @@ var EditPostPreviewAdmin = (function( $ ) {
 			post_title: $( '#title' ).val(),
 			post_content: editor && ! editor.isHidden() ? wp.editor.removep( editor.getContent() ) : $( '#content' ).val(),
 			post_excerpt: $( '#excerpt' ).val(),
+			comment_status: $( '#comment_status' ).prop( 'checked' ) ? 'open' : 'closed',
+			ping_status: $( '#ping_status' ).prop( 'checked' ) ? 'open' : 'closed',
 			post_author: $( '#post_author_override' ).val()
 		};
 		postSettingId = 'post[' + postType + '][' + postId + ']';
@@ -70,6 +72,8 @@ var EditPostPreviewAdmin = (function( $ ) {
 				}
 				$( '#content' ).val( data[ postSettingId ].post_content ).trigger( 'change' );
 				$( '#excerpt' ).val( data[ postSettingId ].post_excerpt ).trigger( 'change' );
+				$( '#comment_status' ).prop( 'checked', 'open' === data[ postSettingId ].comment_status ).trigger( 'change' );
+				$( '#ping_status' ).prop( 'checked', 'open' === data[ postSettingId ].ping_status ).trigger( 'change' );
 				$( '#post_author_override' ).val( data[ postSettingId ].post_author ).trigger( 'change' );
 			}
 

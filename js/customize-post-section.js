@@ -3,11 +3,35 @@
 
 (function( api, $ ) {
 	'use strict';
-	var defaultSectionPriorities = {};
+	var defaultSectionPriorities = {}, checkboxSynchronizerUpdate, checkboxSynchronizerRefresh;
 
 	if ( ! api.Posts ) {
 		api.Posts = {};
 	}
+
+	/*
+	 * Extend the checkbox synchronizer to support an on/off value instead of boolean.
+	 */
+	checkboxSynchronizerUpdate = api.Element.synchronizer.checkbox.update;
+	checkboxSynchronizerRefresh = api.Element.synchronizer.checkbox.refresh;
+	_.extend( api.Element.synchronizer.checkbox, {
+		update: function( to ) {
+			var value;
+			if ( ! _.isUndefined( this.element.data( 'on-value' ) ) && ! _.isUndefined( this.element.data( 'off-value' ) ) ) {
+				value = to === this.element.data( 'on-value' );
+			} else {
+				value = to;
+			}
+			checkboxSynchronizerUpdate.call( this, value );
+		},
+		refresh: function() {
+			if ( ! _.isUndefined( this.element.data( 'on-value' ) ) && ! _.isUndefined( this.element.data( 'off-value' ) ) ) {
+				return this.element.prop( 'checked' ) ? this.element.data( 'on-value' ) : this.element.data( 'off-value' );
+			} else {
+				return checkboxSynchronizerRefresh.call( this );
+			}
+		}
+	} );
 
 	/**
 	 * A section for managing a post.
@@ -106,6 +130,9 @@
 			if ( postTypeObj.supports.excerpt ) {
 				section.addExcerptControl();
 			}
+			if ( postTypeObj.supports.comments || postTypeObj.supports.trackbacks ) {
+				section.addDiscussionFieldsControl();
+			}
 			if ( postTypeObj.supports.author ) {
 				section.addAuthorControl();
 			}
@@ -121,7 +148,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_title]', {
 				params: {
 					section: section.id,
-					priority: 1,
+					priority: 10,
 					label: api.Posts.data.l10n.fieldTitleLabel,
 					active: true,
 					settings: {
@@ -162,7 +189,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
 				params: {
 					section: section.id,
-					priority: 1,
+					priority: 20,
 					label: api.Posts.data.l10n.fieldContentLabel,
 					active: true,
 					settings: {
@@ -311,7 +338,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_excerpt]', {
 				params: {
 					section: section.id,
-					priority: 1,
+					priority: 30,
 					label: api.Posts.data.l10n.fieldExcerptLabel,
 					active: true,
 					settings: {
@@ -340,6 +367,44 @@
 		},
 
 		/**
+		 * Add discussion fields (comments and ping status fields) control.
+		 *
+		 * @returns {wp.customize.Control}
+		 */
+		addDiscussionFieldsControl: function() {
+			var section = this, postTypeObj, control, setting = api( section.id );
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+			control = new api.controlConstructor.post_discussion_fields( section.id + '[discussion_fields]', {
+				params: {
+					section: section.id,
+					priority: 40,
+					label: api.Posts.data.l10n.fieldDiscussionLabel,
+					active: true,
+					settings: {
+						'default': setting.id
+					},
+					post_type_supports: postTypeObj.supports
+				}
+			} );
+
+			// Override preview trying to de-activate control not present in preview context.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.post_discussion_fields = control;
+			api.control.add( control.id, control );
+
+			// Remove the setting from the settingValidationMessages since it is not specific to this field.
+			if ( control.settingValidationMessages ) {
+				control.settingValidationMessages.remove( setting.id );
+				control.settingValidationMessages.add( control.id, new api.Value( '' ) );
+			}
+			return control;
+		},
+
+		/**
 		 * Add post author control.
 		 *
 		 * @returns {wp.customize.Control}
@@ -349,7 +414,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_author]', {
 				params: {
 					section: section.id,
-					priority: 1,
+					priority: 50,
 					label: api.Posts.data.l10n.fieldAuthorLabel,
 					active: true,
 					settings: {

@@ -49,6 +49,8 @@ class Test_WP_Customize_Page_Template_Controller extends WP_UnitTestCase {
 	 */
 	function tearDown() {
 		$this->wp_customize = null;
+		unset( $GLOBALS['current_screen'] );
+		unset( $GLOBALS['screen'] );
 		unset( $_POST['customized'] );
 		unset( $GLOBALS['wp_customize'] );
 		parent::tearDown();
@@ -99,10 +101,11 @@ class Test_WP_Customize_Page_Template_Controller extends WP_UnitTestCase {
 	 * @see WP_Customize_Page_Template_Controller::enqueue_edit_post_scripts()
 	 */
 	public function test_enqueue_edit_post_scripts() {
+		set_current_screen( 'post' );
 		$handle = 'edit-post-preview-admin-page-template';
 		$controller = new WP_Customize_Page_Template_Controller();
 		$this->assertFalse( wp_script_is( $handle, 'enqueued' ) );
-		$controller->enqueue_edit_post_scripts();
+		$controller->enqueue_admin_scripts();
 		$this->assertTrue( wp_script_is( $handle, 'enqueued' ) );
 	}
 
