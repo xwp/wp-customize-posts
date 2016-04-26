@@ -73,9 +73,9 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 		$exports = array(
 			'l10n' => array(
 				'default_button_labels' => array(
-					'change' => __( 'Change Image', 'customize-post' ),
-					'default' => __( 'Default', 'customize-post' ),
-					'placeholder' => __( 'No image selected', 'customize-post' ),
+					'change' => __( 'Change Image', 'customize-posts' ),
+					'default' => __( 'Default', 'customize-posts' ),
+					'placeholder' => __( 'No image selected', 'customize-posts' ),
 					'remove' => __( 'Remove', 'customize-posts' ),
 					'select' => __( 'Select Image', 'customize-posts' ),
 				),
