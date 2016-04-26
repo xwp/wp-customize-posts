@@ -64,20 +64,20 @@ class Test_WP_Customize_Featured_Image_Controller extends WP_UnitTestCase {
 		$this->assertEquals( '_thumbnail_id', $controller->meta_key );
 		$this->assertEquals( 'thumbnail', $controller->post_type_supports );
 		$this->assertEquals( 'postMessage', $controller->setting_transport );
-		$this->assertEquals( -1, $controller->default );
+		$this->assertEquals( '', $controller->default );
 		$this->assertEquals( 10, has_action( 'customize_register', array( $controller, 'setup_selective_refresh' ) ) );
 	}
 
 	/**
 	 * Test enqueue_customize_scripts().
 	 *
-	 * @see WP_Customize_Featured_Image_Controller::enqueue_customize_scripts()
+	 * @see WP_Customize_Featured_Image_Controller::enqueue_customize_pane_scripts()
 	 */
 	public function test_enqueue_customize_scripts() {
 		$handle = 'customize-featured-image';
 		$controller = new WP_Customize_Featured_Image_Controller();
 		$this->assertFalse( wp_script_is( $handle, 'enqueued' ) );
-		$controller->enqueue_customize_scripts();
+		$controller->enqueue_customize_pane_scripts();
 		$this->assertTrue( wp_script_is( $handle, 'enqueued' ) );
 
 		$data = wp_scripts()->get_data( $handle, 'after' );
@@ -122,14 +122,6 @@ class Test_WP_Customize_Featured_Image_Controller extends WP_UnitTestCase {
 		$_REQUEST['_wpnonce'] = wp_create_nonce( "set_post_thumbnail-$post_id" );
 		$_POST['post_id'] = $post_id;
 		add_filter( 'wp_die_handler', array( $this, 'die_handler_test_handle_ajax_set_post_thumbnail' ) );
-
-		$_POST['thumbnail_id'] = $post_id;
-		$controller->handle_ajax_set_post_thumbnail();
-		$this->assertContains( 'The chosen image will not persist until you save', $this->die_args[0] );
-		$this->assertContains( 'Invalid attachment selected', $this->die_args[0] );
-		$this->assertContains( 'set_post_thumbnail_nonce', $this->die_args[0] );
-		$this->assertNotContains( 'Remove featured image', $this->die_args[0] );
-		$this->die_args = array();
 
 		$_POST['thumbnail_id'] = $attachment_id;
 		$controller->handle_ajax_set_post_thumbnail();
@@ -279,9 +271,9 @@ class Test_WP_Customize_Featured_Image_Controller extends WP_UnitTestCase {
 		) );
 		$post_id = $this->factory()->post->create();
 		$this->assertEquals( $attachment_id, $controller->sanitize_value( (string) $attachment_id ) );
-		$this->assertEquals( -1, $controller->sanitize_value( '' ) );
-		$this->assertFalse( $controller->sanitize_value( -123 ) );
-		$this->assertFalse( $controller->sanitize_value( $post_id ) );
+		$this->assertEquals( '', $controller->sanitize_value( -1 ) );
+		$this->assertEquals( '', $controller->sanitize_value( -123 ) );
+		$this->assertEquals( '', $controller->sanitize_value( $post_id ) );
 	}
 
 	/**
@@ -295,10 +287,15 @@ class Test_WP_Customize_Featured_Image_Controller extends WP_UnitTestCase {
 		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $controller->meta_key );
 		$setting = new WP_Customize_Postmeta_Setting( $this->wp_customize, $setting_id );
 
-		$this->assertNull( $controller->sanitize_setting( 'bad', $setting, false ) );
+		$this->assertEquals( '', $controller->sanitize_setting( 'bad', $setting, false ) );
 		$this->assertInstanceOf( 'WP_Error', $controller->sanitize_setting( 'bad', $setting, true ) );
 	}
 
+	/**
+	 * Test sanitize_setting().
+	 *
+	 * @see WP_Customize_Featured_Image_Controller::js_value()
+	 */
 	public function test_js_value() {
 		$controller = new WP_Customize_Featured_Image_Controller();
 		$post = get_post( $this->factory()->post->create() );
@@ -306,7 +303,7 @@ class Test_WP_Customize_Featured_Image_Controller extends WP_UnitTestCase {
 		$setting = new WP_Customize_Postmeta_Setting( $this->wp_customize, $setting_id );
 
 		$this->assertEquals( 1, $controller->js_value( '1', $setting ) );
-		$this->assertEquals( -1, $controller->js_value( '0', $setting ) );
-		$this->assertEquals( -1, $controller->js_value( -123, $setting ) );
+		$this->assertEquals( '', $controller->js_value( '0', $setting ) );
+		$this->assertEquals( '', $controller->js_value( -123, $setting ) );
 	}
 }

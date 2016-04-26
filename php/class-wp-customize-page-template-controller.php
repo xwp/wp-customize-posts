@@ -42,7 +42,7 @@ class WP_Customize_Page_Template_Controller extends WP_Customize_Postmeta_Contro
 	/**
 	 * Enqueue customize scripts.
 	 */
-	public function enqueue_customize_scripts() {
+	public function enqueue_customize_pane_scripts() {
 		$handle = 'customize-page-template';
 		wp_enqueue_script( $handle );
 		$exports = array(

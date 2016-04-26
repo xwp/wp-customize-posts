@@ -115,7 +115,7 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 		}
 
 		$this->assertEquals( 10, has_action( 'customize_posts_register_meta', array( $stub, 'register_meta' ) ) );
-		$this->assertEquals( 10, has_action( 'customize_controls_enqueue_scripts', array( $stub, 'enqueue_customize_scripts' ) ) );
+		$this->assertEquals( 10, has_action( 'customize_controls_enqueue_scripts', array( $stub, 'enqueue_customize_pane_scripts' ) ) );
 		$this->assertEquals( 10, has_action( 'admin_enqueue_scripts', array( $stub, 'enqueue_admin_scripts' ) ) );
 	}
 

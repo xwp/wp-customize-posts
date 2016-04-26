@@ -72,13 +72,13 @@ class Test_WP_Customize_Page_Template_Controller extends WP_UnitTestCase {
 	/**
 	 * Test enqueue_customize_scripts().
 	 *
-	 * @see WP_Customize_Page_Template_Controller::enqueue_customize_scripts()
+	 * @see WP_Customize_Page_Template_Controller::enqueue_customize_pane_scripts()
 	 */
 	public function test_enqueue_customize_scripts() {
 		$handle = 'customize-page-template';
 		$controller = new WP_Customize_Page_Template_Controller();
 		$this->assertFalse( wp_script_is( $handle, 'enqueued' ) );
-		$controller->enqueue_customize_scripts();
+		$controller->enqueue_customize_pane_scripts();
 		$this->assertTrue( wp_script_is( $handle, 'enqueued' ) );
 
 		$data = wp_scripts()->get_data( $handle, 'after' );

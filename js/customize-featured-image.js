@@ -70,25 +70,6 @@ var CustomizeFeaturedImage = (function( api ) {
 			} );
 		}
 
-		/*
-		 * When a featured image is removed from a media control, normally its
-		 * value is set to an empty string. There is no way to differentiate
-		 * between an empty string value and an unpopulated postmeta setting,
-		 * since get_post_meta() returns an empty string for postmeta that don't
-		 * exist. So this forces a value to be sanitized as a discrete -1 value.
-		 */
-		api( settingId, function( setting ) {
-			originalValidate = setting.validate;
-			setting.validate = function validateSetting( value ) {
-				var attachmentId = value;
-				if ( '' === attachmentId ) {
-					attachmentId = -1;
-				}
-				originalValidate.call( this, attachmentId );
-				return attachmentId;
-			};
-		} );
-
 		control = new api.MediaControl( controlId, {
 			params: {
 				section: section.id,

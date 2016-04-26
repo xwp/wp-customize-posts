@@ -224,6 +224,12 @@ class Customize_Posts_Plugin {
 		$deps = array( 'edit-post-preview-admin' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
+		$handle = 'customize-preview-featured-image';
+		$src = $plugin_dir_url . 'js/customize-preview-featured-image' . $suffix;
+		$deps = array( 'customize-preview' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 	}
 
 	/**

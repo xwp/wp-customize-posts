@@ -96,8 +96,9 @@ abstract class WP_Customize_Postmeta_Controller {
 		}
 
 		add_action( 'customize_posts_register_meta', array( $this, 'register_meta' ) );
-		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_customize_scripts' ) );
+		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_customize_pane_scripts' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
+		add_action( 'customize_preview_init', array( $this, 'customize_preview_init' ) );
 	}
 
 	/**
@@ -139,9 +140,11 @@ abstract class WP_Customize_Postmeta_Controller {
 	}
 
 	/**
-	 * Enqueue customize scripts.
+	 * Enqueue scripts for Customizer pane (controls).
+	 *
+	 * This would be the scripts for the postmeta Customizer control.
 	 */
-	abstract public function enqueue_customize_scripts();
+	abstract public function enqueue_customize_pane_scripts();
 
 	/**
 	 * Enqueue admin scripts.
@@ -154,8 +157,24 @@ abstract class WP_Customize_Postmeta_Controller {
 
 	/**
 	 * Enqueue edit post scripts.
+	 *
+	 * This would be for receiving updates from the Customizer when making changes in a post preview.
 	 */
 	public function enqueue_edit_post_scripts() {}
+
+	/**
+	 * Initialize Customizer preview.
+	 */
+	public function customize_preview_init() {
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_customize_preview_scripts' ) );
+	}
+
+	/**
+	 * Enqueue scripts for the Customizer preview.
+	 *
+	 * This would enqueue the script for any custom partials.
+	 */
+	public function enqueue_customize_preview_scripts() {}
 
 	/**
 	 * Sanitize a meta value.

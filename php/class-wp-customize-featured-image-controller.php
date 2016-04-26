@@ -46,9 +46,12 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	/**
 	 * Default value.
 	 *
+	 * Note that this needs to be '' instead of -1 due to has_post_thumbnail()
+	 * which casts the stored postmeta value to a boolean.
+	 *
 	 * @var string
 	 */
-	public $default = -1;
+	public $default = '';
 
 	/**
 	 * Constructor.
@@ -62,9 +65,9 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	}
 
 	/**
-	 * Enqueue customize scripts.
+	 * Enqueue Customizer pane (controls) scripts.
 	 */
-	public function enqueue_customize_scripts() {
+	public function enqueue_customize_pane_scripts() {
 		$handle = 'customize-featured-image';
 		wp_enqueue_script( $handle );
 		$exports = array(
@@ -79,6 +82,15 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 			),
 		);
 		wp_add_inline_script( $handle, sprintf( 'CustomizeFeaturedImage.init( %s );', wp_json_encode( $exports ) ) );
+	}
+
+	/**
+	 * Enqueue Customizer preview scripts.
+	 */
+	public function enqueue_customize_preview_scripts() {
+		$handle = 'customize-preview-featured-image';
+		wp_enqueue_script( $handle );
+		wp_add_inline_script( $handle, 'CustomizePreviewFeaturedImage.init()' );
 	}
 
 	/**
@@ -151,7 +163,7 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 		}
 		$attachment_id = wp_unslash( $_POST[ $this->meta_key ] );
 		$attachment_id = $this->sanitize_value( $attachment_id );
-		if ( -1 === $attachment_id ) {
+		if ( -1 === $attachment_id || empty( $attachment_id ) ) {
 			return delete_post_thumbnail( $post_id );
 		} elseif ( $attachment_id > 0 ) {
 			return (bool) set_post_thumbnail( $post_id, $attachment_id );
@@ -241,8 +253,10 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 			$setting_id = $partial_id;
 			$partial_args['render_callback'] = array( $this, 'render_post_thumbnail_partial' );
 			$partial_args['settings'] = array( $setting_id );
+			$partial_args['primary_setting'] = $setting_id;
 			$partial_args['container_inclusive'] = true;
 			$partial_args['selector'] = '[data-customize-partial-id="' . $partial_id . '"]';
+			$partial_args['type'] = 'featured_image';
 		}
 		return $partial_args;
 	}
@@ -294,7 +308,7 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 					'size' => 'post-thumbnail',
 					'attr' => '',
 				),
-				$context
+				wp_parse_args( $context )
 			);
 			$rendered = get_the_post_thumbnail( $setting->post_id, $context['size'], $context['attr'] );
 		}
@@ -309,21 +323,21 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	}
 
 	/**
-	 * Sanitize/validate an attachment ID as representing an attachment post ID or -1.
+	 * Sanitize/validate an attachment ID as representing an attachment post ID or ''.
 	 *
 	 * @see sanitize_meta()
 	 *
 	 * @param int $attachment_id Attachment ID.
-	 * @return int|false Attachment ID, -1, or false if failure.
+	 * @return int|string Attachment ID if valid or empty string if failure.
 	 */
 	public function sanitize_value( $attachment_id ) {
 		$attachment_id = intval( $attachment_id );
 		if ( empty( $attachment_id ) || -1 === $attachment_id ) {
-			return -1;
+			return '';
 		}
 		$mime_type = get_post_mime_type( $attachment_id );
 		if ( ! $mime_type || ! preg_match( '#^image/#', $mime_type ) ) {
-			return false;
+			return '';
 		}
 		return $attachment_id;
 	}
@@ -341,18 +355,28 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	public function sanitize_setting( $attachment_id, WP_Customize_Postmeta_Setting $setting, $strict = false ) {
 		unset( $setting );
 
+		$is_valid = (
+			'' === $attachment_id
+			||
+			-1 === $attachment_id
+			||
+			( is_int( $attachment_id ) && $attachment_id > 0 )
+		);
+
 		/*
 		 * Note that at this point, sanitize_meta() has already been called in WP_Customize_Postmeta_Setting::sanitize(),
 		 * and the meta is registered wit WP_Customize_Featured_Image_Controller::sanitize_value() as the sanitize_callback().
 		 * So $attachment_id is either a valid attachment ID, -1, or false.
 		 */
-		if ( ! is_int( $attachment_id ) ) {
+		if ( $strict && ! $is_valid  ) {
 			if ( $strict ) {
 				return new WP_Error( 'invalid_attachment_id', __( 'The attachment is invalid.', 'customize-posts' ) );
 			} else {
 				return null;
 			}
 		}
+
+		$attachment_id = $this->sanitize_value( $attachment_id );
 
 		return $attachment_id;
 	}
@@ -363,13 +387,13 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	 * @param mixed                         $meta_value The setting value.
 	 * @param WP_Customize_Postmeta_Setting $setting    Setting instance.
 	 *
-	 * @return mixed Formatted value.
+	 * @return int|string Formatted value, integer if greater than 0, or empty string otherwise.
 	 */
 	public function js_value( $meta_value, WP_Customize_Postmeta_Setting $setting ) {
 		unset( $setting );
 		$meta_value = intval( $meta_value );
 		if ( $meta_value <= 0 ) {
-			$meta_value = -1;
+			$meta_value = '';
 		}
 		return $meta_value;
 	}
