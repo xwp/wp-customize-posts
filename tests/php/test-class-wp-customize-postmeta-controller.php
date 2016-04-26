@@ -117,6 +117,21 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 		$this->assertEquals( 10, has_action( 'customize_posts_register_meta', array( $stub, 'register_meta' ) ) );
 		$this->assertEquals( 10, has_action( 'customize_controls_enqueue_scripts', array( $stub, 'enqueue_customize_pane_scripts' ) ) );
 		$this->assertEquals( 10, has_action( 'admin_enqueue_scripts', array( $stub, 'enqueue_admin_scripts' ) ) );
+		$this->assertEquals( 10, has_action( 'customize_preview_init', array( $stub, 'customize_preview_init' ) ) );
+	}
+
+	/**
+	 * Test customize_preview_init().
+	 *
+	 * @see WP_Customize_Postmeta_Controller::customize_preview_init()
+	 */
+	public function test_customize_preview_init() {
+		$args = array( 'meta_key' => 'foo' );
+		/** @var WP_Customize_Postmeta_Controller $stub */
+		$stub = $this->getMockForAbstractClass( 'WP_Customize_Postmeta_Controller', array( $args ) );
+		$this->assertFalse( has_action( 'wp_enqueue_scripts', array( $stub, 'enqueue_customize_preview_scripts' ) ) );
+		$stub->customize_preview_init();
+		$this->assertEquals( 10, has_action( 'wp_enqueue_scripts', array( $stub, 'enqueue_customize_preview_scripts' ) ) );
 	}
 
 	/**

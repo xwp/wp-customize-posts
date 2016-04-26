@@ -163,9 +163,9 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 		}
 		$attachment_id = wp_unslash( $_POST[ $this->meta_key ] );
 		$attachment_id = $this->sanitize_value( $attachment_id );
-		if ( -1 === $attachment_id || empty( $attachment_id ) ) {
+		if ( empty( $attachment_id ) ) {
 			return delete_post_thumbnail( $post_id );
-		} elseif ( $attachment_id > 0 ) {
+		} else {
 			return (bool) set_post_thumbnail( $post_id, $attachment_id );
 		}
 	}

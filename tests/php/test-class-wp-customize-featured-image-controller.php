@@ -69,11 +69,11 @@ class Test_WP_Customize_Featured_Image_Controller extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test enqueue_customize_scripts().
+	 * Test enqueue_customize_pane_scripts().
 	 *
 	 * @see WP_Customize_Featured_Image_Controller::enqueue_customize_pane_scripts()
 	 */
-	public function test_enqueue_customize_scripts() {
+	public function test_enqueue_customize_pane_scripts() {
 		$handle = 'customize-featured-image';
 		$controller = new WP_Customize_Featured_Image_Controller();
 		$this->assertFalse( wp_script_is( $handle, 'enqueued' ) );
@@ -90,6 +90,23 @@ class Test_WP_Customize_Featured_Image_Controller extends WP_UnitTestCase {
 		$after = wp_scripts()->get_data( $handle, 'after' );
 		$this->assertInternalType( 'array', $after );
 		$this->assertContains( 'CustomizeFeaturedImage.init(', array_pop( $after ) );
+	}
+
+	/**
+	 * Test enqueue_customize_preview_scripts().
+	 *
+	 * @see WP_Customize_Featured_Image_Controller::enqueue_customize_preview_scripts()
+	 */
+	public function test_enqueue_customize_preview_scripts() {
+		$handle = 'customize-preview-featured-image';
+		$controller = new WP_Customize_Featured_Image_Controller();
+		$this->assertFalse( wp_script_is( $handle, 'enqueued' ) );
+		$controller->enqueue_customize_preview_scripts();
+		$this->assertTrue( wp_script_is( $handle, 'enqueued' ) );
+
+		$after = wp_scripts()->get_data( $handle, 'after' );
+		$this->assertInternalType( 'array', $after );
+		$this->assertContains( 'CustomizePreviewFeaturedImage.init(', array_pop( $after ) );
 	}
 
 	/**
@@ -243,6 +260,34 @@ class Test_WP_Customize_Featured_Image_Controller extends WP_UnitTestCase {
 
 		$partial_html = $controller->render_post_thumbnail_partial( $partial, array() );
 		$this->assertEquals( $partial_html, $html );
+	}
+
+	/**
+	 * Test add_partials() without Customizer.
+	 *
+	 * @see WP_Customize_Featured_Image_Controller::add_partials()
+	 */
+	public function test_add_partials_without_customize() {
+		$controller = new WP_Customize_Featured_Image_Controller();
+		$GLOBALS['wp_customize'] = null;
+		$partials = $controller->add_partials();
+		$this->assertInternalType( 'array', $partials );
+		$this->assertCount( 0, $partials );
+	}
+
+	/**
+	 * See filter_customize_dynamic_partial_args().
+	 *
+	 * @see WP_Customize_Featured_Image_Controller::filter_customize_dynamic_partial_args()
+	 */
+	public function test_filter_customize_dynamic_partial_args() {
+		$controller = new WP_Customize_Featured_Image_Controller();
+		$post = get_post( $this->factory()->post->create() );
+		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $controller->meta_key );
+		$args = $controller->filter_customize_dynamic_partial_args( false, $setting_id );
+		$this->assertInternalType( 'array', $args );
+
+		$this->assertFalse( $controller->filter_customize_dynamic_partial_args( false, 'unknown' ) );
 	}
 
 	/**
