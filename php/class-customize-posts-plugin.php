@@ -227,7 +227,7 @@ class Customize_Posts_Plugin {
 
 		$handle = 'customize-preview-featured-image';
 		$src = $plugin_dir_url . 'js/customize-preview-featured-image' . $suffix;
-		$deps = array( 'customize-preview' );
+		$deps = array( 'customize-preview', 'customize-selective-refresh' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 	}
