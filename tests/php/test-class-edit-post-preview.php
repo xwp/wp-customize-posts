@@ -154,13 +154,50 @@ class Test_Edit_Post_Preview extends WP_UnitTestCase {
 	 * @see Edit_Post_Preview::enqueue_admin_scripts()
 	 */
 	public function test_enqueue_admin_scripts() {
+		// @codingStandardsIgnoreStart
 		$GLOBALS['post'] = get_post( $this->post_id );
+		// @codingStandardsIgnoreStop
 		set_current_screen( 'post-new.php' );
 
 		$this->preview->enqueue_admin_scripts();
 
 		$this->assertTrue( wp_script_is( 'edit-post-preview-admin', 'enqueued' ) );
 		$this->assertTrue( wp_script_is( 'customize-loader', 'enqueued' ) );
+	}
+
+	/**
+	 * Test remove_static_controls_and_sections().
+	 *
+	 * @see Edit_Post_Preview::remove_static_controls_and_sections()
+	 */
+	public function test_remove_static_controls_and_sections() {
+		global $wp_customize;
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
+		// @codingStandardsIgnoreStart
+		$wp_customize = new WP_Customize_Manager();
+		// @codingStandardsIgnoreStop
+
+		$this->assertEmpty( $wp_customize->sections() );
+		$this->assertEmpty( $wp_customize->controls() );
+		$wp_customize->register_controls();
+		$this->assertNotEmpty( $wp_customize->sections() );
+		$this->assertNotEmpty( $wp_customize->controls() );
+		$this->preview->remove_static_controls_and_sections();
+		$this->assertNotEmpty( $wp_customize->sections() );
+		$this->assertNotEmpty( $wp_customize->controls() );
+
+		$_GET['previewed_post'] = 123;
+		$_REQUEST['customize_preview_post_nonce'] = wp_create_nonce( 'customize_preview_post' );
+		$this->preview->remove_static_controls_and_sections();
+		$this->assertEmpty( $wp_customize->sections() );
+		$this->assertEmpty( $wp_customize->controls() );
+
+		// @codingStandardsIgnoreStart
+		$wp_customize = null;
+		// @codingStandardsIgnoreStop
+		$this->preview->remove_static_controls_and_sections();
 	}
 
 	/**

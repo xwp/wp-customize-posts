@@ -85,7 +85,8 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 		$this->assertNull( $stub->theme_supports );
 		$this->assertEmpty( $stub->post_types );
 		$this->assertNull( $stub->post_type_supports );
-		$this->assertNull( $stub->sanitize_callback );
+		$this->assertEquals( array( $stub, 'sanitize_setting' ), $stub->sanitize_callback );
+		$this->assertEquals( array( $stub, 'js_value' ), $stub->sanitize_js_callback );
 		$this->assertEquals( 'postMessage', $stub->setting_transport );
 		$this->assertEquals( '', $stub->default );
 	}
@@ -102,6 +103,7 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 			'post_types' => array( 'post', 'page' ),
 			'post_type_supports' => 'editor',
 			'sanitize_callback' => 'sanitize_text_field',
+			'sanitize_js_callback' => 'intval',
 			'setting_transport' => 'refresh',
 			'default' => 'Hello world!',
 		);
@@ -113,8 +115,23 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 		}
 
 		$this->assertEquals( 10, has_action( 'customize_posts_register_meta', array( $stub, 'register_meta' ) ) );
-		$this->assertEquals( 10, has_action( 'customize_controls_enqueue_scripts', array( $stub, 'enqueue_customize_scripts' ) ) );
+		$this->assertEquals( 10, has_action( 'customize_controls_enqueue_scripts', array( $stub, 'enqueue_customize_pane_scripts' ) ) );
 		$this->assertEquals( 10, has_action( 'admin_enqueue_scripts', array( $stub, 'enqueue_admin_scripts' ) ) );
+		$this->assertEquals( 10, has_action( 'customize_preview_init', array( $stub, 'customize_preview_init' ) ) );
+	}
+
+	/**
+	 * Test customize_preview_init().
+	 *
+	 * @see WP_Customize_Postmeta_Controller::customize_preview_init()
+	 */
+	public function test_customize_preview_init() {
+		$args = array( 'meta_key' => 'foo' );
+		/** @var WP_Customize_Postmeta_Controller $stub */
+		$stub = $this->getMockForAbstractClass( 'WP_Customize_Postmeta_Controller', array( $args ) );
+		$this->assertFalse( has_action( 'wp_enqueue_scripts', array( $stub, 'enqueue_customize_preview_scripts' ) ) );
+		$stub->customize_preview_init();
+		$this->assertEquals( 10, has_action( 'wp_enqueue_scripts', array( $stub, 'enqueue_customize_preview_scripts' ) ) );
 	}
 
 	/**
@@ -199,6 +216,24 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test register_meta().
+	 *
+	 * @see WP_Customize_Postmeta_Controller::enqueue_admin_scripts()
+	 */
+	public function test_enqueue_admin_scripts() {
+		$args = array(
+			'meta_key' => 'foo',
+			'post_types' => array( 'post', 'page' ),
+			'post_type_supports' => 'editor',
+		);
+		/** @var WP_Customize_Postmeta_Controller $stub */
+		$stub = $this->getMockForAbstractClass( 'WP_Customize_Postmeta_Controller', array( $args ) );
+
+		// @todo Set the current screen to post, and check that it gets called.
+		$stub->enqueue_admin_scripts();
+	}
+
+	/**
 	 * Test sanitize_value().
 	 *
 	 * @see WP_Customize_Postmeta_Controller::sanitize_value()
@@ -217,9 +252,10 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test sanitize_setting().
+	 * Test sanitize_setting() and js_value().
 	 *
 	 * @see WP_Customize_Postmeta_Controller::sanitize_setting()
+	 * @see WP_Customize_Postmeta_Controller::js_value()
 	 */
 	public function test_sanitize_setting() {
 		$args = array(
@@ -236,6 +272,7 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 		$values = array( 'hi', 123, array( 'foo' => 'bar' ) );
 		foreach( $values as $value ) {
 			$this->assertEquals( $value, $stub->sanitize_setting( $value, $setting ) );
+			$this->assertEquals( $value, $stub->js_value( $value, $setting ) );
 		}
 	}
 }

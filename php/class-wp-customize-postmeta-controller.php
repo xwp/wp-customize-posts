@@ -49,6 +49,13 @@ abstract class WP_Customize_Postmeta_Controller {
 	public $sanitize_callback;
 
 	/**
+	 * Sanitize JS setting value callback (aka JSON export).
+	 *
+	 * @var callable
+	 */
+	public $sanitize_js_callback;
+
+	/**
 	 * Setting transport.
 	 *
 	 * @var string
@@ -81,9 +88,17 @@ abstract class WP_Customize_Postmeta_Controller {
 			throw new Exception( 'Missing meta_key' );
 		}
 
+		if ( ! isset( $this->sanitize_callback ) ) {
+			$this->sanitize_callback = array( $this, 'sanitize_setting' );
+		}
+		if ( ! isset( $this->sanitize_js_callback ) ) {
+			$this->sanitize_js_callback = array( $this, 'js_value' );
+		}
+
 		add_action( 'customize_posts_register_meta', array( $this, 'register_meta' ) );
-		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_customize_scripts' ) );
+		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_customize_pane_scripts' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
+		add_action( 'customize_preview_init', array( $this, 'customize_preview_init' ) );
 	}
 
 	/**
@@ -112,7 +127,8 @@ abstract class WP_Customize_Postmeta_Controller {
 
 		foreach ( $post_types as $post_type ) {
 			$setting_args = array(
-				'sanitize_callback' => array( $this, 'sanitize_setting' ),
+				'sanitize_callback' => $this->sanitize_callback,
+				'sanitize_js_callback' => $this->sanitize_js_callback,
 				'transport' => $this->setting_transport,
 				'theme_supports' => $this->theme_supports,
 				'default' => $this->default,
@@ -124,9 +140,11 @@ abstract class WP_Customize_Postmeta_Controller {
 	}
 
 	/**
-	 * Enqueue customize scripts.
+	 * Enqueue scripts for Customizer pane (controls).
+	 *
+	 * This would be the scripts for the postmeta Customizer control.
 	 */
-	abstract public function enqueue_customize_scripts();
+	abstract public function enqueue_customize_pane_scripts();
 
 	/**
 	 * Enqueue admin scripts.
@@ -139,8 +157,24 @@ abstract class WP_Customize_Postmeta_Controller {
 
 	/**
 	 * Enqueue edit post scripts.
+	 *
+	 * This would be for receiving updates from the Customizer when making changes in a post preview.
 	 */
 	public function enqueue_edit_post_scripts() {}
+
+	/**
+	 * Initialize Customizer preview.
+	 */
+	public function customize_preview_init() {
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_customize_preview_scripts' ) );
+	}
+
+	/**
+	 * Enqueue scripts for the Customizer preview.
+	 *
+	 * This would enqueue the script for any custom partials.
+	 */
+	public function enqueue_customize_preview_scripts() {}
 
 	/**
 	 * Sanitize a meta value.
@@ -159,6 +193,8 @@ abstract class WP_Customize_Postmeta_Controller {
 	/**
 	 * Sanitize (and validate) an input.
 	 *
+	 * Callback for `customize_sanitize_post_meta_{$meta_key}` filter.
+	 *
 	 * @see update_metadata()
 	 *
 	 * @param string                        $meta_value The value to sanitize.
@@ -168,6 +204,20 @@ abstract class WP_Customize_Postmeta_Controller {
 	 */
 	public function sanitize_setting( $meta_value, WP_Customize_Postmeta_Setting $setting, $strict = false ) {
 		unset( $setting, $strict );
+		return $meta_value;
+	}
+
+	/**
+	 * Callback to format a Customize setting value for use in JavaScript.
+	 *
+	 * Callback for `customize_sanitize_js_post_meta_{$meta_key}` filter.
+	 *
+	 * @param mixed                         $meta_value The setting value.
+	 * @param WP_Customize_Postmeta_Setting $setting    Setting instance.
+	 * @return mixed Formatted value.
+	 */
+	public function js_value( $meta_value, WP_Customize_Postmeta_Setting $setting ) {
+		unset( $setting );
 		return $meta_value;
 	}
 }

@@ -42,22 +42,16 @@ class WP_Customize_Page_Template_Controller extends WP_Customize_Postmeta_Contro
 	/**
 	 * Enqueue customize scripts.
 	 */
-	public function enqueue_customize_scripts() {
+	public function enqueue_customize_pane_scripts() {
 		$handle = 'customize-page-template';
 		wp_enqueue_script( $handle );
-		wp_add_inline_script( $handle, 'CustomizePageTemplate.init();' );
-
 		$exports = array(
 			'defaultPageTemplateChoices' => $this->get_page_template_choices(),
 			'l10n' => array(
 				'controlLabel' => __( 'Page Template', 'customize-posts' ),
 			),
 		);
-		wp_scripts()->add_data(
-			$handle,
-			'data',
-			sprintf( 'var _wpCustomizePageTemplateExports = %s;', wp_json_encode( $exports ) )
-		);
+		wp_add_inline_script( $handle, sprintf( 'CustomizePageTemplate.init( %s );', wp_json_encode( $exports ) ) );
 	}
 
 	/**

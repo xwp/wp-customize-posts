@@ -154,9 +154,6 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 		$meta_key = $this->meta_key;
 		$prev_value = ''; // Plural meta is not supported.
 
-		// @todo How would $strict validation get passed into the sanitize callback?
-		$meta_value = sanitize_meta( $meta_key, $meta_value, $meta_type );
-
 		/**
 		 * Filter a Customize setting value in form.
 		 *
@@ -165,6 +162,11 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 		 * @param bool                 $strict      Whether validation is being done. This is part of the proposed patch in in #34893.
 		 */
 		$meta_value = apply_filters( "customize_sanitize_{$this->id}", $meta_value, $this, $strict );
+
+		// Apply sanitization if value didn't fail validation.
+		if ( ! is_wp_error( $meta_value ) && ! is_null( $meta_value ) ) {
+			$meta_value = sanitize_meta( $meta_key, $meta_value, $meta_type );
+		}
 
 		/** This filter is documented in wp-includes/meta.php */
 		$check = apply_filters( "update_{$meta_type}_metadata", null, $object_id, $meta_key, $meta_value, $prev_value );
