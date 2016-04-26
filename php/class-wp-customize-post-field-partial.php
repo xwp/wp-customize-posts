@@ -165,13 +165,20 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 			}
 		} elseif ( 'post_author' === $this->field_id ) {
 			if ( 'author-bio' === $this->placement && is_singular() && get_the_author_meta( 'description' ) ) {
-				if ( '' !== locate_template( 'author-bio.php' ) ) {
-					ob_start();
-					get_template_part( 'author-bio' );
-					$rendered = ob_get_contents();
-					ob_end_clean();
-				} else {
-					$rendered = false;
+
+				$rendered = false;
+				$template_parts = array(
+					'template-parts/biography',
+					'author-bio',
+				);
+				foreach ( $template_parts as $template_part ) {
+					if ( '' !== locate_template( $template_part . '.php' ) ) {
+						ob_start();
+						get_template_part( $template_part );
+						$rendered = ob_get_contents();
+						ob_end_clean();
+						break;
+					}
 				}
 			} elseif ( 'byline' === $this->placement && ( is_singular() || is_multi_author() ) ) {
 				$rendered = sprintf( '<a class="url fn n" href="%1$s">%2$s</a>',
