@@ -43,7 +43,7 @@ var CustomizeFeaturedImage = (function( api ) {
 	 * @returns {wp.customize.Control|null} The control.
 	 */
 	component.addControl = function( section ) {
-		var control, controlId, settingId, postTypeObj, originalValidate, originalInitFrame;
+		var control, controlId, settingId, postTypeObj, originalInitFrame;
 		if ( ! section.extended( api.Posts.PostSection ) ) {
 			return null;
 		}

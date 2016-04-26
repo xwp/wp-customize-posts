@@ -1,5 +1,6 @@
 /* global module, wp, _ */
 /* exported CustomizePreviewFeaturedImage */
+/* eslint consistent-this: [ "error", "partial" ] */
 
 var CustomizePreviewFeaturedImage = (function( api, $ ) {
 	'use strict';
