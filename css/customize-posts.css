@@ -94,3 +94,9 @@ body.mce-fullscreen.customize-posts-content-editor-pane-open div.mce-fullscreen 
 .wp-customizer .mce-tooltip {
 	z-index: 500100 !important; /* originally 100100, but z-index of .wp-full-overlay is 500000 */
 }
+
+@media screen and ( max-width: 782px ) {
+	body.customize-posts-content-editor-pane-open #customize-theme-controls [id^=accordion-panel-posts] ul.accordion-section-content {
+		padding-bottom: 300px;
+	}
+}
