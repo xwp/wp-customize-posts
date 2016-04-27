@@ -168,7 +168,6 @@ class Customize_Posts_Plugin {
 			'customize-post-section',
 			'customize-dynamic-control',
 			'underscore',
-			'autosave',
 		);
 		if ( version_compare( str_replace( array( '-src' ), '', $GLOBALS['wp_version'] ), '4.6-beta1', '<' ) ) {
 			$deps[] = 'customize-controls-patched-36521';
