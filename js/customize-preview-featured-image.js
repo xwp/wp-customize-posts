@@ -35,7 +35,7 @@ var CustomizePreviewFeaturedImage = (function( api, $ ) {
 		refresh: function() {
 			var partial = this, setting, refreshPromise;
 			setting = api( partial.params.primarySetting );
-			if ( '' === setting() || -1 === setting() ) {
+			if ( '' === setting() ) {
 				refreshPromise = $.Deferred();
 				partial.fallback();
 				refreshPromise.reject();

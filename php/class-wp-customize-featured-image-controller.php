@@ -184,10 +184,16 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	 *
 	 * Executed during the `admin_post_thumbnail_size` hook to supply the current thumbnail ID
 	 * in WordPress < 4.6 where the third parameter in `admin_post_thumbnail_html` does not exist.
+	 *
+	 * @param string|array $size         Post thumbnail image size to display in the meta box.
+	 * @param int          $thumbnail_id Post thumbnail attachment ID.
+	 * @param WP_Post      $post         The post object associated with the thumbnail.
+	 * @return string|array Size.
 	 */
 	public function set_admin_post_thumbnail_id( $size, $thumbnail_id, $post ) {
-		unset( $size, $post );
+		unset( $post );
 		$this->thumbnail_id = $thumbnail_id;
+		return $size;
 	}
 
 	/**
