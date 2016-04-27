@@ -6,11 +6,11 @@ Edit posts and postmeta in the Customizer. Stop editing your posts/postmeta blin
 **Contributors:** [xwp](https://profiles.wordpress.org/xwp), [westonruter](https://profiles.wordpress.org/westonruter)  
 **Tags:** [customizer](https://wordpress.org/plugins/tags/customizer), [customize](https://wordpress.org/plugins/tags/customize), [posts](https://wordpress.org/plugins/tags/posts), [preview](https://wordpress.org/plugins/tags/preview), [featured-image](https://wordpress.org/plugins/tags/featured-image), [page-template](https://wordpress.org/plugins/tags/page-template)  
 **Requires at least:** 4.5-beta2  
-**Tested up to:** 4.5-RC1  
-**Stable tag:** 0.4.2  
+**Tested up to:** 4.6-alpha  
+**Stable tag:** 0.5.0  
 **License:** [GPLv2 or later](http://www.gnu.org/licenses/gpl-2.0.html)  
 
-[![Build Status](https://travis-ci.org/xwp/wp-customize-posts.svg?branch=master)](https://travis-ci.org/xwp/wp-customize-posts) [![Coverage Status](https://coveralls.io/repos/xwp/wp-customize-posts/badge.svg?branch=master)](https://coveralls.io/github/xwp/wp-customize-posts) [![Built with Grunt](https://cdn.gruntjs.com/builtwith.png)](http://gruntjs.com) [![devDependency Status](https://david-dm.org/xwp/wp-customize-posts/dev-status.svg)](https://david-dm.org/xwp/wp-customize-posts#info=devDependencies) 
+[![Build Status](https://travis-ci.org/xwp/wp-customize-posts.svg?branch=master)](https://travis-ci.org/xwp/wp-customize-posts) [![Coverage Status](https://coveralls.io/repos/xwp/wp-customize-posts/badge.svg?branch=master)](https://coveralls.io/github/xwp/wp-customize-posts) [![Built with Grunt](https://cdn.gruntjs.com/builtwith.svg)](http://gruntjs.com) [![devDependency Status](https://david-dm.org/xwp/wp-customize-posts/dev-status.svg)](https://david-dm.org/xwp/wp-customize-posts#info=devDependencies) 
 
 ## Description ##
 
