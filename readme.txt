@@ -79,8 +79,9 @@ Fixed:
 * Export post/postmeta settings during selective refresh requests so that new posts added will appear in the panel, such as when adding the number of posts to show in the Recent Posts widget. (Issue #97, PR #99)
 * Improve compatibility with Customize Snapshots (PR #95)
 
-See full commit log: https://github.com/xwp/wp-customize-posts/compare/0.4.2...0.5.0
-Issues in milestone: https://github.com/xwp/wp-customize-posts/issues?q=milestone%3A0.5
+See full commit log: [`0.4.2...0.5.0`](https://github.com/xwp/wp-customize-posts/compare/0.4.2...0.5.0)
+
+Issues in milestone: [`milestone:0.5`](https://github.com/xwp/wp-customize-posts/issues?q=milestone%3A0.5)
 
 Props: Weston Ruter (@westonruter), Derek Herman (@valendesigns), Luke Carbis (@lukecarbis), Mike Crantea (@mehigh), Stuart Shields (@stuartshields)
 
