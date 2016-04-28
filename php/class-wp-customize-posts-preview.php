@@ -208,7 +208,7 @@ final class WP_Customize_Posts_Preview {
 	 */
 	public function filter_get_post_meta_to_add_dynamic_postmeta_settings( $value, $object_id, $meta_key ) {
 		$post = get_post( $object_id );
-		if ( ! isset( $this->component->registered_post_meta[ $post->post_type ] ) ) {
+		if ( ! $post || ! isset( $this->component->registered_post_meta[ $post->post_type ] ) ) {
 			return $value;
 		}
 
