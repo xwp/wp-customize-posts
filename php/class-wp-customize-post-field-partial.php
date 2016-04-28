@@ -111,6 +111,12 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 			return false;
 		}
 
+		/**
+		 * Partial.
+		 *
+		 * @var WP_Customize_Post_Field_Partial $partial
+		 */
+
 		$GLOBALS['post'] = $post; // WPCS: override global ok.
 		setup_postdata( $post );
 		if ( 'post_title' === $this->field_id ) {
