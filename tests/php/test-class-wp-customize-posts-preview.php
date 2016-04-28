@@ -411,7 +411,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	/**
 	 * Test filter_get_avatar().
 	 *
-	 * @see WP_Customize_Posts_Preview::filter_edit_post_link()
+	 * @see WP_Customize_Posts_Preview::filter_get_avatar()
 	 */
 	public function test_filter_get_avatar() {
 		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
