@@ -84,7 +84,7 @@ Fixed:
 See full commit log: https://github.com/xwp/wp-customize-posts/compare/0.4.2...0.5.0
 Issues in milestone: https://github.com/xwp/wp-customize-posts/issues?q=milestone%3A0.5
 
-Props: Weston Ruter (@westonruter), Derek Herman (@valendesigns), Mike Crantea (@mehigh), Stuart Shields (@stuartshields)
+Props: Weston Ruter (@westonruter), Derek Herman (@valendesigns), Luke Carbis (@lukecarbis), Mike Crantea (@mehigh), Stuart Shields (@stuartshields)
 
 ### 0.4.2 - 2016-03-30 ###
 Restore stylesheet erroneously deleted during `grunt deploy`.
