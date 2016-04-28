@@ -49,14 +49,14 @@ This **Customize Posts** plugin is not to be confused with 10up's [**Post Custom
 
 == Changelog ==
 
-= 0.4.2 =
+= 0.4.2 - 2016-03-30 =
 Restore stylesheet erroneously deleted during `grunt deploy`.
 
-= 0.4.1 =
+= 0.4.1 [YANKED] =
 * Restore editability of pages in the Customizer (remove default condition that a post type have `publicly_queryable` as `true`).
 * Log errors in `customize-posts` message receiver instead of throwing them.
 
-= 0.4.0 =
+= 0.4.0 - 2016-03-29 =
 * Open Customizer to preview and make additional changes when clicking Preview from post edit admin screen (see [video](https://www.youtube.com/watch?v=Q62nav1k4gY)).
 * Introduce `show_in_customizer` arg for `register_post_type()`, and let override condition on `show_ui` ~~and `publicly_queryable`~~ being both true.
 * Fix modals and inline toolbars in TinyMCE editor displayed in Customizer.
@@ -66,7 +66,7 @@ Restore stylesheet erroneously deleted during `grunt deploy`.
 * Allow auto-draft posts to be previewed.
 * Add Grunt, contributing.
 
-= 0.3.0 =
+= 0.3.0 - 2016-03-08 =
 * Complete rewrite of plugin.
 * Added: Selective refresh is now used to preview changes to the title and content.
 * Added: A TinyMCE editor is now used to edit content, including initial support for Shortcake.
@@ -75,19 +75,19 @@ Restore stylesheet erroneously deleted during `grunt deploy`.
 * Added: Integration with [Customize Setting Validation](https://github.com/xwp/wp-customize-setting-validation) to show show error message when post locking or version conflict happens.
 * Removed: Postmeta fields (custom fields, page template, featured image) were removed for rewrite but will be re-introduced.
 
-= 0.2.4 =
+= 0.2.4 - 2016-01-06 =
 Remove shim that implemented the `customize_save_response` filter which was introduced in 4.2. The shim used a slightly different filter name and broke insertion of nav menu items in the Customizer.
 
-= 0.2.3 =
+= 0.2.3 - 2015-01-09 =
 Change method for registering scripts/styles to fix conflict w/ Jetpack. [PR #26](https://github.com/xwp/wp-customize-posts/pull/26)
 
-= 0.2.2 =
+= 0.2.2 - 2014-12-12 =
 Add compatibility with WordPress 4.1 now that the Customizer has a proper JS API.
 
-= 0.2.1 =
+= 0.2.1 - 2014-09-22 =
 Supply missing `selected` attribute on `post_status` dropdown.
 
-= 0.2.0 =
+= 0.2.0 - 2014-09-17 =
 Initial release on WordPress.org. Key new features:
 
 * Postmeta can now be added, modified, and deleted—all of actions which are fully previewable.
