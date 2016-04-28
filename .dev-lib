@@ -1,1 +1,2 @@
 WPCS_GIT_TREE=develop
+COVERALLS_BADGE_BRANCH=develop
