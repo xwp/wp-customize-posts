@@ -1,5 +1,5 @@
 === Customize Posts ===
-Contributors:      xwp, westonruter
+Contributors:      xwp, westonruter, valendesigns
 Tags:              customizer, customize, posts, preview, featured-image, page-template
 Requires at least: 4.5-beta2
 Tested up to:      4.6-alpha
