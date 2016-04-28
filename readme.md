@@ -95,7 +95,7 @@ Restore stylesheet erroneously deleted during `grunt deploy`.
 * Introduce `show_in_customizer` arg for `register_post_type()`, and let override condition on `show_ui` ~~and `publicly_queryable`~~ being both true.
 * Fix modals and inline toolbars in TinyMCE editor displayed in Customizer.
 * Fix initialization when TinyMCE does not default to Visual.
-* Complete support for Jetpack Infinite Scroll, ensuring posts are listed in Customizer in order of appearane.
+* Complete support for Jetpack Infinite Scroll, ensuring posts are listed in Customizer in order of appearance.
 * Remove dependency on widgets component being loaded.
 * Allow auto-draft posts to be previewed.
 * Add Grunt, contributing.
