@@ -465,6 +465,11 @@ final class WP_Customize_Posts_Preview {
 
 		$results['customize_post_settings'] = array();
 		foreach ( $this->component->manager->settings() as $setting ) {
+			/**
+			 * Setting.
+			 *
+			 * @var WP_Customize_Setting $setting
+			 */
 			if ( ! $setting->check_capabilities() ) {
 				continue;
 			}
