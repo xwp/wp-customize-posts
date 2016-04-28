@@ -33,9 +33,9 @@ As much as possible, the previewing of changes in Customize Posts utilizes the [
 ### Demo Videos ###
 The following are listed in reverse chronological order. The first, more recent videos, show more polish.
 
-[2016-04-28] New features in 0.5.0
+[2016-04-28] New features in 0.5.0.
 
-@TODO
+[![Play video on YouTube](https://i1.ytimg.com/vi/2NXh-1_eUqI/hqdefault.jpg)](https://www.youtube.com/watch?v=2NXh-1_eUqI)
 
 [2016-03-28] Previewing post from Post Edit screen.
 
