@@ -415,12 +415,23 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	 */
 	public function test_filter_get_avatar() {
 		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
-		$avatar = get_avatar( $this->user_id );
+		$size = 123;
+		$default = 'mycustomservice';
+		$alt = 'thealtstring';
+		$args = array( 'extra_attr' => 'data-extra-attr="1"' );
+
+		$avatar = get_avatar( $this->user_id, $size, $default, $alt, $args );
 		$this->assertNotContains( 'data-customize-partial-placement-context', $avatar );
+
 		$preview->customize_preview_init();
-		$avatar = get_avatar( $this->user_id, 123 );
-		$this->assertContains( 'data-customize-partial-placement-context', $avatar );
-		$this->assertContains( 'size&quot;:123', $avatar );
+		$avatar = get_avatar( $this->user_id, $size, $default, $alt, $args );
+		$this->assertTrue( (bool) preg_match( '/data-customize-partial-placement-context="(.+?)"/', $avatar, $matches ) );
+		$context = json_decode( html_entity_decode( $matches[1], ENT_QUOTES ), true );
+		$this->assertEquals( $size, $context['size'] );
+		$this->assertEquals( $default, $context['default'] );
+		$this->assertEquals( $alt, $context['alt'] );
+		$this->assertNotEmpty( $context['extra_attr'] );
+		$this->assertEquals( $args['extra_attr'], $context['extra_attr'] );
 	}
 
 	/**

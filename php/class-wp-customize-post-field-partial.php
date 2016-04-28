@@ -185,10 +185,10 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 					get_the_author_meta( 'display_name', $post->post_author )
 				);
 			} elseif ( 'avatar' === $this->placement ) {
-				if ( ! isset( $context['size'] ) ) {
-					$context['size'] = 96;
-				}
-				$rendered = get_avatar( get_the_author_meta( 'user_email' ), $context['size'] );
+				$size = isset( $context['size'] ) ? $context['size'] : 96;
+				$default = isset( $context['default'] ) ? $context['default'] : '';
+				$alt = isset( $context['alt'] ) ? $context['alt'] : '';
+				$rendered = get_avatar( get_the_author_meta( 'user_email' ), $size, $default, $alt, $context );
 			}
 		}
 

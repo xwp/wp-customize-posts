@@ -119,7 +119,7 @@
 				} );
 				api.selectiveRefresh.partial.add( partial.id, partial );
 
-				// Post field partial for post_author byline.
+				// Post field partial for post_author avatar.
 				partial = new api.previewPosts.PostFieldPartial( id + '[post_author][avatar]', {
 					params: {
 						settings: [ id ],
