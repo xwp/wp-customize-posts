@@ -70,6 +70,7 @@ final class WP_Customize_Posts_Preview {
 		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
 		add_filter( 'edit_post_link', array( $this, 'filter_edit_post_link' ), 10, 2 );
 		add_filter( 'get_edit_post_link', array( $this, 'filter_get_edit_post_link' ), 10, 2 );
+		add_filter( 'get_avatar', array( $this, 'filter_get_avatar' ), 10, 6 );
 		add_filter( 'infinite_scroll_results', array( $this, 'export_registered_settings' ), 10 );
 		add_filter( 'customize_render_partials_response', array( $this, 'export_registered_settings' ), 10 );
 	}
@@ -380,6 +381,41 @@ final class WP_Customize_Posts_Preview {
 		$data_attributes = sprintf( ' data-customize-post-setting-id="%s"', $setting_id );
 		$link = preg_replace( '/(?<=<a\s)/', $data_attributes, $link );
 		return $link;
+	}
+
+	/**
+	 * Filter the avatar to inject the args as context data.
+	 *
+	 * @param string $avatar      &lt;img&gt; tag for the user's avatar.
+	 * @param mixed  $id_or_email The Gravatar to retrieve. Accepts a user_id, gravatar md5 hash,
+	 *                            user email, WP_User object, WP_Post object, or WP_Comment object.
+	 * @param int    $size        Square avatar width and height in pixels to retrieve.
+	 * @param int    $default     Default.
+	 * @param string $alt         Alternative text to use in the avatar image tag.
+	 *                                       Default empty.
+	 * @param array  $args        Arguments passed to get_avatar_data(), after processing.
+	 * @return string Avatar.
+	 */
+	function filter_get_avatar( $avatar, $id_or_email, $size, $default, $alt, $args ) {
+		unset( $id_or_email, $size, $default, $alt );
+
+		// Strip out $found_avatar and any other args amended when get_avatar() is called.
+		$args = wp_array_slice_assoc( $args, array(
+			'size',
+			'height',
+			'width',
+			'default',
+			'force_default',
+			'rating',
+			'scheme',
+			'alt',
+			'class',
+			'force_display',
+			'extra_attr',
+		) );
+		$data_attribute = sprintf( ' data-customize-partial-placement-context="%s"', esc_attr( wp_json_encode( $args ) ) );
+		$avatar = preg_replace( '/(?<=<img\s)/', $data_attribute, $avatar );
+		return $avatar;
 	}
 
 	/**

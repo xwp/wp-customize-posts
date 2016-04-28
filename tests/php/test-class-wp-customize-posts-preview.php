@@ -130,6 +130,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertEquals( 10, has_action( 'wp_footer', array( $preview, 'export_preview_data' ) ) );
 		$this->assertEquals( 10, has_filter( 'edit_post_link', array( $preview, 'filter_edit_post_link' ) ) );
 		$this->assertEquals( 10, has_filter( 'get_edit_post_link', array( $preview, 'filter_get_edit_post_link' ) ) );
+		$this->assertEquals( 10, has_filter( 'get_avatar', array( $preview, 'filter_get_avatar' ) ) );
 		$this->assertEquals( 10, has_filter( 'infinite_scroll_results', array( $preview, 'export_registered_settings' ) ) );
 		$this->assertEquals( 10, has_filter( 'customize_render_partials_response', array( $preview, 'export_registered_settings' ) ) );
 	}
@@ -405,6 +406,32 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$link = '<a class="edit-me" href="' . esc_url( home_url( '?edit-me' ) ) . '">Edit</a>';
 		$contained = sprintf( ' data-customize-post-setting-id="%s"', WP_Customize_Post_Setting::get_post_setting_id( get_post( $this->post_id ) ) );
 		$this->assertContains( $contained, $preview->filter_edit_post_link( $link, $this->post_id ) );
+	}
+
+	/**
+	 * Test filter_get_avatar().
+	 *
+	 * @see WP_Customize_Posts_Preview::filter_get_avatar()
+	 */
+	public function test_filter_get_avatar() {
+		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
+		$size = 123;
+		$default = 'mycustomservice';
+		$alt = 'thealtstring';
+		$args = array( 'extra_attr' => 'data-extra-attr="1"' );
+
+		$avatar = get_avatar( $this->user_id, $size, $default, $alt, $args );
+		$this->assertNotContains( 'data-customize-partial-placement-context', $avatar );
+
+		$preview->customize_preview_init();
+		$avatar = get_avatar( $this->user_id, $size, $default, $alt, $args );
+		$this->assertTrue( (bool) preg_match( '/data-customize-partial-placement-context="(.+?)"/', $avatar, $matches ) );
+		$context = json_decode( html_entity_decode( $matches[1], ENT_QUOTES ), true );
+		$this->assertEquals( $size, $context['size'] );
+		$this->assertEquals( $default, $context['default'] );
+		$this->assertEquals( $alt, $context['alt'] );
+		$this->assertNotEmpty( $context['extra_attr'] );
+		$this->assertEquals( $args['extra_attr'], $context['extra_attr'] );
 	}
 
 	/**
