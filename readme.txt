@@ -17,13 +17,15 @@ The goal for this plugin is to be able to expose the editing of posts and pages 
 
 Did you know that **changing the featured image actually makes the change live even before you save the post**? This is this very surprising/unexpected behavior. The only way to truly preview a change to a featured image is to use something like Customize Posts.
 
-Likewise, did you know that **changing a page template cannot be previewed from the post editor?** When you change the selected page template, the change will not show up when you preview the post (see [#11049](https://core.trac.wordpress.org/ticket/11049)). However, in Customize Posts you *can* preview changes to the page template just by changing the dropdown selection, and then you can see what your page would look like with the new template after the preview refreshes. (Note: This ability was removed in the 0.3 rewrite but it will be re-added.)
+Likewise, did you know that **changing a page template cannot be previewed from the post editor?** When you change the selected page template, the change will not show up when you preview the page (see [#11049](https://core.trac.wordpress.org/ticket/11049)). However, in Customize Posts you *can* preview changes to the page template just by changing the dropdown selection, and then you can see what your page would look like with the new template after the preview refreshes.
 
-Most other changes to metaboxes containing data that gets saved to custom fields (postmeta) also get written when clicking the Preview button. The Customize Posts plugin provides a way to get around this, and also provides a live preview of the changes. Fixing this underlying issue of incorrectly persisting postmeta when doing a preview is captured in [#20299](https://core.trac.wordpress.org/ticket/20299). (Custom fields were removed in the complete rewrite in 0.3; postmeta controls will be re-introduced.)
+Most other changes to metaboxes containing data that gets saved to custom fields (postmeta) also get written when clicking the Preview button. The Customize Posts plugin provides a framework to edit postmeta in the Customizer with a live preview of the changes. (Fixing this underlying issue of incorrectly persisting postmeta when doing a preview is captured in [#20299](https://core.trac.wordpress.org/ticket/20299).)
+
+As much as possible, the previewing of changes in Customize Posts utilizes the [selective refresh](https://make.wordpress.org/core/2016/02/16/selective-refresh-in-the-customizer/) capabilities introduced in WordPress 4.5. Not only does this mean it is faster to preview changes to posts and postmeta, but it also allows you to shift-click on an element to focus on the corresponding control in the Customizer pane. For example you can shift-click on the post title in the preview to focus on the post title control's input field, or shift-click on a featured image to focus on the control's button to open the media library.
 
 **Development of this plugin is done [on GitHub](https://github.com/xwp/wp-customize-posts). Pull requests welcome. Please see [issues](https://github.com/xwp/wp-customize-posts/issues) reported there before going to the [plugin forum](https://wordpress.org/support/plugin/customize-posts).**
 
-This **Customize Posts** plugin is not to be confused with 10up's [**Post Customizer**](https://github.com/10up/Post-Customizer) plugin which is a complimentary effort but seeks to address different use cases. The two plugin projects have [opened a discussion](https://github.com/10up/Post-Customizer/issues/9#issuecomment-43821746) to collaborate where possible.
+(This **Customize Posts** plugin is not to be confused with 10up's [**Post Customizer**](https://github.com/10up/Post-Customizer).)
 
 = Demo Videos =
 
