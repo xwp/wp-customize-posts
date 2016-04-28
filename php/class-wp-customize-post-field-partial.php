@@ -105,7 +105,6 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 	 * @return string|null
 	 */
 	public function render_callback( WP_Customize_Partial $partial, $context = array() ) {
-		unset( $context );
 		$rendered = null;
 		$post = get_post( $this->post_id );
 		if ( ! $post ) {
@@ -185,6 +184,11 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 					esc_url( get_author_posts_url( get_the_author_meta( 'ID', $post->post_author ) ) ),
 					get_the_author_meta( 'display_name', $post->post_author )
 				);
+			} elseif ( 'avatar' === $this->placement ) {
+				if ( ! isset( $context['size'] ) ) {
+					$context['size'] = 96;
+				}
+				$rendered = get_avatar( get_the_author_meta( 'user_email' ), $context['size'] );
 			}
 		}
 

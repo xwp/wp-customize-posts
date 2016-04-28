@@ -118,6 +118,16 @@
 					}
 				} );
 				api.selectiveRefresh.partial.add( partial.id, partial );
+
+				// Post field partial for post_author byline.
+				partial = new api.previewPosts.PostFieldPartial( id + '[post_author][avatar]', {
+					params: {
+						settings: [ id ],
+						containerInclusive: true,
+						fallbackRefresh: false
+					}
+				} );
+				api.selectiveRefresh.partial.add( partial.id, partial );
 			}
 
 			// @todo Trigger event for plugins and postmeta controllers.

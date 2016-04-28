@@ -56,6 +56,8 @@
 						args.params.selector = baseSelector + ' .author-info';
 					} else if ( 'byline' === args.params.placement ) {
 						args.params.selector = baseSelector + ' .byline a.fn';
+					} else if ( 'avatar' === args.params.placement ) {
+						args.params.selector = baseSelector + ' img.avatar';
 					}
 				}
 			}
