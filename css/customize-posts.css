@@ -23,8 +23,8 @@ div.customize-setting-validation-message.error {
 #customize-posts-content-editor-pane {
 	border-top: solid 1px #ddd;
 	position: absolute;
-	height: 329px;
-	bottom: -330px;
+	height: 300px;
+	bottom: -301px;
 	right: 0;
 	left: 0;
 	z-index: 20;
@@ -35,10 +35,20 @@ div.customize-setting-validation-message.error {
 
 	/* @todo This should have visibility:hidden to ensure accessible when closed. */
 }
+
+body.mce-fullscreen.customize-posts-content-editor-pane-open #customize-posts-content-editor-pane {
+	top: 0;
+}
+
+body.customize-posts-content-editor-pane-open #customize-posts-content-editor-pane {
+	bottom: 0;
+}
+
 #customize-posts-content-editor-pane .wp-editor-tools {
 	padding-top: 5px;
 	padding-right: 10px;
 }
+
 #customize-posts-content-editor-pane .wp-media-buttons {
 	padding-left: 5px;
 }
@@ -48,34 +58,26 @@ div.customize-setting-validation-message.error {
 }
 
 body.customize-posts-content-editor-pane-open #customize-preview {
-	bottom: 329px;
-}
-body.customize-posts-content-editor-pane-open:not( .mce-fullscreen ) #customize-posts-content-editor-pane {
-	bottom: 0;
+	bottom: 300px;
 }
 
 body.mce-fullscreen #customize-preview {
 	bottom: 0;
 }
 
-/* @todo Ideally this would include the media buttons in view */
-#wp-customize-posts-content-editor-container div.mce-fullscreen {
-	left: 300px;
+body.mce-fullscreen.customize-posts-content-editor-pane-open div.mce-fullscreen {
+	position: relative;
+	left: 0;
 }
-body:not( .customize-posts-content-editor-pane-open ) div.mce-fullscreen {
-	display: none;
+
+#wp-customize-posts-content-editor-container {
+	border-left: 0;
 }
 
 /* @todo Mobile support for rich text editor */
 
-.wp-customizer #wp-link-backdrop {
-	z-index: 500100; /* originally 100100, but z-index of .wp-full-overlay is 500000 */
-}
 .wp-customizer .ui-autocomplete.wplink-autocomplete {
 	z-index: 500110; /* originally 100110, but z-index of .wp-full-overlay is 500000 */
-}
-.wp-customizer div.mce-inline-toolbar-grp {
-	z-index: 500100; /* originally 100100, but z-index of .wp-full-overlay is 500000 */
 }
 .wp-customizer #wp-link-wrap {
 	z-index: 500105; /* originally 100105, but z-index of .wp-full-overlay is 500000 */
@@ -83,4 +85,18 @@ body:not( .customize-posts-content-editor-pane-open ) div.mce-fullscreen {
 .wp-customizer #wp_editbtns,
 .wp-customizer #wp_gallerybtns {
 	z-index: 500020; /* originally 100020, but z-index of .wp-full-overlay is 500000 */
+}
+.wp-customizer #TB_overlay,
+.wp-customizer #TB_window {
+	z-index: 500050;
+}
+.wp-customizer .mce-panel,
+.wp-customizer .mce-tooltip {
+	z-index: 500100 !important; /* originally 100100, but z-index of .wp-full-overlay is 500000 */
+}
+
+@media screen and ( max-width: 782px ) {
+	body.customize-posts-content-editor-pane-open #customize-theme-controls [id^=accordion-panel-posts] ul.accordion-section-content {
+		padding-bottom: 300px;
+	}
 }

@@ -1,4 +1,6 @@
 /* global wp */
+/* eslint consistent-this: [ "error", "control" ] */
+
 (function( api, $ ) {
 	'use strict';
 
@@ -12,26 +14,69 @@
 	api.DynamicControl = api.Control.extend({
 
 		initialize: function( id, options ) {
-			var control = this;
+			var control = this, args;
 
-			options = options || {};
-			options.params = options.params || {};
-			if ( ! options.params.type ) {
-				options.params.type = 'dynamic';
+			args = options || {};
+			args.params = args.params || {};
+			if ( ! args.params.type ) {
+				args.params.type = 'dynamic';
 			}
-			if ( ! options.params.content ) {
-				options.params.content = $( '<li></li>' );
-				options.params.content.attr( 'id', 'customize-control-' + id.replace( /]/g, '' ).replace( /\[/g, '-' ) );
-				options.params.content.attr( 'class', 'customize-control customize-control-' + options.params.type );
+			if ( ! args.params.content ) {
+				args.params.content = $( '<li></li>' );
+				args.params.content.attr( 'id', 'customize-control-' + id.replace( /]/g, '' ).replace( /\[/g, '-' ) );
+				args.params.content.attr( 'class', 'customize-control customize-control-' + args.params.type );
 			}
 
-			api.Control.prototype.initialize.call( control, id, options );
+			api.Control.prototype.initialize.call( control, id, args );
 			control.propertyElements = [];
 		},
 
-		_setUpSettingProperty: function() {
+		/**
+		 * Add bidirectional data binding links between inputs and the setting(s).
+		 *
+		 * This is copied from wp.customize.Control.prototype.initialize(). It
+		 * should be changed in Core to be applied once the control is embedded.
+		 *
+		 * @private
+		 */
+		_setUpSettingRootLinks: function() {
+			var control, nodes, radios;
+			control = this;
+			nodes = control.container.find( '[data-customize-setting-link]' );
+			radios = {};
+
+			nodes.each( function() {
+				var node = $( this ),
+					name;
+
+				if ( node.is( ':radio' ) ) {
+					name = node.prop( 'name' );
+					if ( radios[ name ] ) {
+						return;
+					}
+
+					radios[ name ] = true;
+					node = nodes.filter( '[name="' + name + '"]' );
+				}
+
+				api( node.data( 'customizeSettingLink' ), function( setting ) {
+					var element = new api.Element( node );
+					control.elements.push( element );
+					element.sync( setting );
+					element.set( setting() );
+				});
+			});
+
+		},
+
+		/**
+		 * Add bidirectional data binding links between inputs and the setting properties.
+		 *
+		 * @private
+		 */
+		_setUpSettingPropertyLinks: function() {
 			var control = this, nodes, radios;
-			if ( ! control.params.setting_property || ! control.setting ) {
+			if ( ! control.setting ) {
 				return;
 			}
 
@@ -80,7 +125,8 @@
 		ready: function() {
 			var control = this;
 
-			control._setUpSettingProperty();
+			control._setUpSettingRootLinks();
+			control._setUpSettingPropertyLinks();
 
 			api.Control.prototype.ready.call( control );
 

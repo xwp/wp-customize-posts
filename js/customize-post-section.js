@@ -1,11 +1,37 @@
 /* global wp, tinyMCE */
+/* eslint consistent-this: [ "error", "section" ] */
+
 (function( api, $ ) {
 	'use strict';
-	var defaultSectionPriorities = {};
+	var defaultSectionPriorities = {}, checkboxSynchronizerUpdate, checkboxSynchronizerRefresh;
 
 	if ( ! api.Posts ) {
 		api.Posts = {};
 	}
+
+	/*
+	 * Extend the checkbox synchronizer to support an on/off value instead of boolean.
+	 */
+	checkboxSynchronizerUpdate = api.Element.synchronizer.checkbox.update;
+	checkboxSynchronizerRefresh = api.Element.synchronizer.checkbox.refresh;
+	_.extend( api.Element.synchronizer.checkbox, {
+		update: function( to ) {
+			var value;
+			if ( ! _.isUndefined( this.element.data( 'on-value' ) ) && ! _.isUndefined( this.element.data( 'off-value' ) ) ) {
+				value = to === this.element.data( 'on-value' );
+			} else {
+				value = to;
+			}
+			checkboxSynchronizerUpdate.call( this, value );
+		},
+		refresh: function() {
+			if ( ! _.isUndefined( this.element.data( 'on-value' ) ) && ! _.isUndefined( this.element.data( 'off-value' ) ) ) {
+				return this.element.prop( 'checked' ) ? this.element.data( 'on-value' ) : this.element.data( 'off-value' );
+			} else {
+				return checkboxSynchronizerRefresh.call( this );
+			}
+		}
+	} );
 
 	/**
 	 * A section for managing a post.
@@ -17,37 +43,37 @@
 	api.Posts.PostSection = api.Section.extend({
 
 		initialize: function( id, options ) {
-			var section = this;
+			var section = this, args;
 
-			options = options || {};
-			options.params = options.params || {};
-			if ( ! options.params.post_type || ! api.Posts.data.postTypes[ options.params.post_type ] ) {
+			args = options || {};
+			args.params = args.params || {};
+			if ( ! args.params.post_type || ! api.Posts.data.postTypes[ args.params.post_type ] ) {
 				throw new Error( 'Missing post_type' );
 			}
-			if ( _.isNaN( options.params.post_id ) ) {
+			if ( _.isNaN( args.params.post_id ) ) {
 				throw new Error( 'Missing post_id' );
 			}
 			if ( ! api.has( id ) ) {
 				throw new Error( 'No setting id' );
 			}
-			if ( ! options.params.title ) {
-				options.params.title = api( id ).get().post_title;
+			if ( ! args.params.title ) {
+				args.params.title = api( id ).get().post_title;
 			}
-			if ( ! options.params.title ) {
-				options.params.title = api.Posts.data.l10n.noTitle;
+			if ( ! args.params.title ) {
+				args.params.title = api.Posts.data.l10n.noTitle;
 			}
 
 			section.postFieldControls = {};
 
-			if ( ! options.params.priority ) {
-				if ( ! defaultSectionPriorities[ options.params.post_type ] ) {
-					defaultSectionPriorities[ options.params.post_type ] = api.Section.prototype.defaults.priority;
+			if ( ! args.params.priority ) {
+				if ( ! defaultSectionPriorities[ args.params.post_type ] ) {
+					defaultSectionPriorities[ args.params.post_type ] = api.Section.prototype.defaults.priority;
 				}
-				defaultSectionPriorities[ options.params.post_type ] += 1;
-				options.params.priority = defaultSectionPriorities[ options.params.post_type ];
+				defaultSectionPriorities[ args.params.post_type ] += 1;
+				args.params.priority = defaultSectionPriorities[ args.params.post_type ];
 			}
 
-			api.Section.prototype.initialize.call( section, id, options );
+			api.Section.prototype.initialize.call( section, id, args );
 		},
 
 		/**
@@ -101,6 +127,15 @@
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
 			}
+			if ( postTypeObj.supports.excerpt ) {
+				section.addExcerptControl();
+			}
+			if ( postTypeObj.supports.comments || postTypeObj.supports.trackbacks ) {
+				section.addDiscussionFieldsControl();
+			}
+			if ( postTypeObj.supports.author ) {
+				section.addAuthorControl();
+			}
 		},
 
 		/**
@@ -113,7 +148,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_title]', {
 				params: {
 					section: section.id,
-					priority: 1,
+					priority: 10,
 					label: api.Posts.data.l10n.fieldTitleLabel,
 					active: true,
 					settings: {
@@ -154,7 +189,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
 				params: {
 					section: section.id,
-					priority: 1,
+					priority: 20,
 					label: api.Posts.data.l10n.fieldContentLabel,
 					active: true,
 					settings: {
@@ -229,6 +264,10 @@
 				} else {
 					editor.off( 'input change keyup', control.onVisualEditorChange );
 					textarea.off( 'input', control.onTextEditorChange );
+
+					// Cancel link and force a click event to exit fullscreen & kitchen sink mode.
+					editor.execCommand( 'wp_link_cancel' );
+					$( '.mce-active' ).click();
 				}
 			} );
 
@@ -261,7 +300,7 @@
 			 * @param args
 			 */
 			control.focus = function( args ) {
-				var control = this, editor = tinyMCE.get( 'customize-posts-content' );
+				var editor = tinyMCE.get( 'customize-posts-content' );
 				api.controlConstructor.dynamic.prototype.focus.call( control, args );
 				control.editorExpanded.set( true );
 				editor.focus();
@@ -284,6 +323,121 @@
 				textarea.attr( 'id', '' );
 				control.container.append( control.editorToggleExpandButton );
 			} );
+
+			// Remove the setting from the settingValidationMessages since it is not specific to this field.
+			if ( control.settingValidationMessages ) {
+				control.settingValidationMessages.remove( setting.id );
+				control.settingValidationMessages.add( control.id, new api.Value( '' ) );
+			}
+			return control;
+		},
+
+		/**
+		 * Add post excerpt control.
+		 *
+		 * @returns {wp.customize.Control}
+		 */
+		addExcerptControl: function() {
+			var section = this, control, setting = api( section.id );
+			control = new api.controlConstructor.dynamic( section.id + '[post_excerpt]', {
+				params: {
+					section: section.id,
+					priority: 30,
+					label: api.Posts.data.l10n.fieldExcerptLabel,
+					active: true,
+					settings: {
+						'default': setting.id
+					},
+					field_type: 'textarea',
+					setting_property: 'post_excerpt'
+				}
+			} );
+
+			// Override preview trying to de-activate control not present in preview context.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.post_excerpt = control;
+			api.control.add( control.id, control );
+
+			// Remove the setting from the settingValidationMessages since it is not specific to this field.
+			if ( control.settingValidationMessages ) {
+				control.settingValidationMessages.remove( setting.id );
+				control.settingValidationMessages.add( control.id, new api.Value( '' ) );
+			}
+			return control;
+		},
+
+		/**
+		 * Add discussion fields (comments and ping status fields) control.
+		 *
+		 * @returns {wp.customize.Control}
+		 */
+		addDiscussionFieldsControl: function() {
+			var section = this, postTypeObj, control, setting = api( section.id );
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+			control = new api.controlConstructor.post_discussion_fields( section.id + '[discussion_fields]', {
+				params: {
+					section: section.id,
+					priority: 60,
+					label: api.Posts.data.l10n.fieldDiscussionLabel,
+					active: true,
+					settings: {
+						'default': setting.id
+					},
+					post_type_supports: postTypeObj.supports
+				}
+			} );
+
+			// Override preview trying to de-activate control not present in preview context.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.post_discussion_fields = control;
+			api.control.add( control.id, control );
+
+			// Remove the setting from the settingValidationMessages since it is not specific to this field.
+			if ( control.settingValidationMessages ) {
+				control.settingValidationMessages.remove( setting.id );
+				control.settingValidationMessages.add( control.id, new api.Value( '' ) );
+			}
+			return control;
+		},
+
+		/**
+		 * Add post author control.
+		 *
+		 * @returns {wp.customize.Control}
+		 */
+		addAuthorControl: function() {
+			var section = this, control, setting = api( section.id );
+			control = new api.controlConstructor.dynamic( section.id + '[post_author]', {
+				params: {
+					section: section.id,
+					priority: 70,
+					label: api.Posts.data.l10n.fieldAuthorLabel,
+					active: true,
+					settings: {
+						'default': setting.id
+					},
+					field_type: 'select',
+					setting_property: 'post_author',
+					choices: api.Posts.data.authorChoices
+				}
+			} );
+
+			// Override preview trying to de-activate control not present in preview context.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.post_author = control;
+			api.control.add( control.id, control );
 
 			// Remove the setting from the settingValidationMessages since it is not specific to this field.
 			if ( control.settingValidationMessages ) {
