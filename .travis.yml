@@ -9,6 +9,7 @@ php:
     - 7.0
 
 env:
+    - WP_VERSION=4.5 WP_MULTISITE=0
     - WP_VERSION=trunk WP_MULTISITE=0
     - WP_VERSION=trunk WP_MULTISITE=1
 
