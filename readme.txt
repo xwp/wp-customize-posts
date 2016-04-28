@@ -27,27 +27,60 @@ This **Customize Posts** plugin is not to be confused with 10up's [**Post Custom
 
 = Demo Videos =
 
-1) [2016-03-01] Demonstration of hooking into edit post links so that they actually work in the Customizer and expand the section to edit the given post (as opposed to the link doing nothing at all when clicked), as well as shift-clicking on the title and content (needs better discovery UI, see [#27403](https://core.trac.wordpress.org/ticket/27403)):
+The following are listed in reverse chronological order. The first, more recent videos, show more polish.
 
-[youtube https://www.youtube.com/watch?v=nYfph3NbNCc]
+[2016-04-28] New features in 0.5.0
 
-2) [2016-03-03] Demonstration of integration with [Customize Setting Validation](https://github.com/xwp/wp-customize-setting-validation) ([#34893](https://core.trac.wordpress.org/ticket/34893)) to gracefully handle failures to save due to post locking and concurrent user editing:
+@TODO
 
-[youtube https://www.youtube.com/watch?v=OUwwTt6FtlQ]
-
-3) [2016-03-04] Demo featuring the WP visual rich text editor (TinyMCE), including the insertion of images from the media library. Post content can be edited in the Customizer and previewed in multiple contexts. For example, this allows you to preview how a Read More tag will appear when the post appears on a post list page, and you can navigate to the single post to continue previewing subsequent paragraphs. You can expand the editor into a full-screen mode to focus on writing and then quickly preview the changes on the site by toggling the editor. You can make changes to as many posts as you want, but none of the changes will go live until you hit Save & Publish: everything is previewed so there is no “save and surprise”.
-
-[youtube https://www.youtube.com/watch?v=QJsEl0gd7dk]
-
-4) [2016-03-05] Opening a draft post in the Customizer to preview title wrapping.
-
-[youtube https://www.youtube.com/watch?v=sXu2pA42J88]
-
-5) [2016-03-28] Previewing post from Post Edit screen.
+[2016-03-28] Previewing post from Post Edit screen.
 
 [youtube https://www.youtube.com/watch?v=Q62nav1k4gY]
 
+[2016-03-05] Opening a draft post in the Customizer to preview title wrapping.
+
+[youtube https://www.youtube.com/watch?v=sXu2pA42J88]
+
+[2016-03-04] Demo featuring the WP visual rich text editor (TinyMCE), including the insertion of images from the media library. Post content can be edited in the Customizer and previewed in multiple contexts. For example, this allows you to preview how a Read More tag will appear when the post appears on a post list page, and you can navigate to the single post to continue previewing subsequent paragraphs. You can expand the editor into a full-screen mode to focus on writing and then quickly preview the changes on the site by toggling the editor. You can make changes to as many posts as you want, but none of the changes will go live until you hit Save & Publish: everything is previewed so there is no “save and surprise”.
+
+[youtube https://www.youtube.com/watch?v=QJsEl0gd7dk]
+
+[2016-03-03] Demonstration of integration with [Customize Setting Validation](https://github.com/xwp/wp-customize-setting-validation) ([#34893](https://core.trac.wordpress.org/ticket/34893)) to gracefully handle failures to save due to post locking and concurrent user editing:
+
+[youtube https://www.youtube.com/watch?v=OUwwTt6FtlQ]
+
+[2016-03-01] Demonstration of hooking into edit post links so that they actually work in the Customizer and expand the section to edit the given post (as opposed to the link doing nothing at all when clicked), as well as shift-clicking on the title and content (needs better discovery UI, see [#27403](https://core.trac.wordpress.org/ticket/27403)):
+
+[youtube https://www.youtube.com/watch?v=nYfph3NbNCc]
+
 == Changelog ==
+
+= 0.5.0 - 2016-04-27 =
+
+Added:
+
+* Support for postmeta, including a framework for registering postmeta types. (Issues #1, PR #89)
+* Page template control and preview, with sync from Customizer post preview back to post edit screen. (Issue #85, PR #89)
+* Featured image control, with sync from Customizer post preview back to post edit screen. Changes to the featured image can now be previewed, where normally this is not possible in WordPress. Improved featured image selection on edit post screen to not update featured image in place, instead waiting until the post is Saved until updating the featured image postmeta. The featured image can be set from the post edit screen and then previewed in the Customizer via the post Preview Changes button: the featured image can be further changed in the Customizer post preview, with changes synced back to the post edit screen when the Customizer post preview is exited. (Issue #57, PR #102)
+* Author control and preview, with sync from Customizer post preview back to post edit screen (Issue #62, PRs #89 #92)
+* Excerpt control and preview, with sync from Customizer post preview back to post edit screen (Issue #60, PR #91)
+* Comment status control and preview, with sync from Customizer post preview back to post edit screen (Issues #61, PR #100)
+* Ping status control and preview, with sync from Customizer post preview back to post edit screen (Issue #64, PR #100)
+* Improve PHPUnit test coverage to 98%.
+* Note: Selective refresh support was specifically tested with Twenty Fifteen and Twenty Sixteen. See #103 for a way for themes to configure how they represent the various post fields in template parts.
+
+Fixed:
+
+* Improve editor styles in mobile and in fullscreen mode. (Issue #45, PR #107)
+* Modals, toolbars, and tooltips and are no longer hidden (Issue #80, PRs #81, #101).
+* Improve compatibility with Customize Widgets Plus (PR #83). See also https://github.com/xwp/wp-customize-widgets-plus/pull/46 for a fix in the Customizer post preview.
+* Export post/postmeta settings during selective refresh requests so that new posts added will appear in the panel, such as when adding the number of posts to show in the Recent Posts widget. (Issue #97, PR #99)
+* Improve compatibility with Customize Snapshots (PR #95)
+
+See full commit log: https://github.com/xwp/wp-customize-posts/compare/0.4.2...0.5.0
+Issues in milestone: https://github.com/xwp/wp-customize-posts/issues?q=milestone%3A0.5
+
+Props: Weston Ruter (@westonruter), Derek Herman (@valendesigns), Mike Crantea (@mehigh), Stuart Shields (@stuartshields)
 
 = 0.4.2 - 2016-03-30 =
 Restore stylesheet erroneously deleted during `grunt deploy`.
