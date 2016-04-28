@@ -54,6 +54,14 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	public $default = '';
 
 	/**
+	 * Current thumbnail ID.
+	 *
+	 * @access private
+	 * @var string
+	 */
+	private $thumbnail_id = '';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param array $args Args.
@@ -100,6 +108,7 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	 */
 	public function override_default_edit_post_screen_functionality() {
 		add_action( 'wp_ajax_set-post-thumbnail', array( $this, 'handle_ajax_set_post_thumbnail' ), 0 );
+		add_filter( 'admin_post_thumbnail_size', array( $this, 'set_admin_post_thumbnail_id' ), 10, 3 );
 		add_filter( 'admin_post_thumbnail_html', array( $this, 'filter_admin_post_thumbnail_html' ), 10, 3 );
 		add_action( 'save_post', array( $this, 'handle_save_post_thumbnail_id' ) );
 	}
@@ -171,6 +180,23 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	}
 
 	/**
+	 * Sets the current thumbnail ID.
+	 *
+	 * Executed during the `admin_post_thumbnail_size` hook to supply the current thumbnail ID
+	 * in WordPress < 4.6 where the third parameter in `admin_post_thumbnail_html` does not exist.
+	 *
+	 * @param string|array $size         Post thumbnail image size to display in the meta box.
+	 * @param int          $thumbnail_id Post thumbnail attachment ID.
+	 * @param WP_Post      $post         The post object associated with the thumbnail.
+	 * @return string|array Size.
+	 */
+	public function set_admin_post_thumbnail_id( $size, $thumbnail_id, $post ) {
+		unset( $post );
+		$this->thumbnail_id = $thumbnail_id;
+		return $size;
+	}
+
+	/**
 	 * Inject the featured image attachment ID into the metabox.
 	 *
 	 * Note that this value is also exposed in JS as wp.media.view.settings.post.featuredImageId,
@@ -186,7 +212,10 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	 * @param int    $thumbnail_id Thumbnail ID.
 	 * @return string Content.
 	 */
-	public function filter_admin_post_thumbnail_html( $content, $post_id, $thumbnail_id ) {
+	public function filter_admin_post_thumbnail_html( $content, $post_id, $thumbnail_id = null ) {
+		if ( is_null( $thumbnail_id ) ) {
+			$thumbnail_id = $this->thumbnail_id;
+		}
 		$content .= '<p><strong>' . esc_html__( 'Note: The chosen image will not persist until you save.', 'customize-posts' ) . '</strong></p>';
 		if ( empty( $thumbnail_id ) ) {
 			$thumbnail_id = -1;

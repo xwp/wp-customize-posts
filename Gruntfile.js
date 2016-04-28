@@ -91,10 +91,11 @@ module.exports = function( grunt ) {
 		copy: {
 			build: {
 				src: [
-					'js/*.js',
-					'css/*.css',
 					'*.php',
-					'php/*.php',
+					'assets/*',
+					'css/*',
+					'js/*',
+					'php/*',
 					'readme.txt'
 				],
 				dest: 'build',

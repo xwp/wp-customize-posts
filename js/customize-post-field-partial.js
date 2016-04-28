@@ -55,7 +55,9 @@
 					if ( 'author-bio' === args.params.placement ) {
 						args.params.selector = baseSelector + ' .author-info';
 					} else if ( 'byline' === args.params.placement ) {
-						args.params.selector = baseSelector + ' .byline a.fn';
+						args.params.selector = baseSelector + ' .vcard a.fn';
+					} else if ( 'avatar' === args.params.placement ) {
+						args.params.selector = baseSelector + ' .vcard img.avatar';
 					}
 				}
 			}
