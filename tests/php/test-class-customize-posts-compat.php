@@ -56,8 +56,10 @@ if ( ! class_exists( 'Jetpack' ) ) {
 
 		/**
 		 * Mock `is_module_active` method.
+		 *
+		 * @param string $module Module.
 		 */
-		public static function is_module_active( $module ) {
+		public static function is_module_active( $module = '' ) {
 			return true;
 		}
 	}
