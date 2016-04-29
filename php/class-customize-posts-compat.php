@@ -28,15 +28,15 @@ class Customize_Posts_Compat {
 	 */
 	public function __construct( Customize_Posts_Plugin $plugin ) {
 		$this->plugin = $plugin;
-		add_filter( 'customize_posts_excluded_post_types', array( $this, 'jetpack_exclude_feedback' ) );
+		add_filter( 'customize_posts_excluded_post_types', array( $this, 'jetpack_excluded_post_types' ) );
 	}
 
 	/**
-	 * Exclude Jetpack's `feeback` post type.
+	 * Excluded post types registered in Jetpack.
 	 *
 	 * @param array $post_types Excluded post types.
 	 */
-	public function jetpack_exclude_feedback( $post_types ) {
+	public function jetpack_excluded_post_types( $post_types ) {
 		if ( class_exists( 'Jetpack', false ) && Jetpack::is_module_active( 'contact-form' ) ) {
 			$post_types[] = 'feedback';
 		}

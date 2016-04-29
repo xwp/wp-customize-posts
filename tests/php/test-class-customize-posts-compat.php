@@ -34,16 +34,16 @@ class Test_Customize_Posts_Compat extends WP_UnitTestCase {
 	 * @see Customize_Posts_Compat::__construct()
 	 */
 	public function test_construct() {
-		$this->assertEquals( 10, has_action( 'customize_posts_excluded_post_types', array( $this->plugin->compat, 'jetpack_exclude_feedback' ) ) );
+		$this->assertEquals( 10, has_action( 'customize_posts_excluded_post_types', array( $this->plugin->compat, 'jetpack_excluded_post_types' ) ) );
 	}
 
 	/**
 	 * Test Jetpack's feedback is excluded.
 	 *
-	 * @see Customize_Posts_Compat::jetpack_exclude_feedback()
+	 * @see Customize_Posts_Compat::jetpack_excluded_post_types()
 	 */
-	public function test_jetpack_exclude_feedback() {
-		$this->assertEquals( array( 'feedback' ), $this->plugin->compat->jetpack_exclude_feedback( array() ) );
+	public function test_jetpack_excluded_post_types() {
+		$this->assertEquals( array( 'feedback' ), $this->plugin->compat->jetpack_excluded_post_types( array() ) );
 	}
 }
 
