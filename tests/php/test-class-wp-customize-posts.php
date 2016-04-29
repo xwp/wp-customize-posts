@@ -100,6 +100,15 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		do_action( 'wp_loaded' );
 		do_action( 'wp', $GLOBALS['wp'] );
 	}
+	/**
+	 * Filter the excluded post types.
+	 *
+	 * @param array $post_types Excluded post types.
+	 */
+	public function exclude_customize_test( $post_types ) {
+		$post_types[] = 'customize_test';
+		return $post_types;
+	}
 
 	/**
 	 * Test constructor.
@@ -117,6 +126,19 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertEquals( 5, has_action( 'customize_dynamic_setting_class', array( $posts, 'filter_customize_dynamic_setting_class' ) ) );
 		$this->assertEquals( 10, has_action( 'customize_save_response', array( $posts, 'filter_customize_save_response_for_conflicts' ) ) );
 		$this->assertInstanceOf( 'WP_Customize_Posts_Preview', $posts->preview );
+	}
+
+	/**
+	 * Test excluded post types are not in the `get_post_types` array.
+	 *
+	 * @see WP_Customize_Posts::filter_register_post_type_args()
+	 */
+	public function test_filter_register_post_type_args() {
+		add_filter( 'customize_posts_excluded_post_types', array( $this, 'exclude_customize_test' ) );
+		register_post_type( 'customize_test', array( 'show_ui' => true ) );
+		$this->assertArrayNotHasKey( 'customize_test', $this->posts->get_post_types() );
+		_unregister_post_type( 'customize_test' );
+		remove_filter( 'customize_posts_excluded_post_types', array( $this, 'exclude_customize_test' ) );
 	}
 
 	/**

@@ -21,6 +21,13 @@ class Customize_Posts_Plugin {
 	public $version;
 
 	/**
+	 * Compatibility class.
+	 *
+	 * @var Customize_Posts_Compat
+	 */
+	public $compat;
+
+	/**
 	 * Edit Post Preview.
 	 *
 	 * @var Edit_Post_Preview
@@ -56,6 +63,9 @@ class Customize_Posts_Plugin {
 		if ( preg_match( '/Version:\s*(\S+)/', file_get_contents( dirname( __FILE__ ) . '/../customize-posts.php' ), $matches ) ) {
 			$this->version = $matches[1];
 		}
+
+		require_once dirname( __FILE__ ) . '/class-customize-posts-compat.php';
+		$this->compat = new Customize_Posts_Compat( $this );
 
 		require_once dirname( __FILE__ ) . '/class-edit-post-preview.php';
 		$this->edit_post_preview = new Edit_Post_Preview( $this );
