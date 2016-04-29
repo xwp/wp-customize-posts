@@ -92,7 +92,6 @@ module.exports = function( grunt ) {
 			build: {
 				src: [
 					'*.php',
-					'assets/*',
 					'css/*',
 					'js/*',
 					'php/*',
@@ -139,7 +138,8 @@ module.exports = function( grunt ) {
 			deploy: {
 				options: {
 					plugin_slug: '<%= pkg.name %>',
-					build_dir: 'build'
+					build_dir: 'build',
+					assets_dir: 'wp-assets'
 				}
 			}
 		}
