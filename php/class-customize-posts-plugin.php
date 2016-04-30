@@ -63,7 +63,7 @@ class Customize_Posts_Plugin {
 		require_once dirname( __FILE__ ) . '/class-customize-posts-theme-support.php';
 
 		foreach ( array( 'theme', 'plugin' ) as $type ) {
-			foreach ( glob( __DIR__ . '/' . $type . '-support/class-*.php' ) as $file_path ) {
+			foreach ( glob( dirname( __FILE__ ) . '/' . $type . '-support/class-*.php' ) as $file_path ) {
 				if ( is_readable( $file_path ) ) {
 					require_once $file_path;
 					$class_name = str_replace( '-', '_', preg_replace( '/^class-(.+)\.php$/', '$1', basename( $file_path ) ) );
