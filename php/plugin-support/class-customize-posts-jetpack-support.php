@@ -34,8 +34,13 @@ class Customize_Posts_Jetpack_Support extends Customize_Posts_Plugin_Support {
 	 * @access public
 	 */
 	public function show_in_customizer() {
-		if ( Jetpack::is_module_active( 'contact-form' ) ) {
-			get_post_type_object( 'feedback' )->show_in_customizer = false;
+		if ( ! Jetpack::is_module_active( 'contact-form' ) ) {
+			return;
 		}
+		$post_type_object = get_post_type_object( 'feedback' );
+		if ( ! $post_type_object ) {
+			return;
+		}
+		$post_type_object->show_in_customizer = false;
 	}
 }
