@@ -1,4 +1,5 @@
-/*global wp, _wpCustomizePreviewPostsData, JSON */
+/* global wp, _wpCustomizePreviewPostsData, JSON */
+
 ( function( api, $ ) {
 	'use strict';
 
@@ -39,7 +40,8 @@
 				// Post field partial for post_title.
 				partial = new api.previewPosts.PostFieldPartial( id + '[post_title]', {
 					params: {
-						settings: [ id ]
+						settings: [ id ],
+						selector: api.previewPosts.data.partialSelectors.title || '.entry-title'
 					}
 				} );
 				api.selectiveRefresh.partial.add( partial.id, partial );
@@ -47,7 +49,8 @@
 				// Post field partial for post_content.
 				partial = new api.previewPosts.PostFieldPartial( id + '[post_content]', {
 					params: {
-						settings: [ id ]
+						settings: [ id ],
+						selector: api.previewPosts.data.partialSelectors.content || '.entry-content'
 					}
 				} );
 				api.selectiveRefresh.partial.add( partial.id, partial );
@@ -55,7 +58,8 @@
 				// Post field partial for post_excerpt.
 				partial = new api.previewPosts.PostFieldPartial( id + '[post_excerpt]', {
 					params: {
-						settings: [ id ]
+						settings: [ id ],
+						selector: api.previewPosts.data.partialSelectors.excerpt || '.entry-summary'
 					}
 				} );
 				api.selectiveRefresh.partial.add( partial.id, partial );
@@ -65,6 +69,8 @@
 					partial = new api.previewPosts.PostFieldPartial( id + '[comment_status][comments-area]', {
 						params: {
 							settings: [ id ],
+							selector: api.previewPosts.data.partialSelectors.comments.area || '.comments-area',
+							bodySelector: true,
 							containerInclusive: true,
 							fallbackRefresh: true
 						}
@@ -76,6 +82,8 @@
 				partial = new api.previewPosts.PostFieldPartial( id + '[comment_status][comments-link]', {
 					params: {
 						settings: [ id ],
+						selector: api.previewPosts.data.partialSelectors.comments.link || '.comments-link',
+						bodySelector: api.previewPosts.data.isSingular,
 						containerInclusive: true,
 						fallbackRefresh: false
 					}
@@ -93,16 +101,19 @@
 				partial = new api.previewPosts.PostFieldPartial( id + '[ping_status]', {
 					params: {
 						settings: [ id ],
+						selector: api.previewPosts.data.partialSelectors.pings || '.comments-area',
+						bodySelector: true,
 						containerInclusive: true,
 						fallbackRefresh: false
 					}
 				} );
 				api.selectiveRefresh.partial.add( partial.id, partial );
 
-				// Post field partial for post_author author-bio.
-				partial = new api.previewPosts.PostFieldPartial( id + '[post_author][author-bio]', {
+				// Post field partial for post_author biography.
+				partial = new api.previewPosts.PostFieldPartial( id + '[post_author][biography]', {
 					params: {
 						settings: [ id ],
+						selector: api.previewPosts.data.partialSelectors.author.biography || '.author-info',
 						containerInclusive: true,
 						fallbackRefresh: true
 					}
@@ -113,6 +124,7 @@
 				partial = new api.previewPosts.PostFieldPartial( id + '[post_author][byline]', {
 					params: {
 						settings: [ id ],
+						selector: api.previewPosts.data.partialSelectors.author.byline || '.vcard a.fn',
 						containerInclusive: true,
 						fallbackRefresh: false
 					}
@@ -123,6 +135,7 @@
 				partial = new api.previewPosts.PostFieldPartial( id + '[post_author][avatar]', {
 					params: {
 						settings: [ id ],
+						selector: api.previewPosts.data.partialSelectors.author.avatar || '.vcard img.avatar',
 						containerInclusive: true,
 						fallbackRefresh: false
 					}

@@ -442,11 +442,34 @@ final class WP_Customize_Posts_Preview {
 			}
 		}
 
+		/**
+		 * Filter the selectors used to render partials.
+		 *
+		 * @param array $partial_selectors Partial selectors.
+		 * @return array
+		 */
+		$partial_selectors = apply_filters( 'customize_posts_partial_selectors', array(
+			'title' => '.entry-title',
+			'content' => '.entry-content',
+			'excerpt' => '.entry-summary',
+			'comments' => array(
+				'area' => '.comments-area',
+				'link' => '.comments-link',
+			),
+			'pings' => '.comments-area',
+			'author' => array(
+				'biography' => '.author-info',
+				'byline' => '.vcard a.fn',
+				'avatar' => '.vcard img.avatar',
+			),
+		) );
+
 		$exported = array(
 			'isPostPreview' => is_preview(),
 			'isSingular' => is_singular(),
 			'queriedPostId' => $queried_post_id,
 			'settingProperties' => $setting_properties,
+			'partialSelectors' => $partial_selectors,
 		);
 
 		$data = sprintf( 'var _wpCustomizePreviewPostsData = %s;', wp_json_encode( $exported ) );

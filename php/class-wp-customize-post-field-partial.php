@@ -111,92 +111,35 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 			return false;
 		}
 
-		/**
-		 * Partial.
-		 *
-		 * @var WP_Customize_Post_Field_Partial $partial
-		 */
-
 		$GLOBALS['post'] = $post; // WPCS: override global ok.
 		setup_postdata( $post );
-		if ( 'post_title' === $this->field_id ) {
-			$rendered = $post->post_title;
 
-			if ( ! empty( $post->post_password ) ) {
-				/** This filter is documented in wp-includes/post-template.php */
-				$protected_title_format = apply_filters( 'protected_title_format', __( 'Protected: %s', 'customize-posts' ), $post );
-				$rendered = sprintf( $protected_title_format, $rendered );
-			} elseif ( isset( $post->post_status ) && 'private' === $post->post_status ) {
-				/** This filter is documented in wp-includes/post-template.php */
-				$private_title_format = apply_filters( 'private_title_format', __( 'Private: %s', 'customize-posts' ), $post );
-				$rendered = sprintf( $private_title_format, $rendered );
-			}
-
-			/** This filter is documented in wp-includes/post-template.php */
-			$rendered = apply_filters( 'the_title', $rendered, $post->ID );
-
-			// @todo We need to pass whether a link is present as placement context.
-			if ( ! is_single() ) {
-				$rendered = sprintf( '<a href="%s" rel="bookmark">%s</a>', esc_url( get_permalink( $post->ID ) ), $rendered );
-			}
-		} elseif ( 'post_content' === $this->field_id ) {
-			$rendered = get_the_content();
-
-			/** This filter is documented in wp-includes/post-template.php */
-			$rendered = apply_filters( 'the_content', $rendered );
-			$rendered = str_replace( ']]>', ']]&gt;', $rendered );
-		} elseif ( 'post_excerpt' === $partial->field_id ) {
-			$rendered = get_the_excerpt();
-
-			/** This filter is documented in wp-includes/post-template.php */
-			$rendered = apply_filters( 'the_excerpt', $rendered );
-		} elseif ( ( 'comment_status' === $partial->field_id && 'comments-area' === $this->placement ) || ( 'ping_status' === $partial->field_id ) && is_singular() ) {
-			if ( comments_open() || get_comments_number() ) {
-				ob_start();
-				comments_template();
-				$rendered = ob_get_contents();
-				ob_end_clean();
-			} else {
-				$rendered = '';
-			}
-		} elseif ( 'comment_status' === $partial->field_id && 'comments-link' === $this->placement && ! is_single() && ! post_password_required() && ( comments_open() || get_comments_number() ) ) {
-			ob_start();
-			/* translators: %s: post title */
-			comments_popup_link( sprintf( __( 'Leave a comment<span class="screen-reader-text"> on %s</span>', 'customize-posts' ), get_the_title() ) );
-			$link = ob_get_contents();
-			ob_end_clean();
-			if ( ! empty( $link ) ) {
-				$rendered = '<span class="comments-link">' . $link . '</span>';
-			}
-		} elseif ( 'post_author' === $this->field_id ) {
-			if ( 'author-bio' === $this->placement && is_singular() && get_the_author_meta( 'description' ) ) {
-
-				$rendered = false;
-				$template_parts = array(
-					'template-parts/biography',
-					'author-bio',
-				);
-				foreach ( $template_parts as $template_part ) {
-					if ( '' !== locate_template( $template_part . '.php' ) ) {
-						ob_start();
-						get_template_part( $template_part );
-						$rendered = ob_get_contents();
-						ob_end_clean();
-						break;
-					}
-				}
-			} elseif ( 'byline' === $this->placement && ( is_singular() || is_multi_author() ) ) {
-				$rendered = sprintf( '<a class="url fn n" href="%1$s">%2$s</a>',
-					esc_url( get_author_posts_url( get_the_author_meta( 'ID', $post->post_author ) ) ),
-					get_the_author_meta( 'display_name', $post->post_author )
-				);
-			} elseif ( 'avatar' === $this->placement ) {
-				$size = isset( $context['size'] ) ? $context['size'] : 96;
-				$default = isset( $context['default'] ) ? $context['default'] : '';
-				$alt = isset( $context['alt'] ) ? $context['alt'] : '';
-				$rendered = get_avatar( get_the_author_meta( 'user_email' ), $size, $default, $alt, $context );
-			}
+		$method = 'render_' . $this->field_id;
+		if ( method_exists( $this, $method ) ) {
+			$rendered = $this->$method( $partial, $context, $post );
 		}
+
+		/**
+		 * Filter the rendered partial by the field id.
+		 *
+		 * @param string|null          $rendered Rendered partial.
+		 * @param WP_Customize_Partial $partial  Partial.
+		 * @param array                $context  Context.
+		 * @param WP_Post              $post     Post object.
+		 * @return string|null
+		 */
+		$rendered = apply_filters( 'customize_posts_rendered_' . $this->field_id . '_partial', $rendered, $partial, $context, $post, $this );
+
+		/**
+		 * Filter the rendered partial.
+		 *
+		 * @param string|null          $rendered Rendered partial.
+		 * @param WP_Customize_Partial $partial  Partial.
+		 * @param array                $context  Context.
+		 * @param WP_Post              $post     Post object.
+		 * @return string|null
+		 */
+		$rendered = apply_filters( 'customize_posts_rendered_partial', $rendered, $partial, $context, $post, $this );
 
 		wp_reset_postdata();
 		return $rendered;
@@ -214,5 +157,166 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 		$data['field_id'] = $this->field_id;
 		$data['placement'] = $this->placement;
 		return $data;
+	}
+
+	/**
+	 * Render the post title.
+	 *
+	 * @param WP_Customize_Partial $partial Partial.
+	 * @param array                $context Context.
+	 * @param WP_Post              $post    Post object.
+	 * @return string
+	 */
+	public function render_post_title( $partial, $context, $post ) {
+		$rendered = $post->post_title;
+
+		if ( ! empty( $post->post_password ) ) {
+			/** This filter is documented in wp-includes/post-template.php */
+			$protected_title_format = apply_filters( 'protected_title_format', __( 'Protected: %s', 'customize-posts' ), $post );
+			$rendered = sprintf( $protected_title_format, $rendered );
+		} elseif ( isset( $post->post_status ) && 'private' === $post->post_status ) {
+			/** This filter is documented in wp-includes/post-template.php */
+			$private_title_format = apply_filters( 'private_title_format', __( 'Private: %s', 'customize-posts' ), $post );
+			$rendered = sprintf( $private_title_format, $rendered );
+		}
+
+		/** This filter is documented in wp-includes/post-template.php */
+		$rendered = apply_filters( 'the_title', $rendered, $post->ID );
+
+		// @todo We need to pass whether a link is present as placement context.
+		if ( ! is_single() ) {
+			$rendered = sprintf( '<a href="%s" rel="bookmark">%s</a>', esc_url( get_permalink( $post->ID ) ), $rendered );
+		}
+
+		return $rendered;
+	}
+
+	/**
+	 * Render the post content.
+	 *
+	 * @param WP_Customize_Partial $partial Partial.
+	 * @param array                $context Context.
+	 * @param WP_Post              $post    Post object.
+	 * @return string
+	 */
+	public function render_post_content( $partial, $context, $post ) {
+		$rendered = get_the_content();
+
+		/** This filter is documented in wp-includes/post-template.php */
+		$rendered = apply_filters( 'the_content', $rendered );
+		$rendered = str_replace( ']]>', ']]&gt;', $rendered );
+
+		return $rendered;
+	}
+
+	/**
+	 * Render the post excerpt.
+	 *
+	 * @param WP_Customize_Partial $partial Partial.
+	 * @param array                $context Context.
+	 * @param WP_Post              $post    Post object.
+	 * @return string
+	 */
+	public function render_post_excerpt( $partial, $context, $post ) {
+		$rendered = get_the_excerpt();
+
+		/** This filter is documented in wp-includes/post-template.php */
+		$rendered = apply_filters( 'the_excerpt', $rendered );
+
+		return $rendered;
+	}
+
+	/**
+	 * Render comments area & link.
+	 *
+	 * @param WP_Customize_Partial $partial Partial.
+	 * @param array                $context Context.
+	 * @param WP_Post              $post    Post object.
+	 * @return string|null
+	 */
+	public function render_comment_status( $partial, $context, $post ) {
+		$rendered = null;
+
+		if ( 'comments-area' === $this->placement && is_singular() ) {
+			if ( comments_open() || get_comments_number() ) {
+				ob_start();
+				comments_template();
+				$rendered = ob_get_contents();
+				ob_end_clean();
+			} else {
+				$rendered = '';
+			}
+		} elseif ( 'comments-link' === $this->placement && ! is_single() && ! post_password_required() && ( comments_open() || get_comments_number() ) ) {
+			ob_start();
+			/* translators: %s: post title */
+			comments_popup_link( sprintf( __( 'Leave a comment<span class="screen-reader-text"> on %s</span>', 'customize-posts' ), get_the_title() ) );
+			$link = ob_get_contents();
+			ob_end_clean();
+			if ( ! empty( $link ) ) {
+				$rendered = '<span class="comments-link">' . $link . '</span>';
+			}
+		}
+
+		return $rendered;
+	}
+
+	/**
+	 * Render pings.
+	 *
+	 * @param WP_Customize_Partial $partial Partial.
+	 * @param array                $context Context.
+	 * @param WP_Post              $post    Post object.
+	 * @return string
+	 */
+	public function render_ping_status( $partial, $context, $post ) {
+		if ( is_singular() && ( comments_open() || get_comments_number() ) ) {
+			ob_start();
+			comments_template();
+			$rendered = ob_get_contents();
+			ob_end_clean();
+		} else {
+			$rendered = '';
+		}
+
+		return $rendered;
+	}
+
+	/**
+	 * Render post author.
+	 *
+	 * @param WP_Customize_Partial $partial Partial.
+	 * @param array                $context Context.
+	 * @param WP_Post              $post    Post object.
+	 * @return string|bool
+	 */
+	public function render_post_author( $partial, $context, $post ) {
+		if ( 'biography' === $this->placement && is_singular() && get_the_author_meta( 'description' ) ) {
+			$rendered = false;
+			$template_parts = array(
+				'template-parts/biography',
+				'author-bio',
+			);
+			foreach ( $template_parts as $template_part ) {
+				if ( '' !== locate_template( $template_part . '.php' ) ) {
+					ob_start();
+					get_template_part( $template_part );
+					$rendered = ob_get_contents();
+					ob_end_clean();
+					break;
+				}
+			}
+		} elseif ( 'byline' === $this->placement && ( is_singular() || is_multi_author() ) ) {
+			$rendered = sprintf( '<a class="url fn n" href="%1$s">%2$s</a>',
+				esc_url( get_author_posts_url( get_the_author_meta( 'ID', $post->post_author ) ) ),
+				get_the_author_meta( 'display_name', $post->post_author )
+			);
+		} elseif ( 'avatar' === $this->placement ) {
+			$size = isset( $context['size'] ) ? $context['size'] : 96;
+			$default = isset( $context['default'] ) ? $context['default'] : '';
+			$alt = isset( $context['alt'] ) ? $context['alt'] : '';
+			$rendered = get_avatar( get_the_author_meta( 'user_email' ), $size, $default, $alt, $context );
+		}
+
+		return $rendered;
 	}
 }
