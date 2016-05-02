@@ -62,7 +62,6 @@ final class WP_Customize_Posts {
 		require_once ABSPATH . WPINC . '/customize/class-wp-customize-partial.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-field-partial.php';
 
-		add_filter( 'register_post_type_args', array( $this, 'filter_register_post_type_args' ), 10, 2 );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'customize_controls_init', array( $this, 'enqueue_editor' ) );
 
@@ -73,30 +72,6 @@ final class WP_Customize_Posts {
 		add_filter( 'customize_save_response', array( $this, 'filter_customize_save_response_for_conflicts' ), 10, 2 );
 
 		$this->preview = new WP_Customize_Posts_Preview( $this );
-	}
-
-	/**
-	 * Filter the arguments when registering a post type.
-	 *
-	 * @param array  $args      Array of arguments for registering a post type.
-	 * @param string $post_type Post type key.
-	 * @return array
-	 */
-	public function filter_register_post_type_args( $args, $post_type ) {
-
-		/**
-		 * Filter which post types are excluded from the Customizer Preview Pane.
-		 *
-		 * @param array $post_types Excluded post types.
-		 * @return array
-		 */
-		$post_types = (array) apply_filters( 'customize_posts_excluded_post_types', array() );
-
-		if ( in_array( $post_type, $post_types, true ) ) {
-			$args['show_in_customizer'] = false;
-		}
-
-		return $args;
 	}
 
 	/**

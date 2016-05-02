@@ -25,19 +25,17 @@ class Customize_Posts_Jetpack_Support extends Customize_Posts_Plugin_Support {
 	 * @access public
 	 */
 	public function add_support() {
-		add_filter( 'customize_posts_excluded_post_types', array( $this, 'excluded_post_types' ) );
+		add_filter( 'wp_loaded', array( $this, 'show_in_customizer' ) );
 	}
 
 	/**
-	 * Excluded post types registered in Jetpack.
+	 * Exclude Jetpack registered post types from being displayed in the Customizer.
 	 *
-	 * @param array $post_types Excluded post types.
+	 * @access public
 	 */
-	public function excluded_post_types( $post_types ) {
+	public function show_in_customizer() {
 		if ( Jetpack::is_module_active( 'contact-form' ) ) {
-			$post_types[] = 'feedback';
+			get_post_type_object( 'feedback' )->show_in_customizer = false;
 		}
-
-		return $post_types;
 	}
 }

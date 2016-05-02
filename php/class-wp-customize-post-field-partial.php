@@ -128,7 +128,7 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 		 * @param WP_Post              $post     Post object.
 		 * @return string|null
 		 */
-		$rendered = apply_filters( 'customize_posts_rendered_' . $this->field_id . '_partial', $rendered, $partial, $context, $post, $this );
+		$rendered = apply_filters( 'customize_posts_rendered_' . $this->field_id . '_partial', $rendered, $partial, $context, $post );
 
 		/**
 		 * Filter the rendered partial.
@@ -139,7 +139,7 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 		 * @param WP_Post              $post     Post object.
 		 * @return string|null
 		 */
-		$rendered = apply_filters( 'customize_posts_rendered_partial', $rendered, $partial, $context, $post, $this );
+		$rendered = apply_filters( 'customize_posts_rendered_partial', $rendered, $partial, $context, $post );
 
 		wp_reset_postdata();
 		return $rendered;
