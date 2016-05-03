@@ -119,28 +119,6 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 			$rendered = $this->$method( $partial, $context, $post );
 		}
 
-		/**
-		 * Filter the rendered partial by the field id.
-		 *
-		 * @param string|null          $rendered Rendered partial.
-		 * @param WP_Customize_Partial $partial  Partial.
-		 * @param array                $context  Context.
-		 * @param WP_Post              $post     Post object.
-		 * @return string|null
-		 */
-		$rendered = apply_filters( 'customize_posts_rendered_' . $this->field_id . '_partial', $rendered, $partial, $context, $post );
-
-		/**
-		 * Filter the rendered partial.
-		 *
-		 * @param string|null          $rendered Rendered partial.
-		 * @param WP_Customize_Partial $partial  Partial.
-		 * @param array                $context  Context.
-		 * @param WP_Post              $post     Post object.
-		 * @return string|null
-		 */
-		$rendered = apply_filters( 'customize_posts_rendered_partial', $rendered, $partial, $context, $post );
-
 		wp_reset_postdata();
 		return $rendered;
 	}
