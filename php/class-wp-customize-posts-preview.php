@@ -462,11 +462,6 @@ final class WP_Customize_Posts_Preview {
 				'container_inclusive' => true,
 			),
 			'post_author' => array(
-				'biography' => array(
-					'selector' => '.author-info',
-					'singular_only' => true,
-					'container_inclusive' => true,
-				),
 				'byline' => array(
 					'selector' => '.vcard a.fn',
 					'container_inclusive' => true,
