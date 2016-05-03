@@ -21,7 +21,7 @@
 		 * @inheritdoc
 		 */
 		initialize: function( id, options ) {
-			var partial = this, args, matches, baseSelector, bodySelector, idPattern = /^post\[(.+?)]\[(-?\d+)]\[(.+?)](?:\[(.+?)])?$/;
+			var partial = this, args, matches, idPattern = /^post\[(.+?)]\[(-?\d+)]\[(.+?)](?:\[(.+?)])?$/;
 
 			args = options || {};
 			args.params = args.params || {};
@@ -34,16 +34,7 @@
 			args.params.field_id = matches[3];
 			args.params.placement = matches[4] || '';
 
-			if ( args.params.selector ) {
-				baseSelector = '.hentry.post-' + String( args.params.post_id ) + '.type-' + args.params.post_type;
-				bodySelector = '.postid-' + String( args.params.post_id ) + '.single-' + args.params.post_type;
-				if ( ! args.params.bodySelector ) {
-					args.params.selector = baseSelector + ' ' + args.params.selector;
-				} else {
-					args.params.selector = bodySelector + ' ' + args.params.selector;
-				}
-				api.selectiveRefresh.Partial.prototype.initialize.call( partial, id, args );
-			}
+			api.selectiveRefresh.Partial.prototype.initialize.call( partial, id, args );
 		},
 
 		/**

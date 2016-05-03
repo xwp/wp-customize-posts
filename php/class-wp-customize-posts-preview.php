@@ -326,6 +326,12 @@ final class WP_Customize_Posts_Preview {
 				$args = array();
 			}
 			$args['type'] = WP_Customize_Post_Field_Partial::TYPE;
+
+			$placement = isset( $matches['placement'] ) ? $matches['placement'] : '';
+			$schema = $this->get_post_field_partial_schema( $matches['field_id'], $placement );
+			if ( ! empty( $schema ) ) {
+				$args = array_merge( $args, $schema );
+			}
 		}
 		return $args;
 	}
@@ -419,6 +425,84 @@ final class WP_Customize_Posts_Preview {
 	}
 
 	/**
+	 * Get the schema for dynamically registered partials.
+	 *
+	 * @param string $field_id  The partial field ID.
+	 * @param string $placement The partial placement.
+	 * @return array
+	 */
+	public function get_post_field_partial_schema( $field_id = '', $placement = '' ) {
+		$schema = array(
+			'post_title' => array(
+				'selector' => '.entry-title',
+			),
+			'post_content' => array(
+				'selector' => '.entry-content',
+			),
+			'post_excerpt' => array(
+				'selector' => '.entry-summary',
+			),
+			'comment_status' => array(
+				'comments-area' => array(
+					'selector' => '.comments-area',
+					'body_selector' => true,
+					'singular_only' => true,
+					'container_inclusive' => true,
+				),
+				'comments-link' => array(
+					'selector' => '.comments-link',
+					'archive_only' => true,
+					'container_inclusive' => true,
+				),
+			),
+			'ping_status' => array(
+				'selector' => '.comments-area',
+				'body_selector' => true,
+				'singular_only' => true,
+				'container_inclusive' => true,
+			),
+			'post_author' => array(
+				'biography' => array(
+					'selector' => '.author-info',
+					'singular_only' => true,
+					'container_inclusive' => true,
+				),
+				'byline' => array(
+					'selector' => '.vcard a.fn',
+					'container_inclusive' => true,
+					'fallback_refresh' => false,
+				),
+				'avatar' => array(
+					'selector' => '.vcard img.avatar',
+					'container_inclusive' => true,
+					'fallback_refresh' => false,
+				),
+			),
+		);
+
+		/**
+		 * Filter the schema for dynamically registered partials.
+		 *
+		 * @param array $schema Partial schema.
+		 * @return array
+		 */
+		$schema = apply_filters( 'customize_posts_partial_schema', $schema );
+
+		// Return specific schema based on the field_id & placement.
+		if ( ! empty( $field_id ) ) {
+			if ( empty( $placement ) && isset( $schema[ $field_id ] ) ) {
+				return $schema[ $field_id ];
+			} elseif ( ! empty( $placement ) && isset( $schema[ $field_id ][ $placement ] ) ) {
+				return $schema[ $field_id ][ $placement ];
+			} else {
+				return array();
+			}
+		}
+
+		return $schema;
+	}
+
+	/**
 	 * Export data into the customize preview.
 	 */
 	public function export_preview_data() {
@@ -442,34 +526,12 @@ final class WP_Customize_Posts_Preview {
 			}
 		}
 
-		/**
-		 * Filter the selectors used to render partials.
-		 *
-		 * @param array $partial_selectors Partial selectors.
-		 * @return array
-		 */
-		$partial_selectors = apply_filters( 'customize_posts_partial_selectors', array(
-			'title' => '.entry-title',
-			'content' => '.entry-content',
-			'excerpt' => '.entry-summary',
-			'comments' => array(
-				'area' => '.comments-area',
-				'link' => '.comments-link',
-			),
-			'pings' => '.comments-area',
-			'author' => array(
-				'biography' => '.author-info',
-				'byline' => '.vcard a.fn',
-				'avatar' => '.vcard img.avatar',
-			),
-		) );
-
 		$exported = array(
 			'isPostPreview' => is_preview(),
 			'isSingular' => is_singular(),
 			'queriedPostId' => $queried_post_id,
 			'settingProperties' => $setting_properties,
-			'partialSelectors' => $partial_selectors,
+			'partialSchema' => $this->get_post_field_partial_schema(),
 		);
 
 		$data = sprintf( 'var _wpCustomizePreviewPostsData = %s;', wp_json_encode( $exported ) );

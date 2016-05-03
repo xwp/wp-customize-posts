@@ -112,14 +112,10 @@ class Test_WP_Customize_Post_Field_Partial extends WP_UnitTestCase {
 		$this->assertEquals( $post_id, $partial->post_id );
 		$this->assertEquals( $post->post_type, $partial->post_type );
 		$this->assertEquals( 'post_title', $partial->field_id );
-		$this->assertFalse( $partial->container_inclusive );
-		$this->assertTrue( $partial->fallback_refresh );
 
 		$id = sprintf( 'post[%s][%d][%s][%s]', $post->post_type, $post->ID, 'post_title', 'heading' );
 		$partial = new WP_Customize_Post_Field_Partial( $this->wp_customize->selective_refresh, $id );
 		$this->assertEquals( 'heading', $partial->placement );
-		$this->assertTrue( $partial->container_inclusive );
-		$this->assertFalse( $partial->fallback_refresh );
 	}
 
 	/**

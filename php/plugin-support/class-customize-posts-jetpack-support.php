@@ -20,7 +20,7 @@ class Customize_Posts_Jetpack_Support extends Customize_Posts_Plugin_Support {
 	public $slug = 'jetpack/jetpack.php';
 
 	/**
-	 * Constructor.
+	 * Add plugin support.
 	 *
 	 * @access public
 	 */
@@ -34,13 +34,11 @@ class Customize_Posts_Jetpack_Support extends Customize_Posts_Plugin_Support {
 	 * @access public
 	 */
 	public function show_in_customizer() {
-		if ( ! Jetpack::is_module_active( 'contact-form' ) ) {
-			return;
+		if ( Jetpack::is_module_active( 'contact-form' ) ) {
+			$post_type_object = get_post_type_object( 'feedback' );
+			if ( $post_type_object ) {
+				$post_type_object->show_in_customizer = false;
+			}
 		}
-		$post_type_object = get_post_type_object( 'feedback' );
-		if ( ! $post_type_object ) {
-			return;
-		}
-		$post_type_object->show_in_customizer = false;
 	}
 }

@@ -84,15 +84,6 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 		$args['field_id'] = $matches['field_id'];
 		$args['placement'] = isset( $matches['placement'] ) ? $matches['placement'] : '';
 
-		if ( ! empty( $args['placement'] ) ) {
-			if ( ! isset( $args['container_inclusive'] ) ) {
-				$args['container_inclusive'] = true;
-			}
-			if ( ! isset( $args['fallback_refresh'] ) ) {
-				$args['fallback_refresh'] = false;
-			}
-		}
-
 		parent::__construct( $component, $id, $args );
 	}
 
