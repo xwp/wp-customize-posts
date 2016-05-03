@@ -2,6 +2,11 @@
 <ruleset name="Customize Posts Plugin">
 
 	<rule ref="WordPress-Core" />
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" value="customize-posts" />
+		</properties>
+	</rule>
 	<rule ref="WordPress-Docs" />
 
 	<rule ref="Squiz.Commenting.FunctionComment.ScalarTypeHintMissing">
