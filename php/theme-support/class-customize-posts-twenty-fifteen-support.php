@@ -37,7 +37,7 @@ class Customize_Posts_Twenty_Fifteen_Support extends Customize_Posts_Theme_Suppo
 	 * @return array
 	 */
 	public function partial_schema( $schema ) {
-		$schema['post_author']['biography'] = array(
+		$schema['post_author[biography]'] = array(
 			'selector' => '.author-info',
 			'singular_only' => true,
 			'container_inclusive' => true,

@@ -73,27 +73,22 @@
 	/**
 	 * Geneate the partial schema.
 	 *
-	 * @param {int} id - Setting ID.
+	 * @param {string} id
 	 */
 	api.previewPosts.partialSchema = function( id ) {
 		var partialSchema = [];
 
-		_.each( api.previewPosts.data.partialSchema, function( schema, partialId ) {
-			if ( ! schema.selector ) {
-				_.each( schema, function( placementSchema, placementId ) {
-					placementSchema.settings = [ id ];
-					partialSchema.push( {
-						id: id + '[' + partialId + '][' + placementId + ']',
-						params: api.previewPosts.snakeToCamel( placementSchema )
-					} );
-				} );
-			} else {
-				schema.settings = [ id ];
-				partialSchema.push( {
-					id: id + '[' + partialId + ']',
-					params: api.previewPosts.snakeToCamel( schema )
-				} );
-			}
+		_.each( api.previewPosts.data.partialSchema, function( params, key ) {
+			var partialId, idParts;
+
+			idParts = key.replace( /]/g, '' ).split( /\[/ );
+			partialId = id + '[' + idParts.join( '][' ) + ']';
+
+			params.settings = [ id ];
+			partialSchema.push( {
+				id: partialId,
+				params: api.previewPosts.snakeToCamel( params )
+			} );
 		} );
 
 		return partialSchema;

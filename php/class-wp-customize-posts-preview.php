@@ -327,8 +327,11 @@ final class WP_Customize_Posts_Preview {
 			}
 			$args['type'] = WP_Customize_Post_Field_Partial::TYPE;
 
-			$placement = isset( $matches['placement'] ) ? $matches['placement'] : '';
-			$schema = $this->get_post_field_partial_schema( $matches['field_id'], $placement );
+			$field_id = $matches['field_id'];
+			if ( ! empty( $matches['placement'] ) ) {
+				$field_id .= '[' . $matches['placement'] . ']';
+			}
+			$schema = $this->get_post_field_partial_schema( $field_id );
 			if ( ! empty( $schema ) ) {
 				$args = array_merge( $args, $schema );
 			}
@@ -427,11 +430,10 @@ final class WP_Customize_Posts_Preview {
 	/**
 	 * Get the schema for dynamically registered partials.
 	 *
-	 * @param string $field_id  The partial field ID.
-	 * @param string $placement The partial placement.
+	 * @param string $field_id The partial field ID.
 	 * @return array
 	 */
-	public function get_post_field_partial_schema( $field_id = '', $placement = '' ) {
+	public function get_post_field_partial_schema( $field_id = '' ) {
 		$schema = array(
 			'post_title' => array(
 				'selector' => '.entry-title',
@@ -442,18 +444,16 @@ final class WP_Customize_Posts_Preview {
 			'post_excerpt' => array(
 				'selector' => '.entry-summary',
 			),
-			'comment_status' => array(
-				'comments-area' => array(
-					'selector' => '.comments-area',
-					'body_selector' => true,
-					'singular_only' => true,
-					'container_inclusive' => true,
-				),
-				'comments-link' => array(
-					'selector' => '.comments-link',
-					'archive_only' => true,
-					'container_inclusive' => true,
-				),
+			'comment_status[comments-area]' => array(
+				'selector' => '.comments-area',
+				'body_selector' => true,
+				'singular_only' => true,
+				'container_inclusive' => true,
+			),
+			'comment_status[comments-link]' => array(
+				'selector' => '.comments-link',
+				'archive_only' => true,
+				'container_inclusive' => true,
 			),
 			'ping_status' => array(
 				'selector' => '.comments-area',
@@ -461,17 +461,15 @@ final class WP_Customize_Posts_Preview {
 				'singular_only' => true,
 				'container_inclusive' => true,
 			),
-			'post_author' => array(
-				'byline' => array(
-					'selector' => '.vcard a.fn',
-					'container_inclusive' => true,
-					'fallback_refresh' => false,
-				),
-				'avatar' => array(
-					'selector' => '.vcard img.avatar',
-					'container_inclusive' => true,
-					'fallback_refresh' => false,
-				),
+			'post_author[byline]' => array(
+				'selector' => '.vcard a.fn',
+				'container_inclusive' => true,
+				'fallback_refresh' => false,
+			),
+			'post_author[avatar]' => array(
+				'selector' => '.vcard img.avatar',
+				'container_inclusive' => true,
+				'fallback_refresh' => false,
 			),
 		);
 
@@ -485,10 +483,8 @@ final class WP_Customize_Posts_Preview {
 
 		// Return specific schema based on the field_id & placement.
 		if ( ! empty( $field_id ) ) {
-			if ( empty( $placement ) && isset( $schema[ $field_id ] ) ) {
+			if ( isset( $schema[ $field_id ] ) ) {
 				return $schema[ $field_id ];
-			} elseif ( ! empty( $placement ) && isset( $schema[ $field_id ][ $placement ] ) ) {
-				return $schema[ $field_id ][ $placement ];
 			} else {
 				return array();
 			}
