@@ -105,8 +105,8 @@ body.mce-fullscreen.customize-posts-content-editor-pane-open div.mce-fullscreen 
 	z-index: 30;
 }
 .customize-posts-content-editor-pane-open .wp-full-overlay.collapsed .collapse-sidebar {
-	bottom: 304px;
+	bottom: 308px;
 }
 .customize-posts-content-editor-pane-open.mce-fullscreen .wp-full-overlay.collapsed .collapse-sidebar {
-	bottom:8px;
+	bottom: 8px;
 }
