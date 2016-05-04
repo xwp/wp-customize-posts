@@ -116,9 +116,14 @@ class Test_Customize_Posts_Jetpack_Support extends WP_UnitTestCase {
 	 */
 	public function test_show_in_customizer() {
 		register_post_type( 'feedback', array( 'show_ui' => true ) );
-		$this->assertArrayHasKey( 'feedback', $this->posts->get_post_types() );
+
+		$post_type_objects = $this->posts->get_post_types();
+		$this->assertTrue( $post_type_objects['feedback']->show_in_customizer );
 		$this->jetpack->show_in_customizer();
-		$this->assertArrayNotHasKey( 'feedback', $this->posts->get_post_types() );
+
+		$post_type_objects = $this->posts->get_post_types();
+		$this->assertFalse( $post_type_objects['feedback']->show_in_customizer );
+
 		_unregister_post_type( 'feedback' );
 	}
 }
