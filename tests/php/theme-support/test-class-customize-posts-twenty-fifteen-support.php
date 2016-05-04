@@ -1,17 +1,17 @@
 <?php
 /**
- * Tests for Customize_Posts_Twenty_Sixteen_Support.
+ * Tests for Customize_Posts_Twenty_Fifteen_Support.
  *
  * @package WordPress
  * @subpackage Customize
  */
 
 /**
- * Class Test_Customize_Posts_Twenty_Sixteen_Support
+ * Class Test_Customize_Posts_Twenty_Fifteen_Support
  *
- * @group twentysixteen
+ * @group twentyfifteen
  */
-class Test_Customize_Posts_Twenty_Sixteen_Support extends WP_UnitTestCase {
+class Test_Customize_Posts_Twenty_Fifteen_Support extends WP_UnitTestCase {
 
 	/**
 	 * Plugin instance.
@@ -49,11 +49,11 @@ class Test_Customize_Posts_Twenty_Sixteen_Support extends WP_UnitTestCase {
 	protected $user_id;
 
 	/**
-	 * Customize_Posts_Twenty_Sixteen_Support instance.
+	 * Customize_Posts_Twenty_Fifteen_Support instance.
 	 *
-	 * @var Customize_Posts_Twenty_Sixteen_Support
+	 * @var Customize_Posts_Twenty_Fifteen_Support
 	 */
-	protected $twentysixteen;
+	protected $twentyfifteen;
 
 	/**
 	 * Setup.
@@ -78,12 +78,12 @@ class Test_Customize_Posts_Twenty_Sixteen_Support extends WP_UnitTestCase {
 		unset( $GLOBALS['wp_themes'] );
 
 		$this->plugin = $GLOBALS['customize_posts_plugin'];
-		$this->twentysixteen = new Customize_Posts_Twenty_Sixteen_Support( $this->plugin );
+		$this->twentyfifteen = new Customize_Posts_Twenty_Fifteen_Support( $this->plugin );
 
 		$this->user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $this->user_id );
-		switch_theme( $this->twentysixteen->slug );
-		$this->twentysixteen->init();
+		switch_theme( $this->twentyfifteen->slug );
+		$this->twentyfifteen->init();
 
 		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
 		// @codingStandardsIgnoreStart
@@ -122,25 +122,25 @@ class Test_Customize_Posts_Twenty_Sixteen_Support extends WP_UnitTestCase {
 	/**
 	 * Test add support.
 	 *
-	 * @see Customize_Posts_Twenty_Sixteen_Support::is_support_needed()
+	 * @see Customize_Posts_Twenty_Fifteen_Support::is_support_needed()
 	 */
 	public function test_is_support_needed() {
-		$this->assertTrue( $this->twentysixteen->is_support_needed() );
+		$this->assertTrue( $this->twentyfifteen->is_support_needed() );
 	}
 
 	/**
 	 * Test add support.
 	 *
-	 * @see Customize_Posts_Twenty_Sixteen_Support::add_support()
+	 * @see Customize_Posts_Twenty_Fifteen_Support::add_support()
 	 */
 	public function test_add_support() {
-		$this->assertEquals( 10, has_action( 'customize_posts_partial_schema', array( $this->twentysixteen, 'filter_partial_schema' ) ) );
+		$this->assertEquals( 10, has_action( 'customize_posts_partial_schema', array( $this->twentyfifteen, 'filter_partial_schema' ) ) );
 	}
 
 	/**
 	 * Test add support.
 	 *
-	 * @see Customize_Posts_Twenty_Sixteen_Support::filter_partial_schema()
+	 * @see Customize_Posts_Twenty_Fifteen_Support::filter_partial_schema()
 	 */
 	public function test_filter_partial_schema() {
 		$preview = new WP_Customize_Posts_Preview( $this->wp_customize->posts );
@@ -150,7 +150,7 @@ class Test_Customize_Posts_Twenty_Sixteen_Support extends WP_UnitTestCase {
 	/**
 	 * Test render_callback().
 	 *
-	 * @see Customize_Posts_Twenty_Sixteen_Support::biography_render_callback()
+	 * @see Customize_Posts_Twenty_Fifteen_Support::biography_render_callback()
 	 */
 	public function test_biography_render_callback() {
 		$this->markTestSkipped( 'locate_template has STYLESHEETPATH hardcoded' );
@@ -158,7 +158,7 @@ class Test_Customize_Posts_Twenty_Sixteen_Support extends WP_UnitTestCase {
 		$post = get_post( $this->factory()->post->create() );
 		$id = sprintf( 'post[%s][%d][%s][%s]', $post->post_type, $post->ID, 'post_author', 'biography' );
 		$args = array(
-			'render_callback' => array( $this->twentysixteen, 'biography_render_callback' ),
+			'render_callback' => array( $this->twentyfifteen, 'biography_render_callback' ),
 		);
 		$partial = new WP_Customize_Post_Field_Partial( $this->wp_customize->selective_refresh, $id, $args );
 

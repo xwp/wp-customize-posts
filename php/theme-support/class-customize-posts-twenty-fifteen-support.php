@@ -8,8 +8,6 @@
 
 /**
  * Class Customize_Posts_Twenty_Fifteen_Support
- *
- * @codeCoverageIgnore
  */
 class Customize_Posts_Twenty_Fifteen_Support extends Customize_Posts_Theme_Support {
 
