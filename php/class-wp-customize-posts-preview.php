@@ -517,12 +517,18 @@ final class WP_Customize_Posts_Preview {
 			}
 		}
 
+		$exported_partial_schema = array();
+		foreach ( $this->get_post_field_partial_schema() as $key => $schema ) {
+			unset( $schema['render_callback'] );
+			$exported_partial_schema[ $key ] = $schema;
+		}
+
 		$exported = array(
 			'isPostPreview' => is_preview(),
 			'isSingular' => is_singular(),
 			'queriedPostId' => $queried_post_id,
 			'settingProperties' => $setting_properties,
-			'partialSchema' => $this->get_post_field_partial_schema(),
+			'partialSchema' => $exported_partial_schema,
 		);
 
 		$data = sprintf( 'var _wpCustomizePreviewPostsData = %s;', wp_json_encode( $exported ) );

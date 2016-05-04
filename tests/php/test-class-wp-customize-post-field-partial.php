@@ -55,13 +55,6 @@ class Test_WP_Customize_Post_Field_Partial extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Filter the author description.
-	 */
-	public function author_description() {
-		return 'Post author bio';
-	}
-
-	/**
 	 * Test __construct().
 	 *
 	 * @see WP_Customize_Post_Field_Partial::__construct()
@@ -270,23 +263,6 @@ class Test_WP_Customize_Post_Field_Partial extends WP_UnitTestCase {
 		$rendered = $partial->render();
 		$this->assertContains( '<div id="comments" class="comments-area">', $rendered );
 		$this->assertNotContains( '<textarea id="comment"', $rendered );
-	}
-
-	/**
-	 * Test render_callback().
-	 *
-	 * @see WP_Customize_Post_Field_Partial::render_callback()
-	 */
-	public function test_render_callback_post_author_bio() {
-		$post = get_post( $this->factory()->post->create() );
-		$id = sprintf( 'post[%s][%d][%s][%s]', $post->post_type, $post->ID, 'post_author', 'biography' );
-		$partial = new WP_Customize_Post_Field_Partial( $this->wp_customize->selective_refresh, $id );
-
-		add_filter( 'get_the_author_description', array( $this, 'author_description' ) );
-		$this->go_to( get_permalink( $post->ID ) );
-		$rendered = $partial->render();
-		$this->assertContains( 'Post author bio', $rendered );
-		remove_filter( 'get_the_author_description', array( $this, 'author_description' ) );
 	}
 
 	/**

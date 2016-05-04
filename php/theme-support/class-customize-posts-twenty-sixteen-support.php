@@ -26,7 +26,6 @@ class Customize_Posts_Twenty_Sixteen_Support extends Customize_Posts_Theme_Suppo
 	 */
 	public function add_support() {
 		add_filter( 'customize_posts_partial_schema', array( $this, 'filter_partial_schema' ) );
-		add_filter( 'customize_partial_render', array( $this, 'filter_partial_render' ), 10, 3 );
 	}
 
 	/**
@@ -42,38 +41,28 @@ class Customize_Posts_Twenty_Sixteen_Support extends Customize_Posts_Theme_Suppo
 			'selector' => '.author-info',
 			'singular_only' => true,
 			'container_inclusive' => true,
+			'render_callback' => array( $this, 'biography_render_callback' ),
 		);
 
 		return $schema;
 	}
 
 	/**
-	 * Render partial.
+	 * Render the post_author biography partial.
 	 *
-	 * @param string|array|false   $rendered          The partial value. Default false.
-	 * @param WP_Customize_Partial $partial           WP_Customize_Setting instance.
-	 * @param array                $container_context Optional array of context data associated with
-	 *                                                the target container.
+	 * @param WP_Customize_Partial $partial Partial.
+	 * @param array                $context Context.
+	 *
+	 * @return string|null
 	 */
-	public function filter_partial_render( $rendered, $partial, $container_context ) {
-		$can_render_bio = (
-			isset( $partial->field_id ) &&
-			isset( $partial->placement ) &&
-			'post_author' === $partial->field_id &&
-			'biography' === $partial->placement &&
-			is_singular() &&
-			get_the_author_meta( 'description' )
-		);
+	public function biography_render_callback( WP_Customize_Partial $partial, $context = array() ) {
+		$rendered = false;
 
-		if ( $can_render_bio ) {
-			$rendered = false;
-
-			if ( '' !== locate_template( 'template-parts/biography.php' ) ) {
-				ob_start();
-				get_template_part( 'template-parts/biography' );
-				$rendered = ob_get_contents();
-				ob_end_clean();
-			}
+		if ( is_singular() && get_the_author_meta( 'description' ) && '' !== locate_template( 'template-parts/biography.php' ) ) {
+			ob_start();
+			get_template_part( 'template-parts/biography' );
+			$rendered = ob_get_contents();
+			ob_end_clean();
 		}
 
 		return $rendered;
