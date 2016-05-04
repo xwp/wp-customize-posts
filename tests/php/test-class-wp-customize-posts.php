@@ -234,7 +234,11 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->do_customize_boot_actions();
 		foreach ( $posts->get_post_types() as $post_type_object ) {
 			$panel_id = sprintf( 'posts[%s]', $post_type_object->name );
-			$this->assertInstanceOf( 'WP_Customize_Posts_Panel', $posts->manager->get_panel( $panel_id ) );
+			if ( empty( $post_type_object->show_in_customizer ) ) {
+				$this->assertNull( $posts->manager->get_panel( $panel_id ) );
+			} else {
+				$this->assertInstanceOf( 'WP_Customize_Posts_Panel', $posts->manager->get_panel( $panel_id ) );
+			}
 		}
 	}
 
