@@ -259,22 +259,9 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 	 * @return string|bool
 	 */
 	public function render_post_author( $partial, $context, $post ) {
-		if ( 'biography' === $this->placement && is_singular() && get_the_author_meta( 'description' ) ) {
-			$rendered = false;
-			$template_parts = array(
-				'template-parts/biography',
-				'author-bio',
-			);
-			foreach ( $template_parts as $template_part ) {
-				if ( '' !== locate_template( $template_part . '.php' ) ) {
-					ob_start();
-					get_template_part( $template_part );
-					$rendered = ob_get_contents();
-					ob_end_clean();
-					break;
-				}
-			}
-		} elseif ( 'byline' === $this->placement && ( is_singular() || is_multi_author() ) ) {
+		$rendered = null;
+
+		if ( 'byline' === $this->placement && ( is_singular() || is_multi_author() ) ) {
 			$rendered = sprintf( '<a class="url fn n" href="%1$s">%2$s</a>',
 				esc_url( get_author_posts_url( get_the_author_meta( 'ID', $post->post_author ) ) ),
 				get_the_author_meta( 'display_name', $post->post_author )
