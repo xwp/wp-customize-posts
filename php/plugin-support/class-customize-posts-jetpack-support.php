@@ -7,6 +7,16 @@
  */
 
 /**
+ * Add Customize Posts support.
+ *
+ * @codeCoverageIgnore
+ */
+function customize_posts_jetpack_support() {
+	add_customize_posts_support( 'Customize_Posts_Jetpack_Support' );
+}
+add_action( 'after_setup_theme', 'customize_posts_jetpack_support' );
+
+/**
  * Class Customize_Posts_Jetpack_Support
  */
 class Customize_Posts_Jetpack_Support extends Customize_Posts_Plugin_Support {
@@ -25,7 +35,7 @@ class Customize_Posts_Jetpack_Support extends Customize_Posts_Plugin_Support {
 	 * @access public
 	 */
 	public function add_support() {
-		add_filter( 'wp_loaded', array( $this, 'show_in_customizer' ) );
+		add_filter( 'init', array( $this, 'show_in_customizer' ) );
 	}
 
 	/**

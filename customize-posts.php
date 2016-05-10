@@ -31,3 +31,43 @@
 // @codeCoverageIgnoreStart
 require_once dirname( __FILE__ ) . '/php/class-customize-posts-plugin.php';
 $GLOBALS['customize_posts_plugin'] = new Customize_Posts_Plugin(); // @codeCoverageIgnoreEnd
+
+/**
+ * Intantiate a Customize Posts support class.
+ *
+ * The support class must extend `Customize_Posts_Support` or one of it's subclasses.
+ *
+ * @global array $wp_customize_posts_support
+ *
+ * @param string $class_name The support class name.
+ */
+function add_customize_posts_support( $class_name ) {
+	global $wp_customize_posts_support;
+
+	if ( class_exists( $class_name, false ) ) {
+		$support = new $class_name();
+
+		if ( $support instanceof Customize_Posts_Support ) {
+			$support->init();
+			$wp_customize_posts_support[ $class_name ] = $support;
+		}
+	}
+}
+
+/**
+ * Get a Customize Posts support class instance.
+ *
+ * @global array $wp_customize_posts_support
+ *
+ * @param string $class_name The support class name.
+ * @return mixed The support class instance or false.
+ */
+function get_customize_posts_support( $class_name ) {
+	global $wp_customize_posts_support;
+
+	if ( ! isset( $wp_customize_posts_support[ $class_name ] ) ) {
+		return false;
+	}
+
+	return $wp_customize_posts_support[ $class_name ];
+}

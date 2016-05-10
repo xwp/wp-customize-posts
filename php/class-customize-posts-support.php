@@ -12,31 +12,12 @@
 abstract class Customize_Posts_Support {
 
 	/**
-	 * Plugin instance.
-	 *
-	 * @access public
-	 * @var Customize_Posts_Plugin
-	 */
-	public $plugin;
-
-	/**
 	 * Plugin/Theme slug.
 	 *
 	 * @access public
 	 * @var string
 	 */
 	public $slug;
-
-	/**
-	 * Constructor.
-	 *
-	 * @access public
-	 *
-	 * @param Customize_Posts_Plugin $plugin Plugin instance.
-	 */
-	public function __construct( Customize_Posts_Plugin $plugin ) {
-		$this->plugin = $plugin;
-	}
 
 	/**
 	 * Initialize support.

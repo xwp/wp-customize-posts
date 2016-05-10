@@ -331,9 +331,11 @@ final class WP_Customize_Posts_Preview {
 			if ( ! empty( $matches['placement'] ) ) {
 				$field_id .= '[' . $matches['placement'] . ']';
 			}
-			$schema = $this->get_post_field_partial_schema( $field_id );
-			if ( ! empty( $schema ) ) {
-				$args = array_merge( $args, $schema );
+			if ( current_theme_supports( 'customize-posts' ) ) {
+				$schema = $this->get_post_field_partial_schema( $field_id );
+				if ( ! empty( $schema ) ) {
+					$args = array_merge( $args, $schema );
+				}
 			}
 		}
 		return $args;
@@ -518,9 +520,11 @@ final class WP_Customize_Posts_Preview {
 		}
 
 		$exported_partial_schema = array();
-		foreach ( $this->get_post_field_partial_schema() as $key => $schema ) {
-			unset( $schema['render_callback'] );
-			$exported_partial_schema[ $key ] = $schema;
+		if ( current_theme_supports( 'customize-posts' ) ) {
+			foreach ( $this->get_post_field_partial_schema() as $key => $schema ) {
+				unset( $schema['render_callback'] );
+				$exported_partial_schema[ $key ] = $schema;
+			}
 		}
 
 		$exported = array(

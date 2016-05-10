@@ -1,24 +1,15 @@
 <?php
 /**
- * Tests for Customize_Posts_Twenty_Sixteen_Support.
+ * Tests for Customize_Posts_Dummy_Support.
  *
  * @package WordPress
  * @subpackage Customize
  */
 
 /**
- * Class Test_Customize_Posts_Twenty_Sixteen_Support
- *
- * @group twentysixteen
+ * Class Test_Customize_Posts_Dummy_Support
  */
-class Test_Customize_Posts_Twenty_Sixteen_Support extends WP_UnitTestCase {
-
-	/**
-	 * Plugin instance.
-	 *
-	 * @var Plugin
-	 */
-	protected $plugin;
+class Test_Customize_Posts_Dummy_Support extends WP_UnitTestCase {
 
 	/**
 	 * Manager.
@@ -49,11 +40,11 @@ class Test_Customize_Posts_Twenty_Sixteen_Support extends WP_UnitTestCase {
 	protected $user_id;
 
 	/**
-	 * Customize_Posts_Twenty_Sixteen_Support instance.
+	 * Customize_Posts_Dummy_Support instance.
 	 *
-	 * @var Customize_Posts_Twenty_Sixteen_Support
+	 * @var Customize_Posts_Dummy_Support
 	 */
-	protected $twentysixteen;
+	protected $support;
 
 	/**
 	 * Setup.
@@ -62,7 +53,7 @@ class Test_Customize_Posts_Twenty_Sixteen_Support extends WP_UnitTestCase {
 	 */
 	public function setUp() {
 		parent::setUp();
-		$this->theme_root = dirname( dirname( dirname( __FILE__ ) ) ) . '/themes';
+		$this->theme_root = str_replace( '/php/theme-support', '/data/themes', dirname( __FILE__ ) );
 
 		$this->orig_theme_dir = $GLOBALS['wp_theme_directories'];
 		// @codingStandardsIgnoreStart
@@ -73,17 +64,21 @@ class Test_Customize_Posts_Twenty_Sixteen_Support extends WP_UnitTestCase {
 		add_filter( 'stylesheet_root', array( $this, '_theme_root' ) );
 		add_filter( 'template_root', array( $this, '_theme_root' ) );
 
-		// clear caches
+		// Clear caches.
 		wp_clean_themes_cache();
 		unset( $GLOBALS['wp_themes'] );
 
-		$this->plugin = $GLOBALS['customize_posts_plugin'];
-		$this->twentysixteen = new Customize_Posts_Twenty_Sixteen_Support( $this->plugin );
-
 		$this->user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $this->user_id );
-		switch_theme( $this->twentysixteen->slug );
-		$this->twentysixteen->init();
+		switch_theme( 'dummy' );
+
+		// The theme is not loaded yet, so we need to load the class first.
+		require_once( $this->theme_root . '/dummy/functions.php' );
+		$class_name = 'Customize_Posts_Dummy_Support';
+		$this->assertFalse( get_customize_posts_support( $class_name ) );
+		add_customize_posts_support( $class_name );
+		$this->support = get_customize_posts_support( $class_name );
+		$this->assertInstanceOf( 'Customize_Posts_Support', $this->support );
 
 		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
 		// @codingStandardsIgnoreStart
@@ -106,41 +101,43 @@ class Test_Customize_Posts_Twenty_Sixteen_Support extends WP_UnitTestCase {
 		remove_filter( 'template_root', array( $this, '_theme_root' ) );
 		wp_clean_themes_cache();
 		unset( $GLOBALS['wp_themes'] );
+		unset( $GLOBALS['wp_customize_posts_support'] );
 		$this->wp_customize = null;
+		$this->support = null;
 		unset( $_POST['customized'] );
 		unset( $GLOBALS['wp_customize'] );
 		parent::tearDown();
 	}
 
 	/**
-	 * Filter the author description.
+	 * Replace the normal theme root dir with our premade test dir
 	 */
-	public function author_description() {
-		return 'Post author bio';
+	function _theme_root( $dir ) {
+		return $this->theme_root;
 	}
 
 	/**
 	 * Test add support.
 	 *
-	 * @see Customize_Posts_Twenty_Sixteen_Support::is_support_needed()
+	 * @see Customize_Posts_Dummy_Support::is_support_needed()
 	 */
 	public function test_is_support_needed() {
-		$this->assertTrue( $this->twentysixteen->is_support_needed() );
+		$this->assertTrue( $this->support->is_support_needed() );
 	}
 
 	/**
 	 * Test add support.
 	 *
-	 * @see Customize_Posts_Twenty_Sixteen_Support::add_support()
+	 * @see Customize_Posts_Dummy_Support::add_support()
 	 */
 	public function test_add_support() {
-		$this->assertEquals( 10, has_action( 'customize_posts_partial_schema', array( $this->twentysixteen, 'filter_partial_schema' ) ) );
+		$this->assertEquals( 10, has_action( 'customize_posts_partial_schema', array( $this->support, 'filter_partial_schema' ) ) );
 	}
 
 	/**
 	 * Test add support.
 	 *
-	 * @see Customize_Posts_Twenty_Sixteen_Support::filter_partial_schema()
+	 * @see Customize_Posts_Dummy_Support::filter_partial_schema()
 	 */
 	public function test_filter_partial_schema() {
 		$preview = new WP_Customize_Posts_Preview( $this->wp_customize->posts );
@@ -150,22 +147,18 @@ class Test_Customize_Posts_Twenty_Sixteen_Support extends WP_UnitTestCase {
 	/**
 	 * Test render_callback().
 	 *
-	 * @see Customize_Posts_Twenty_Sixteen_Support::biography_render_callback()
+	 * @see Customize_Posts_Dummy_Support::biography_render_callback()
 	 */
 	public function test_biography_render_callback() {
-		$this->markTestSkipped( 'locate_template has STYLESHEETPATH hardcoded' );
-
 		$post = get_post( $this->factory()->post->create() );
 		$id = sprintf( 'post[%s][%d][%s][%s]', $post->post_type, $post->ID, 'post_author', 'biography' );
 		$args = array(
-			'render_callback' => array( $this->twentysixteen, 'biography_render_callback' ),
+			'render_callback' => array( $this->support, 'biography_render_callback' ),
 		);
 		$partial = new WP_Customize_Post_Field_Partial( $this->wp_customize->selective_refresh, $id, $args );
 
-		add_filter( 'get_the_author_description', array( $this, 'author_description' ) );
 		$this->go_to( get_permalink( $post->ID ) );
 		$rendered = $partial->render();
-		$this->assertContains( 'Post author bio', $rendered );
-		remove_filter( 'get_the_author_description', array( $this, 'author_description' ) );
+		$this->assertContains( '<div id="author-info">Biography</div>', $rendered );
 	}
 }

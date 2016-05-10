@@ -1,6 +1,6 @@
 <?php
 /**
- * Customize Posts Twenty Sixteen Support.
+ * Dummy theme functions.
  *
  * @package WordPress
  * @subpackage Customize
@@ -8,21 +8,19 @@
 
 /**
  * Add Customize Posts support.
- *
- * @codeCoverageIgnore
  */
-function twentysixteen_support() {
+function dummy_support() {
 	add_theme_support( 'customize-posts' );
-	add_customize_posts_support( 'Customize_Posts_Twenty_Sixteen_Support' );
+	add_customize_posts_support( 'Customize_Posts_Dummy_Support' );
 }
-add_action( 'after_setup_theme', 'twentysixteen_support' );
+add_action( 'after_setup_theme', 'dummy_support' );
 
 /**
- * Class Customize_Posts_Twenty_Sixteen_Support
+ * Class Customize_Posts_Dummy_Support
  *
  * @codeCoverageIgnore
  */
-class Customize_Posts_Twenty_Sixteen_Support extends Customize_Posts_Theme_Support {
+class Customize_Posts_Dummy_Support extends Customize_Posts_Theme_Support {
 
 	/**
 	 * Theme slug.
@@ -30,7 +28,7 @@ class Customize_Posts_Twenty_Sixteen_Support extends Customize_Posts_Theme_Suppo
 	 * @access public
 	 * @var string
 	 */
-	public $slug = 'twentysixteen';
+	public $slug = 'dummy';
 
 	/**
 	 * Add theme support.
@@ -69,15 +67,6 @@ class Customize_Posts_Twenty_Sixteen_Support extends Customize_Posts_Theme_Suppo
 	 * @return string|null
 	 */
 	public function biography_render_callback( WP_Customize_Partial $partial, $context = array() ) {
-		$rendered = false;
-
-		if ( is_singular() && get_the_author_meta( 'description' ) && '' !== locate_template( 'template-parts/biography.php' ) ) {
-			ob_start();
-			get_template_part( 'template-parts/biography' );
-			$rendered = ob_get_contents();
-			ob_end_clean();
-		}
-
-		return $rendered;
+		return '<div id="author-info">Biography</div>';
 	}
 }

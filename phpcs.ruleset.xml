@@ -3,6 +3,7 @@
 
 	<rule ref="WordPress-Core" />
 	<rule ref="WordPress.WP.I18n">
+		<exclude-pattern>*/php/theme-support/*</exclude-pattern>
 		<properties>
 			<property name="text_domain" value="customize-posts" />
 		</properties>

@@ -106,7 +106,7 @@ class Test_Customize_Posts_Jetpack_Support extends WP_UnitTestCase {
 	 * @see Customize_Posts_Jetpack_Support::add_support()
 	 */
 	public function test_add_support() {
-		$this->assertEquals( 10, has_action( 'wp_loaded', array( $this->jetpack, 'show_in_customizer' ) ) );
+		$this->assertEquals( 10, has_action( 'init', array( $this->jetpack, 'show_in_customizer' ) ) );
 	}
 
 	/**

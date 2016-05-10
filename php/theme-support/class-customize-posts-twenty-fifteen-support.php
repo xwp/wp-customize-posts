@@ -1,13 +1,26 @@
 <?php
 /**
- * Customize Posts Twenty Fifteen Support class.
+ * Customize Posts Twenty Fifteen Support.
  *
  * @package WordPress
  * @subpackage Customize
  */
 
 /**
+ * Add Customize Posts support.
+ *
+ * @codeCoverageIgnore
+ */
+function twentyfifteen_support() {
+	add_theme_support( 'customize-posts' );
+	add_customize_posts_support( 'Customize_Posts_Twenty_Fifteen_Support' );
+}
+add_action( 'after_setup_theme', 'twentyfifteen_support' );
+
+/**
  * Class Customize_Posts_Twenty_Fifteen_Support
+ *
+ * @codeCoverageIgnore
  */
 class Customize_Posts_Twenty_Fifteen_Support extends Customize_Posts_Theme_Support {
 

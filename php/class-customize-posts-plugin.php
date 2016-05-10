@@ -62,12 +62,10 @@ class Customize_Posts_Plugin {
 		require_once dirname( __FILE__ ) . '/class-customize-posts-plugin-support.php';
 		require_once dirname( __FILE__ ) . '/class-customize-posts-theme-support.php';
 
+		// @todo Move the support classes into the theme or plugin.
 		foreach ( array( 'theme', 'plugin' ) as $type ) {
 			foreach ( glob( dirname( __FILE__ ) . '/' . $type . '-support/class-*.php' ) as $file_path ) {
 				require_once $file_path;
-				$class_name = str_replace( '-', '_', preg_replace( '/^class-(.+)\.php$/', '$1', basename( $file_path ) ) );
-				$support = new $class_name( $this );
-				$support->init();
 			}
 		}
 

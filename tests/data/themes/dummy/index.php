@@ -6,4 +6,4 @@
  * @subpackage Customize
  */
 
-echo dirname( __FILE__ ) . '/' . basename( __FILE__ );
+echo 'Only here for testing';
