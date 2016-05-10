@@ -56,11 +56,8 @@ class Test_Customize_Posts_Jetpack_Support extends WP_UnitTestCase {
 	public function setUp() {
 		parent::setUp();
 		$this->plugin = $GLOBALS['customize_posts_plugin'];
-		$this->jetpack = new Customize_Posts_Jetpack_Support( $this->plugin );
-
 		$this->active_plugins = get_option( 'active_plugins' );
-		update_option( 'active_plugins', array( $this->jetpack->slug ) );
-		$this->jetpack->init();
+		update_option( 'active_plugins', array( 'jetpack/jetpack.php' ) );
 
 		$this->user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
 
@@ -75,6 +72,9 @@ class Test_Customize_Posts_Jetpack_Support extends WP_UnitTestCase {
 		if ( isset( $this->wp_customize->posts ) ) {
 			$this->posts = $this->wp_customize->posts;
 		}
+
+		$this->do_customize_boot_actions();
+		$this->jetpack = $this->wp_customize->posts->supports[ 'Customize_Posts_Jetpack_Support' ];
 	}
 
 	/**
@@ -84,11 +84,34 @@ class Test_Customize_Posts_Jetpack_Support extends WP_UnitTestCase {
 	 */
 	public function tearDown() {
 		$this->wp_customize = null;
-		unset( $_POST['customized'] );
+		$this->support = null;
 		unset( $GLOBALS['wp_customize'] );
 		unset( $GLOBALS['wp_scripts'] );
+		unset( $_REQUEST['nonce'] );
+		unset( $_REQUEST['customize_preview_post_nonce'] );
+		unset( $_REQUEST['wp_customize'] );
 		update_option( 'active_plugins', $this->active_plugins );
 		parent::tearDown();
+	}
+
+	/**
+	 * Do Customizer boot actions.
+	 */
+	function do_customize_boot_actions() {
+		// Remove actions that call add_theme_support( 'title-tag' ).
+		remove_action( 'after_setup_theme', 'twentyfifteen_setup' );
+		remove_action( 'after_setup_theme', 'twentysixteen_setup' );
+
+		$_SERVER['REQUEST_METHOD'] = 'POST';
+		$_POST['customized'] = '';
+		do_action( 'setup_theme' );
+		$_REQUEST['nonce'] = wp_create_nonce( 'preview-customize_' . $this->wp_customize->theme()->get_stylesheet() );
+		$_REQUEST['customize_preview_post_nonce'] = wp_create_nonce( 'customize_preview_post' );
+		do_action( 'after_setup_theme' );
+		do_action( 'customize_register', $this->wp_customize );
+		$this->wp_customize->customize_preview_init();
+		do_action( 'wp', $GLOBALS['wp'] );
+		$_REQUEST['wp_customize'] = 'on';
 	}
 
 	/**
@@ -98,15 +121,6 @@ class Test_Customize_Posts_Jetpack_Support extends WP_UnitTestCase {
 	 */
 	public function test_is_support_needed() {
 		$this->assertTrue( $this->jetpack->is_support_needed() );
-	}
-
-	/**
-	 * Test add support.
-	 *
-	 * @see Customize_Posts_Jetpack_Support::add_support()
-	 */
-	public function test_add_support() {
-		$this->assertEquals( 10, has_action( 'init', array( $this->jetpack, 'show_in_customizer' ) ) );
 	}
 
 	/**

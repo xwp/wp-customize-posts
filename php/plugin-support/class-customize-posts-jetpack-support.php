@@ -10,11 +10,15 @@
  * Add Customize Posts support.
  *
  * @codeCoverageIgnore
+ *
+ * @param WP_Customize_Manager $wp_customize Customize manager instance.
  */
-function customize_posts_jetpack_support() {
-	add_customize_posts_support( 'Customize_Posts_Jetpack_Support' );
+function customize_posts_jetpack_support( $wp_customize ) {
+	if ( isset( $wp_customize->posts ) ) {
+		$wp_customize->posts->add_support( new Customize_Posts_Jetpack_Support( $wp_customize->posts ) );
+	}
 }
-add_action( 'after_setup_theme', 'customize_posts_jetpack_support' );
+add_action( 'customize_register', 'customize_posts_jetpack_support' );
 
 /**
  * Class Customize_Posts_Jetpack_Support
@@ -35,7 +39,7 @@ class Customize_Posts_Jetpack_Support extends Customize_Posts_Plugin_Support {
 	 * @access public
 	 */
 	public function add_support() {
-		add_filter( 'init', array( $this, 'show_in_customizer' ) );
+		$this->show_in_customizer();
 	}
 
 	/**

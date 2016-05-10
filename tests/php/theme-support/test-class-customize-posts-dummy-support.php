@@ -8,6 +8,8 @@
 
 /**
  * Class Test_Customize_Posts_Dummy_Support
+ *
+ * @group dummy
  */
 class Test_Customize_Posts_Dummy_Support extends WP_UnitTestCase {
 
@@ -73,18 +75,16 @@ class Test_Customize_Posts_Dummy_Support extends WP_UnitTestCase {
 		switch_theme( 'dummy' );
 
 		// The theme is not loaded yet, so we need to load the class first.
-		require_once( $this->theme_root . '/dummy/functions.php' );
-		$class_name = 'Customize_Posts_Dummy_Support';
-		$this->assertFalse( get_customize_posts_support( $class_name ) );
-		add_customize_posts_support( $class_name );
-		$this->support = get_customize_posts_support( $class_name );
-		$this->assertInstanceOf( 'Customize_Posts_Support', $this->support );
+		require( $this->theme_root . '/dummy/functions.php' );
 
 		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
 		// @codingStandardsIgnoreStart
 		$GLOBALS['wp_customize'] = new WP_Customize_Manager();
 		// @codingStandardsIgnoreStop
 		$this->wp_customize = $GLOBALS['wp_customize'];
+
+		$this->do_customize_boot_actions();
+		$this->support = $this->wp_customize->posts->supports[ 'Customize_Posts_Dummy_Support' ];
 	}
 
 	/**
@@ -101,12 +101,36 @@ class Test_Customize_Posts_Dummy_Support extends WP_UnitTestCase {
 		remove_filter( 'template_root', array( $this, '_theme_root' ) );
 		wp_clean_themes_cache();
 		unset( $GLOBALS['wp_themes'] );
-		unset( $GLOBALS['wp_customize_posts_support'] );
 		$this->wp_customize = null;
 		$this->support = null;
-		unset( $_POST['customized'] );
 		unset( $GLOBALS['wp_customize'] );
+		unset( $GLOBALS['wp_scripts'] );
+		unset( $_REQUEST['nonce'] );
+		unset( $_REQUEST['customize_preview_post_nonce'] );
+		unset( $_REQUEST['wp_customize'] );
+		unset( $_GET['previewed_post'] );
 		parent::tearDown();
+	}
+
+	/**
+	 * Do Customizer boot actions.
+	 */
+	function do_customize_boot_actions() {
+		// Remove actions that call add_theme_support( 'title-tag' ).
+		remove_action( 'after_setup_theme', 'twentyfifteen_setup' );
+		remove_action( 'after_setup_theme', 'twentysixteen_setup' );
+
+		$_SERVER['REQUEST_METHOD'] = 'POST';
+		$_POST['customized'] = '';
+		do_action( 'setup_theme' );
+		$_REQUEST['nonce'] = wp_create_nonce( 'preview-customize_' . $this->wp_customize->theme()->get_stylesheet() );
+		$_REQUEST['customize_preview_post_nonce'] = wp_create_nonce( 'customize_preview_post' );
+		do_action( 'after_setup_theme' );
+		do_action( 'customize_register', $this->wp_customize );
+		$this->wp_customize->customize_preview_init();
+		do_action( 'wp', $GLOBALS['wp'] );
+		$_REQUEST['wp_customize'] = 'on';
+		$_GET['previewed_post'] = 123;
 	}
 
 	/**

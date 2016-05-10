@@ -10,12 +10,15 @@
  * Add Customize Posts support.
  *
  * @codeCoverageIgnore
+ *
+ * @param WP_Customize_Manager $wp_customize Customize manager instance.
  */
-function twentyeleven_support() {
-	add_theme_support( 'customize-posts' );
-	add_customize_posts_support( 'Customize_Posts_Twenty_Eleven_Support' );
+function twentyeleven_support( $wp_customize ) {
+	if ( isset( $wp_customize->posts ) ) {
+		$wp_customize->posts->add_support( new Customize_Posts_Twenty_Eleven_Support( $wp_customize->posts ) );
+	}
 }
-add_action( 'after_setup_theme', 'twentyeleven_support' );
+add_action( 'customize_register', 'twentyeleven_support' );
 
 /**
  * Class Customize_Posts_Twenty_Eleven_Support
