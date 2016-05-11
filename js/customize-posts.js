@@ -1,5 +1,4 @@
 /* global jQuery, wp, _, _wpCustomizePostsExports, console */
-/* eslint consistent-return: "error" */
 
 (function( api, $ ) {
 	'use strict';
@@ -90,8 +89,8 @@
 	/**
 	 * Handle adding post setting.
 	 *
-	 * @param {string} id
-	 * @return {wp.customize.Section}
+	 * @param {string} id - Section ID (same as post setting ID).
+	 * @return {wp.customize.Section|null} Added (or existing) section, or null if not able to be added.
 	 */
 	component.addPostSection = function( id ) {
 		var section, sectionId, panelId, sectionType, postId, postType, idParts, Constructor, htmlParser;
@@ -101,17 +100,17 @@
 			if ( 'undefined' !== typeof console && console.error ) {
 				console.error( 'Unrecognized post type: ' + postType );
 			}
-			return;
+			return null;
 		}
 		if ( ! component.data.postTypes[ postType ].show_in_customizer ) {
-			return;
+			return null;
 		}
 		postId = parseInt( idParts[2], 10 );
 		if ( ! postId ) {
 			if ( 'undefined' !== typeof console && console.error ) {
 				console.error( 'Bad post id: ' + idParts[2] );
 			}
-			return;
+			return null;
 		}
 
 		sectionType = 'post[' + postType + ']';
@@ -119,7 +118,7 @@
 		sectionId = id;
 
 		if ( api.section.has( sectionId ) ) {
-			return;
+			return api.section( sectionId );
 		}
 
 		Constructor = api.sectionConstructor[ sectionType ] || api.sectionConstructor.post;
