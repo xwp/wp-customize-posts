@@ -1,5 +1,5 @@
 /* global wp, jQuery */
-/* eslint consistent-this: [ "error", "panel" ] */
+/* eslint consistent-this: [ "error", "panel" ], no-magic-numbers: [ "error", { "ignore": [0,500] } ] */
 
 (function( api, $ ) {
 	'use strict';
@@ -30,10 +30,8 @@
 			}
 
 			panel.deferred.embedded.done(function() {
-				var descriptionContainer, noPreviewedPostsNotice, shouldShowNotice, addNewButton, postObj;
-				postObj = api.Posts.data.postTypes[ panel.postType ];
+				var descriptionContainer, noPreviewedPostsNotice, shouldShowNotice;
 				descriptionContainer = panel.container.find( '.panel-meta:first' );
-				addNewButton = wp.template( 'customize-posts-add-new' );
 
 				noPreviewedPostsNotice = $( $.trim( wp.template( 'customize-panel-posts-' + panel.postType + '-notice' )({
 					message: panel.params.noPostsLoadedMessage
@@ -46,48 +44,7 @@
 					} ).length;
 				};
 
-				if ( postObj.current_user_can.create_posts ) {
-					descriptionContainer.after( addNewButton( {
-						label: postObj.labels.singular_name,
-						panel: panel
-					} ) );
-
-					$( '.add-new-' + panel.postType ).on( 'click', function( event ) {
-						var request;
-
-						event.preventDefault();
-
-						request = wp.ajax.post( 'customize-posts-add-new', {
-							'customize-posts-nonce': api.Posts.data.nonce,
-							'wp_customize': 'on',
-							'post_type': panel.postType
-						} );
-
-						request.done( function( response ) {
-							wp.customize.previewer.previewUrl( response.url );
-
-							api.section( response.sectionId, function( section ) {
-								var controls = section.controls();
-
-								// @todo Figure out why we need this hack to focus the first control.
-								section.focus( {
-									completeCallback: function() {
-										if ( controls[0] ) {
-											setTimeout( function() {
-												controls[0].focus();
-											}, 500 );
-										}
-									}
-								} );
-							} );
-						} );
-
-						request.fail( function() {
-
-							// @todo Display errors in the Customize Settings Validation area.
-						} );
-					} );
-				}
+				panel.addNewPost();
 
 				/*
 				 * Set the initial visibility state for rendered notice.
@@ -106,6 +63,62 @@
 					}
 				});
 			});
+		},
+
+		/**
+		 * Add new post UI & listen for click events.
+		 */
+		addNewPost: function() {
+			var panel = this, descriptionContainer, addNewButton, postObj;
+
+			descriptionContainer = panel.container.find( '.panel-meta:first' );
+			addNewButton = wp.template( 'customize-posts-add-new' );
+			postObj = api.Posts.data.postTypes[ panel.postType ];
+
+			if ( postObj.current_user_can.create_posts ) {
+				descriptionContainer.after( addNewButton( {
+					label: postObj.labels.singular_name,
+					panel: panel
+				} ) );
+
+				$( '.add-new-' + panel.postType ).on( 'click', function( event ) {
+					var request;
+
+					event.preventDefault();
+
+					request = wp.ajax.post( 'customize-posts-add-new', {
+						'customize-posts-nonce': api.Posts.data.nonce,
+						'wp_customize': 'on',
+						'post_type': panel.postType
+					} );
+
+					request.done( function( response ) {
+						wp.customize.previewer.previewUrl( response.url );
+
+						api.section( response.sectionId, function( section ) {
+							var callback, controls = section.controls();
+
+							// @todo Figure out why we need this hack to focus the first control.
+							callback = function() {
+								if ( controls[0] ) {
+									controls[0].focus();
+								}
+							};
+
+							section.focus( {
+								completeCallback: function() {
+									setTimeout( callback, 500 );
+								}
+							} );
+						} );
+					} );
+
+					request.fail( function() {
+
+						// @todo Display errors in the Customize Settings Validation area.
+					} );
+				} );
+			}
 		},
 
 		/**
