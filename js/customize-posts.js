@@ -1,4 +1,5 @@
-/*global jQuery, wp, _, _wpCustomizePostsExports, console */
+/* global jQuery, wp, _, _wpCustomizePostsExports, console */
+/* eslint consistent-return: "error" */
 
 (function( api, $ ) {
 	'use strict';
