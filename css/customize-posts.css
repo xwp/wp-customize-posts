@@ -20,6 +20,34 @@ div.customize-setting-validation-message.error {
 	float: right;
 }
 
+#customize-controls .control-panel-posts .customize-info {
+	margin-bottom: 0;
+}
+
+.customize-posts-add-new {
+	padding: 15px 12px;
+	margin: 0;
+	overflow: hidden;
+}
+
+.customize-posts-add-new button {
+	float: right;
+}
+
+.customize-posts-add-new button:before {
+	content: "\f132";
+	display: inline-block;
+	position: relative;
+	left: -2px;
+	top: -1px;
+	font: normal 20px/1 dashicons;
+	vertical-align: middle;
+	-webkit-transition: all 0.2s;
+	transition: all 0.2s;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
 #customize-posts-content-editor-pane {
 	border-top: solid 1px #ddd;
 	position: absolute;

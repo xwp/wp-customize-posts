@@ -70,6 +70,8 @@ final class WP_Customize_Posts {
 		add_filter( 'customize_dynamic_setting_args', array( $this, 'filter_customize_dynamic_setting_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_setting_class', array( $this, 'filter_customize_dynamic_setting_class' ), 5, 3 );
 		add_filter( 'customize_save_response', array( $this, 'filter_customize_save_response_for_conflicts' ), 10, 2 );
+		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_templates' ) );
+		add_action( 'wp_ajax_customize-posts-add-new', array( $this, 'ajax_add_new_post' ) );
 
 		$this->preview = new WP_Customize_Posts_Preview( $this );
 	}
@@ -431,19 +433,28 @@ final class WP_Customize_Posts {
 				continue;
 			}
 
-			$post_types[ $post_type ] = wp_array_slice_assoc( (array) $post_type_obj, array(
-				'name',
-				'supports',
-				'labels',
-				'has_archive',
-				'menu_icon',
-				'description',
-				'hierarchical',
-				'show_in_customizer',
-			) );
+			$post_types[ $post_type ] = array_merge(
+				wp_array_slice_assoc( (array) $post_type_obj, array(
+					'name',
+					'supports',
+					'labels',
+					'has_archive',
+					'menu_icon',
+					'description',
+					'hierarchical',
+					'show_in_customizer',
+				) ),
+				array(
+					'current_user_can' => array(
+						'create_posts' => current_user_can( $post_type_obj->cap->create_posts ),
+						'delete_posts' => current_user_can( $post_type_obj->cap->delete_posts ),
+					),
+				)
+			);
 		}
 
 		$exports = array(
+			'nonce' => wp_create_nonce( 'customize-posts' ),
 			'postTypes' => $post_types,
 			'authorChoices' => $this->get_author_choices(),
 			'l10n' => array(
@@ -538,5 +549,77 @@ final class WP_Customize_Posts {
 	public function sanitize_post_id( $value ) {
 		$value = intval( $value );
 		return $value;
+	}
+
+	/**
+	 * Underscore (JS) templates for dialog windows.
+	 */
+	public function render_templates() {
+		?>
+		<script type="text/html" id="tmpl-customize-posts-add-new">
+			<li class="customize-posts-add-new">
+				<button class="button-secondary add-new-{{ data.panel.postType }}" data-panel-id="{{ data.panel.id }}">
+					<?php esc_html_e( 'Add New', 'customize-posts' ); ?> {{ data.label }}
+				</button>
+			</li>
+		</script>
+		<?php
+	}
+
+	/**
+	 * Ajax handler for adding a new post.
+	 *
+	 * @access public
+	 */
+	public function ajax_add_new_post() {
+		check_ajax_referer( 'customize-posts', 'customize-posts-nonce' );
+
+		if ( ! current_user_can( 'customize' ) ) {
+			wp_die( -1 );
+		}
+
+		if ( empty( $_POST['post_type'] ) ) {
+			wp_send_json_error( 'missing_post_type' );
+		}
+
+		$post_type_obj = get_post_type_object( $_POST['post_type'] );
+		if ( ! $post_type_obj || ! current_user_can( $post_type_obj->cap->create_posts ) ) {
+			wp_send_json_error( 'insufficient_post_permissions' );
+		}
+
+		$post = $this->add_new_post( $_POST['post_type'] );
+
+		if ( empty( $post ) ) {
+			wp_send_json_error( array( 'message' => __( 'Post could not be created.', 'customize-posts' ) ) );
+		} else {
+			$data = array(
+				'sectionId' => WP_Customize_Post_Setting::get_post_setting_id( $post ),
+				'url' => get_preview_post_link( $post->ID ),
+			);
+			wp_send_json_success( $data );
+		}
+	}
+
+	/**
+	 * Add a new post.
+	 *
+	 * @access public
+	 *
+	 * @param string $post_type The post type.
+	 */
+	public function add_new_post( $post_type = '' ) {
+		add_filter( 'wp_insert_post_empty_content', '__return_false' );
+		$args = array(
+		  'post_status' => 'customize-draft',
+		  'post_type'   => $post_type,
+		);
+		$post_id = wp_insert_post( $args, false );
+		remove_filter( 'wp_insert_post_empty_content', '__return_false' );
+
+		if ( 0 < $post_id ) {
+			return get_post( $post_id );
+		}
+
+		return false;
 	}
 }

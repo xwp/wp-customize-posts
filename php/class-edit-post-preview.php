@@ -173,5 +173,11 @@ class Edit_Post_Preview {
 	public function make_auto_draft_status_previewable() {
 		global $wp_post_statuses;
 		$wp_post_statuses['auto-draft']->protected = true;
+
+		register_post_status( 'customize-draft', array(
+			'label'     => 'customize-draft',
+			'internal'  => true,
+			'protected' => true,
+		) );
 	}
 }

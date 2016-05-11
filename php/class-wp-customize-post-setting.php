@@ -181,6 +181,9 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		if ( isset( $post_data['post_excerpt'] ) ) {
 			$post_data['post_excerpt'] = preg_replace( '/\r\n/', "\n", $post_data['post_excerpt'] );
 		}
+		if ( 'customize-draft' === $post_data['post_status'] ) {
+			$post_data['post_status'] = 'publish';
+		}
 
 		return $post_data;
 	}

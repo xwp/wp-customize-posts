@@ -60,8 +60,11 @@
 	 * Handle receiving customized-posts messages from the preview.
 	 *
 	 * @param {object} data
+	 * @return {wp.customize.Section[]}
 	 */
 	component.receivePreviewData = function( data ) {
+		var sections = [], section;
+
 		_.each( data.settings, function( setting, id ) {
 
 			if ( ! api.has( id ) ) {
@@ -73,15 +76,21 @@
 			}
 
 			if ( 'post' === setting.type ) {
-				component.addPostSection( id );
+				section = component.addPostSection( id );
+				if ( section ) {
+					sections.push( section );
+				}
 			}
 		} );
+
+		return sections;
 	};
 
 	/**
 	 * Handle adding post setting.
 	 *
 	 * @param {string} id
+	 * @return {wp.customize.Section}
 	 */
 	component.addPostSection = function( id ) {
 		var section, sectionId, panelId, sectionType, postId, postType, idParts, Constructor, htmlParser;
@@ -126,6 +135,8 @@
 			}
 		});
 		api.section.add( sectionId, section );
+
+		return section;
 	};
 
 	api.bind( 'ready', function() {

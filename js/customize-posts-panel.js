@@ -30,8 +30,10 @@
 			}
 
 			panel.deferred.embedded.done(function() {
-				var descriptionContainer, noPreviewedPostsNotice, shouldShowNotice;
+				var descriptionContainer, noPreviewedPostsNotice, shouldShowNotice, addNewButton, postObj;
+				postObj = api.Posts.data.postTypes[ panel.postType ];
 				descriptionContainer = panel.container.find( '.panel-meta:first' );
+				addNewButton = wp.template( 'customize-posts-add-new' );
 
 				noPreviewedPostsNotice = $( $.trim( wp.template( 'customize-panel-posts-' + panel.postType + '-notice' )({
 					message: panel.params.noPostsLoadedMessage
@@ -43,6 +45,47 @@
 						return section.active();
 					} ).length;
 				};
+
+				if ( postObj.current_user_can.create_posts ) {
+					descriptionContainer.after( addNewButton( {
+						label: postObj.labels.singular_name,
+						panel: panel
+					} ) );
+
+					$( '.add-new-' + panel.postType ).on( 'click', function( event ) {
+						var request;
+
+						event.preventDefault();
+
+						request = wp.ajax.post( 'customize-posts-add-new', {
+							'customize-posts-nonce': api.Posts.data.nonce,
+							'wp_customize': 'on',
+							'post_type': panel.postType
+						} );
+
+						request.done( function( response ) {
+							wp.customize.previewer.previewUrl( response.url );
+
+							api.section( response.sectionId, function( section ) {
+								var controls = section.controls();
+								// @todo Figure out why we need this hack to focus the first control.
+								section.focus( {
+									completeCallback: function() {
+										if ( controls[0] ) {
+											setTimeout( function() {
+												controls[0].focus();
+											}, 500 );
+										}
+									}
+								} );
+							} );
+						} );
+
+						request.fail( function() {
+							// @todo Display errors in the Customize Settings Validation area.
+						} );
+					} );
+				}
 
 				/*
 				 * Set the initial visibility state for rendered notice.

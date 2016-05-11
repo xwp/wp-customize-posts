@@ -74,6 +74,15 @@
 			}
 
 			api.Section.prototype.initialize.call( section, id, args );
+
+			section.active.validate = function( active ) {
+				var setting = api( section.id );
+				if ( setting ) {
+					return setting._dirty || active;
+				} else {
+					return true;
+				}
+			};
 		},
 
 		/**
