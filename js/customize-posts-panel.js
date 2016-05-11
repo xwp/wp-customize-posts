@@ -68,6 +68,7 @@
 
 							api.section( response.sectionId, function( section ) {
 								var controls = section.controls();
+
 								// @todo Figure out why we need this hack to focus the first control.
 								section.focus( {
 									completeCallback: function() {
@@ -82,6 +83,7 @@
 						} );
 
 						request.fail( function() {
+
 							// @todo Display errors in the Customize Settings Validation area.
 						} );
 					} );
