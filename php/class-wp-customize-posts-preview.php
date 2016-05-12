@@ -519,7 +519,7 @@ final class WP_Customize_Posts_Preview {
 
 		$exported_partial_schema = array();
 		foreach ( $this->get_post_field_partial_schema() as $key => $schema ) {
-			unset( $schema['render_callback'] );
+			unset( $schema['render_callback'] ); // PHP callbacks are generally not JSON-serializable.
 			$exported_partial_schema[ $key ] = $schema;
 		}
 

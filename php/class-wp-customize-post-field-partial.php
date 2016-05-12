@@ -42,7 +42,7 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 	/**
 	 * Setting that this section is related to.
 	 *
-	 * @var WP_Customize_Post_Setting
+	 * @var string
 	 */
 	public $field_id;
 
@@ -137,6 +137,7 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 	 * @return string
 	 */
 	public function render_post_title( $partial, $context, $post ) {
+		unset( $partial, $context );
 		$rendered = $post->post_title;
 
 		if ( ! empty( $post->post_password ) ) {
@@ -169,6 +170,7 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 	 * @return string
 	 */
 	public function render_post_content( $partial, $context, $post ) {
+		unset( $partial, $context, $post );
 		$rendered = get_the_content();
 
 		/** This filter is documented in wp-includes/post-template.php */
@@ -187,6 +189,7 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 	 * @return string
 	 */
 	public function render_post_excerpt( $partial, $context, $post ) {
+		unset( $partial, $context, $post );
 		$rendered = get_the_excerpt();
 
 		/** This filter is documented in wp-includes/post-template.php */
@@ -204,6 +207,7 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 	 * @return string|null
 	 */
 	public function render_comment_status( $partial, $context, $post ) {
+		unset( $partial, $context, $post );
 		$rendered = null;
 
 		if ( 'comments-area' === $this->placement && is_singular() ) {
@@ -238,6 +242,7 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 	 * @return string
 	 */
 	public function render_ping_status( $partial, $context, $post ) {
+		unset( $partial, $context, $post );
 		if ( is_singular() && ( comments_open() || get_comments_number() ) ) {
 			ob_start();
 			comments_template();
@@ -259,6 +264,7 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 	 * @return string|bool
 	 */
 	public function render_post_author( $partial, $context, $post ) {
+		unset( $partial );
 		$rendered = null;
 
 		if ( 'byline' === $this->placement && ( is_singular() || is_multi_author() ) ) {

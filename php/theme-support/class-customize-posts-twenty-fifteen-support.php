@@ -58,6 +58,7 @@ class Customize_Posts_Twenty_Fifteen_Support extends Customize_Posts_Theme_Suppo
 	 * @return string|null
 	 */
 	public function biography_render_callback( WP_Customize_Partial $partial, $context = array() ) {
+		unset( $partial, $context );
 		$rendered = false;
 
 		if ( is_singular() && get_the_author_meta( 'description' ) && '' !== locate_template( 'author-bio.php' ) ) {

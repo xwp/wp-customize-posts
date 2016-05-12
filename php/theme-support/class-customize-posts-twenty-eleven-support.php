@@ -60,6 +60,7 @@ class Customize_Posts_Twenty_Eleven_Support extends Customize_Posts_Theme_Suppor
 	 * @return string|null
 	 */
 	public function biography_render_callback( WP_Customize_Partial $partial, $context = array() ) {
+		unset( $partial, $context );
 		$rendered = false;
 
 		if ( is_singular() && get_the_author_meta( 'description' ) && ( ! function_exists( 'is_multi_author' ) || is_multi_author() ) ) {
