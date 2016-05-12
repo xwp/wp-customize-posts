@@ -21,7 +21,7 @@
 		 * @inheritdoc
 		 */
 		initialize: function( id, options ) {
-			var partial = this, args, matches, baseSelector, singularSelector, idPattern = /^post\[(.+?)]\[(-?\d+)]\[(.+?)](?:\[(.+?)])?$/;
+			var partial = this, args, matches, idPattern = /^post\[(.+?)]\[(-?\d+)]\[(.+?)](?:\[(.+?)])?$/;
 
 			args = options || {};
 			args.params = args.params || {};
@@ -34,33 +34,6 @@
 			args.params.field_id = matches[3];
 			args.params.placement = matches[4] || '';
 
-			if ( ! args.params.selector ) {
-				baseSelector = '.hentry.post-' + String( args.params.post_id ) + '.type-' + args.params.post_type;
-				singularSelector = '.postid-' + String( args.params.post_id ) + '.single-' + args.params.post_type;
-				if ( 'post_title' === args.params.field_id ) {
-					args.params.selector = baseSelector + ' .entry-title';
-				} else if ( 'post_content' === args.params.field_id ) {
-					args.params.selector = baseSelector + ' .entry-content';
-				} else if ( 'post_excerpt' === args.params.field_id ) {
-					args.params.selector = baseSelector + ' .entry-summary';
-				} else if ( 'comment_status' === args.params.field_id ) {
-					if ( 'comments-area' === args.params.placement ) {
-						args.params.selector = singularSelector + ' .comments-area';
-					} else if ( 'comments-link' === args.params.placement ) {
-						args.params.selector = baseSelector + ' .comments-link';
-					}
-				} else if ( 'ping_status' === args.params.field_id ) {
-					args.params.selector = singularSelector + ' .comments-area';
-				} else if ( 'post_author' === args.params.field_id ) {
-					if ( 'author-bio' === args.params.placement ) {
-						args.params.selector = baseSelector + ' .author-info';
-					} else if ( 'byline' === args.params.placement ) {
-						args.params.selector = baseSelector + ' .vcard a.fn';
-					} else if ( 'avatar' === args.params.placement ) {
-						args.params.selector = baseSelector + ' .vcard img.avatar';
-					}
-				}
-			}
 			api.selectiveRefresh.Partial.prototype.initialize.call( partial, id, args );
 		},
 

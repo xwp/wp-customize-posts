@@ -43,6 +43,13 @@ final class WP_Customize_Posts {
 	public $registered_post_meta = array();
 
 	/**
+	 * Registered support classes.
+	 *
+	 * @var array
+	 */
+	public $supports = array();
+
+	/**
 	 * Initial loader.
 	 *
 	 * @access public
@@ -72,6 +79,27 @@ final class WP_Customize_Posts {
 		add_filter( 'customize_save_response', array( $this, 'filter_customize_save_response_for_conflicts' ), 10, 2 );
 
 		$this->preview = new WP_Customize_Posts_Preview( $this );
+	}
+
+	/**
+	 * Instantiate a Customize Posts support class.
+	 *
+	 * The support class must extend `Customize_Posts_Support` or one of it's subclasses.
+	 *
+	 * @param string|Customize_Posts_Support $support The support class name or object.
+	 */
+	function add_support( $support ) {
+		if ( is_string( $support ) && class_exists( $support, false ) ) {
+			$support = new $support( $this );
+		}
+
+		if ( $support instanceof Customize_Posts_Support ) {
+			$class_name = get_class( $support );
+			if ( ! isset( $this->supports[ $class_name ] ) ) {
+				$this->supports[ $class_name ] = $support;
+				$support->init();
+			}
+		}
 	}
 
 	/**
