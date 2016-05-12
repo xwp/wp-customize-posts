@@ -7,20 +7,6 @@
  */
 
 /**
- * Add Customize Posts support.
- *
- * @codeCoverageIgnore
- *
- * @param WP_Customize_Manager $wp_customize Customize manager instance.
- */
-function customize_posts_jetpack_support( $wp_customize ) {
-	if ( isset( $wp_customize->posts ) ) {
-		$wp_customize->posts->add_support( new Customize_Posts_Jetpack_Support( $wp_customize->posts ) );
-	}
-}
-add_action( 'customize_register', 'customize_posts_jetpack_support' );
-
-/**
  * Class Customize_Posts_Jetpack_Support
  */
 class Customize_Posts_Jetpack_Support extends Customize_Posts_Plugin_Support {

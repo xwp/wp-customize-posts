@@ -7,20 +7,6 @@
  */
 
 /**
- * Add Customize Posts support.
- *
- * @codeCoverageIgnore
- *
- * @param WP_Customize_Manager $wp_customize Customize manager instance.
- */
-function twentythirteen_support( $wp_customize ) {
-	if ( isset( $wp_customize->posts ) ) {
-		$wp_customize->posts->add_support( new Customize_Posts_Twenty_Thirteen_Support( $wp_customize->posts ) );
-	}
-}
-add_action( 'customize_register', 'twentythirteen_support' );
-
-/**
  * Class Customize_Posts_Twenty_Thirteen_Support
  *
  * @codeCoverageIgnore

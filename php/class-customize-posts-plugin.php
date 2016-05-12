@@ -57,18 +57,6 @@ class Customize_Posts_Plugin {
 			$this->version = $matches[1];
 		}
 
-		// Theme & Plugin Support.
-		require_once dirname( __FILE__ ) . '/class-customize-posts-support.php';
-		require_once dirname( __FILE__ ) . '/class-customize-posts-plugin-support.php';
-		require_once dirname( __FILE__ ) . '/class-customize-posts-theme-support.php';
-
-		// @todo Move the support classes into the theme or plugin.
-		foreach ( array( 'theme', 'plugin' ) as $type ) {
-			foreach ( glob( dirname( __FILE__ ) . '/' . $type . '-support/class-*.php' ) as $file_path ) {
-				require_once $file_path;
-			}
-		}
-
 		require_once dirname( __FILE__ ) . '/class-edit-post-preview.php';
 		$this->edit_post_preview = new Edit_Post_Preview( $this );
 
@@ -76,6 +64,7 @@ class Customize_Posts_Plugin {
 		add_action( 'wp_default_styles', array( $this, 'register_styles' ), 11 );
 		add_filter( 'user_has_cap', array( $this, 'grant_customize_capability' ), 10, 3 );
 		add_filter( 'customize_loaded_components', array( $this, 'filter_customize_loaded_components' ), 100, 2 );
+		add_action( 'customize_register', array( $this, 'load_support_classes' ) );
 
 		require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-controller.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-page-template-controller.php';
@@ -124,6 +113,30 @@ class Customize_Posts_Plugin {
 		$wp_customize->posts = new WP_Customize_Posts( $wp_customize );
 
 		return $components;
+	}
+
+	/**
+	 * Load theme and plugin compatibility classes.
+	 *
+	 * @param WP_Customize_Manager $wp_customize Manager.
+	 */
+	function load_support_classes( $wp_customize ) {
+
+		// Theme & Plugin Support.
+		require_once dirname( __FILE__ ) . '/class-customize-posts-support.php';
+		require_once dirname( __FILE__ ) . '/class-customize-posts-plugin-support.php';
+		require_once dirname( __FILE__ ) . '/class-customize-posts-theme-support.php';
+
+		foreach ( array( 'theme', 'plugin' ) as $type ) {
+			foreach ( glob( dirname( __FILE__ ) . '/' . $type . '-support/class-*.php' ) as $file_path ) {
+				require_once $file_path;
+
+				$class_name = str_replace( '-', '_', preg_replace( '/^class-(.+)\.php$/', '$1', basename( $file_path ) ) );
+				if ( class_exists( $class_name ) ) {
+					$wp_customize->posts->add_support( new $class_name( $wp_customize->posts ) );
+				}
+			}
+		}
 	}
 
 	/**

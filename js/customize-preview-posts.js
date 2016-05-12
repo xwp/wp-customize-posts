@@ -103,7 +103,7 @@
 		var newParams = {};
 
 		_.each( params, function( value, key ) {
-			var i = key.replace( /(\_\w)/g, function( str ) {
+			var i = key.replace( /_\w/g, function( str ) {
 				return str[1].toUpperCase();
 			} );
 			newParams[ i ] = value;
