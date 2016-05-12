@@ -82,7 +82,7 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Intantiate a Customize Posts support class.
+	 * Instantiate a Customize Posts support class.
 	 *
 	 * The support class must extend `Customize_Posts_Support` or one of it's subclasses.
 	 *
@@ -94,10 +94,10 @@ final class WP_Customize_Posts {
 		}
 
 		if ( $support instanceof Customize_Posts_Support ) {
-			$support->init();
 			$class_name = get_class( $support );
-			if ( ! in_array( $class_name, $this->supports ) ) {
+			if ( ! isset( $this->supports[ $class_name ] ) ) {
 				$this->supports[ $class_name ] = $support;
+				$support->init();
 			}
 		}
 	}

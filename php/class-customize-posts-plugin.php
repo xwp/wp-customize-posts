@@ -118,6 +118,8 @@ class Customize_Posts_Plugin {
 	/**
 	 * Load theme and plugin compatibility classes.
 	 *
+	 * @codeCoverageIgnore
+	 *
 	 * @param WP_Customize_Manager $wp_customize Manager.
 	 */
 	function load_support_classes( $wp_customize ) {
