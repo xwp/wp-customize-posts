@@ -185,13 +185,13 @@
 		 */
 		addContentControl: function() {
 			var section = this, control, setting = api( section.id ),
-			    preview = $( '#customize-preview' ),
-			    editorPane = $( '#customize-posts-content-editor-pane' ),
-			    editorFrame = $( '#customize-posts-content_ifr' ),
-			    mceTools = $( '#wp-customize-posts-content-editor-tools' ),
-	            mceToolbar = $( '.mce-toolbar-grp' ),
-	            mceStatusbar = $( '.mce-statusbar' ),
-	            dragbar = $( '.cp-dragbar' ), resize;
+			preview = $( '#customize-preview' ),
+			editorPane = $( '#customize-posts-content-editor-pane' ),
+			editorFrame = $( '#customize-posts-content_ifr' ),
+			mceTools = $( '#wp-customize-posts-content-editor-tools' ),
+			mceToolbar = $( '.mce-toolbar-grp' ),
+			mceStatusbar = $( '.mce-statusbar' ),
+			dragbar = $( '.cp-dragbar' ), resize;
 
 			control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
 				params: {
@@ -318,44 +318,46 @@
 			};
 
 			/**
-             * Vertically Resize Expanded Editor
+             * Vertically Resize Expanded Post Editor leaving nor less than 300px of preview or editor
              */
-            dragbar.on( 'mousedown', function( e ) {
+            dragbar.on( 'mousedown', function( mdEvent ) {
                 var wh = window.innerHeight,
-                    sh = mceTools.outerHeight() + mceToolbar.outerHeight() + mceStatusbar.outerHeight(),
-                    minScroll = 300,
-                    maxScroll = 300;
+                sh = mceTools.outerHeight() + mceToolbar.outerHeight() + mceStatusbar.outerHeight(),
+                bh = 1, //Element border offset
+                minScroll = 300,
+                maxScroll = 300;
 
-                e.preventDefault();
+                mdEvent.preventDefault();
                 preview.prepend( '<div id="cpdraghelper"></div>' );
-                $( document ).on( 'mousemove', function( e ) {
-                    resize = wh - e.pageY;
-                    editorFrame.css( 'pointer-events', 'none' );
 
-                    if ( resize < minScroll ) { //Don't scale lower than 300px
-                        preview.css( 'bottom', '300px' );
-                        editorPane.css( 'height', '300px' );
-                        editorFrame.css( 'height', '200px' );
-                        dragbar.css( 'bottom', '299px' );
-                    } else if ( resize > wh - maxScroll ) { //Don't scale from 300px top of preview
-                        preview.css( 'bottom', wh - maxScroll );
-                        editorPane.css( 'height', wh - maxScroll );
-                        editorFrame.css( 'height', wh - maxScroll - sh );
-                        dragbar.css( 'bottom', wh - maxScroll - 1 );
-                    } else {
-                        preview.css( 'bottom', resize );
-                        editorPane.css( 'height', resize );
-                        editorFrame.css( 'height', resize - sh );
-                        dragbar.css( 'bottom', resize - 1 );
-                    }
-                } );
-            } );
+				$( document ).on( 'mousemove', function( mmEvent ) {
+					resize = wh - mmEvent.pageY;
+					editorFrame.css( 'pointer-events', 'none' );
+
+					if ( resize < minScroll ) { //Don't scale lower than 300px
+						preview.css( 'bottom', '300px' );
+						editorPane.css( 'height', '300px' );
+						editorFrame.css( 'height', '200px' );
+						dragbar.css( 'bottom', '299px' );
+					} else if ( resize > wh - maxScroll ) { //Don't scale from 300px top of preview
+						preview.css( 'bottom', wh - maxScroll );
+						editorPane.css( 'height', wh - maxScroll );
+						editorFrame.css( 'height', wh - maxScroll - sh );
+						dragbar.css( 'bottom', wh - maxScroll - 1 );
+					} else {
+						preview.css( 'bottom', resize );
+						editorPane.css( 'height', resize );
+						editorFrame.css( 'height', resize - sh );
+						dragbar.css( 'bottom', resize - 1 );
+					}
+				} );
+			} );
 
 			$( document ).on( 'mouseup', function() {
-                $( document ).unbind( 'mousemove' );
-                $( '#cpdraghelper' ).remove();
-                editorFrame.css( 'pointer-events', '' );
-            });
+				$( document ).unbind( 'mousemove' );
+				$( '#cpdraghelper' ).remove();
+				editorFrame.css( 'pointer-events', '' );
+			});
 
 			// Override preview trying to de-activate control not present in preview context.
 			control.active.validate = function() {
