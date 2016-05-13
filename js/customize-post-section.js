@@ -322,7 +322,9 @@
              */
             dragbar.on( 'mousedown', function( e ) {
                 var wh = window.innerHeight,
-                    sh = mceTools.outerHeight() + mceToolbar.outerHeight() + mceStatusbar.outerHeight();
+                    sh = mceTools.outerHeight() + mceToolbar.outerHeight() + mceStatusbar.outerHeight(),
+                    minScroll = 300,
+                    maxScroll = 300;
 
                 e.preventDefault();
                 preview.prepend( '<div id="cpdraghelper"></div>' );
@@ -330,21 +332,21 @@
                     resize = wh - e.pageY;
                     editorFrame.css( 'pointer-events', 'none' );
 
-                    if ( resize  < 300 ) { //Don't scale lower than 300px
+                    if ( resize < minScroll ) { //Don't scale lower than 300px
                         preview.css( 'bottom', '300px' );
                         editorPane.css( 'height', '300px' );
                         editorFrame.css( 'height', '200px' );
                         dragbar.css( 'bottom', '299px' );
-                    } else if ( resize > ( wh - 300 ) ) { //Don't scale from 300px top of preview
-                        preview.css( 'bottom', wh - 300 );
-                        editorPane.css( 'height', wh - 300 );
-                        editorFrame.css( 'height', ( wh - 300 ) - sh );
-                        dragbar.css( 'bottom', ( wh - 300 ) - 1 );
+                    } else if ( resize > wh - maxScroll ) { //Don't scale from 300px top of preview
+                        preview.css( 'bottom', wh - maxScroll );
+                        editorPane.css( 'height', wh - maxScroll );
+                        editorFrame.css( 'height', wh - maxScroll - sh );
+                        dragbar.css( 'bottom', wh - maxScroll - 1 );
                     } else {
                         preview.css( 'bottom', resize );
                         editorPane.css( 'height', resize );
-                        editorFrame.css( 'height', ( resize - sh ) );
-                        dragbar.css( 'bottom', ( resize ) - 1 );
+                        editorFrame.css( 'height', resize - sh );
+                        dragbar.css( 'bottom', resize - 1 );
                     }
                 } );
             } );
