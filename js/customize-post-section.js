@@ -323,8 +323,6 @@
             dragbar.on('mousedown', function(e) {
                 e.preventDefault();
                 var wh = window.innerHeight,
-                    eh = editor_pane.outerHeight(),
-                    ph = preview.outerHeight(),
                     sh = mce_tools.outerHeight() + mce_toolbar.outerHeight() + mce_statusbar.outerHeight();
 
                 preview.prepend('<div id="cpdraghelper"></div>');
