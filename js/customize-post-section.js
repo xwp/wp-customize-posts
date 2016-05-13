@@ -343,12 +343,12 @@
 						preview.css( 'bottom', wh - maxScroll );
 						editorPane.css( 'height', wh - maxScroll );
 						editorFrame.css( 'height', wh - maxScroll - sh );
-						dragbar.css( 'bottom', wh - maxScroll - 1 );
+						dragbar.css( 'bottom', wh - maxScroll - bh );
 					} else {
 						preview.css( 'bottom', resize );
 						editorPane.css( 'height', resize );
 						editorFrame.css( 'height', resize - sh );
-						dragbar.css( 'bottom', resize - 1 );
+						dragbar.css( 'bottom', resize - bh );
 					}
 				} );
 			} );
