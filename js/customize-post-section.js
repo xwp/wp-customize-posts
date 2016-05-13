@@ -184,7 +184,14 @@
 		 * @returns {wp.customize.Control}
 		 */
 		addContentControl: function() {
-			var section = this, control, setting = api( section.id );
+			var section = this, control, setting = api( section.id ),
+			    preview = $('#customize-preview'),
+			    editor_pane = $('#customize-posts-content-editor-pane'),
+			    editor_frame = $('#customize-posts-content_ifr'),
+			    mce_tools = $('#wp-customize-posts-content-editor-tools'),
+	            mce_toolbar = $('.mce-toolbar-grp'),
+	            mce_statusbar = $('.mce-statusbar'),
+	            dragbar = $('.cp-dragbar'), resize;
 
 			control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
 				params: {
@@ -280,6 +287,7 @@
 				} else {
 					api.Posts.postIdInput.val( '' );
 					control.editorExpanded.set( false );
+					preview.css( 'bottom', '' );
 				}
 			} );
 
@@ -291,6 +299,9 @@
 				control.editorExpanded.set( ! control.editorExpanded() );
 				if ( control.editorExpanded() ) {
 					editor.focus();
+					preview.css( 'bottom', resize );
+				} else {
+					preview.css( 'bottom', '' );
 				}
 			} );
 
@@ -305,6 +316,46 @@
 				control.editorExpanded.set( true );
 				editor.focus();
 			};
+
+			/**
+             * Vertically Resize Expanded Editor
+             */
+            dragbar.on('mousedown', function(e) {
+                e.preventDefault();
+                var wh = window.innerHeight,
+                    eh = editor_pane.outerHeight(),
+                    ph = preview.outerHeight(),
+                    sh = mce_tools.outerHeight() + mce_toolbar.outerHeight() + mce_statusbar.outerHeight();
+
+                preview.prepend('<div id="cpdraghelper"></div>');
+                $(document).on('mousemove', function(e){
+                    resize = wh - e.pageY;
+                    editor_frame.css( 'pointer-events', 'none' );
+
+                    if( resize  < 300 ){ //don't scale lower than 300px
+                        preview.css( 'bottom', '300px' );
+                        editor_pane.css( 'height', '300px' );
+                        editor_frame.css ( 'height', '200px' );
+                        dragbar.css( 'bottom', '299px' );
+                    } else if ( resize > ( wh - 300 ) ){ //don't scale from 300px top of preview
+                        preview.css( 'bottom', wh - 300 );
+                        editor_pane.css( 'height', wh - 300 );
+                        editor_frame.css ( 'height', ( wh - 300 ) - sh );
+                        dragbar.css( 'bottom', ( wh - 300 ) - 1 );
+                    } else {
+                        preview.css( 'bottom', resize );
+                        editor_pane.css( 'height', resize );
+                        editor_frame.css ( 'height', ( resize - sh ) );
+                        dragbar.css( 'bottom', ( resize ) - 1 );
+                    }
+    			});
+    		});
+
+    		$(document).on('mouseup', function() {
+                $(document).unbind('mousemove');
+                $('#cpdraghelper').remove();
+                editor_frame.css('pointer-events', '');
+            });
 
 			// Override preview trying to de-activate control not present in preview context.
 			control.active.validate = function() {

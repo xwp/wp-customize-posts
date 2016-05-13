@@ -32,8 +32,7 @@ div.customize-setting-validation-message.error {
 	display: block;
 	-webkit-transition: bottom 0.2s;
 	transition: bottom 0.2s;
-
-	/* @todo This should have visibility:hidden to ensure accessible when closed. */
+	visibility: hidden;
 }
 
 body.mce-fullscreen.customize-posts-content-editor-pane-open #customize-posts-content-editor-pane {
@@ -42,6 +41,7 @@ body.mce-fullscreen.customize-posts-content-editor-pane-open #customize-posts-co
 
 body.customize-posts-content-editor-pane-open #customize-posts-content-editor-pane {
 	bottom: 0;
+	visibility: inherit;
 }
 
 #customize-posts-content-editor-pane .wp-editor-tools {
@@ -72,6 +72,31 @@ body.mce-fullscreen.customize-posts-content-editor-pane-open div.mce-fullscreen 
 
 #wp-customize-posts-content-editor-container {
 	border-left: 0;
+}
+
+/* vertical resize bar */
+.cp-dragbar {
+    bottom: 299px;
+    cursor: row-resize;
+    display: none;
+    height: 3px;
+    position: absolute;
+    width: 100%;
+    z-index: 21;
+}
+.customize-posts-content-editor-pane-open .cp-dragbar {
+    display: block;
+}
+#cpdraghelper {
+    background: rgba(0,0,0,0.25);
+    bottom: 0;
+    height: 100%;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 100%;
+    z-index: 999999999999999999999999999999999999;
 }
 
 /* @todo Mobile support for rich text editor */

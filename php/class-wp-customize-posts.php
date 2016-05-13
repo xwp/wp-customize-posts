@@ -483,7 +483,7 @@ final class WP_Customize_Posts {
 	 * Render rich text editor.
 	 */
 	public function render_editor() {
-		echo '<div id="customize-posts-content-editor-pane">';
+		echo '<div class="cp-dragbar"></div><div id="customize-posts-content-editor-pane">';
 
 		// The settings passed in here are derived from those used in edit-form-advanced.php.
 		wp_editor( '', 'customize-posts-content', array(
