@@ -185,13 +185,13 @@
 		 */
 		addContentControl: function() {
 			var section = this, control, setting = api( section.id ),
-			    preview = $('#customize-preview'),
-			    editor_pane = $('#customize-posts-content-editor-pane'),
-			    editor_frame = $('#customize-posts-content_ifr'),
-			    mce_tools = $('#wp-customize-posts-content-editor-tools'),
-	            mce_toolbar = $('.mce-toolbar-grp'),
-	            mce_statusbar = $('.mce-statusbar'),
-	            dragbar = $('.cp-dragbar'), resize;
+			    preview = $( '#customize-preview' ),
+			    editorPane = $( '#customize-posts-content-editor-pane' ),
+			    editorFrame = $( '#customize-posts-content_ifr' ),
+			    mceTools = $( '#wp-customize-posts-content-editor-tools' ),
+	            mceToolbar = $( '.mce-toolbar-grp' ),
+	            mceStatusbar = $( '.mce-statusbar' ),
+	            dragbar = $( '.cp-dragbar' ), resize;
 
 			control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
 				params: {
@@ -320,39 +320,39 @@
 			/**
              * Vertically Resize Expanded Editor
              */
-            dragbar.on('mousedown', function(e) {
-                e.preventDefault();
+            dragbar.on( 'mousedown', function( e ) {
                 var wh = window.innerHeight,
-                    sh = mce_tools.outerHeight() + mce_toolbar.outerHeight() + mce_statusbar.outerHeight();
+                    sh = mceTools.outerHeight() + mceToolbar.outerHeight() + mceStatusbar.outerHeight();
 
-                preview.prepend('<div id="cpdraghelper"></div>');
-                $(document).on('mousemove', function(e){
+                e.preventDefault();
+                preview.prepend( '<div id="cpdraghelper"></div>' );
+                $( document ).on( 'mousemove', function( e ) {
                     resize = wh - e.pageY;
-                    editor_frame.css( 'pointer-events', 'none' );
+                    editorFrame.css( 'pointer-events', 'none' );
 
-                    if( resize  < 300 ){ //don't scale lower than 300px
+                    if ( resize  < 300 ) { //Don't scale lower than 300px
                         preview.css( 'bottom', '300px' );
-                        editor_pane.css( 'height', '300px' );
-                        editor_frame.css ( 'height', '200px' );
+                        editorPane.css( 'height', '300px' );
+                        editorFrame.css( 'height', '200px' );
                         dragbar.css( 'bottom', '299px' );
-                    } else if ( resize > ( wh - 300 ) ){ //don't scale from 300px top of preview
+                    } else if ( resize > ( wh - 300 ) ) { //Don't scale from 300px top of preview
                         preview.css( 'bottom', wh - 300 );
-                        editor_pane.css( 'height', wh - 300 );
-                        editor_frame.css ( 'height', ( wh - 300 ) - sh );
+                        editorPane.css( 'height', wh - 300 );
+                        editorFrame.css( 'height', ( wh - 300 ) - sh );
                         dragbar.css( 'bottom', ( wh - 300 ) - 1 );
                     } else {
                         preview.css( 'bottom', resize );
-                        editor_pane.css( 'height', resize );
-                        editor_frame.css ( 'height', ( resize - sh ) );
+                        editorPane.css( 'height', resize );
+                        editorFrame.css( 'height', ( resize - sh ) );
                         dragbar.css( 'bottom', ( resize ) - 1 );
                     }
-    			});
-    		});
+                } );
+            } );
 
-    		$(document).on('mouseup', function() {
-                $(document).unbind('mousemove');
-                $('#cpdraghelper').remove();
-                editor_frame.css('pointer-events', '');
+			$( document ).on( 'mouseup', function() {
+                $( document ).unbind( 'mousemove' );
+                $( '#cpdraghelper' ).remove();
+                editorFrame.css( 'pointer-events', '' );
             });
 
 			// Override preview trying to de-activate control not present in preview context.
