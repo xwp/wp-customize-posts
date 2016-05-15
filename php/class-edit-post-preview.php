@@ -101,6 +101,19 @@ class Edit_Post_Preview {
 			return;
 		}
 		wp_enqueue_script( 'edit-post-preview-admin' );
+
+		$data = array(
+			'customize_url' => self::get_customize_url(),
+		);
+		wp_scripts()->add_data( 'edit-post-preview-admin', 'data', sprintf( 'var _editPostPreviewAdminExports = %s;', wp_json_encode( $data ) ) );
+		wp_enqueue_script( 'customize-loader' );
+		wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( function() { EditPostPreviewAdmin.init(); } );', 'after' );
+	}
+
+	/**
+	 * Get Post customize link
+	 */
+	public function get_customize_url() {
 		$post = $this->get_previewed_post();
 
 		$id_param = ( 'page' === $post->post_type ) ? 'page_id' : 'p';
@@ -114,12 +127,8 @@ class Edit_Post_Preview {
 			),
 			wp_customize_url()
 		);
-		$data = array(
-			'customize_url' => $customize_url,
-		);
-		wp_scripts()->add_data( 'edit-post-preview-admin', 'data', sprintf( 'var _editPostPreviewAdminExports = %s;', wp_json_encode( $data ) ) );
-		wp_enqueue_script( 'customize-loader' );
-		wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( function() { EditPostPreviewAdmin.init(); } );', 'after' );
+
+		return $customize_url;
 	}
 
 	/**
