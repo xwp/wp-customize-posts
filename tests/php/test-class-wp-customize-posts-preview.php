@@ -356,6 +356,12 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$args = $preview->filter_customize_dynamic_partial_args( array( 'other' => 'one' ), $partial_id );
 		$this->assertEquals( WP_Customize_Post_Field_Partial::TYPE, $args['type'] );
 		$this->assertEquals( 'one', $args['other'] );
+
+		$partial_id = sprintf( 'post[%s][%d][%s][%s]', $post->post_type, $post->ID, 'post_author', 'avatar' );
+		$args = $preview->filter_customize_dynamic_partial_args( false, $partial_id );
+		$this->assertInternalType( 'array', $args );
+		$this->assertTrue( $args['container_inclusive'] );
+		$this->assertFalse( $args['fallback_refresh'] );
 	}
 
 	/**

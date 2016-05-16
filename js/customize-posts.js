@@ -93,6 +93,9 @@
 			}
 			return;
 		}
+		if ( ! component.data.postTypes[ postType ].show_in_customizer ) {
+			return;
+		}
 		postId = parseInt( idParts[2], 10 );
 		if ( ! postId ) {
 			if ( 'undefined' !== typeof console && console.error ) {

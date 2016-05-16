@@ -43,6 +43,13 @@ final class WP_Customize_Posts {
 	public $registered_post_meta = array();
 
 	/**
+	 * Registered support classes.
+	 *
+	 * @var array
+	 */
+	public $supports = array();
+
+	/**
 	 * Initial loader.
 	 *
 	 * @access public
@@ -75,6 +82,27 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Instantiate a Customize Posts support class.
+	 *
+	 * The support class must extend `Customize_Posts_Support` or one of it's subclasses.
+	 *
+	 * @param string|Customize_Posts_Support $support The support class name or object.
+	 */
+	function add_support( $support ) {
+		if ( is_string( $support ) && class_exists( $support, false ) ) {
+			$support = new $support( $this );
+		}
+
+		if ( $support instanceof Customize_Posts_Support ) {
+			$class_name = get_class( $support );
+			if ( ! isset( $this->supports[ $class_name ] ) ) {
+				$this->supports[ $class_name ] = $support;
+				$support->init();
+			}
+		}
+	}
+
+	/**
 	 * Get post type objects that can be managed in Customizer.
 	 *
 	 * By default only post types which have show_ui and publicly_queryable as true
@@ -87,20 +115,16 @@ final class WP_Customize_Posts {
 		$post_types = array();
 		$post_type_objects = get_post_types( array(), 'objects' );
 		foreach ( $post_type_objects as $post_type_object ) {
-			$is_included = $post_type_object->show_ui;
-			if ( isset( $post_type_object->show_in_customizer ) ) {
-				$is_included = $post_type_object->show_in_customizer;
+			$post_type_object = clone $post_type_object;
+			if ( ! isset( $post_type_object->show_in_customizer ) ) {
+				$post_type_object->show_in_customizer = $post_type_object->show_ui;
 			}
+			$post_type_object->supports = get_all_post_type_supports( $post_type_object->name );
 
-			if ( $is_included ) {
-				$post_type_object = clone $post_type_object;
-				$post_type_object->supports = get_all_post_type_supports( $post_type_object->name );
+			// Remove unnecessary properties.
+			unset( $post_type_object->register_meta_box_cb );
 
-				// Remove unnecessary properties.
-				unset( $post_type_object->register_meta_box_cb );
-
-				$post_types[ $post_type_object->name ] = $post_type_object;
-			}
+			$post_types[ $post_type_object->name ] = $post_type_object;
 		}
 
 		// Skip media as special case.
@@ -228,6 +252,10 @@ final class WP_Customize_Posts {
 		// Note that this does not include nav_menu_item.
 		$this->set_builtin_post_type_descriptions();
 		foreach ( $this->get_post_types() as $post_type_object ) {
+			if ( empty( $post_type_object->show_in_customizer ) ) {
+				continue;
+			}
+
 			$panel_id = sprintf( 'posts[%s]', $post_type_object->name );
 
 			// @todo Should this panel be filterable so that other post types can customize which subclass is used?
@@ -439,6 +467,7 @@ final class WP_Customize_Posts {
 				'menu_icon',
 				'description',
 				'hierarchical',
+				'show_in_customizer',
 			) );
 		}
 

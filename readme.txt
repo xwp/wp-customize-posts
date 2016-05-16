@@ -6,6 +6,7 @@ Tested up to:      4.6-alpha
 Stable tag:        0.5.0
 License:           GPLv2 or later
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
+Text Domain:       customize-posts
 
 Edit posts and postmeta in the Customizer. Stop editing your posts/postmeta blind!
 
@@ -78,6 +79,8 @@ Fixed:
 * Improve compatibility with Customize Widgets Plus (PR #83). See also https://github.com/xwp/wp-customize-widgets-plus/pull/46 for a fix in the Customizer post preview.
 * Export post/postmeta settings during selective refresh requests so that new posts added will appear in the panel, such as when adding the number of posts to show in the Recent Posts widget. (Issue #97, PR #99)
 * Improve compatibility with Customize Snapshots (PR #95)
+
+See [v0.5 release post](https://make.xwp.co/2016/04/29/customize-posts-v0-5-released/) on Make XWP.
 
 See full commit log: [`0.4.2...0.5.0`](https://github.com/xwp/wp-customize-posts/compare/0.4.2...0.5.0)
 

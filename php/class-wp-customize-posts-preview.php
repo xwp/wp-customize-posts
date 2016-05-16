@@ -326,6 +326,15 @@ final class WP_Customize_Posts_Preview {
 				$args = array();
 			}
 			$args['type'] = WP_Customize_Post_Field_Partial::TYPE;
+
+			$field_id = $matches['field_id'];
+			if ( ! empty( $matches['placement'] ) ) {
+				$field_id .= '[' . $matches['placement'] . ']';
+			}
+			$schema = $this->get_post_field_partial_schema( $field_id );
+			if ( ! empty( $schema ) ) {
+				$args = array_merge( $args, $schema );
+			}
 		}
 		return $args;
 	}
@@ -419,6 +428,72 @@ final class WP_Customize_Posts_Preview {
 	}
 
 	/**
+	 * Get the schema for dynamically registered partials.
+	 *
+	 * @param string $field_id The partial field ID.
+	 * @return array
+	 */
+	public function get_post_field_partial_schema( $field_id = '' ) {
+		$schema = array(
+			'post_title' => array(
+				'selector' => '.entry-title',
+			),
+			'post_content' => array(
+				'selector' => '.entry-content',
+			),
+			'post_excerpt' => array(
+				'selector' => '.entry-summary',
+			),
+			'comment_status[comments-area]' => array(
+				'selector' => '.comments-area',
+				'body_selector' => true,
+				'singular_only' => true,
+				'container_inclusive' => true,
+			),
+			'comment_status[comments-link]' => array(
+				'selector' => '.comments-link',
+				'archive_only' => true,
+				'container_inclusive' => true,
+			),
+			'ping_status' => array(
+				'selector' => '.comments-area',
+				'body_selector' => true,
+				'singular_only' => true,
+				'container_inclusive' => true,
+			),
+			'post_author[byline]' => array(
+				'selector' => '.vcard a.fn',
+				'container_inclusive' => true,
+				'fallback_refresh' => false,
+			),
+			'post_author[avatar]' => array(
+				'selector' => '.vcard img.avatar',
+				'container_inclusive' => true,
+				'fallback_refresh' => false,
+			),
+		);
+
+		/**
+		 * Filter the schema for dynamically registered partials.
+		 *
+		 * @param array $schema Partial schema.
+		 * @return array
+		 */
+		$schema = apply_filters( 'customize_posts_partial_schema', $schema );
+
+		// Return specific schema based on the field_id & placement.
+		if ( ! empty( $field_id ) ) {
+			if ( isset( $schema[ $field_id ] ) ) {
+				return $schema[ $field_id ];
+			} else {
+				return array();
+			}
+		}
+
+		return $schema;
+	}
+
+	/**
 	 * Export data into the customize preview.
 	 */
 	public function export_preview_data() {
@@ -442,11 +517,18 @@ final class WP_Customize_Posts_Preview {
 			}
 		}
 
+		$exported_partial_schema = array();
+		foreach ( $this->get_post_field_partial_schema() as $key => $schema ) {
+			unset( $schema['render_callback'] ); // PHP callbacks are generally not JSON-serializable.
+			$exported_partial_schema[ $key ] = $schema;
+		}
+
 		$exported = array(
 			'isPostPreview' => is_preview(),
 			'isSingular' => is_singular(),
 			'queriedPostId' => $queried_post_id,
 			'settingProperties' => $setting_properties,
+			'partialSchema' => $exported_partial_schema,
 		);
 
 		$data = sprintf( 'var _wpCustomizePreviewPostsData = %s;', wp_json_encode( $exported ) );
