@@ -114,15 +114,15 @@ class Edit_Post_Preview {
 		wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( function() { EditPostPreviewAdmin.init(); } );', 'after' );
 
 		if ( 'add' !== get_current_screen()->action ) {
-			wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( \'.wrap h1\' ).append( \'<a class="page-title-action hide-if-no-customize" href="'. esc_url( $customize_url ) .'">Edit in Customizer</a>\' )', 'after' );
+			wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( \'.wrap h1\' ).append( \'<a class="page-title-action hide-if-no-customize" href="' . esc_url( $customize_url ) . '">Edit in Customizer</a>\' )', 'after' );
 		}
 	}
 
 	/**
 	 * Add the edit customizer to row actions for Posts/Pages
 	 *
-	 * @param array $actions
-	 * @param object $post
+	 * @param array $actions Actions.
+	 * @param object $post Post.
 	 * @return array $rebuild_actions
 	 */
 	public function add_edit_customizer_to_row_actions( $actions, $post ) {
@@ -130,7 +130,7 @@ class Edit_Post_Preview {
 			return false;
 		}
 
-		// Let's rebuild the order of $actions
+		// Let's rebuild the order of $actions.
 		$rebuild_actions = array();
 		$rebuild_actions['edit'] = $actions['edit'];
 		$rebuild_actions['edit_customizer'] = '<a href="' . esc_html( self::get_customize_url( $post ) ) . '">Edit in Customizer</a>';
@@ -142,9 +142,9 @@ class Edit_Post_Preview {
 	}
 
 	/**
-	 * Get the customize link
-	 * 
-	 * @param array $post
+	 * Get the customize line
+	 *
+	 * @param array $post Post.
 	 * @return string $customize_url
 	 */
 	public function get_customize_url( $post = null ) {
