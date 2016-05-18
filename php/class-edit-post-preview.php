@@ -36,6 +36,8 @@ class Edit_Post_Preview {
 		add_action( 'customize_controls_init', array( $this, 'remove_static_controls_and_sections' ), 100 );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_customize_scripts' ) );
 		add_action( 'customize_preview_init', array( $this, 'make_auto_draft_status_previewable' ) );
+		add_filter( 'post_row_actions', array( $this, 'add_edit_customizer_to_row_actions' ), 10, 2 );
+		add_filter( 'page_row_actions', array( $this, 'add_edit_customizer_to_row_actions' ), 10, 2 );
 	}
 
 	/**
@@ -101,20 +103,54 @@ class Edit_Post_Preview {
 			return;
 		}
 		wp_enqueue_script( 'edit-post-preview-admin' );
+		$customize_url = self::get_customize_url();
 
 		$data = array(
-			'customize_url' => self::get_customize_url(),
+			'customize_url' => $customize_url,
 		);
+
 		wp_scripts()->add_data( 'edit-post-preview-admin', 'data', sprintf( 'var _editPostPreviewAdminExports = %s;', wp_json_encode( $data ) ) );
 		wp_enqueue_script( 'customize-loader' );
 		wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( function() { EditPostPreviewAdmin.init(); } );', 'after' );
+
+		if ( 'add' !== get_current_screen()->action ) {
+			wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( \'.wrap h1\' ).append( \'<a class="page-title-action hide-if-no-customize" href="'. esc_url( $customize_url ) .'">Edit in Customizer</a>\' )', 'after' );
+		}
 	}
 
 	/**
-	 * Get Post customize link
+	 * Add the edit customizer to row actions for Posts/Pages
+	 *
+	 * @param array $actions
+	 * @param object $post
+	 * @return array $rebuild_actions
 	 */
-	public function get_customize_url() {
-		$post = $this->get_previewed_post();
+	public function add_edit_customizer_to_row_actions( $actions, $post ) {
+		if ( ! is_a( $post, 'WP_Post' ) ) {
+			return false;
+		}
+
+		// Let's rebuild the order of $actions
+		$rebuild_actions = array();
+		$rebuild_actions['edit'] = $actions['edit'];
+		$rebuild_actions['edit_customizer'] = '<a href="' . esc_html( self::get_customize_url( $post ) ) . '">Edit in Customizer</a>';
+		$rebuild_actions['inline hide-if-no-js'] = $actions['inline hide-if-no-js'];
+		$rebuild_actions['trash'] = $actions['trash'];
+		$rebuild_actions['view'] = $actions['view'];
+
+		return $rebuild_actions;
+	}
+
+	/**
+	 * Get the customize link
+	 * 
+	 * @param array $post
+	 * @return string $customize_url
+	 */
+	public function get_customize_url( $post = null ) {
+		if ( ! is_a( $post, 'WP_Post' ) ) {
+			$post = $this->get_previewed_post();
+		}
 
 		$id_param = ( 'page' === $post->post_type ) ? 'page_id' : 'p';
 		$url = get_preview_post_link( $post, array(), home_url( '?preview=true&' . $id_param . '=' . $post->ID ) );
