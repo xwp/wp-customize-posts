@@ -339,13 +339,15 @@
 				preview.prepend( '<div id="customize-posts-draghelper"></div>' );
 
 				$( document ).on( 'mousemove', function() {
+					var maxHeight;
+
 					resizeHeight = windowHeight - event.pageY;
 					editorFrame.css( 'pointer-events', 'none' );
 
 					if ( resizeHeight < minScroll ) {
 						control.editorResize( minScroll, minScroll, minScroll - editorComponentsCombinedHeight, minScroll - dragbarBottomOffset );
 					} else if ( resizeHeight > ( windowHeight - maxScroll ) ) {
-						var maxHeight = windowHeight - maxScroll;
+						maxHeight = windowHeight - maxScroll;
 						control.editorResize( maxHeight, maxHeight, maxHeight - editorComponentsCombinedHeight, maxHeight - dragbarBottomOffset );
 					} else {
 						control.editorResize( resizeHeight, resizeHeight, resizeHeight - editorComponentsCombinedHeight, resizeHeight - dragbarBottomOffset );
