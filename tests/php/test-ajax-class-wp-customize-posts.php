@@ -179,4 +179,62 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 		$role->add_cap( 'edit_posts' );
 		add_filter( 'user_has_cap', array( $GLOBALS['customize_posts_plugin'], 'grant_customize_capability' ), 10, 3 );
 	}
+
+	/**
+	 * Test handle_ajax_set_post_thumbnail().
+	 *
+	 * @see WP_Customize_Featured_Image_Controller::handle_ajax_set_post_thumbnail()
+	 * @see WP_Customize_Featured_Image_Controller::filter_admin_post_thumbnail_html()
+	 */
+	public function test_handle_ajax_set_post_thumbnail() {
+		$controller = new WP_Customize_Featured_Image_Controller();
+		$controller->override_default_edit_post_screen_functionality();
+
+		$post_id = $this->factory()->post->create();
+		$attachment_id = $this->factory()->attachment->create_object( 'foo.jpg', 0, array(
+			'post_mime_type' => 'image/jpeg'
+		) );
+		$_REQUEST['_wpnonce'] = wp_create_nonce( "update-post_$post_id" );
+		$_POST['post_id'] = $post_id;
+		$_REQUEST['json'] = '1';
+		add_filter( 'wp_die_ajax_handler', array( $this, 'die_handler_test_handle_ajax_set_post_thumbnail' ) );
+
+		$_POST['thumbnail_id'] = $attachment_id;
+		ob_start();
+		$controller->handle_ajax_set_post_thumbnail();
+		$json = ob_get_clean();
+		$this->assertContains( 'The chosen image will not persist until you save', $json );
+		$this->assertNotContains( 'Invalid attachment selected', $json );
+		$this->assertContains( 'set_post_thumbnail_nonce', $json );
+		$this->assertContains( 'Remove featured image', $json );
+		$this->die_args = array();
+
+		$_POST['thumbnail_id'] = -1;
+		ob_start();
+		$controller->handle_ajax_set_post_thumbnail();
+		$json = ob_get_clean();
+		$this->assertNotContains( 'Remove featured image', $json );
+		$this->assertContains( 'Set featured image', $json );
+		$this->assertContains( 'set_post_thumbnail_nonce', $json );
+		$this->die_args = array();
+	}
+
+	protected $die_args = array();
+
+	/**
+	 * Get die handler.
+	 *
+	 * @return callable
+	 */
+	public function die_handler_test_handle_ajax_set_post_thumbnail() {
+		return array( $this, 'die_test_handle_ajax_set_post_thumbnail' );
+	}
+
+	/**
+	 * Handle die.
+	 */
+	public function die_test_handle_ajax_set_post_thumbnail() {
+		$this->die_args = func_get_args();
+	}
+
 }
