@@ -333,9 +333,6 @@
 				editorComponentsCombinedHeight = mceTools.outerHeight() + mceToolbar.outerHeight() + mceStatusbar.outerHeight(),
 				minScroll = 39, // Min px of editor to retain
 				maxScroll = 3, // Min px of preview to retain
-				previewBottomOffset = 300,
-				visualEditorHeight = 300,
-				textEditorHeight = 200,
 				dragbarBottomOffset = 1; // Vertically center the dragbar
 
 				event.preventDefault();
