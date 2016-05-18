@@ -94,6 +94,20 @@ class Edit_Post_Preview {
 	}
 
 	/**
+	 * Generate a preview permalink for a post/page.
+	 *
+	 * @access public
+	 *
+	 * @param WP_Post $post The post in question.
+	 */
+	public static function get_preview_post_link( $post ) {
+		$id_param = ( 'page' === $post->post_type ) ? 'page_id' : 'p';
+		$permalink = get_preview_post_link( $post, array(), home_url( '?preview=true&' . $id_param . '=' . $post->ID ) );
+
+		return $permalink;
+	}
+
+	/**
 	 * Enqueue scripts for post edit screen.
 	 */
 	public function enqueue_admin_scripts() {
@@ -103,11 +117,9 @@ class Edit_Post_Preview {
 		wp_enqueue_script( 'edit-post-preview-admin' );
 		$post = $this->get_previewed_post();
 
-		$id_param = ( 'page' === $post->post_type ) ? 'page_id' : 'p';
-		$url = get_preview_post_link( $post, array(), home_url( '?preview=true&' . $id_param . '=' . $post->ID ) );
 		$customize_url = add_query_arg(
 			array(
-				'url' => urlencode( $url ),
+				'url' => urlencode( self::get_preview_post_link( $post ) ),
 				'previewed_post' => $post->ID,
 				'autofocus[section]' => sprintf( 'post[%s][%d]', $post->post_type, $post->ID ),
 				self::PREVIEW_POST_NONCE_QUERY_VAR => wp_create_nonce( self::PREVIEW_POST_NONCE_ACTION ),
@@ -172,12 +184,7 @@ class Edit_Post_Preview {
 	 */
 	public function make_auto_draft_status_previewable() {
 		global $wp_post_statuses;
+		$wp_post_statuses['auto-draft']->public = true;
 		$wp_post_statuses['auto-draft']->protected = true;
-
-		register_post_status( 'customize-draft', array(
-			'label'     => 'customize-draft',
-			'internal'  => true,
-			'protected' => true,
-		) );
 	}
 }

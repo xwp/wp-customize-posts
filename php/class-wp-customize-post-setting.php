@@ -181,9 +181,6 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		if ( isset( $post_data['post_excerpt'] ) ) {
 			$post_data['post_excerpt'] = preg_replace( '/\r\n/', "\n", $post_data['post_excerpt'] );
 		}
-		if ( 'customize-draft' === $post_data['post_status'] ) {
-			$post_data['post_status'] = 'publish';
-		}
 
 		return $post_data;
 	}
@@ -506,6 +503,10 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 
 		$data['ID'] = $this->post_id;
 		$data['post_type'] = $this->post_type;
+
+		if ( 'customize-draft' === $data['post_status'] || 'auto-draft' === $data['post_status'] ) {
+			$data['post_status'] = 'publish';
+		}
 
 		$result = wp_update_post( wp_slash( $data ), true );
 
