@@ -119,9 +119,9 @@ class Edit_Post_Preview {
 	}
 
 	/**
-	 * Add the edit customizer to row actions for Posts/Pages
+	 * Add the edit customizer to row actions for Posts/Pages.
 	 *
-	 * @param array $actions Actions.
+	 * @param array  $actions Actions.
 	 * @param object $post Post.
 	 * @return array $rebuild_actions
 	 */
