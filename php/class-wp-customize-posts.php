@@ -703,6 +703,7 @@ final class WP_Customize_Posts {
 	 *
 	 * @param string  $permalink The post's permalink.
 	 * @param WP_Post $post      The post in question.
+	 * @return string
 	 */
 	public function post_link_draft( $permalink, $post ) {
 		if ( $post instanceof WP_Post && in_array( $post->post_status, self::$draft_status, true ) ) {
@@ -719,6 +720,7 @@ final class WP_Customize_Posts {
 	 *
 	 * @param string $link    The page's permalink.
 	 * @param int    $post_id The ID of the page.
+	 * @return string
 	 */
 	public function page_link_draft( $link, $post_id ) {
 		$post = get_post( $post_id );
@@ -736,13 +738,14 @@ final class WP_Customize_Posts {
 	 * @access public
 	 *
 	 * @param string $post_type The post type.
+	 * @return WP_Post|false
 	 */
 	public function add_new_post( $post_type = '' ) {
 		if ( null !== get_post_type_object( $post_type ) ) {
 			add_filter( 'wp_insert_post_empty_content', '__return_false' );
 			$args = array(
-			  'post_status' => 'auto-draft',
-			  'post_type'   => $post_type,
+				'post_status' => 'auto-draft',
+				'post_type'   => $post_type,
 			);
 			$post_id = wp_insert_post( $args, false );
 			remove_filter( 'wp_insert_post_empty_content', '__return_false' );
@@ -777,17 +780,17 @@ final class WP_Customize_Posts {
 			wp_send_json_error( 'missing_post_type' );
 		}
 
-		$post_type_obj = get_post_type_object( $_POST['post_type'] );
-		if ( ! $post_type_obj || ! current_user_can( $post_type_obj->cap->create_posts ) ) {
+		$post_type_object = get_post_type_object( wp_unslash( $_POST['post_type'] ) );
+		if ( ! $post_type_object || ! current_user_can( $post_type_object->cap->create_posts ) ) {
 			wp_send_json_error( 'insufficient_post_permissions' );
 		}
 
-		$post = $this->add_new_post( $_POST['post_type'] );
+		$post = $this->add_new_post( $post_type_object->name );
 
 		if ( $post instanceof WP_Post ) {
 			$data = array(
 				'sectionId' => WP_Customize_Post_Setting::get_post_setting_id( $post ),
-				'url' => get_preview_post_link( $post->ID ),
+				'url' => Edit_Post_Preview::get_preview_post_link( $post ),
 			);
 			wp_send_json_success( $data );
 		}
