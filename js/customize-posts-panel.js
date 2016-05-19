@@ -110,9 +110,14 @@
 						} );
 					} );
 
-					request.fail( function() {
+					request.fail( function( response ) {
+						var error = response.responseJSON.data;
 
-						// @todo Display errors in the Customize Settings Validation area.
+						if ( 'undefined' !== typeof response.responseJSON.data.message ) {
+							error = response.responseJSON.data.message;
+						}
+
+						console.error( error );
 					} );
 				} );
 			}
