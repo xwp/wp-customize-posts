@@ -1,4 +1,4 @@
-/* global wp, jQuery */
+/* global wp, jQuery, console */
 /* eslint consistent-this: [ "error", "panel" ], no-magic-numbers: [ "error", { "ignore": [0,500] } ] */
 
 (function( api, $ ) {
