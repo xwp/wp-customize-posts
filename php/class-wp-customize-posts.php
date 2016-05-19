@@ -598,7 +598,7 @@ final class WP_Customize_Posts {
 		?>
 		<script type="text/html" id="tmpl-customize-posts-add-new">
 			<li class="customize-posts-add-new">
-				<button class="button-secondary add-new-{{ data.panel.postType }}" data-panel-id="{{ data.panel.id }}">
+				<button class="button-secondary add-new-post-stub">
 					<?php esc_html_e( 'Add New', 'customize-posts' ); ?> {{ data.label }}
 				</button>
 			</li>

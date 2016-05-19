@@ -44,7 +44,7 @@
 					} ).length;
 				};
 
-				panel.addNewPost();
+				panel.setupPostAddition();
 
 				/*
 				 * Set the initial visibility state for rendered notice.
@@ -66,9 +66,9 @@
 		},
 
 		/**
-		 * Add new post UI & listen for click events.
+		 * Add new post stub, which builds the UI & listens for click events.
 		 */
-		addNewPost: function() {
+		setupPostAddition: function() {
 			var panel = this, descriptionContainer, addNewButton, postObj;
 
 			descriptionContainer = panel.container.find( '.panel-meta:first' );
@@ -77,11 +77,10 @@
 
 			if ( postObj.current_user_can.create_posts ) {
 				descriptionContainer.after( addNewButton( {
-					label: postObj.labels.singular_name,
-					panel: panel
+					label: postObj.labels.singular_name
 				} ) );
 
-				$( '.add-new-' + panel.postType ).on( 'click', function( event ) {
+				panel.container.find( '.add-new-post-stub' ).on( 'click', function( event ) {
 					var request;
 
 					event.preventDefault();
@@ -96,19 +95,17 @@
 						wp.customize.previewer.previewUrl( response.url );
 
 						api.section( response.sectionId, function( section ) {
-							var callback, controls = section.controls();
+							var focusControl, controls = section.controls();
 
-							// @todo Figure out why we need this hack to focus the first control.
-							callback = function() {
+							// @todo Figure out why we need to delay focusing the first control.
+							focusControl = _.debounce( function() {
 								if ( controls[0] ) {
 									controls[0].focus();
 								}
-							};
+							}, 500 );
 
 							section.focus( {
-								completeCallback: function() {
-									setTimeout( callback, 500 );
-								}
+								completeCallback: focusControl
 							} );
 						} );
 					} );

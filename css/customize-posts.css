@@ -30,11 +30,11 @@ div.customize-setting-validation-message.error {
 	overflow: hidden;
 }
 
-.customize-posts-add-new button {
+.customize-posts-add-new .add-new-post-stub {
 	float: right;
 }
 
-.customize-posts-add-new button:before {
+.customize-posts-add-new .add-new-post-stub:before {
 	content: "\f132";
 	display: inline-block;
 	position: relative;

@@ -368,6 +368,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		ob_end_clean();
 		$this->assertContains( '<script type="text/html" id="tmpl-customize-posts-add-new">', $markup );
 		$this->assertContains( '<li class="customize-posts-add-new">', $markup );
+		$this->assertContains( '<button class="button-secondary add-new-post-stub">', $markup );
 	}
 
 	/**
