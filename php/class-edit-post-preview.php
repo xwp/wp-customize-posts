@@ -36,8 +36,10 @@ class Edit_Post_Preview {
 		add_action( 'customize_controls_init', array( $this, 'remove_static_controls_and_sections' ), 100 );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_customize_scripts' ) );
 		add_action( 'customize_preview_init', array( $this, 'make_auto_draft_status_previewable' ) );
+		add_action( 'admin_footer', array( $this, 'add_edit_customizer_button_posts' ) );
 		add_filter( 'post_row_actions', array( $this, 'add_edit_customizer_to_row_actions' ), 10, 2 );
 		add_filter( 'page_row_actions', array( $this, 'add_edit_customizer_to_row_actions' ), 10, 2 );
+
 	}
 
 	/**
@@ -112,10 +114,6 @@ class Edit_Post_Preview {
 		wp_scripts()->add_data( 'edit-post-preview-admin', 'data', sprintf( 'var _editPostPreviewAdminExports = %s;', wp_json_encode( $data ) ) );
 		wp_enqueue_script( 'customize-loader' );
 		wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( function() { EditPostPreviewAdmin.init(); } );', 'after' );
-
-		if ( 'add' !== get_current_screen()->action ) {
-			wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( \'.wrap h1\' ).append( \'<a class="page-title-action hide-if-no-customize" href="' . esc_url( $customize_url ) . '">Edit in Customizer</a>\' )', 'after' );
-		}
 	}
 
 	/**
@@ -130,15 +128,24 @@ class Edit_Post_Preview {
 			return false;
 		}
 
-		// Let's rebuild the order of $actions.
+		$post_type_object = get_post_types( array(), 'objects' );
+		if ( ! isset( $post_type_object[ get_post_type() ]->show_in_customizer ) && 'post' !== get_post_type() && 'page' !== get_post_type()  ) {
+			return $actions;
+		}
+
+		// Let's rebuild the start of our array.
 		$rebuild_actions = array();
 		$rebuild_actions['edit'] = $actions['edit'];
-		$rebuild_actions['edit_customizer'] = '<a href="' . esc_html( self::get_customize_url( $post ) ) . '">Edit in Customizer</a>';
-		$rebuild_actions['inline hide-if-no-js'] = $actions['inline hide-if-no-js'];
-		$rebuild_actions['trash'] = $actions['trash'];
-		$rebuild_actions['view'] = $actions['view'];
+		$rebuild_actions['edit_customizer'] = sprintf( '<a href="%1$s">%2$s</a>', esc_url( self::get_customize_url() ), esc_html__( 'Edit in Customizer', 'customize-posts' ) );
 
-		return $rebuild_actions;
+		return array_merge( $rebuild_actions, $actions );
+	}
+
+	public function add_edit_customizer_button_posts() {
+		if ( 'add' !== get_current_screen()->action ) {
+			printf( '<a id="%1$s" class="%2$s" href="%3$s">%4$s</a>', esc_html__( 'customize-button', 'customize-posts' ), esc_html__( 'page-title-action hide-if-no-customize', 'customize-posts' ), esc_url( self::get_customize_url() ), esc_html__( 'Edit in Customizer', 'customize-posts' ) );
+			wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( \'#customize-button\' ).appendTo( \'.wrap h1\' )', 'after' );
+		}
 	}
 
 	/**
