@@ -130,7 +130,7 @@ class Edit_Post_Preview {
 
 		// We need to make sure the current post type has show_in_customizer to true or if it's default post type is post or page.
 		$post_type_object = get_post_types( array(), 'objects' );
-		if ( ! isset( $post_type_object[ get_post_type() ]->show_in_customizer ) && 'post' !== get_post_type() && 'page' !== get_post_type()  ) {
+		if ( ! isset( $post_type_object[ get_post_type() ]->show_in_customizer ) && 'post' !== get_post_type() && 'page' !== get_post_type() || ! current_user_can( 'edit_post', $post->ID ) ) {
 			return $actions;
 		}
 
@@ -146,10 +146,13 @@ class Edit_Post_Preview {
 	 * Add the Edit in Customizer button to the edit post screen.
 	 */
 	public function add_edit_customizer_button_posts() {
-		if ( 'add' !== get_current_screen()->action ) {
-			printf( '<a id="%1$s" class="%2$s" href="%3$s">%4$s</a>', esc_html__( 'customize-button', 'customize-posts' ), esc_html__( 'page-title-action hide-if-no-customize', 'customize-posts' ), esc_url( self::get_customize_url() ), esc_html__( 'Edit in Customizer', 'customize-posts' ) );
-			wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( \'#customize-button\' ).appendTo( \'.wrap h1\' )', 'after' );
+		$post_type_object = get_post_types( array(), 'objects' );
+		if ( ! isset( $post_type_object[ get_post_type() ]->show_in_customizer ) || '' !== get_current_screen()->action ) {
+			return false;
 		}
+
+		printf( '<a id="%1$s" class="%2$s" href="%3$s">%4$s</a>', esc_html__( 'customize-button', 'customize-posts' ), esc_html__( 'page-title-action hide-if-no-customize', 'customize-posts' ), esc_url( self::get_customize_url() ), esc_html__( 'Edit in Customizer', 'customize-posts' ) );
+		wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( \'#customize-button\' ).appendTo( \'.wrap h1\' )', 'after' );
 	}
 
 	/**
@@ -166,7 +169,7 @@ class Edit_Post_Preview {
 		if ( ! $post ) {
 			return false;
 		}
-
+		
 		$id_param = ( 'page' === $post->post_type ) ? 'page_id' : 'p';
 		$url = get_preview_post_link( $post, array(), home_url( '?preview=true&' . $id_param . '=' . $post->ID ) );
 		$customize_url = add_query_arg(
