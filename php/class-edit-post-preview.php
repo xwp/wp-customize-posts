@@ -128,6 +128,7 @@ class Edit_Post_Preview {
 			return false;
 		}
 
+		// We need to make sure the current post type has show_in_customizer to true or if it's default post type is post or page.
 		$post_type_object = get_post_types( array(), 'objects' );
 		if ( ! isset( $post_type_object[ get_post_type() ]->show_in_customizer ) && 'post' !== get_post_type() && 'page' !== get_post_type()  ) {
 			return $actions;
@@ -141,6 +142,11 @@ class Edit_Post_Preview {
 		return array_merge( $rebuild_actions, $actions );
 	}
 
+	/**
+	 * Add the Edit in Customizer button to the edit post screen.
+	 *
+	 * @return string Edit in Customizer button.
+	 */
 	public function add_edit_customizer_button_posts() {
 		if ( 'add' !== get_current_screen()->action ) {
 			printf( '<a id="%1$s" class="%2$s" href="%3$s">%4$s</a>', esc_html__( 'customize-button', 'customize-posts' ), esc_html__( 'page-title-action hide-if-no-customize', 'customize-posts' ), esc_url( self::get_customize_url() ), esc_html__( 'Edit in Customizer', 'customize-posts' ) );
@@ -149,7 +155,7 @@ class Edit_Post_Preview {
 	}
 
 	/**
-	 * Get the customize line
+	 * Get the customize line.
 	 *
 	 * @param array $post Post.
 	 * @return string $customize_url
@@ -157,6 +163,10 @@ class Edit_Post_Preview {
 	public function get_customize_url( $post = null ) {
 		if ( ! is_a( $post, 'WP_Post' ) ) {
 			$post = $this->get_previewed_post();
+		}
+
+		if ( ! $post ) {
+			return false;
 		}
 
 		$id_param = ( 'page' === $post->post_type ) ? 'page_id' : 'p';
