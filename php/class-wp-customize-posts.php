@@ -87,8 +87,9 @@ final class WP_Customize_Posts {
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_templates' ) );
 		add_action( 'init', array( $this, 'register_customize_draft' ) );
 		add_filter( 'customize_snapshot_save', array( $this, 'transition_customize_draft' ) );
-		add_action( 'pre_get_posts', array( $this, 'exclude_non_previewed_drafts' ) );
+		add_action( 'posts_where', array( $this, 'include_previewed_drafts' ), 10, 2 );
 		add_filter( 'post_link', array( $this, 'post_link_draft' ), 10, 2 );
+		add_filter( 'post_type_link', array( $this, 'post_link_draft' ), 10, 2 );
 		add_filter( 'page_link', array( $this, 'page_link_draft' ), 10, 2 );
 		add_action( 'wp_ajax_customize-posts-add-new', array( $this, 'ajax_add_new_post' ) );
 
@@ -615,9 +616,9 @@ final class WP_Customize_Posts {
 	public function register_customize_draft() {
 		register_post_status( 'customize-draft', array(
 			'label'                     => 'customize-draft',
-			'public'                    => true,
+			'public'                    => false,
 			'internal'                  => true,
-			'protected'                 => false,
+			'protected'                 => true,
 			'exclude_from_search'       => true,
 			'show_in_admin_all_list'    => false,
 			'show_in_admin_status_list' => false,
@@ -665,35 +666,71 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Excludes posts with an `auto-draft` or `customize-draft` status that are not being previewed.
+	 * Get the `auto-draft` or `customize-draft` posts that are being previewed.
 	 *
-	 * @action pre_get_posts
 	 * @access public
 	 *
-	 * @param WP_Query $query The WP_Query instance (passed by reference).
+	 * @param string $post_type     The post type.
+	 * @param bool   $is_main_query Whether this is the main query. Default: false.
+	 * @return array
 	 */
-	public function exclude_non_previewed_drafts( $query ) {
-		if ( $query->is_main_query() && ! is_admin() && ! $query->is_single() && ! empty( $_REQUEST['customized'] ) ) {
-			$post_ids = array();
-			$settings = json_decode( wp_unslash( $_REQUEST['customized'] ), true );
+	public function get_previewed_drafts( $post_type, $is_main_query = false ) {
+		$post_ids = array();
+		$settings = $this->manager->unsanitized_post_values();
+		if ( ! empty( $settings ) ) {
 			foreach ( (array) $settings as $id => $setting ) {
 				if ( ! preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches ) ) {
 					continue;
 				}
-				if ( in_array( $setting['post_status'], self::$draft_status, true ) ) {
+
+				/**
+				 * Filter the post type used in the main query.
+				 *
+				 * @param string $post_type         Main query post type.
+				 * @param string $setting_post_type Current setting post type.
+				 */
+				$main_query_post_type = apply_filters( 'customize_posts_main_query_post_type', 'post', $matches['post_type'] );
+
+				$post_type_match = (
+					in_array( $matches['post_type'], (array) $post_type, true ) ||
+					(
+						$is_main_query &&
+						$main_query_post_type === $matches['post_type'] &&
+						( empty( $post_type ) || 'any' === $post_type )
+					)
+				);
+
+				if ( in_array( $setting['post_status'], self::$draft_status, true ) && $post_type_match ) {
 					$post_ids[] = intval( $matches['post_id'] );
 				}
 			}
-			$draft_query = new WP_Query( array(
-				'posts_per_page' => -1,
-				'post_status'    => self::$draft_status,
-				'fields'         => 'ids',
-			) );
-			$excluded = array_diff( $draft_query->posts, $post_ids );
-			if ( ! empty( $excluded ) ) {
-				$query->set( 'post__not_in', $excluded );
+		}
+
+		return $post_ids;
+	}
+
+	/**
+	 * Include stubbed posts that are being previewed.
+	 *
+	 * @filter posts_where
+	 * @access public
+	 *
+	 * @param string   $where The WHERE clause of the query.
+	 * @param WP_Query $query The WP_Query instance (passed by reference).
+	 * @return string
+	 */
+	public function include_previewed_drafts( $where, $query ) {
+		global $wpdb;
+
+		if ( ! $query->is_admin() && ! $query->is_singular() ) {
+			$post_ids = $this->get_previewed_drafts( $query->query_vars['post_type'], $query->is_main_query() );
+			if ( ! empty( $post_ids ) ) {
+				$post__in = implode( ',', array_map( 'absint', $post_ids ) );
+				$where .= " OR {$wpdb->posts}.ID IN ($post__in)";
 			}
 		}
+
+		return $where;
 	}
 
 	/**
@@ -747,7 +784,7 @@ final class WP_Customize_Posts {
 				'post_status' => 'auto-draft',
 				'post_type'   => $post_type,
 			);
-			$post_id = wp_insert_post( $args, false );
+			$post_id = wp_insert_post( wp_slash( $args ), false );
 			remove_filter( 'wp_insert_post_empty_content', '__return_false' );
 
 			if ( 0 < $post_id ) {

@@ -415,6 +415,48 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test get_previewed_drafts method.
+	 *
+	 * @see WP_Customize_Posts::get_previewed_drafts()
+	 */
+	public function test_get_previewed_drafts() {
+		$post = $this->posts->add_new_post( 'post' );
+		$page = $this->posts->add_new_post( 'page' );
+		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+		$page_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $page );
+		$data = array();
+		$data['some_other_id'] = array(
+			'some_key' => 'Some Value',
+		);
+		$data[ $post_setting_id ] = array(
+			'post_title' => 'Testing Post Draft',
+			'post_status' => 'auto-draft',
+		);
+		$data[ $page_setting_id ] = array(
+			'post_title' => 'Testing Page Draft',
+			'post_status' => 'auto-draft',
+		);
+		$_POST['customized'] = wp_json_encode( $data );
+
+		$this->assertEquals( array( $post->ID ), $this->posts->get_previewed_drafts( 'post' ) );
+		$this->assertEquals( array( $post->ID ), $this->posts->get_previewed_drafts( '', true ) );
+		$this->assertEquals( array( $page->ID ), $this->posts->get_previewed_drafts( 'page' ) );
+		add_filter( 'customize_posts_main_query_post_type', array( $this, 'filter_main_query_post_type' ), 10, 2 );
+		$this->assertEquals( array( $post->ID, $page->ID ), $this->posts->get_previewed_drafts( '', true ) );
+		remove_filter( 'customize_posts_main_query_post_type', array( $this, 'filter_main_query_post_type' ), 10, 2 );
+	}
+
+	/**
+	 * Filter the main query post types
+	 */
+	public function filter_main_query_post_type( $post_type, $setting_post_type ) {
+		if ( 'page' === $setting_post_type ) {
+			return 'page';
+		}
+		return $post_type;
+	}
+
+	/**
 	 * Test add_new_post method.
 	 *
 	 * @see WP_Customize_Posts::add_new_post()

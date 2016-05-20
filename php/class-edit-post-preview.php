@@ -101,8 +101,16 @@ class Edit_Post_Preview {
 	 * @param WP_Post $post The post in question.
 	 */
 	public static function get_preview_post_link( $post ) {
-		$id_param = ( 'page' === $post->post_type ) ? 'page_id' : 'p';
-		$permalink = get_preview_post_link( $post, array(), home_url( '?preview=true&' . $id_param . '=' . $post->ID ) );
+		$permalink = '';
+
+		if ( $post instanceof WP_Post ) {
+			$id_param = ( 'page' === $post->post_type ) ? 'page_id' : 'p';
+			$args = array();
+			$args['preview'] = true;
+			$args[ $id_param ] = $post->ID;
+			$args['post_type'] = $post->post_type;
+			$permalink = get_preview_post_link( $post, $args, home_url() );
+		}
 
 		return $permalink;
 	}
@@ -184,7 +192,6 @@ class Edit_Post_Preview {
 	 */
 	public function make_auto_draft_status_previewable() {
 		global $wp_post_statuses;
-		$wp_post_statuses['auto-draft']->public = true;
 		$wp_post_statuses['auto-draft']->protected = true;
 	}
 }
