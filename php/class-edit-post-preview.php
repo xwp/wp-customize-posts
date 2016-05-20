@@ -147,7 +147,7 @@ class Edit_Post_Preview {
 	 */
 	public function add_edit_customizer_button_posts() {
 		$post_type_object = get_post_types( array(), 'objects' );
-		if ( ! isset( $post_type_object[ get_post_type() ]->show_in_customizer ) || '' !== get_current_screen()->action ) {
+		if ( ! isset( $post_type_object[ get_post_type() ]->show_in_customizer ) && 'post' !== get_post_type() && 'page' !== get_post_type() || '' !== get_current_screen()->action ) {
 			return false;
 		}
 
