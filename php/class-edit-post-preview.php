@@ -137,7 +137,7 @@ class Edit_Post_Preview {
 		// Let's rebuild the start of our array.
 		$rebuild_actions = array();
 		$rebuild_actions['edit'] = $actions['edit'];
-		$rebuild_actions['edit_customizer'] = sprintf( '<a href="%1$s">%2$s</a>', esc_url( self::get_customize_url() ), esc_html__( 'Edit in Customizer', 'customize-posts' ) );
+		$rebuild_actions['edit_customizer'] = sprintf( '<a href="%1$s">%2$s</a>', esc_url( self::get_customize_url( $post ) ), esc_html__( 'Edit in Customizer', 'customize-posts' ) );
 
 		return array_merge( $rebuild_actions, $actions );
 	}
