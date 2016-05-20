@@ -378,10 +378,9 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	 *
 	 * @param string                        $attachment_id The value to sanitize.
 	 * @param WP_Customize_Postmeta_Setting $setting       Setting.
-	 * @param bool                          $strict        Whether validation is being done. This is part of the proposed patch in in #34893.
-	 * @return mixed|null Null if an input isn't valid, otherwise the sanitized value.
+	 * @return mixed|WP_Error Sanitized value or `WP_Error` if invalid.
 	 */
-	public function sanitize_setting( $attachment_id, WP_Customize_Postmeta_Setting $setting, $strict = false ) {
+	public function sanitize_setting( $attachment_id, WP_Customize_Postmeta_Setting $setting ) {
 		unset( $setting );
 
 		$is_valid = (
@@ -397,12 +396,8 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 		 * and the meta is registered wit WP_Customize_Featured_Image_Controller::sanitize_value() as the sanitize_callback().
 		 * So $attachment_id is either a valid attachment ID, -1, or false.
 		 */
-		if ( $strict && ! $is_valid  ) {
-			if ( $strict ) {
-				return new WP_Error( 'invalid_attachment_id', __( 'The attachment is invalid.', 'customize-posts' ) );
-			} else {
-				return null;
-			}
+		if ( ! $is_valid  ) {
+			return new WP_Error( 'invalid_attachment_id', __( 'The attachment is invalid.', 'customize-posts' ) );
 		}
 
 		$attachment_id = $this->sanitize_value( $attachment_id );

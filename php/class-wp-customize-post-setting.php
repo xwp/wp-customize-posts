@@ -247,28 +247,22 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	 * @see wp_insert_post()
 	 *
 	 * @param array $post_data   The value to sanitize.
-	 * @param bool  $strict      Whether validation is being done. This is part of the proposed patch in in #34893.
-	 * @return string|array|null|WP_Error Null if an input isn't valid, otherwise the sanitized value. WP_Error returned if `$strict`.
+	 * @return string|array|null|WP_Error Null if an input isn't valid, otherwise the sanitized value.
 	 */
-	public function sanitize( $post_data, $strict = false ) {
+	public function sanitize( $post_data ) {
 		global $wpdb;
 
 		$post_data = array_merge( $this->default, $post_data );
 
-		// The customize_validate_settings action is part of the Customize Setting Validation plugin.
-		if ( ! $strict && doing_action( 'customize_validate_settings' ) ) {
-			$strict = true;
-		}
-
 		$update = ( $this->post_id > 0 );
 		$post_type_obj = get_post_type_object( $this->post_type );
 
-		if ( $strict && ! empty( $post_data['post_type'] ) && $post_data['post_type'] !== $this->post_type ) {
+		if ( ! empty( $post_data['post_type'] ) && $post_data['post_type'] !== $this->post_type ) {
 			return new WP_Error( 'bad_post_type' );
 		}
 		$post_data['post_type'] = $this->post_type;
 
-		if ( $strict && $update ) {
+		if ( $update ) {
 			// Check post lock.
 			$locked_user = wp_check_post_lock( $this->post_id );
 			if ( $locked_user ) {
@@ -314,7 +308,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			&& post_type_supports( $this->post_type, 'excerpt' );
 
 		/** This filter is documented in wp-includes/post.php */
-		if ( $strict && apply_filters( 'wp_insert_post_empty_content', $maybe_empty, $post_data ) ) {
+		if ( apply_filters( 'wp_insert_post_empty_content', $maybe_empty, $post_data ) ) {
 			return new WP_Error( 'empty_content', __( 'Content, title, and excerpt are empty.', 'customize-posts' ) );
 		}
 
@@ -367,11 +361,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		$aa = substr( $post_data['post_date'], 0, 4 );
 		$valid_date = wp_checkdate( $mm, $jj, $aa, $post_data['post_date'] );
 		if ( ! $valid_date ) {
-			if ( $strict ) {
-				return new WP_Error( 'invalid_date', __( 'Whoops, the provided date is invalid.', 'customize-posts' ) );
-			} else {
-				$post_data['post_date'] = '';
-			}
+			return new WP_Error( 'invalid_date', __( 'Whoops, the provided date is invalid.', 'customize-posts' ) );
 		}
 
 		if ( empty( $post_data['post_date_gmt'] ) || '0000-00-00 00:00:00' === $post_data['post_date_gmt'] ) {
