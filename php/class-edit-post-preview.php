@@ -144,8 +144,6 @@ class Edit_Post_Preview {
 
 	/**
 	 * Add the Edit in Customizer button to the edit post screen.
-	 *
-	 * @return string Edit in Customizer button.
 	 */
 	public function add_edit_customizer_button_posts() {
 		if ( 'add' !== get_current_screen()->action ) {
