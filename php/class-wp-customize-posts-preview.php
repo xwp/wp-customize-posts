@@ -66,7 +66,7 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_add_dynamic_post_settings_and_sections' ), 1000 );
 		add_filter( 'comments_open', array( $this, 'filter_preview_comments_open' ), 10, 2 );
 		add_filter( 'pings_open', array( $this, 'filter_preview_pings_open' ), 10, 2 );
-		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_add_dynamic_postmeta_settings' ), 1000, 4 );
+		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_add_dynamic_postmeta_settings' ), 1000, 2 );
 		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
 		add_filter( 'edit_post_link', array( $this, 'filter_edit_post_link' ), 10, 2 );
 		add_filter( 'get_edit_post_link', array( $this, 'filter_get_edit_post_link' ), 10, 2 );
@@ -125,7 +125,7 @@ final class WP_Customize_Posts_Preview {
 	}
 
 	/**
-	 * Create dynamic post settings and sections for posts queried in the page.
+	 * Create dynamic post/postmeta settings and sections for posts queried in the page.
 	 *
 	 * @param array $posts Posts.
 	 * @return array
@@ -142,6 +142,7 @@ final class WP_Customize_Posts_Preview {
 				) );
 				$this->component->manager->add_section( $section );
 			}
+			$this->component->register_post_type_meta_settings( $post->ID );
 		}
 		return $posts;
 	}
@@ -204,35 +205,10 @@ final class WP_Customize_Posts_Preview {
 	 *
 	 * @param null|array|string $value     The value get_metadata() should return - a single metadata value, or an array of values.
 	 * @param int               $object_id Object ID.
-	 * @param string            $meta_key  Meta key.
 	 * @return mixed Value.
 	 */
-	public function filter_get_post_meta_to_add_dynamic_postmeta_settings( $value, $object_id, $meta_key ) {
-		$post = get_post( $object_id );
-		if ( ! $post || ! isset( $this->component->registered_post_meta[ $post->post_type ] ) ) {
-			return $value;
-		}
-
-		if ( '' === $meta_key ) {
-			if ( null !== $value ) {
-				$meta_keys = array_keys( $value );
-			} else {
-				$meta_keys = array();
-			}
-		} else {
-			$meta_keys = array( $meta_key );
-		}
-
-		$setting_ids = array();
-		if ( ! empty( $meta_keys ) ) {
-			foreach ( $meta_keys as $key ) {
-				if ( isset( $this->component->registered_post_meta[ $post->post_type ][ $key ] ) ) {
-					$setting_ids[] = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $key );
-				}
-			}
-		}
-		$this->component->manager->add_dynamic_settings( $setting_ids );
-
+	public function filter_get_post_meta_to_add_dynamic_postmeta_settings( $value, $object_id ) {
+		$this->component->register_post_type_meta_settings( $object_id );
 		return $value;
 	}
 
