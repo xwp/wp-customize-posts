@@ -366,6 +366,22 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Add all postmeta settings for all registered postmeta for a given post type instance.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	public function register_post_type_meta_settings( $post_id ) {
+		$post = get_post( $post_id );
+		$setting_ids = array();
+		if ( isset( $this->registered_post_meta[ $post->post_type ] ) ) {
+			foreach ( array_keys( $this->registered_post_meta[ $post->post_type ] ) as $key ) {
+				$setting_ids[] = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $key );
+			}
+		}
+		$this->manager->add_dynamic_settings( $setting_ids );
+	}
+
+	/**
 	 * When loading the customizer from a post, get the post.
 	 *
 	 * @return WP_Post|null
