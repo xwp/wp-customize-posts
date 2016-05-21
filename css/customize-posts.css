@@ -24,6 +24,47 @@ div.customize-setting-validation-message.error {
 	margin-bottom: 0;
 }
 
+#customize-controls .customize-posts-navigation {
+	position: absolute;
+	top: 4px;
+	right: 1px;
+	padding: 20px;
+	width: 20px;
+	height: 20px;
+	cursor: pointer;
+	-webkit-appearance: none;
+	background: transparent;
+	color: #555;
+	border: none;
+}
+
+#customize-controls .customize-posts-navigation:before {
+	padding: 4px;
+	position: absolute;
+	top: 6px;
+	left: 6px;
+	-webkit-border-radius: 100%;
+	border-radius: 100%;
+}
+
+#customize-controls .customize-posts-navigation:focus:before {
+	-webkit-box-shadow:
+		0 0 0 1px #5b9dd9,
+		0 0 2px 1px rgba(30, 140, 190, .8);
+	box-shadow:
+		0 0 0 1px #5b9dd9,
+		0 0 2px 1px rgba(30, 140, 190, .8);
+}
+
+#customize-controls .customize-posts-navigation:focus,
+#customize-controls .customize-posts-navigation:hover {
+	color: #0073aa;
+}
+
+#customize-controls .customize-posts-navigation:focus {
+	outline: none;
+}
+
 .customize-posts-add-new {
 	padding: 15px 12px;
 	margin: 0;

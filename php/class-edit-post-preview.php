@@ -108,7 +108,9 @@ class Edit_Post_Preview {
 			$args = array();
 			$args['preview'] = true;
 			$args[ $id_param ] = $post->ID;
-			$args['post_type'] = $post->post_type;
+			if ( 'page_id' !== $id_param && 'post' !== $post->post_type ) {
+				$args['post_type'] = $post->post_type;
+			}
 			$permalink = get_preview_post_link( $post, $args, home_url() );
 		}
 

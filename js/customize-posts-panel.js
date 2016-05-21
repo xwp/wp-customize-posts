@@ -92,7 +92,7 @@
 					} );
 
 					request.done( function( response ) {
-						wp.customize.previewer.previewUrl( response.url );
+						api.previewer.previewUrl( response.url );
 
 						api.section( response.sectionId, function( section ) {
 							var focusControl, controls = section.controls();

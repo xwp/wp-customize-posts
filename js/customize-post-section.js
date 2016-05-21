@@ -1,4 +1,4 @@
-/* global wp, tinyMCE */
+/* global wp, tinyMCE, console */
 /* eslint consistent-this: [ "error", "section" ], no-magic-numbers: [ "error", { "ignore": [1] } ] */
 
 (function( api, $ ) {
@@ -93,6 +93,7 @@
 
 			section.setupTitleUpdating();
 			section.setupSettingValidation();
+			section.setupPostNavigation();
 			section.setupControls();
 
 			// @todo If postTypeObj.hierarchical, then allow the sections to be re-ordered by drag and drop (add grabber control).
@@ -120,6 +121,49 @@
 					sectionInnerTitleElement.text( title );
 					sectionInnerTitleElement.prepend( customizeActionElement );
 				}
+			} );
+		},
+
+		/**
+		 * Reload the pane based on the current posts preview url.
+		 */
+		setupPostNavigation: function() {
+			var section = this,
+			    setting = api( section.id ),
+			    sectionContainer = section.container.closest( '.accordion-section' ),
+			    sectionTitle = sectionContainer.find( '.customize-section-title:first' ),
+			    sectionNavigationButton = wp.template( 'customize-posts-navigation' ),
+			    postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+
+			sectionTitle.append( sectionNavigationButton( {
+				label: postTypeObj.labels.singular_name
+			} ) );
+
+			section.container.find( '.customize-posts-navigation' ).on( 'click', function( event ) {
+				var request;
+
+				event.preventDefault();
+
+				request = wp.ajax.post( 'customize-posts-navigation', {
+					'customize-posts-nonce': api.Posts.data.nonce,
+					'wp_customize': 'on',
+					'setting_id': setting.id
+				} );
+
+				request.done( function( response ) {
+					api.previewer.previewUrl( response.url );
+					$( '.customize-posts-navigation' ).blur();
+				} );
+
+				request.fail( function( response ) {
+					var error = response.responseJSON.data;
+
+					if ( 'undefined' !== typeof response.responseJSON.data.message ) {
+						error = response.responseJSON.data.message;
+					}
+
+					console.error( error );
+				} );
 			} );
 		},
 
