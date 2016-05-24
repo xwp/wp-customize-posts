@@ -83,7 +83,7 @@
 				panel.container.find( '.add-new-post-stub' ).on( 'click', function( event ) {
 					event.preventDefault();
 
-					api.Posts.insertPost( { post_type: panel.postType }, true ).done( function( section ) {
+					api.Posts.insertPost( { post_type: panel.postType, post_status: 'publish' }, true ).done( function( section ) {
 						var focusControl, controls = section.controls();
 
 						// @todo Figure out why we need to delay focusing the first control.
