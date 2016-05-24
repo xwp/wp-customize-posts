@@ -57,6 +57,47 @@
 	} );
 
 	/**
+	 * Insert a new stubbed `auto-draft` post.
+	 *
+	 * @param {object} params     - Parameters to configure the setting.
+	 * @param {boolean} [preview] - Whether to refresh to the preview URL. Defaults to false.
+	 * @return {Promise}
+	 */
+	component.insertPost = function( params, preview ) {
+		var request, deferred = $.Deferred();
+
+		params = params || {};
+		preview = preview || false;
+
+		request = wp.ajax.post( 'customize-posts-add-new', {
+			'customize-posts-nonce': api.Posts.data.nonce,
+			'wp_customize': 'on',
+			'params': params,
+		} );
+
+		request.done( function( response ) {
+			component.receivePreviewData( response );
+			if ( preview ) {
+				api.previewer.previewUrl( response.url );
+			}
+			deferred.resolve( api.section( response.sectionId ) );
+		} );
+
+		request.fail( function( response ) {
+			var error = response || '';
+
+			if ( 'undefined' !== typeof response.message ) {
+				error = response.message;
+			}
+
+			console.error( error );
+			deferred.reject();
+		} );
+
+		return deferred.promise();
+	};
+
+	/**
 	 * Handle receiving customized-posts messages from the preview.
 	 *
 	 * @param {object} data

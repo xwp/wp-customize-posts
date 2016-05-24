@@ -385,6 +385,7 @@ final class WP_Customize_Posts {
 	 * Add all postmeta settings for all registered postmeta for a given post type instance.
 	 *
 	 * @param int $post_id Post ID.
+	 * @return array
 	 */
 	public function register_post_type_meta_settings( $post_id ) {
 		$post = get_post( $post_id );
@@ -395,6 +396,8 @@ final class WP_Customize_Posts {
 			}
 		}
 		$this->manager->add_dynamic_settings( $setting_ids );
+
+		return $setting_ids;
 	}
 
 	/**
@@ -835,27 +838,77 @@ final class WP_Customize_Posts {
 			wp_send_json_error( 'customize_not_allowed' );
 		}
 
-		if ( empty( $_POST['post_type'] ) ) {
+		if ( empty( $_POST['params'] ) ) {
 			status_header( 400 );
-			wp_send_json_error( 'missing_post_type' );
+			wp_send_json_error( 'missing_params' );
 		}
 
-		$post_type_object = get_post_type_object( wp_unslash( $_POST['post_type'] ) );
+		$params = $_POST['params'];
+
+		if ( empty( $params['post_type'] ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'missing_post_type_param' );
+		}
+
+		$post_type_object = get_post_type_object( wp_unslash( $params['post_type'] ) );
 		if ( ! $post_type_object || ! current_user_can( $post_type_object->cap->create_posts ) ) {
+			status_header( 403 );
 			wp_send_json_error( 'insufficient_post_permissions' );
 		}
 
 		$post = $this->add_new_post( $post_type_object->name );
 
 		if ( $post instanceof WP_Post ) {
+			$exported_settings = array();
+
+			$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+			$setting_ids = array( $post_setting_id );
+			$this->manager->add_dynamic_settings( $setting_ids );
+
+			$this->manager->set_post_value( $post_setting_id, $params );
+			$post_setting = $this->manager->get_setting( $post_setting_id );
+			$post_setting->preview();
+
+			$setting_ids = array_merge( $setting_ids, $this->manager->posts->register_post_type_meta_settings( $post->ID ) );
+			foreach ( $setting_ids as $setting_id ) {
+				$setting = $this->manager->get_setting( $setting_id );
+				if ( ! $setting ) {
+					continue;
+				}
+				if ( preg_match( WP_Customize_Postmeta_Setting::SETTING_ID_PATTERN, $setting->id, $matches ) ) {
+					if ( isset( $matches['meta_key'] ) && isset( $params[ $matches['meta_key'] ] ) ) {
+						$this->manager->set_post_value( $setting_id, $params[ $matches['meta_key'] ] );
+						$setting->preview();
+					}
+				}
+				if ( method_exists( $setting, 'json' ) ) { // New in 4.6-alpha.
+					$exported_settings[ $setting->id ] = $setting->json();
+				} else {
+					$exported_settings[ $setting->id ] = array(
+						'value' => $setting->js_value(),
+						'transport' => $setting->transport,
+						'dirty' => $setting->dirty,
+						'type' => $setting->type,
+					);
+				}
+			}
 			$data = array(
+				'settings' => $exported_settings,
 				'sectionId' => WP_Customize_Post_Setting::get_post_setting_id( $post ),
 				'url' => Edit_Post_Preview::get_preview_post_link( $post ),
 			);
 			wp_send_json_success( $data );
 		}
 
-		wp_send_json_error( array( 'message' => __( 'Post could not be created.', 'customize-posts' ) ) );
+		$singular_name = __( 'Post', 'customize-posts' );
+		if ( ! empty( $post_type_object->labels->singular_name ) ) {
+			$singular_name = $post_type_object->labels->singular_name;
+		}
+
+		$data = array(
+			'message' => sprintf( __( '%s could not be created.', 'customize-posts' ), $singular_name ),
+		);
+		wp_send_json_error( $data );
 	}
 
 	/**

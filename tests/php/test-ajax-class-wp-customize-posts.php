@@ -76,7 +76,9 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 		$_POST = array(
 			'action' => 'customize-posts',
 			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
-			'post_type' => 'post',
+			'params' => array(
+				'post_type' => 'post',
+			),
 		);
 		$this->make_ajax_call( 'customize-posts-add-new' );
 
@@ -143,7 +145,7 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 		$response = json_decode( $this->_last_response, true );
 		$expected_results = array(
 			'success' => false,
-			'data'    => 'missing_post_type',
+			'data'    => 'missing_params',
 		);
 
 		$this->assertSame( $expected_results, $response );
@@ -164,7 +166,9 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 		$_POST = array(
 			'action' => 'customize-posts',
 			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
-			'post_type' => 'post',
+			'params' => array(
+				'post_type' => 'post',
+			),
 		);
 		$this->make_ajax_call( 'customize-posts-add-new' );
 

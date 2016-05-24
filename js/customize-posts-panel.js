@@ -81,43 +81,21 @@
 				} ) );
 
 				panel.container.find( '.add-new-post-stub' ).on( 'click', function( event ) {
-					var request;
-
 					event.preventDefault();
 
-					request = wp.ajax.post( 'customize-posts-add-new', {
-						'customize-posts-nonce': api.Posts.data.nonce,
-						'wp_customize': 'on',
-						'post_type': panel.postType
-					} );
+					api.Posts.insertPost( { post_type: panel.postType }, true ).done( function( section ) {
+						var focusControl, controls = section.controls();
 
-					request.done( function( response ) {
-						api.previewer.previewUrl( response.url );
+						// @todo Figure out why we need to delay focusing the first control.
+						focusControl = _.debounce( function() {
+							if ( controls[0] ) {
+								controls[0].focus();
+							}
+						}, 500 );
 
-						api.section( response.sectionId, function( section ) {
-							var focusControl, controls = section.controls();
-
-							// @todo Figure out why we need to delay focusing the first control.
-							focusControl = _.debounce( function() {
-								if ( controls[0] ) {
-									controls[0].focus();
-								}
-							}, 500 );
-
-							section.focus( {
-								completeCallback: focusControl
-							} );
+						section.focus( {
+							completeCallback: focusControl
 						} );
-					} );
-
-					request.fail( function( response ) {
-						var error = response.responseJSON.data;
-
-						if ( 'undefined' !== typeof response.responseJSON.data.message ) {
-							error = response.responseJSON.data.message;
-						}
-
-						console.error( error );
 					} );
 				} );
 			}
