@@ -696,15 +696,27 @@ final class WP_Customize_Posts {
 	 *
 	 * @access public
 	 *
-	 * @param string $post_type     The post type.
+	 * @param string $query_vars    The query vars.
 	 * @param bool   $is_main_query Whether this is the main query. Default: false.
 	 * @return array
 	 */
-	public function get_previewed_drafts( $post_type, $is_main_query = false ) {
+	public function get_previewed_drafts( $query_vars, $is_main_query = false ) {
+		if ( empty( $query_vars['post_type'] ) ) {
+			$query_vars['post_type'] = array( 'post' );
+		} elseif ( is_string( $query_vars['post_type'] ) ) {
+			$query_vars['post_type'] = explode( ',', $query_vars['post_type'] );
+		}
+
+		if ( empty( $query_vars['post_status'] ) ) {
+			$query_vars['post_status'] = array( 'publish' );
+		} elseif ( is_string( $query_vars['post_status'] ) ) {
+			$query_vars['post_status'] = explode( ',', $query_vars['post_status'] );
+		}
+
 		$post_ids = array();
 		$settings = $this->manager->unsanitized_post_values();
 		if ( ! empty( $settings ) ) {
-			foreach ( (array) $settings as $id => $setting ) {
+			foreach ( (array) $settings as $id => $post_data ) {
 				if ( ! preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches ) ) {
 					continue;
 				}
@@ -718,15 +730,17 @@ final class WP_Customize_Posts {
 				$main_query_post_type = apply_filters( 'customize_posts_main_query_post_type', 'post', $matches['post_type'] );
 
 				$post_type_match = (
-					in_array( $matches['post_type'], (array) $post_type, true ) ||
+					in_array( $matches['post_type'], $query_vars['post_type'], true ) ||
 					(
 						$is_main_query &&
 						$main_query_post_type === $matches['post_type'] &&
-						( empty( $post_type ) || 'any' === $post_type )
+						in_array( 'any', $query_vars['post_type'], true )
 					)
 				);
 
-				if ( in_array( $setting['post_status'], self::$draft_status, true ) && $post_type_match ) {
+				$post_status_match = in_array( $post_data['post_status'], $query_vars['post_status'], true );
+
+				if ( $post_status_match && $post_type_match ) {
 					$post_ids[] = intval( $matches['post_id'] );
 				}
 			}
@@ -749,7 +763,7 @@ final class WP_Customize_Posts {
 		global $wpdb;
 
 		if ( ! $query->is_admin() && ! $query->is_singular() ) {
-			$post_ids = $this->get_previewed_drafts( $query->query_vars['post_type'], $query->is_main_query() );
+			$post_ids = $this->get_previewed_drafts( $query->query_vars, $query->is_main_query() );
 			if ( ! empty( $post_ids ) ) {
 				$post__in = implode( ',', array_map( 'absint', $post_ids ) );
 				$where .= " OR {$wpdb->posts}.ID IN ($post__in)";
@@ -869,7 +883,7 @@ final class WP_Customize_Posts {
 			$post_setting = $this->manager->get_setting( $post_setting_id );
 			$post_setting->preview();
 
-			$setting_ids = array_merge( $setting_ids, $this->manager->posts->register_post_type_meta_settings( $post->ID ) );
+			$setting_ids = array_merge( $setting_ids, $this->register_post_type_meta_settings( $post->ID ) );
 			foreach ( $setting_ids as $setting_id ) {
 				$setting = $this->manager->get_setting( $setting_id );
 				if ( ! $setting ) {
