@@ -126,6 +126,10 @@
 
 		/**
 		 * Reload the pane based on the current posts preview url.
+		 *
+		 * @todo Only show the link if the current previewUrl is not this post's URL.
+		 *
+		 * @returns {void}
 		 */
 		setupPostNavigation: function() {
 			var section = this,
