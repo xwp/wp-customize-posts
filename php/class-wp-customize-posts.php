@@ -891,6 +891,7 @@ final class WP_Customize_Posts {
 						'type' => $setting->type,
 					);
 				}
+				$exported_settings[ $setting->id ]['dirty'] = true;
 			}
 			$data = array(
 				'settings' => $exported_settings,

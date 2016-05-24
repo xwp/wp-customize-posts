@@ -72,7 +72,7 @@
 		request = wp.ajax.post( 'customize-posts-add-new', {
 			'customize-posts-nonce': api.Posts.data.nonce,
 			'wp_customize': 'on',
-			'params': params,
+			'params': params
 		} );
 
 		request.done( function( response ) {
@@ -104,19 +104,22 @@
 	 * @return {wp.customize.Section[]}
 	 */
 	component.receivePreviewData = function( data ) {
-		var sections = [], section;
+		var sections = [], section, setting;
 
-		_.each( data.settings, function( setting, id ) {
+		_.each( data.settings, function( settingArgs, id ) {
 
 			if ( ! api.has( id ) ) {
-				api.create( id, id, setting.value, {
-					transport: setting.transport,
+				setting = api.create( id, id, settingArgs.value, {
+					transport: settingArgs.transport,
 					previewer: api.previewer,
-					dirty: setting.dirty
+					dirty: settingArgs.dirty
 				} );
+				if ( settingArgs.dirty ) {
+					setting.callbacks.fireWith( setting, [ settingArgs.value, {} ] );
+				}
 			}
 
-			if ( 'post' === setting.type ) {
+			if ( 'post' === settingArgs.type ) {
 				section = component.addPostSection( id );
 				if ( section ) {
 					sections.push( section );
