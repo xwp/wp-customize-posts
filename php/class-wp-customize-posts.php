@@ -696,8 +696,8 @@ final class WP_Customize_Posts {
 	 *
 	 * @access public
 	 *
-	 * @param array  $query_vars    The query vars.
-	 * @param bool   $is_main_query Whether this is the main query. Default: false.
+	 * @param array $query_vars    The query vars.
+	 * @param bool  $is_main_query Whether this is the main query. Default: false.
 	 * @return array
 	 */
 	public function get_previewed_drafts( $query_vars = array(), $is_main_query = false ) {
