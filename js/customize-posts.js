@@ -1,4 +1,4 @@
-/*global jQuery, wp, _, _wpCustomizePostsExports, console */
+/* global jQuery, wp, _, _wpCustomizePostsExports, console */
 
 (function( api, $ ) {
 	'use strict';
@@ -57,31 +57,113 @@
 	} );
 
 	/**
-	 * Handle receiving customized-posts messages from the preview.
+	 * Get the post preview URL.
 	 *
-	 * @param {object} data
+	 * @param {object} params - Parameters to configure the preview URL.
+	 * @param {number} params.post_id - Post ID to preview.
+	 * @param {string} [params.post_type] - Post type to preview.
+	 * @return {string} Preview URL.
 	 */
-	component.receivePreviewData = function( data ) {
-		_.each( data.settings, function( setting, id ) {
+	component.getPreviewUrl = function( params ) {
+		var url = api.settings.url.home,
+		    args = {};
 
-			if ( ! api.has( id ) ) {
-				api.create( id, id, setting.value, {
-					transport: setting.transport,
-					previewer: api.previewer,
-					dirty: setting.dirty
-				} );
+		if ( ! params || ! params.post_id ) {
+			throw new Error( 'Missing params' );
+		}
+
+		args.preview = true;
+		if ( 'page' === params.post_type ) {
+			args.page_id = params.post_id;
+		} else {
+			args.p = params.post_id;
+			if ( params.post_type && 'post' !== params.post_type ) {
+				args.post_type = params.post_type;
 			}
+		}
 
-			if ( 'post' === setting.type ) {
-				component.addPostSection( id );
+		return url + '?' + $.param( args );
+	};
+
+	/**
+	 * Insert a new stubbed `auto-draft` post.
+	 *
+	 * @param {object} params - Parameters to configure the setting.
+	 * @return {Promise} Promise resolved with the added section.
+	 */
+	component.insertAutoDraftPost = function( params ) {
+		var request, deferred = $.Deferred();
+
+		request = wp.ajax.post( 'customize-posts-add-new', {
+			'customize-posts-nonce': api.Posts.data.nonce,
+			'wp_customize': 'on',
+			'params': params || {}
+		} );
+
+		request.done( function( response ) {
+			var sections = component.receivePreviewData( response );
+			if ( 0 === sections.length ) {
+				deferred.rejectWith( 'no_sections' );
+			} else {
+				deferred.resolve( _.extend(
+					{ section: sections[0] },
+					response
+				) );
 			}
 		} );
+
+		request.fail( function( response ) {
+			var error = response || '';
+
+			if ( 'undefined' !== typeof response.message ) {
+				error = response.message;
+			}
+
+			console.error( error );
+			deferred.rejectWith( error );
+		} );
+
+		return deferred.promise();
+	};
+
+	/**
+	 * Handle receiving customized-posts messages from the preview.
+	 *
+	 * @param {object} data Data from preview.
+	 * @return {wp.customize.Section[]} Sections added.
+	 */
+	component.receivePreviewData = function( data ) {
+		var sections = [], section, setting;
+
+		_.each( data.settings, function( settingArgs, id ) {
+
+			if ( ! api.has( id ) ) {
+				setting = api.create( id, id, settingArgs.value, {
+					transport: settingArgs.transport,
+					previewer: api.previewer,
+					dirty: settingArgs.dirty
+				} );
+				if ( settingArgs.dirty ) {
+					setting.callbacks.fireWith( setting, [ setting.get(), {} ] );
+				}
+			}
+
+			if ( 'post' === settingArgs.type ) {
+				section = component.addPostSection( id );
+				if ( section ) {
+					sections.push( section );
+				}
+			}
+		} );
+
+		return sections;
 	};
 
 	/**
 	 * Handle adding post setting.
 	 *
-	 * @param {string} id
+	 * @param {string} id - Section ID (same as post setting ID).
+	 * @return {wp.customize.Section|null} Added (or existing) section, or null if not able to be added.
 	 */
 	component.addPostSection = function( id ) {
 		var section, sectionId, panelId, sectionType, postId, postType, idParts, Constructor, htmlParser;
@@ -91,17 +173,17 @@
 			if ( 'undefined' !== typeof console && console.error ) {
 				console.error( 'Unrecognized post type: ' + postType );
 			}
-			return;
+			return null;
 		}
 		if ( ! component.data.postTypes[ postType ].show_in_customizer ) {
-			return;
+			return null;
 		}
 		postId = parseInt( idParts[2], 10 );
 		if ( ! postId ) {
 			if ( 'undefined' !== typeof console && console.error ) {
 				console.error( 'Bad post id: ' + idParts[2] );
 			}
-			return;
+			return null;
 		}
 
 		sectionType = 'post[' + postType + ']';
@@ -109,7 +191,7 @@
 		sectionId = id;
 
 		if ( api.section.has( sectionId ) ) {
-			return;
+			return api.section( sectionId );
 		}
 
 		Constructor = api.sectionConstructor[ sectionType ] || api.sectionConstructor.post;
@@ -126,6 +208,8 @@
 			}
 		});
 		api.section.add( sectionId, section );
+
+		return section;
 	};
 
 	api.bind( 'ready', function() {

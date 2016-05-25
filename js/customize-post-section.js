@@ -1,5 +1,5 @@
 /* global wp, tinyMCE */
-/* eslint consistent-this: [ "error", "section" ] */
+/* eslint consistent-this: [ "error", "section" ], no-magic-numbers: [ "error", { "ignore": [1] } ] */
 
 (function( api, $ ) {
 	'use strict';
@@ -74,6 +74,15 @@
 			}
 
 			api.Section.prototype.initialize.call( section, id, args );
+
+			section.active.validate = function( active ) {
+				var setting = api( section.id );
+				if ( setting ) {
+					return setting._dirty || active;
+				} else {
+					return true;
+				}
+			};
 		},
 
 		/**
@@ -84,6 +93,7 @@
 
 			section.setupTitleUpdating();
 			section.setupSettingValidation();
+			section.setupPostNavigation();
 			section.setupControls();
 
 			// @todo If postTypeObj.hierarchical, then allow the sections to be re-ordered by drag and drop (add grabber control).
@@ -115,7 +125,43 @@
 		},
 
 		/**
+		 * Reload the pane based on the current posts preview url.
+		 *
+		 * @returns {void}
+		 */
+		setupPostNavigation: function() {
+			var section = this,
+			    sectionNavigationButton,
+			    sectionContainer = section.container.closest( '.accordion-section' ),
+			    sectionTitle = sectionContainer.find( '.customize-section-title:first' ),
+			    sectionNavigationButtonTemplate = wp.template( 'customize-posts-navigation' ),
+			    postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+
+			// Short-circuit showing a link if the post type is not publicly queryable anyway.
+			if ( ! postTypeObj['public'] ) {
+				return;
+			}
+
+			sectionNavigationButton = $( sectionNavigationButtonTemplate( {
+				label: postTypeObj.labels.singular_name
+			} ) );
+			sectionTitle.append( sectionNavigationButton );
+
+			// Hide the link when the post is currently in the preview.
+			api.previewer.bind( 'customized-posts', function( data ) {
+				sectionNavigationButton.toggle( section.params.post_id !== data.queriedPostId );
+			} );
+
+			sectionNavigationButton.on( 'click', function( event ) {
+				event.preventDefault();
+				api.previewer.previewUrl( api.Posts.getPreviewUrl( section.params ) );
+			} );
+		},
+
+		/**
 		 * Set up the post field controls.
+		 *
+		 * @returns {void}
 		 */
 		setupControls: function() {
 			var section = this, postTypeObj;
