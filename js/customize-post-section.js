@@ -230,7 +230,15 @@
 		 * @returns {wp.customize.Control}
 		 */
 		addContentControl: function() {
-			var section = this, control, setting = api( section.id );
+			var section = this, control, setting = api( section.id ),
+			preview = $( '#customize-preview' ),
+			editorPane = $( '#customize-posts-content-editor-pane' ),
+			editorFrame = $( '#customize-posts-content_ifr' ),
+			mceTools = $( '#wp-customize-posts-content-editor-tools' ),
+			mceToolbar = $( '.mce-toolbar-grp' ),
+			mceStatusbar = $( '.mce-statusbar' ),
+			dragbar = $( '.customize-posts-dragbar' ),
+			resizeHeight;
 
 			control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
 				params: {
@@ -326,6 +334,7 @@
 				} else {
 					api.Posts.postIdInput.val( '' );
 					control.editorExpanded.set( false );
+					preview.css( 'bottom', '' );
 				}
 			} );
 
@@ -337,6 +346,9 @@
 				control.editorExpanded.set( ! control.editorExpanded() );
 				if ( control.editorExpanded() ) {
 					editor.focus();
+					preview.css( 'bottom', resizeHeight );
+				} else {
+					preview.css( 'bottom', '' );
 				}
 			} );
 
@@ -351,6 +363,64 @@
 				control.editorExpanded.set( true );
 				editor.focus();
 			};
+
+			/**
+			 * Vertically Resize Expanded Post Editor
+			 */
+			control.editorResize = function( previewBottomOffset, visualEditorHeight, textEditorHeight, dragbarBottomOffset ) {
+				preview.css( 'bottom', previewBottomOffset );
+				editorPane.css( 'height', visualEditorHeight );
+				editorFrame.css( 'height', textEditorHeight );
+				dragbar.css( 'bottom', dragbarBottomOffset  );
+			};
+
+			dragbar.on( 'mousedown', function() {
+				var windowHeight = window.innerHeight,
+				editorComponentsCombinedHeight = mceTools.outerHeight() + mceToolbar.outerHeight() + mceStatusbar.outerHeight(),
+				minScroll = 39, // Min px of editor to retain
+				maxScroll = 3, // Min px of preview to retain
+				dragbarBottomOffset = 1; // Vertically center the dragbar
+
+				event.preventDefault();
+				preview.prepend( '<div id="customize-posts-draghelper"></div>' );
+
+				$( document ).on( 'mousemove', function() {
+					var maxHeight;
+
+					resizeHeight = windowHeight - event.pageY;
+					editorFrame.css( 'pointer-events', 'none' );
+
+					if ( resizeHeight < minScroll ) {
+						control.editorResize( minScroll, minScroll, minScroll - editorComponentsCombinedHeight, minScroll - dragbarBottomOffset );
+					} else if ( resizeHeight > ( windowHeight - maxScroll ) ) {
+						maxHeight = windowHeight - maxScroll;
+						control.editorResize( maxHeight, maxHeight, maxHeight - editorComponentsCombinedHeight, maxHeight - dragbarBottomOffset );
+					} else {
+						control.editorResize( resizeHeight, resizeHeight, resizeHeight - editorComponentsCombinedHeight, resizeHeight - dragbarBottomOffset );
+					}
+				} );
+			} );
+
+			$( document ).on( 'mouseup', dragbar, function() {
+				$( document ).unbind( 'mousemove' );
+				$( '#customize-posts-draghelper' ).remove();
+				editorFrame.css( 'pointer-events', '' );
+			} );
+
+			// Do not allow expanded editor to vertically push out of viewport on resize
+			$( window ).on( 'resize', function() {
+				var windowHeight = window.innerHeight,
+				editor = $( '#customize-posts-content-editor-pane' ),
+				editorComponentsCombinedHeight = mceTools.outerHeight() + mceToolbar.outerHeight() + mceStatusbar.outerHeight(),
+				dragbarOffset = 1,
+				minScroll = 39;  // Min px of editor to retain
+
+				if ( windowHeight < minScroll ) {
+					control.editorResize( minScroll, minScroll, minScroll - editorComponentsCombinedHeight, minScroll - dragbarOffset );
+				} else if ( windowHeight < editor.outerHeight() ) {
+					control.editorResize( windowHeight, windowHeight, windowHeight - editorComponentsCombinedHeight, windowHeight - dragbarOffset );
+				}
+			} );
 
 			// Override preview trying to de-activate control not present in preview context.
 			control.active.validate = function() {
