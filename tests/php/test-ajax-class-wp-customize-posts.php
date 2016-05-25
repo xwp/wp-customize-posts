@@ -157,7 +157,7 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 	 * @see WP_Customize_Posts::ajax_add_new_post()
 	 */
 	function test_ajax_add_new_post_insufficient_post_permissions() {
-		remove_filter( 'user_has_cap', array( $GLOBALS['customize_posts_plugin'], 'grant_customize_capability' ), 10, 3 );
+		remove_filter( 'user_has_cap', array( $GLOBALS['customize_posts_plugin'], 'grant_customize_capability' ), 10 );
 		$role = get_role( 'administrator' );
 		$role->add_cap( 'customize' );
 		$role->remove_cap( 'edit_posts' );
@@ -190,7 +190,7 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 	 * @see WP_Customize_Posts::ajax_navigation()
 	 */
 	function test_ajax_navigation() {
-		$post = $this->wp_customize->posts->add_new_post( 'post' );
+		$post = $this->wp_customize->posts->insert_auto_draft_post( 'post' );
 		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
 		$_POST = array(
 			'action' => 'customize-posts',

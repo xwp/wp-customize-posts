@@ -731,24 +731,28 @@ final class WP_Customize_Posts {
 	 * @access public
 	 *
 	 * @param string $post_type The post type.
-	 * @return WP_Post|false
+	 * @return WP_Post|WP_Error
 	 */
-	public function add_new_post( $post_type = '' ) {
-		if ( null !== get_post_type_object( $post_type ) ) {
-			add_filter( 'wp_insert_post_empty_content', '__return_false' );
-			$args = array(
-				'post_status' => 'auto-draft',
-				'post_type'   => $post_type,
-			);
-			$post_id = wp_insert_post( wp_slash( $args ), false );
-			remove_filter( 'wp_insert_post_empty_content', '__return_false' );
+	public function insert_auto_draft_post( $post_type ) {
 
-			if ( 0 < $post_id ) {
-				return get_post( $post_id );
-			}
+		$post_type_obj = get_post_type_object( $post_type );
+		if ( ! $post_type_obj ) {
+			return new WP_Error( 'unknown_post_type', __( 'Unknown post type', 'customize-posts' ) );
 		}
 
-		return false;
+		add_filter( 'wp_insert_post_empty_content', '__return_false' );
+		$args = array(
+			'post_status' => 'auto-draft',
+			'post_type'   => $post_type,
+		);
+		$r = wp_insert_post( wp_slash( $args ), true );
+		remove_filter( 'wp_insert_post_empty_content', '__return_false' );
+
+		if ( is_wp_error( $r ) ) {
+			return $r;
+		} else {
+			return get_post( $r );
+		}
 	}
 
 	/**
@@ -786,9 +790,21 @@ final class WP_Customize_Posts {
 			wp_send_json_error( 'insufficient_post_permissions' );
 		}
 
-		$post = $this->add_new_post( $post_type_object->name );
+		$r = $this->insert_auto_draft_post( $post_type_object->name );
+		if ( is_wp_error( $r ) ) {
+			$error = $r;
+			if ( ! empty( $post_type_object->labels->singular_name ) ) {
+				$singular_name = $post_type_object->labels->singular_name;
+			} else {
+				$singular_name = __( 'Post', 'customize-posts' );
+			}
 
-		if ( $post instanceof WP_Post ) {
+			$data = array(
+				'message' => sprintf( __( '%1$s could not be created: %2$s', 'customize-posts' ), $singular_name, $error->get_error_message() ),
+			);
+			wp_send_json_error( $data );
+		} else {
+			$post = $r;
 			$exported_settings = array();
 
 			$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
@@ -830,16 +846,6 @@ final class WP_Customize_Posts {
 			);
 			wp_send_json_success( $data );
 		}
-
-		$singular_name = __( 'Post', 'customize-posts' );
-		if ( ! empty( $post_type_object->labels->singular_name ) ) {
-			$singular_name = $post_type_object->labels->singular_name;
-		}
-
-		$data = array(
-			'message' => sprintf( __( '%s could not be created.', 'customize-posts' ), $singular_name ),
-		);
-		wp_send_json_error( $data );
 	}
 
 	/**

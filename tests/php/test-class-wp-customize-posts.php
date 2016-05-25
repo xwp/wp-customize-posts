@@ -388,8 +388,8 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 * @see WP_Customize_Posts::transition_customize_draft()
 	 */
 	public function test_transition_customize_draft() {
-		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $this->posts->add_new_post( 'post' ) );
-		$page_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $this->posts->add_new_post( 'page' ) );
+		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $this->posts->insert_auto_draft_post( 'post' ) );
+		$page_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $this->posts->insert_auto_draft_post( 'page' ) );
 		$data = array();
 		$data['some_other_id'] = array(
 			'value' => array(
@@ -415,12 +415,12 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test add_new_post method.
+	 * Test insert_auto_draft_post method.
 	 *
-	 * @see WP_Customize_Posts::add_new_post()
+	 * @see WP_Customize_Posts::insert_auto_draft_post()
 	 */
-	public function test_add_new_post_returns_false() {
-		$post = $this->posts->add_new_post( 'fake' );
-		$this->assertFalse( $post );
+	public function test_insert_auto_draft_post_returns_error() {
+		$r = $this->posts->insert_auto_draft_post( 'fake' );
+		$this->assertInstanceOf( 'WP_Error', $r );
 	}
 }

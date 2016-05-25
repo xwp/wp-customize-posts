@@ -241,8 +241,8 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	public function test_get_previewed_posts_for_query() {
 		global $wp_the_query;
 
-		$post = $this->posts_component->add_new_post( 'post' );
-		$page = $this->posts_component->add_new_post( 'page' );
+		$post = $this->posts_component->insert_auto_draft_post( 'post' );
+		$page = $this->posts_component->insert_auto_draft_post( 'page' );
 		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
 		$page_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $page );
 		$data = array();
