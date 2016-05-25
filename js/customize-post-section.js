@@ -170,6 +170,7 @@
 			if ( postTypeObj.supports.title ) {
 				section.addTitleControl();
 			}
+			section.addSlugControl();
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
 			}
@@ -212,6 +213,55 @@
 
 			// Register.
 			section.postFieldControls.post_title = control;
+			api.control.add( control.id, control );
+
+			// Remove the setting from the settingValidationMessages since it is not specific to this field.
+			if ( control.settingValidationMessages ) {
+				control.settingValidationMessages.remove( setting.id );
+				control.settingValidationMessages.add( control.id, new api.Value( '' ) );
+			}
+			return control;
+		},
+
+		/**
+		 * Add post slug control.
+		 *
+		 * @returns {wp.customize.Control}
+		 */
+		addSlugControl: function() {
+			var section = this, control, setting = api( section.id );
+			control = new api.controlConstructor.dynamic( section.id + '[post_name]', {
+				params: {
+					section: section.id,
+					priority: 15,
+					label: api.Posts.data.l10n.fieldSlugLabel,
+					active: true,
+					settings: {
+						'default': setting.id
+					},
+					field_type: 'text',
+					setting_property: 'post_name'
+				}
+			} );
+
+			// Supply a placeholder for the input field to approximate how an empty slug will be derived from the title.
+			control.deferred.embedded.done( function() {
+				var input = control.container.find( 'input' );
+				function setPlaceholder() {
+					var slug = api.Posts.sanitizeTitleWithDashes( setting.get().post_title );
+					input.prop( 'placeholder', slug );
+				}
+				setPlaceholder();
+				setting.bind( setPlaceholder );
+			} );
+
+			// Override preview trying to de-activate control not present in preview context.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.post_name = control;
 			api.control.add( control.id, control );
 
 			// Remove the setting from the settingValidationMessages since it is not specific to this field.
