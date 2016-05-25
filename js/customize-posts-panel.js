@@ -99,7 +99,7 @@
 					promise.done( function( data ) {
 
 						// Navigate to the newly-created post if it is public; otherwise, refresh the preview.
-						if ( postObj.publicly_queryable && data.url ) {
+						if ( postObj['public'] && data.url ) {
 							api.previewer.previewUrl( data.url );
 						} else {
 							api.previewer.refresh();

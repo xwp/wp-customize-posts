@@ -138,7 +138,7 @@
 			    postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 
 			// Short-circuit showing a link if the post type is not publicly queryable anyway.
-			if ( ! postTypeObj.publicly_queryable ) {
+			if ( ! postTypeObj['public'] ) {
 				return;
 			}
 

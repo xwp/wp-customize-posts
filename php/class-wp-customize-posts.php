@@ -503,6 +503,7 @@ final class WP_Customize_Posts {
 					'hierarchical',
 					'show_in_customizer',
 					'publicly_queryable',
+					'public',
 				) ),
 				array(
 					'current_user_can' => array(
