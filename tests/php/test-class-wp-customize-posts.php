@@ -417,9 +417,11 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	/**
 	 * Test get_previewed_drafts method.
 	 *
-	 * @see WP_Customize_Posts::get_previewed_drafts()
+	 * @see WP_Customize_Posts::get_previewed_posts_for_query()
 	 */
-	public function test_get_previewed_drafts() {
+	public function test_get_previewed_posts_for_query() {
+		global $wp_the_query;
+
 		$post = $this->posts->add_new_post( 'post' );
 		$page = $this->posts->add_new_post( 'page' );
 		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
@@ -438,11 +440,17 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		);
 		$_POST['customized'] = wp_json_encode( $data );
 
-		$this->assertEquals( array( $post->ID ), $this->posts->get_previewed_drafts() );
-		$this->assertEquals( array( $page->ID ), $this->posts->get_previewed_drafts( array( 'post_type' => 'page' ) ) );
-		$this->assertEquals( array( $post->ID, $page->ID ), $this->posts->get_previewed_drafts( array( 'post_type' => 'any' ), true ) );
+		$query = new WP_Query( array( 'post_type' => 'post' ) );
+		$this->assertEquals( array( $post->ID ), $this->posts->get_previewed_posts_for_query( $query ) );
+		$query = new WP_Query( array( 'post_type' => 'page' ) );
+		$this->assertEquals( array( $page->ID ), $this->posts->get_previewed_posts_for_query( $query ) );
+		$query = new WP_Query( array( 'post_type' => 'any' ) );
+		$wp_the_query = $query;
+		$this->assertEquals( array( $post->ID, $page->ID ), $this->posts->get_previewed_posts_for_query( $query ) );
 		add_filter( 'customize_posts_main_query_post_type', array( $this, 'filter_main_query_post_type' ), 10, 2 );
-		$this->assertEquals( array( $post->ID, $page->ID ), $this->posts->get_previewed_drafts( array( 'post_type' => 'post' ), true ) );
+		$query = new WP_Query( array( 'post_type' => 'post' ) );
+		$wp_the_query = $query;
+		$this->assertEquals( array( $post->ID, $page->ID ), $this->posts->get_previewed_posts_for_query( $query ) );
 		remove_filter( 'customize_posts_main_query_post_type', array( $this, 'filter_main_query_post_type' ), 10 );
 	}
 

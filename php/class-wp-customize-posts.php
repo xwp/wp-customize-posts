@@ -87,7 +87,7 @@ final class WP_Customize_Posts {
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_templates' ) );
 		add_action( 'init', array( $this, 'register_customize_draft' ) );
 		add_filter( 'customize_snapshot_save', array( $this, 'transition_customize_draft' ) );
-		add_action( 'posts_where', array( $this, 'include_previewed_drafts' ), 10, 2 );
+		add_action( 'posts_where', array( $this, 'filter_posts_where_to_include_previewed_posts' ), 10, 2 );
 		add_filter( 'post_link', array( $this, 'post_link_draft' ), 10, 2 );
 		add_filter( 'post_type_link', array( $this, 'post_link_draft' ), 10, 2 );
 		add_filter( 'page_link', array( $this, 'page_link_draft' ), 10, 2 );
@@ -691,15 +691,16 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Get the `auto-draft` or `customize-draft` posts that are being previewed.
+	 * Get current posts being previewed which should be included in the given query.
 	 *
 	 * @access public
 	 *
-	 * @param array $query_vars    The query vars.
-	 * @param bool  $is_main_query Whether this is the main query. Default: false.
+	 * @param \WP_Query $query The query.
 	 * @return array
 	 */
-	public function get_previewed_drafts( $query_vars = array(), $is_main_query = false ) {
+	public function get_previewed_posts_for_query( WP_Query $query ) {
+		$query_vars = $query->query_vars;
+
 		if ( empty( $query_vars['post_type'] ) ) {
 			$query_vars['post_type'] = array( 'post' );
 		} elseif ( is_string( $query_vars['post_type'] ) ) {
@@ -731,7 +732,7 @@ final class WP_Customize_Posts {
 				$post_type_match = (
 					in_array( $matches['post_type'], $query_vars['post_type'], true ) ||
 					(
-						$is_main_query &&
+						$query->is_main_query() &&
 						(
 							$main_query_post_type === $matches['post_type'] ||
 							in_array( 'any', $query_vars['post_type'], true )
@@ -760,11 +761,11 @@ final class WP_Customize_Posts {
 	 * @param WP_Query $query The WP_Query instance (passed by reference).
 	 * @return string
 	 */
-	public function include_previewed_drafts( $where, $query ) {
+	public function filter_posts_where_to_include_previewed_posts( $where, $query ) {
 		global $wpdb;
 
 		if ( ! $query->is_admin && ! $query->is_singular() ) {
-			$post_ids = $this->get_previewed_drafts( $query->query_vars, $query->is_main_query() );
+			$post_ids = $this->get_previewed_posts_for_query( $query );
 			if ( ! empty( $post_ids ) ) {
 				$post__in = implode( ',', array_map( 'absint', $post_ids ) );
 				$where .= " OR {$wpdb->posts}.ID IN ($post__in)";
