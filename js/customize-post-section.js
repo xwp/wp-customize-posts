@@ -1,4 +1,4 @@
-/* global wp, tinyMCE, console */
+/* global wp, tinyMCE */
 /* eslint consistent-this: [ "error", "section" ], no-magic-numbers: [ "error", { "ignore": [1] } ] */
 
 (function( api, $ ) {
@@ -132,7 +132,6 @@
 		setupPostNavigation: function() {
 			var section = this,
 			    sectionNavigationButton,
-			    setting = api( section.id ),
 			    sectionContainer = section.container.closest( '.accordion-section' ),
 			    sectionTitle = sectionContainer.find( '.customize-section-title:first' ),
 			    sectionNavigationButtonTemplate = wp.template( 'customize-posts-navigation' ),
