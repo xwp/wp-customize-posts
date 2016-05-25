@@ -60,17 +60,15 @@
 	 * Insert a new stubbed `auto-draft` post.
 	 *
 	 * @param {object} params - Parameters to configure the setting.
-	 * @return {Promise}
+	 * @return {Promise} Promise resolved with the added section.
 	 */
 	component.insertPost = function( params ) {
 		var request, deferred = $.Deferred();
 
-		params = params || {};
-
 		request = wp.ajax.post( 'customize-posts-add-new', {
 			'customize-posts-nonce': api.Posts.data.nonce,
 			'wp_customize': 'on',
-			'params': params
+			'params': params || {}
 		} );
 
 		request.done( function( response ) {
@@ -96,8 +94,8 @@
 	/**
 	 * Handle receiving customized-posts messages from the preview.
 	 *
-	 * @param {object} data
-	 * @return {wp.customize.Section[]}
+	 * @param {object} data Data from preview.
+	 * @return {wp.customize.Section[]} Sections added.
 	 */
 	component.receivePreviewData = function( data ) {
 		var sections = [], section, setting;

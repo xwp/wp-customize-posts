@@ -67,6 +67,8 @@
 
 		/**
 		 * Add new post stub, which builds the UI & listens for click events.
+		 *
+		 * @return {void}
 		 */
 		setupPostAddition: function() {
 			var panel = this, descriptionContainer, addNewButton, postObj;
@@ -105,7 +107,7 @@
 		/**
 		 * Allow an active panel to be contextually active even when it has no active controls.
 		 *
-		 * @returns {boolean}
+		 * @returns {boolean} Whether contextually active.
 		 */
 		isContextuallyActive: function() {
 			var panel = this;

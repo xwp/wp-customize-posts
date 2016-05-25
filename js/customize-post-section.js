@@ -173,6 +173,8 @@
 
 		/**
 		 * Set up the post field controls.
+		 *
+		 * @returns {void}
 		 */
 		setupControls: function() {
 			var section = this, postTypeObj;
