@@ -83,9 +83,17 @@
 				} ) );
 
 				panel.container.find( '.add-new-post-stub' ).on( 'click', function( event ) {
+					var postData, button = $( this ), promise;
 					event.preventDefault();
+					button.prop( 'disabled', true );
 
-					api.Posts.insertPost( { post_type: panel.postType, post_status: 'publish' } ).done( function( section ) {
+					postData = {
+						post_type: panel.postType,
+						post_status: 'publish'
+					};
+
+					promise = api.Posts.insertPost( postData );
+					promise.done( function( section ) {
 						var focusControl, controls = section.controls();
 
 						focusControl = function() {
@@ -99,6 +107,9 @@
 						section.focus( {
 							completeCallback: focusControl
 						} );
+					} );
+					promise.always( function() {
+						button.prop( 'disabled', false );
 					} );
 				} );
 			}
