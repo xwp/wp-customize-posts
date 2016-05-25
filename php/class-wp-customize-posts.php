@@ -50,6 +50,13 @@ final class WP_Customize_Posts {
 	public $supports = array();
 
 	/**
+	 * Draft post status.
+	 *
+	 * @var array
+	 */
+	private static $draft_status = array( 'auto-draft', 'customize-draft' );
+
+	/**
 	 * Initial loader.
 	 *
 	 * @access public
@@ -77,6 +84,13 @@ final class WP_Customize_Posts {
 		add_filter( 'customize_dynamic_setting_args', array( $this, 'filter_customize_dynamic_setting_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_setting_class', array( $this, 'filter_customize_dynamic_setting_class' ), 5, 3 );
 		add_filter( 'customize_save_response', array( $this, 'filter_customize_save_response_for_conflicts' ), 10, 2 );
+		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_templates' ) );
+		add_action( 'init', array( $this, 'register_customize_draft' ) );
+		add_filter( 'customize_snapshot_save', array( $this, 'transition_customize_draft' ) );
+		add_filter( 'post_link', array( $this, 'post_link_draft' ), 10, 2 );
+		add_filter( 'post_type_link', array( $this, 'post_link_draft' ), 10, 2 );
+		add_filter( 'page_link', array( $this, 'page_link_draft' ), 10, 2 );
+		add_action( 'wp_ajax_customize-posts-add-new', array( $this, 'ajax_add_new_post' ) );
 
 		$this->preview = new WP_Customize_Posts_Preview( $this );
 	}
@@ -369,16 +383,19 @@ final class WP_Customize_Posts {
 	 * Add all postmeta settings for all registered postmeta for a given post type instance.
 	 *
 	 * @param int $post_id Post ID.
+	 * @return array
 	 */
 	public function register_post_type_meta_settings( $post_id ) {
 		$post = get_post( $post_id );
 		$setting_ids = array();
-		if ( isset( $this->registered_post_meta[ $post->post_type ] ) ) {
+		if ( ! empty( $post ) && isset( $this->registered_post_meta[ $post->post_type ] ) ) {
 			foreach ( array_keys( $this->registered_post_meta[ $post->post_type ] ) as $key ) {
 				$setting_ids[] = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $key );
 			}
 		}
 		$this->manager->add_dynamic_settings( $setting_ids );
+
+		return $setting_ids;
 	}
 
 	/**
@@ -475,19 +492,30 @@ final class WP_Customize_Posts {
 				continue;
 			}
 
-			$post_types[ $post_type ] = wp_array_slice_assoc( (array) $post_type_obj, array(
-				'name',
-				'supports',
-				'labels',
-				'has_archive',
-				'menu_icon',
-				'description',
-				'hierarchical',
-				'show_in_customizer',
-			) );
+			$post_types[ $post_type ] = array_merge(
+				wp_array_slice_assoc( (array) $post_type_obj, array(
+					'name',
+					'supports',
+					'labels',
+					'has_archive',
+					'menu_icon',
+					'description',
+					'hierarchical',
+					'show_in_customizer',
+					'publicly_queryable',
+					'public',
+				) ),
+				array(
+					'current_user_can' => array(
+						'create_posts' => current_user_can( $post_type_obj->cap->create_posts ),
+						'delete_posts' => current_user_can( $post_type_obj->cap->delete_posts ),
+					),
+				)
+			);
 		}
 
 		$exports = array(
+			'nonce' => wp_create_nonce( 'customize-posts' ),
 			'postTypes' => $post_types,
 			'authorChoices' => $this->get_author_choices(),
 			'l10n' => array(
@@ -582,5 +610,242 @@ final class WP_Customize_Posts {
 	public function sanitize_post_id( $value ) {
 		$value = intval( $value );
 		return $value;
+	}
+
+	/**
+	 * Underscore (JS) templates.
+	 */
+	public function render_templates() {
+		?>
+		<script type="text/html" id="tmpl-customize-posts-add-new">
+			<li class="customize-posts-add-new">
+				<button class="button-secondary add-new-post-stub">
+					<?php esc_html_e( 'Add New', 'customize-posts' ); ?> {{ data.label }}
+				</button>
+			</li>
+		</script>
+
+		<script id="tmpl-customize-posts-navigation" type="text/html">
+			<button class="customize-posts-navigation dashicons dashicons-visibility" tabindex="0">
+				<span class="screen-reader-text"><?php esc_html_e( 'Preview', 'customize-posts' ); ?> {{ data.label }}</span>
+			</button>
+		</script>
+		<?php
+	}
+
+	/**
+	 * Register the `customize-draft` post status.
+	 *
+	 * @action init
+	 * @access public
+	 */
+	public function register_customize_draft() {
+		register_post_status( 'customize-draft', array(
+			'label'                     => 'customize-draft',
+			'public'                    => false,
+			'internal'                  => true,
+			'protected'                 => true,
+			'exclude_from_search'       => true,
+			'show_in_admin_all_list'    => false,
+			'show_in_admin_status_list' => false,
+		) );
+	}
+
+	/**
+	 * Transition the post status.
+	 *
+	 * This ensures unpublished new posts, which are added to a snapshot, are not
+	 * garbage collected during the `wp_scheduled_auto_draft_delete` action by
+	 * changing the default `auto-draft` post status to `customize-draft`.
+	 *
+	 * @filter customize_snapshot_save
+	 * @access public
+	 *
+	 * @param array $data Customizer settings and values.
+	 * @return array
+	 */
+	public function transition_customize_draft( $data ) {
+		foreach ( $data as $id => $setting ) {
+			if ( ! preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches ) ) {
+				continue;
+			}
+			if ( 'auto-draft' === $setting['value']['post_status'] ) {
+				$post_status = 'customize-draft';
+
+				add_filter( 'wp_insert_post_empty_content', '__return_false' );
+				$result = wp_update_post( array(
+					'ID' => intval( $matches['post_id'] ),
+					'post_status' => $post_status,
+				), true );
+				remove_filter( 'wp_insert_post_empty_content', '__return_false' );
+
+				// @todo Amend customize_save_response if error.
+				if ( ! is_wp_error( $result ) ) {
+					$data[ $id ]['value']['post_status'] = $post_status;
+				}
+			}
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Filter the preview permalink for a post.
+	 *
+	 * @access public
+	 *
+	 * @param string  $permalink The post's permalink.
+	 * @param WP_Post $post      The post in question.
+	 * @return string
+	 */
+	public function post_link_draft( $permalink, $post ) {
+		if ( $post instanceof WP_Post && in_array( get_post_status( $post->ID ), self::$draft_status, true ) ) {
+			$permalink = Edit_Post_Preview::get_preview_post_link( $post );
+		}
+
+		return $permalink;
+	}
+
+	/**
+	 * Filter the preview permalink for a page.
+	 *
+	 * @access public
+	 *
+	 * @param string $link    The page's permalink.
+	 * @param int    $post_id The ID of the page.
+	 * @return string
+	 */
+	public function page_link_draft( $link, $post_id ) {
+		$post = get_post( $post_id );
+
+		if ( $post instanceof WP_Post && in_array( get_post_status( $post->ID ), self::$draft_status, true ) ) {
+			$link = Edit_Post_Preview::get_preview_post_link( $post );
+		}
+
+		return $link;
+	}
+
+	/**
+	 * Add a new `auto-draft` post.
+	 *
+	 * @access public
+	 *
+	 * @param string $post_type The post type.
+	 * @return WP_Post|WP_Error
+	 */
+	public function insert_auto_draft_post( $post_type ) {
+
+		$post_type_obj = get_post_type_object( $post_type );
+		if ( ! $post_type_obj ) {
+			return new WP_Error( 'unknown_post_type', __( 'Unknown post type', 'customize-posts' ) );
+		}
+
+		add_filter( 'wp_insert_post_empty_content', '__return_false' );
+		$args = array(
+			'post_status' => 'auto-draft',
+			'post_type'   => $post_type,
+		);
+		$r = wp_insert_post( wp_slash( $args ), true );
+		remove_filter( 'wp_insert_post_empty_content', '__return_false' );
+
+		if ( is_wp_error( $r ) ) {
+			return $r;
+		} else {
+			return get_post( $r );
+		}
+	}
+
+	/**
+	 * Ajax handler for adding a new post.
+	 *
+	 * @action wp_ajax_customize-posts-add-new
+	 * @access public
+	 */
+	public function ajax_add_new_post() {
+		if ( ! check_ajax_referer( 'customize-posts', 'customize-posts-nonce', false ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'bad_nonce' );
+		}
+
+		if ( ! current_user_can( 'customize' ) ) {
+			status_header( 403 );
+			wp_send_json_error( 'customize_not_allowed' );
+		}
+
+		if ( empty( $_POST['params'] ) || ! is_array( $_POST['params'] ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'missing_params' );
+		}
+
+		$params = wp_unslash( $_POST['params'] );
+
+		if ( empty( $params['post_type'] ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'missing_post_type_param' );
+		}
+
+		$post_type_object = get_post_type_object( $params['post_type'] );
+		if ( ! $post_type_object || ! current_user_can( $post_type_object->cap->create_posts ) ) {
+			status_header( 403 );
+			wp_send_json_error( 'insufficient_post_permissions' );
+		}
+
+		$r = $this->insert_auto_draft_post( $post_type_object->name );
+		if ( is_wp_error( $r ) ) {
+			$error = $r;
+			if ( ! empty( $post_type_object->labels->singular_name ) ) {
+				$singular_name = $post_type_object->labels->singular_name;
+			} else {
+				$singular_name = __( 'Post', 'customize-posts' );
+			}
+
+			$data = array(
+				'message' => sprintf( __( '%1$s could not be created: %2$s', 'customize-posts' ), $singular_name, $error->get_error_message() ),
+			);
+			wp_send_json_error( $data );
+		} else {
+			$post = $r;
+			$exported_settings = array();
+
+			$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+			$setting_ids = array( $post_setting_id );
+			$this->manager->add_dynamic_settings( $setting_ids );
+
+			$this->manager->set_post_value( $post_setting_id, $params );
+			$post_setting = $this->manager->get_setting( $post_setting_id );
+			$post_setting->preview();
+
+			$setting_ids = array_merge( $setting_ids, $this->register_post_type_meta_settings( $post->ID ) );
+			foreach ( $setting_ids as $setting_id ) {
+				$setting = $this->manager->get_setting( $setting_id );
+				if ( ! $setting ) {
+					continue;
+				}
+				if ( preg_match( WP_Customize_Postmeta_Setting::SETTING_ID_PATTERN, $setting->id, $matches ) ) {
+					if ( isset( $matches['meta_key'] ) && isset( $params[ $matches['meta_key'] ] ) ) {
+						$this->manager->set_post_value( $setting_id, $params[ $matches['meta_key'] ] );
+						$setting->preview();
+					}
+				}
+				if ( method_exists( $setting, 'json' ) ) { // New in 4.6-alpha.
+					$exported_settings[ $setting->id ] = $setting->json();
+				} else {
+					$exported_settings[ $setting->id ] = array(
+						'value' => $setting->js_value(),
+						'transport' => $setting->transport,
+						'dirty' => $setting->dirty,
+						'type' => $setting->type,
+					);
+				}
+				$exported_settings[ $setting->id ]['dirty'] = true;
+			}
+			$data = array(
+				'postId' => $post->ID,
+				'settings' => $exported_settings,
+				'sectionId' => WP_Customize_Post_Setting::get_post_setting_id( $post ),
+				'url' => Edit_Post_Preview::get_preview_post_link( $post ),
+			);
+			wp_send_json_success( $data );
+		}
 	}
 }

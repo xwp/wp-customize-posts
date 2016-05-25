@@ -85,6 +85,8 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_preview_settings' ), 1000 );
 		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
 		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_preview' ), 1000, 4 );
+		add_filter( 'posts_where', array( $this, 'filter_posts_where_to_include_previewed_posts' ), 10, 2 );
+		add_filter( 'wp_setup_nav_menu_item', array( $this, 'filter_nav_menu_item_to_set_url' ) );
 		$this->has_preview_filters = true;
 		return true;
 	}
@@ -162,6 +164,111 @@ final class WP_Customize_Posts_Preview {
 			}
 		}
 		return $posts;
+	}
+
+	/**
+	 * Get current posts being previewed which should be included in the given query.
+	 *
+	 * @access public
+	 *
+	 * @param \WP_Query $query The query.
+	 * @return array
+	 */
+	public function get_previewed_posts_for_query( WP_Query $query ) {
+		$query_vars = $query->query_vars;
+
+		if ( empty( $query_vars['post_type'] ) ) {
+			$query_vars['post_type'] = array( 'post' );
+		} elseif ( is_string( $query_vars['post_type'] ) ) {
+			$query_vars['post_type'] = explode( ',', $query_vars['post_type'] );
+		}
+
+		if ( empty( $query_vars['post_status'] ) ) {
+			$query_vars['post_status'] = array( 'publish' );
+		} elseif ( is_string( $query_vars['post_status'] ) ) {
+			$query_vars['post_status'] = explode( ',', $query_vars['post_status'] );
+		}
+
+		$post_ids = array();
+		$settings = $this->component->manager->unsanitized_post_values();
+		if ( ! empty( $settings ) ) {
+			foreach ( (array) $settings as $id => $post_data ) {
+				if ( ! preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches ) ) {
+					continue;
+				}
+
+				$post_type_match = (
+					in_array( $matches['post_type'], $query_vars['post_type'], true )
+					||
+					(
+						in_array( 'any', $query_vars['post_type'], true )
+						&&
+						in_array( $matches['post_type'], get_post_types( array( 'exclude_from_search' => false ) ), true )
+					)
+				);
+
+				$post_status_match = in_array( $post_data['post_status'], $query_vars['post_status'], true );
+
+				if ( $post_status_match && $post_type_match ) {
+					$post_ids[] = intval( $matches['post_id'] );
+				}
+			}
+		}
+
+		return $post_ids;
+	}
+
+	/**
+	 * Include stubbed posts that are being previewed.
+	 *
+	 * @filter posts_where
+	 * @access public
+	 *
+	 * @param string   $where The WHERE clause of the query.
+	 * @param WP_Query $query The WP_Query instance (passed by reference).
+	 * @return string
+	 */
+	public function filter_posts_where_to_include_previewed_posts( $where, $query ) {
+		global $wpdb;
+
+		if ( ! $query->is_admin && ! $query->is_singular() ) {
+			$post_ids = $this->get_previewed_posts_for_query( $query );
+			if ( ! empty( $post_ids ) ) {
+				$post__in = implode( ',', array_map( 'absint', $post_ids ) );
+				$where .= " OR {$wpdb->posts}.ID IN ($post__in)";
+			}
+		}
+
+		return $where;
+	}
+
+	/**
+	 * Filter a nav menu item for an added post to supply a URL field.
+	 *
+	 * This is probably a bug in Core where the `value_as_wp_post_nav_menu_item`
+	 * should be setting the url property.
+	 *
+	 * @access public
+	 * @see WP_Customize_Nav_Menu_Item_Setting::value_as_wp_post_nav_menu_item()
+	 *
+	 * @param WP_Post $nav_menu_item Nav menu item.
+	 * @return WP_Post Nav menu item.
+	 */
+	public function filter_nav_menu_item_to_set_url( $nav_menu_item ) {
+		if ( 'post_type' !== $nav_menu_item->type || $nav_menu_item->url || ! $nav_menu_item->object_id ) {
+			return $nav_menu_item;
+		}
+
+		$post = get_post( $nav_menu_item->object_id );
+		if ( ! $post ) {
+			return $nav_menu_item;
+		}
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+		$setting = $this->component->manager->get_setting( $setting_id );
+		if ( $setting ) {
+			$nav_menu_item->url = get_permalink( $post->ID );
+		}
+		return $nav_menu_item;
 	}
 
 	/**

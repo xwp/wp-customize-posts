@@ -504,6 +504,10 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		$data['ID'] = $this->post_id;
 		$data['post_type'] = $this->post_type;
 
+		if ( 'customize-draft' === $data['post_status'] || 'auto-draft' === $data['post_status'] ) {
+			$data['post_status'] = 'publish';
+		}
+
 		$result = wp_update_post( wp_slash( $data ), true );
 
 		if ( is_wp_error( $result ) ) {

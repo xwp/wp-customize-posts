@@ -7,7 +7,7 @@
  */
 
 /**
- * Class WP_Customize_Posts
+ * Class Test_WP_Customize_Posts
  */
 class Test_WP_Customize_Posts extends WP_UnitTestCase {
 
@@ -354,5 +354,73 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertEquals( 10, $this->posts->sanitize_post_id( '10k' ) );
 		$this->assertEquals( 0, $this->posts->sanitize_post_id( 'no' ) );
 		$this->assertEquals( -2, $this->posts->sanitize_post_id( '-2' ) );
+	}
+
+	/**
+	 * Test templates are rendered.
+	 *
+	 * @see WP_Customize_Posts::render_templates()
+	 */
+	public function test_render_templates() {
+		ob_start();
+		$this->posts->render_templates();
+		$markup = ob_get_contents();
+		ob_end_clean();
+		$this->assertContains( '<script type="text/html" id="tmpl-customize-posts-add-new">', $markup );
+		$this->assertContains( '<li class="customize-posts-add-new">', $markup );
+		$this->assertContains( '<button class="button-secondary add-new-post-stub">', $markup );
+	}
+
+	/**
+	 * Test register_customize_draft method.
+	 *
+	 * @see WP_Customize_Posts::register_customize_draft()
+	 */
+	public function test_register_customize_draft() {
+		$this->posts->register_customize_draft();
+		global $wp_post_statuses;
+		$this->assertArrayHasKey( 'customize-draft', $wp_post_statuses );
+	}
+
+	/**
+	 * Test transition_customize_draft method.
+	 *
+	 * @see WP_Customize_Posts::transition_customize_draft()
+	 */
+	public function test_transition_customize_draft() {
+		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $this->posts->insert_auto_draft_post( 'post' ) );
+		$page_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $this->posts->insert_auto_draft_post( 'page' ) );
+		$data = array();
+		$data['some_other_id'] = array(
+			'value' => array(
+				'some_key' => 'Some Value',
+			),
+		);
+		$data[ $post_setting_id ] = array(
+			'value' => array(
+				'post_title' => 'Testing Post Draft',
+				'post_status' => 'auto-draft',
+			),
+		);
+		$data[ $page_setting_id ] = array(
+			'value' => array(
+				'post_title' => 'Testing Page Draft',
+				'post_status' => 'auto-draft',
+			),
+		);
+		$expected = $this->posts->transition_customize_draft( $data );
+		$this->assertEquals( 'Testing Post Draft', $expected[ $post_setting_id ]['value']['post_title'] );
+		$this->assertEquals( 'customize-draft', $expected[ $post_setting_id ]['value']['post_status'] );
+		$this->assertEquals( 'customize-draft', $expected[ $page_setting_id ]['value']['post_status'] );
+	}
+
+	/**
+	 * Test insert_auto_draft_post method.
+	 *
+	 * @see WP_Customize_Posts::insert_auto_draft_post()
+	 */
+	public function test_insert_auto_draft_post_returns_error() {
+		$r = $this->posts->insert_auto_draft_post( 'fake' );
+		$this->assertInstanceOf( 'WP_Error', $r );
 	}
 }

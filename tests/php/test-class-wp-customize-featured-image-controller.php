@@ -123,58 +123,6 @@ class Test_WP_Customize_Featured_Image_Controller extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test handle_ajax_set_post_thumbnail().
-	 *
-	 * @see WP_Customize_Featured_Image_Controller::handle_ajax_set_post_thumbnail()
-	 * @see WP_Customize_Featured_Image_Controller::filter_admin_post_thumbnail_html()
-	 */
-	public function test_handle_ajax_set_post_thumbnail() {
-		$controller = new WP_Customize_Featured_Image_Controller();
-		$controller->override_default_edit_post_screen_functionality();
-
-		$post_id = $this->factory()->post->create();
-		$attachment_id = $this->factory()->attachment->create_object( 'foo.jpg', 0, array(
-			'post_mime_type' => 'image/jpeg'
-		) );
-		$_REQUEST['_wpnonce'] = wp_create_nonce( "set_post_thumbnail-$post_id" );
-		$_POST['post_id'] = $post_id;
-		add_filter( 'wp_die_handler', array( $this, 'die_handler_test_handle_ajax_set_post_thumbnail' ) );
-
-		$_POST['thumbnail_id'] = $attachment_id;
-		$controller->handle_ajax_set_post_thumbnail();
-		$this->assertContains( 'The chosen image will not persist until you save', $this->die_args[0] );
-		$this->assertNotContains( 'Invalid attachment selected', $this->die_args[0] );
-		$this->assertContains( 'set_post_thumbnail_nonce', $this->die_args[0] );
-		$this->assertContains( 'Remove featured image', $this->die_args[0] );
-		$this->die_args = array();
-
-		$_POST['thumbnail_id'] = -1;
-		$controller->handle_ajax_set_post_thumbnail();
-		$this->assertNotContains( 'Remove featured image', $this->die_args[0] );
-		$this->assertContains( 'Set featured image', $this->die_args[0] );
-		$this->assertContains( 'set_post_thumbnail_nonce', $this->die_args[0] );
-		$this->die_args = array();
-	}
-
-	protected $die_args = array();
-
-	/**
-	 * Get die handler.
-	 *
-	 * @return callable
-	 */
-	public function die_handler_test_handle_ajax_set_post_thumbnail() {
-		return array( $this, 'die_test_handle_ajax_set_post_thumbnail' );
-	}
-
-	/**
-	 * Handle die.
-	 */
-	public function die_test_handle_ajax_set_post_thumbnail() {
-		$this->die_args = func_get_args();
-	}
-
-	/**
 	 * Test handle_save_post_thumbnail_id().
 	 *
 	 * @see WP_Customize_Featured_Image_Controller::handle_save_post_thumbnail_id()
