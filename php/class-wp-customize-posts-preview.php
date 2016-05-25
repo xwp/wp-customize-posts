@@ -521,6 +521,9 @@ final class WP_Customize_Posts_Preview {
 			'post_title' => array(
 				'selector' => '.entry-title',
 			),
+			'post_name' => array(
+				'fallback_refresh' => true,
+			),
 			'post_content' => array(
 				'selector' => '.entry-content',
 			),

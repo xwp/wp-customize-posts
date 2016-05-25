@@ -62,6 +62,13 @@
 							partial = new api.previewPosts.PostFieldPartial( schema.id, { params: schema.params } );
 							api.selectiveRefresh.partial.add( partial.id, partial );
 						}
+					} else {
+						partial = new api.previewPosts.PostFieldPartial( schema.id, { params: schema.params } );
+						partial.renderContent = function() {
+							api.selectiveRefresh.requestFullRefresh();
+							return true;
+						};
+						api.selectiveRefresh.partial.add( partial.id, partial );
 					}
 				} );
 			}
