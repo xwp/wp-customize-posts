@@ -443,7 +443,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertEquals( array( $post->ID, $page->ID ), $this->posts->get_previewed_drafts( array( 'post_type' => 'any' ), true ) );
 		add_filter( 'customize_posts_main_query_post_type', array( $this, 'filter_main_query_post_type' ), 10, 2 );
 		$this->assertEquals( array( $post->ID, $page->ID ), $this->posts->get_previewed_drafts( array( 'post_type' => 'post' ), true ) );
-		remove_filter( 'customize_posts_main_query_post_type', array( $this, 'filter_main_query_post_type' ), 10, 2 );
+		remove_filter( 'customize_posts_main_query_post_type', array( $this, 'filter_main_query_post_type' ), 10 );
 	}
 
 	/**
