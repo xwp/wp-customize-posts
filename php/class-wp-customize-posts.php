@@ -762,7 +762,7 @@ final class WP_Customize_Posts {
 	public function include_previewed_drafts( $where, $query ) {
 		global $wpdb;
 
-		if ( ! $query->is_admin() && ! $query->is_singular() ) {
+		if ( ! $query->is_admin && ! $query->is_singular() ) {
 			$post_ids = $this->get_previewed_drafts( $query->query_vars, $query->is_main_query() );
 			if ( ! empty( $post_ids ) ) {
 				$post__in = implode( ',', array_map( 'absint', $post_ids ) );
