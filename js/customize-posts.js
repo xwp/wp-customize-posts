@@ -72,9 +72,15 @@
 		} );
 
 		request.done( function( response ) {
-			component.receivePreviewData( response );
-			api.previewer.refresh();
-			deferred.resolve( api.section( response.sectionId ) );
+			var sections = component.receivePreviewData( response );
+			if ( 0 === sections.length ) {
+				deferred.rejectWith( 'no_sections' );
+			} else {
+				deferred.resolve( _.extend(
+					{ section: sections[0] },
+					response
+				) );
+			}
 		} );
 
 		request.fail( function( response ) {
@@ -85,7 +91,7 @@
 			}
 
 			console.error( error );
-			deferred.reject();
+			deferred.rejectWith( error );
 		} );
 
 		return deferred.promise();
@@ -109,7 +115,7 @@
 					dirty: settingArgs.dirty
 				} );
 				if ( settingArgs.dirty ) {
-					setting.callbacks.fireWith( setting, [ settingArgs.value, {} ] );
+					setting.callbacks.fireWith( setting, [ setting.get(), {} ] );
 				}
 			}
 

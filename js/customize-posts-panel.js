@@ -93,19 +93,41 @@
 					};
 
 					promise = api.Posts.insertPost( postData );
-					promise.done( function( section ) {
-						var focusControl, controls = section.controls();
+					promise.done( function( data ) {
 
-						focusControl = function() {
-							api.previewer.bind( 'customized-posts', function() {
-								if ( controls[0] ) {
-									controls[0].focus();
+						// Navigate to the newly-created post if it is public; otherwise, refresh the preview.
+						if ( postObj.publicly_queryable && data.url ) {
+							api.previewer.previewUrl( data.url );
+						} else {
+							api.previewer.refresh();
+						}
+
+						/**
+						 * Perform a dance to focus on the first control in the section.
+						 *
+						 * There is a race condition where focusing on a control too
+						 * early can result in the focus logic not being able to see
+						 * any visible inputs to focus on.
+						 *
+						 * @returns {void}
+						 */
+						function focusControlOnceFocusable() {
+							var firstControl = data.section.controls()[0];
+							function onChangeActive( isActive ) {
+								if ( isActive ) {
+									data.section.active.unbind( onChangeActive );
+									_.defer( function() {
+										firstControl.focus();
+									} );
 								}
-							} );
-						};
+							}
+							if ( firstControl ) {
+								data.section.active.bind( onChangeActive );
+							}
+						}
 
-						section.focus( {
-							completeCallback: focusControl
+						data.section.focus( {
+							completeCallback: focusControlOnceFocusable
 						} );
 					} );
 					promise.always( function() {

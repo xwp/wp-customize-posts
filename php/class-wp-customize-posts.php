@@ -504,6 +504,7 @@ final class WP_Customize_Posts {
 					'description',
 					'hierarchical',
 					'show_in_customizer',
+					'publicly_queryable',
 				) ),
 				array(
 					'current_user_can' => array(
