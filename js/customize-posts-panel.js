@@ -95,7 +95,7 @@
 						postData.post_title = api.Posts.data.l10n.noTitle;
 					}
 
-					promise = api.Posts.insertPost( postData );
+					promise = api.Posts.insertAutoDraftPost( postData );
 					promise.done( function( data ) {
 
 						// Navigate to the newly-created post if it is public; otherwise, refresh the preview.

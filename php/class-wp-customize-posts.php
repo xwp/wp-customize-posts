@@ -840,6 +840,7 @@ final class WP_Customize_Posts {
 				$exported_settings[ $setting->id ]['dirty'] = true;
 			}
 			$data = array(
+				'postId' => $post->ID,
 				'settings' => $exported_settings,
 				'sectionId' => WP_Customize_Post_Setting::get_post_setting_id( $post ),
 				'url' => Edit_Post_Preview::get_preview_post_link( $post ),

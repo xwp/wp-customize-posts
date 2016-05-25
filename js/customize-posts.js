@@ -62,7 +62,7 @@
 	 * @param {object} params - Parameters to configure the setting.
 	 * @return {Promise} Promise resolved with the added section.
 	 */
-	component.insertPost = function( params ) {
+	component.insertAutoDraftPost = function( params ) {
 		var request, deferred = $.Deferred();
 
 		request = wp.ajax.post( 'customize-posts-add-new', {
