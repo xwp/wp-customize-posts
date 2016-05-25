@@ -127,23 +127,33 @@
 		/**
 		 * Reload the pane based on the current posts preview url.
 		 *
-		 * @todo Only show the link if the current previewUrl is not this post's URL.
-		 *
 		 * @returns {void}
 		 */
 		setupPostNavigation: function() {
 			var section = this,
+			    sectionNavigationButton,
 			    setting = api( section.id ),
 			    sectionContainer = section.container.closest( '.accordion-section' ),
 			    sectionTitle = sectionContainer.find( '.customize-section-title:first' ),
-			    sectionNavigationButton = wp.template( 'customize-posts-navigation' ),
+			    sectionNavigationButtonTemplate = wp.template( 'customize-posts-navigation' ),
 			    postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 
-			sectionTitle.append( sectionNavigationButton( {
+			// Short-circuit showing a link if the post type is not publicly queryable anyway.
+			if ( ! postTypeObj.publicly_queryable ) {
+				return;
+			}
+
+			sectionNavigationButton = $( sectionNavigationButtonTemplate( {
 				label: postTypeObj.labels.singular_name
 			} ) );
+			sectionTitle.append( sectionNavigationButton );
 
-			section.container.find( '.customize-posts-navigation' ).on( 'click', function( event ) {
+			// Hide the link when the post is currently in the preview.
+			api.previewer.bind( 'customized-posts', function( data ) {
+				sectionNavigationButton.toggle( section.params.post_id !== data.queriedPostId );
+			} );
+
+			sectionNavigationButton.on( 'click', function( event ) {
 				var request;
 
 				event.preventDefault();
@@ -156,7 +166,6 @@
 
 				request.done( function( response ) {
 					api.previewer.previewUrl( response.url );
-					$( '.customize-posts-navigation' ).blur();
 				} );
 
 				request.fail( function( response ) {

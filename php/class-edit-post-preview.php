@@ -99,6 +99,7 @@ class Edit_Post_Preview {
 	 * @access public
 	 *
 	 * @param WP_Post $post The post in question.
+	 * @return string Edit post link.
 	 */
 	public static function get_preview_post_link( $post ) {
 		$permalink = '';
