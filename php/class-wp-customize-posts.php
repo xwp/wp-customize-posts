@@ -679,10 +679,8 @@ final class WP_Customize_Posts {
 				), true );
 				remove_filter( 'wp_insert_post_empty_content', '__return_false' );
 
-				if ( is_wp_error( $result ) ) {
-
-					// @todo Amend customize_save_response.
-				} else {
+				// @todo Amend customize_save_response if error.
+				if ( ! is_wp_error( $result ) ) {
 					$data[ $id ]['value']['post_status'] = $post_status;
 				}
 			}
