@@ -236,7 +236,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	/**
 	 * Test get_previewed_drafts method.
 	 *
-	 * @see WP_Customize_Posts::get_previewed_posts_for_query()
+	 * @see WP_Customize_Posts_Preview::get_previewed_posts_for_query()
 	 */
 	public function test_get_previewed_posts_for_query() {
 		global $wp_the_query;
@@ -266,25 +266,9 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$query = new WP_Query( array( 'post_type' => 'any' ) );
 		$wp_the_query = $query;
 		$this->assertEquals( array( $post->ID, $page->ID ), $this->posts_component->preview->get_previewed_posts_for_query( $query ) );
-		add_filter( 'customize_posts_main_query_post_type', array( $this, 'filter_main_query_post_type' ), 10, 2 );
-		$query = new WP_Query( array( 'post_type' => 'post' ) );
+		$query = new WP_Query( array( 'post_type' => 'any' ) );
 		$wp_the_query = $query;
 		$this->assertEquals( array( $post->ID, $page->ID ), $this->posts_component->preview->get_previewed_posts_for_query( $query ) );
-		remove_filter( 'customize_posts_main_query_post_type', array( $this, 'filter_main_query_post_type' ), 10 );
-	}
-
-	/**
-	 * Filter the main query post types
-	 *
-	 * @param string $post_type Post type.
-	 * @param string $setting_post_type Setting post type.
-	 * @return string
-	 */
-	public function filter_main_query_post_type( $post_type, $setting_post_type ) {
-		if ( 'page' === $setting_post_type ) {
-			return 'page';
-		}
-		return $post_type;
 	}
 
 	/**

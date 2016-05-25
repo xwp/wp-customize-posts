@@ -196,22 +196,13 @@ final class WP_Customize_Posts_Preview {
 					continue;
 				}
 
-				/**
-				 * Filter the post type used in the main query.
-				 *
-				 * @param string $post_type         Main query post type.
-				 * @param string $setting_post_type Current setting post type.
-				 */
-				$main_query_post_type = apply_filters( 'customize_posts_main_query_post_type', 'post', $matches['post_type'] );
-
 				$post_type_match = (
-					in_array( $matches['post_type'], $query_vars['post_type'], true ) ||
+					in_array( $matches['post_type'], $query_vars['post_type'], true )
+					||
 					(
-						$query->is_main_query() &&
-						(
-							$main_query_post_type === $matches['post_type'] ||
-							in_array( 'any', $query_vars['post_type'], true )
-						)
+						in_array( 'any', $query_vars['post_type'], true )
+						&&
+						in_array( $matches['post_type'], get_post_types( array( 'exclude_from_search' => false ) ), true )
 					)
 				);
 
