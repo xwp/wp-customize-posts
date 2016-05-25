@@ -91,6 +91,9 @@
 						post_type: panel.postType,
 						post_status: 'publish'
 					};
+					if ( postObj.supports.title ) {
+						postData.post_title = api.Posts.data.l10n.noTitle;
+					}
 
 					promise = api.Posts.insertPost( postData );
 					promise.done( function( data ) {
@@ -117,7 +120,11 @@
 								if ( isActive ) {
 									data.section.active.unbind( onChangeActive );
 									_.defer( function() {
-										firstControl.focus();
+										firstControl.focus( {
+											completeCallback: function() {
+												firstControl.container.find( 'input:first' ).select();
+											}
+										} );
 									} );
 								}
 							}
