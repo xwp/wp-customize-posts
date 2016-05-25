@@ -146,6 +146,8 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertEquals( 10, has_action( 'the_post', array( $preview, 'preview_setup_postdata' ) ) );
 		$this->assertEquals( 1000, has_filter( 'the_posts', array( $preview, 'filter_the_posts_to_preview_settings' ) ) );
 		$this->assertEquals( 1000, has_filter( 'get_post_metadata', array( $preview, 'filter_get_post_meta_to_preview' ) ) );
+		$this->assertEquals( 10, has_filter( 'posts_where', array( $preview, 'filter_posts_where_to_include_previewed_posts' ) ) );
+		$this->assertEquals( 10, has_filter( 'wp_setup_nav_menu_item', array( $preview, 'filter_nav_menu_item_to_set_url' ) ) );
 		$this->assertFalse( $preview->add_preview_filters() );
 	}
 
@@ -269,6 +271,30 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$query = new WP_Query( array( 'post_type' => 'any' ) );
 		$wp_the_query = $query;
 		$this->assertEquals( array( $post->ID, $page->ID ), $this->posts_component->preview->get_previewed_posts_for_query( $query ) );
+	}
+
+	/**
+	 * Test filter_nav_menu_item_to_set_url().
+	 *
+	 * See WP_Customize_Posts_Preview::filter_nav_menu_item_to_set_url()
+	 */
+	public function test_filter_nav_menu_item_to_set_url() {
+		$post = get_post( $this->factory()->post->create() );
+		$nav_menu_item = new WP_Post( (object) array(
+			'type' => 'post_type',
+			'object_id' => $post->ID,
+			'url' => '',
+		) );
+
+		$filtered_nav_menu_item = $this->posts_component->preview->filter_nav_menu_item_to_set_url( clone $nav_menu_item );
+		$this->assertEmpty( $filtered_nav_menu_item->url );
+
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+		$this->posts_component->manager->set_post_value( $setting_id, $post->to_array() );
+		$this->posts_component->manager->register_dynamic_settings();
+		$filtered_nav_menu_item = $this->posts_component->preview->filter_nav_menu_item_to_set_url( clone $nav_menu_item );
+		$this->assertNotEmpty( $filtered_nav_menu_item->url );
+		$this->assertEquals( get_permalink( $post->ID ), $filtered_nav_menu_item->url );
 	}
 
 	/**

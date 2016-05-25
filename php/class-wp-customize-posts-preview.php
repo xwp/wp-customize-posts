@@ -86,6 +86,7 @@ final class WP_Customize_Posts_Preview {
 		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
 		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_preview' ), 1000, 4 );
 		add_filter( 'posts_where', array( $this, 'filter_posts_where_to_include_previewed_posts' ), 10, 2 );
+		add_filter( 'wp_setup_nav_menu_item', array( $this, 'filter_nav_menu_item_to_set_url' ) );
 		$this->has_preview_filters = true;
 		return true;
 	}
@@ -239,6 +240,35 @@ final class WP_Customize_Posts_Preview {
 		}
 
 		return $where;
+	}
+
+	/**
+	 * Filter a nav menu item for an added post to supply a URL field.
+	 *
+	 * This is probably a bug in Core where the `value_as_wp_post_nav_menu_item`
+	 * should be setting the url property.
+	 *
+	 * @access public
+	 * @see WP_Customize_Nav_Menu_Item_Setting::value_as_wp_post_nav_menu_item()
+	 *
+	 * @param WP_Post $nav_menu_item Nav menu item.
+	 * @return WP_Post Nav menu item.
+	 */
+	public function filter_nav_menu_item_to_set_url( $nav_menu_item ) {
+		if ( 'post_type' !== $nav_menu_item->type || $nav_menu_item->url || ! $nav_menu_item->object_id ) {
+			return $nav_menu_item;
+		}
+
+		$post = get_post( $nav_menu_item->object_id );
+		if ( ! $post ) {
+			return $nav_menu_item;
+		}
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+		$setting = $this->component->manager->get_setting( $setting_id );
+		if ( $setting ) {
+			$nav_menu_item->url = get_permalink( $post->ID );
+		}
+		return $nav_menu_item;
 	}
 
 	/**
