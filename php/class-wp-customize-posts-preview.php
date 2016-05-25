@@ -85,6 +85,7 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_preview_settings' ), 1000 );
 		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
 		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_preview' ), 1000, 4 );
+		add_filter( 'posts_where', array( $this, 'filter_posts_where_to_include_previewed_posts' ), 10, 2 );
 		$this->has_preview_filters = true;
 		return true;
 	}
@@ -162,6 +163,91 @@ final class WP_Customize_Posts_Preview {
 			}
 		}
 		return $posts;
+	}
+
+	/**
+	 * Get current posts being previewed which should be included in the given query.
+	 *
+	 * @access public
+	 *
+	 * @param \WP_Query $query The query.
+	 * @return array
+	 */
+	public function get_previewed_posts_for_query( WP_Query $query ) {
+		$query_vars = $query->query_vars;
+
+		if ( empty( $query_vars['post_type'] ) ) {
+			$query_vars['post_type'] = array( 'post' );
+		} elseif ( is_string( $query_vars['post_type'] ) ) {
+			$query_vars['post_type'] = explode( ',', $query_vars['post_type'] );
+		}
+
+		if ( empty( $query_vars['post_status'] ) ) {
+			$query_vars['post_status'] = array( 'publish' );
+		} elseif ( is_string( $query_vars['post_status'] ) ) {
+			$query_vars['post_status'] = explode( ',', $query_vars['post_status'] );
+		}
+
+		$post_ids = array();
+		$settings = $this->component->manager->unsanitized_post_values();
+		if ( ! empty( $settings ) ) {
+			foreach ( (array) $settings as $id => $post_data ) {
+				if ( ! preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches ) ) {
+					continue;
+				}
+
+				/**
+				 * Filter the post type used in the main query.
+				 *
+				 * @param string $post_type         Main query post type.
+				 * @param string $setting_post_type Current setting post type.
+				 */
+				$main_query_post_type = apply_filters( 'customize_posts_main_query_post_type', 'post', $matches['post_type'] );
+
+				$post_type_match = (
+					in_array( $matches['post_type'], $query_vars['post_type'], true ) ||
+					(
+						$query->is_main_query() &&
+						(
+							$main_query_post_type === $matches['post_type'] ||
+							in_array( 'any', $query_vars['post_type'], true )
+						)
+					)
+				);
+
+				$post_status_match = in_array( $post_data['post_status'], $query_vars['post_status'], true );
+
+				if ( $post_status_match && $post_type_match ) {
+					$post_ids[] = intval( $matches['post_id'] );
+				}
+			}
+		}
+
+		return $post_ids;
+	}
+
+	/**
+	 * Include stubbed posts that are being previewed.
+	 *
+	 * @filter posts_where
+	 * @access public
+	 *
+	 * @param string   $where The WHERE clause of the query.
+	 * @param WP_Query $query The WP_Query instance (passed by reference).
+	 * @return string
+	 */
+	public function filter_posts_where_to_include_previewed_posts( $where, $query ) {
+		global $wpdb;
+
+		if ( ! $query->is_admin && ! $query->is_singular() ) {
+			$post_ids = $this->get_previewed_posts_for_query( $query );
+			if ( ! empty( $post_ids ) ) {
+				$post__in = implode( ',', array_map( 'absint', $post_ids ) );
+				$where .= " OR {$wpdb->posts}.ID IN ($post__in)";
+			}
+		}
+
+		return $where;
 	}
 
 	/**

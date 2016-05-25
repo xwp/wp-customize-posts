@@ -234,6 +234,60 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test get_previewed_drafts method.
+	 *
+	 * @see WP_Customize_Posts::get_previewed_posts_for_query()
+	 */
+	public function test_get_previewed_posts_for_query() {
+		global $wp_the_query;
+
+		$post = $this->posts_component->add_new_post( 'post' );
+		$page = $this->posts_component->add_new_post( 'page' );
+		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+		$page_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $page );
+		$data = array();
+		$data['some_other_id'] = array(
+			'some_key' => 'Some Value',
+		);
+		$data[ $post_setting_id ] = array(
+			'post_title' => 'Testing Post Draft',
+			'post_status' => 'publish',
+		);
+		$data[ $page_setting_id ] = array(
+			'post_title' => 'Testing Page Draft',
+			'post_status' => 'publish',
+		);
+		$_POST['customized'] = wp_slash( wp_json_encode( $data ) );
+
+		$query = new WP_Query( array( 'post_type' => 'post' ) );
+		$this->assertEquals( array( $post->ID ), $this->posts_component->preview->get_previewed_posts_for_query( $query ) );
+		$query = new WP_Query( array( 'post_type' => 'page' ) );
+		$this->assertEquals( array( $page->ID ), $this->posts_component->preview->get_previewed_posts_for_query( $query ) );
+		$query = new WP_Query( array( 'post_type' => 'any' ) );
+		$wp_the_query = $query;
+		$this->assertEquals( array( $post->ID, $page->ID ), $this->posts_component->preview->get_previewed_posts_for_query( $query ) );
+		add_filter( 'customize_posts_main_query_post_type', array( $this, 'filter_main_query_post_type' ), 10, 2 );
+		$query = new WP_Query( array( 'post_type' => 'post' ) );
+		$wp_the_query = $query;
+		$this->assertEquals( array( $post->ID, $page->ID ), $this->posts_component->preview->get_previewed_posts_for_query( $query ) );
+		remove_filter( 'customize_posts_main_query_post_type', array( $this, 'filter_main_query_post_type' ), 10 );
+	}
+
+	/**
+	 * Filter the main query post types
+	 *
+	 * @param string $post_type Post type.
+	 * @param string $setting_post_type Setting post type.
+	 * @return string
+	 */
+	public function filter_main_query_post_type( $post_type, $setting_post_type ) {
+		if ( 'page' === $setting_post_type ) {
+			return 'page';
+		}
+		return $post_type;
+	}
+
+	/**
 	 * Test filter_preview_comments_open().
 	 *
 	 * @see WP_Customize_Posts_Preview::filter_preview_comments_open()
