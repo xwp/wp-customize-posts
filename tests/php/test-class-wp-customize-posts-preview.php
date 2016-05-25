@@ -199,6 +199,11 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$input_posts = array( $post );
 		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
 
+		$this->posts_component->register_post_type_meta( 'post', 'foo' );
+		$foo_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, 'foo' );
+		$this->posts_component->register_post_type_meta( 'post', 'bar' );
+		$bar_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, 'bar' );
+
 		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
 		$this->do_customize_boot_actions( array(
 			$setting_id => array_merge(
@@ -221,6 +226,11 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$section = $this->posts_component->manager->get_section( $section_id );
 		$this->assertNotEmpty( $section );
 		$this->assertNotEquals( $original_post_content, $filtered_posts[0]->post_content );
+
+		$foo_setting = $this->posts_component->manager->get_setting( $foo_setting_id );
+		$bar_setting = $this->posts_component->manager->get_setting( $bar_setting_id );
+		$this->assertInstanceOf( 'WP_Customize_Postmeta_Setting', $foo_setting );
+		$this->assertInstanceOf( 'WP_Customize_Postmeta_Setting', $bar_setting );
 	}
 
 	/**
@@ -252,24 +262,25 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test filter_get_post_meta_to_add_dynamic_postmeta_settings().
+	 * Test filter_get_post_meta_to_add_dynamic_postmeta_settings() and register_post_type_meta_settings().
 	 *
+	 * @see WP_Customize_Posts_Preview::register_post_type_meta_settings()
 	 * @see WP_Customize_Posts_Preview::filter_get_post_meta_to_add_dynamic_postmeta_settings()
 	 */
 	public function test_filter_get_post_meta_to_add_dynamic_postmeta_settings() {
 		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
-		$this->posts_component->register_post_type_meta( 'post', 'foo' );
-		$this->posts_component->register_post_type_meta( 'post', 'bar' );
 		$post = get_post( $this->post_id );
+
+		$this->posts_component->register_post_type_meta( 'post', 'foo' );
 		$foo_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, 'foo' );
-		$bar_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, 'bar' );
-
 		$this->assertEmpty( $this->posts_component->manager->get_setting( $foo_setting_id ) );
-		$preview->filter_get_post_meta_to_add_dynamic_postmeta_settings( '', $post->ID, 'foo' );
+		$preview->filter_get_post_meta_to_add_dynamic_postmeta_settings( null, $post->ID );
 		$this->assertNotEmpty( $this->posts_component->manager->get_setting( $foo_setting_id ) );
-		$this->assertEmpty( $this->posts_component->manager->get_setting( $bar_setting_id ) );
 
-		$preview->filter_get_post_meta_to_add_dynamic_postmeta_settings( array( 'bar' => array( '' ) ), $post->ID, '' );
+		$this->posts_component->register_post_type_meta( 'post', 'bar' );
+		$bar_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, 'bar' );
+		$this->assertEmpty( $this->posts_component->manager->get_setting( $bar_setting_id ) );
+		$this->posts_component->register_post_type_meta_settings( $post->ID );
 		$this->assertNotEmpty( $this->posts_component->manager->get_setting( $bar_setting_id ) );
 	}
 
@@ -281,6 +292,10 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	public function test_filter_get_post_meta_to_preview() {
 		$preview = $this->posts_component->preview;
 		$meta_key = 'foo_key';
+		$this->posts_component->register_post_type_meta( 'post', $meta_key );
+		$this->posts_component->register_post_type_meta( 'post', 'other' );
+		$preview->filter_get_post_meta_to_add_dynamic_postmeta_settings( null, $this->post_id );
+
 		$original_meta_value = array( 'original_value' => 1 );
 		$preview_meta_value = array( 'override_value'=> 2  );
 		update_post_meta( $this->post_id, $meta_key, $original_meta_value );
@@ -292,9 +307,6 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertEquals( array( maybe_serialize( $original_meta_value ) ), $meta_values[ $meta_key ] );
 		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $this->post_id ), $meta_key );
 		$other_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $this->post_id ), 'other' );
-		$this->posts_component->register_post_type_meta( 'post', $meta_key );
-		$this->posts_component->register_post_type_meta( 'post', 'other' );
-		$preview->filter_get_post_meta_to_add_dynamic_postmeta_settings( null, $this->post_id, 'other' );
 		$other_setting = $this->posts_component->manager->get_setting( $other_setting_id );
 		$this->assertNotEmpty( $other_setting );
 		$this->posts_component->manager->set_post_value( $other_setting_id, 'other' );
@@ -304,7 +316,6 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertEquals( 'foo_val', $preview->filter_get_post_meta_to_preview( 'foo_val', $this->post_id, $meta_key, true ) );
 		$this->assertEquals( array( 'foo_val' ), $preview->filter_get_post_meta_to_preview( 'foo_val', $this->post_id, $meta_key, false ) );
 		$this->assertEquals( null, $preview->filter_get_post_meta_to_preview( null, $this->post_id, $meta_key, true ) );
-		$preview->filter_get_post_meta_to_add_dynamic_postmeta_settings( null, $this->post_id, $meta_key );
 
 		// Test non-preview without post value.
 		$setting = $this->posts_component->manager->get_setting( $setting_id );
@@ -511,9 +522,9 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $this->post_id ) );
 		$postmeta_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $this->post_id ), 'foo' );
 		$preview->customize_preview_init();
+		$this->posts_component->register_post_type_meta( 'post', 'foo' );
 		query_posts( 'p=' . $this->post_id );
 		update_post_meta( $this->post_id, 'foo', 'bar' );
-		$this->posts_component->register_post_type_meta( 'post', 'foo' );
 		$this->do_customize_boot_actions();
 		$this->assertNotEmpty( get_post_meta( $this->post_id, 'foo' ) );
 
