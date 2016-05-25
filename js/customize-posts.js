@@ -59,15 +59,13 @@
 	/**
 	 * Insert a new stubbed `auto-draft` post.
 	 *
-	 * @param {object} params     - Parameters to configure the setting.
-	 * @param {boolean} [preview] - Whether to refresh to the preview URL. Defaults to false.
+	 * @param {object} params - Parameters to configure the setting.
 	 * @return {Promise}
 	 */
-	component.insertPost = function( params, preview ) {
+	component.insertPost = function( params ) {
 		var request, deferred = $.Deferred();
 
 		params = params || {};
-		preview = preview || false;
 
 		request = wp.ajax.post( 'customize-posts-add-new', {
 			'customize-posts-nonce': api.Posts.data.nonce,
@@ -77,9 +75,7 @@
 
 		request.done( function( response ) {
 			component.receivePreviewData( response );
-			if ( preview ) {
-				api.previewer.previewUrl( response.url );
-			}
+			api.previewer.refresh();
 			deferred.resolve( api.section( response.sectionId ) );
 		} );
 

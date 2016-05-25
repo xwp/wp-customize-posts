@@ -696,11 +696,11 @@ final class WP_Customize_Posts {
 	 *
 	 * @access public
 	 *
-	 * @param string $query_vars    The query vars.
+	 * @param array  $query_vars    The query vars.
 	 * @param bool   $is_main_query Whether this is the main query. Default: false.
 	 * @return array
 	 */
-	public function get_previewed_drafts( $query_vars, $is_main_query = false ) {
+	public function get_previewed_drafts( $query_vars = array(), $is_main_query = false ) {
 		if ( empty( $query_vars['post_type'] ) ) {
 			$query_vars['post_type'] = array( 'post' );
 		} elseif ( is_string( $query_vars['post_type'] ) ) {
@@ -733,8 +733,10 @@ final class WP_Customize_Posts {
 					in_array( $matches['post_type'], $query_vars['post_type'], true ) ||
 					(
 						$is_main_query &&
-						$main_query_post_type === $matches['post_type'] &&
-						in_array( 'any', $query_vars['post_type'], true )
+						(
+							$main_query_post_type === $matches['post_type'] ||
+							in_array( 'any', $query_vars['post_type'], true )
+						)
 					)
 				);
 
@@ -783,7 +785,7 @@ final class WP_Customize_Posts {
 	 * @return string
 	 */
 	public function post_link_draft( $permalink, $post ) {
-		if ( $post instanceof WP_Post && in_array( $post->post_status, self::$draft_status, true ) ) {
+		if ( $post instanceof WP_Post && in_array( get_post_status( $post->ID ), self::$draft_status, true ) ) {
 			$permalink = Edit_Post_Preview::get_preview_post_link( $post );
 		}
 
@@ -802,7 +804,7 @@ final class WP_Customize_Posts {
 	public function page_link_draft( $link, $post_id ) {
 		$post = get_post( $post_id );
 
-		if ( $post instanceof WP_Post && in_array( $post->post_status, self::$draft_status, true ) ) {
+		if ( $post instanceof WP_Post && in_array( get_post_status( $post->ID ), self::$draft_status, true ) ) {
 			$link = Edit_Post_Preview::get_preview_post_link( $post );
 		}
 

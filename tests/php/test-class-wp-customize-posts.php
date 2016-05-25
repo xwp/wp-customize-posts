@@ -430,19 +430,19 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		);
 		$data[ $post_setting_id ] = array(
 			'post_title' => 'Testing Post Draft',
-			'post_status' => 'auto-draft',
+			'post_status' => 'publish',
 		);
 		$data[ $page_setting_id ] = array(
 			'post_title' => 'Testing Page Draft',
-			'post_status' => 'auto-draft',
+			'post_status' => 'publish',
 		);
 		$_POST['customized'] = wp_json_encode( $data );
 
-		$this->assertEquals( array( $post->ID ), $this->posts->get_previewed_drafts( 'post' ) );
-		$this->assertEquals( array( $post->ID ), $this->posts->get_previewed_drafts( '', true ) );
-		$this->assertEquals( array( $page->ID ), $this->posts->get_previewed_drafts( 'page' ) );
+		$this->assertEquals( array( $post->ID ), $this->posts->get_previewed_drafts() );
+		$this->assertEquals( array( $page->ID ), $this->posts->get_previewed_drafts( array( 'post_type' => 'page' ) ) );
+		$this->assertEquals( array( $post->ID, $page->ID ), $this->posts->get_previewed_drafts( array( 'post_type' => 'any' ), true ) );
 		add_filter( 'customize_posts_main_query_post_type', array( $this, 'filter_main_query_post_type' ), 10, 2 );
-		$this->assertEquals( array( $post->ID, $page->ID ), $this->posts->get_previewed_drafts( '', true ) );
+		$this->assertEquals( array( $post->ID, $page->ID ), $this->posts->get_previewed_drafts( array( 'post_type' => 'post' ), true ) );
 		remove_filter( 'customize_posts_main_query_post_type', array( $this, 'filter_main_query_post_type' ), 10, 2 );
 	}
 

@@ -1,4 +1,4 @@
-/* global wp, jQuery, console */
+/* global wp, jQuery */
 /* eslint consistent-this: [ "error", "panel" ], no-magic-numbers: [ "error", { "ignore": [0,500] } ] */
 
 (function( api, $ ) {
@@ -83,15 +83,16 @@
 				panel.container.find( '.add-new-post-stub' ).on( 'click', function( event ) {
 					event.preventDefault();
 
-					api.Posts.insertPost( { post_type: panel.postType, post_status: 'publish' }, true ).done( function( section ) {
+					api.Posts.insertPost( { post_type: panel.postType, post_status: 'publish' } ).done( function( section ) {
 						var focusControl, controls = section.controls();
 
-						// @todo Figure out why we need to delay focusing the first control.
-						focusControl = _.debounce( function() {
-							if ( controls[0] ) {
-								controls[0].focus();
-							}
-						}, 500 );
+						focusControl = function() {
+							api.previewer.bind( 'customized-posts', function() {
+								if ( controls[0] ) {
+									controls[0].focus();
+								}
+							} );
+						};
 
 						section.focus( {
 							completeCallback: focusControl
