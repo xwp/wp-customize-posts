@@ -175,7 +175,6 @@ class Edit_Post_Preview {
 		$customize_url = add_query_arg(
 			array(
 				'url' => urlencode( $url ),
-				'previewed_post' => $post->ID,
 				'autofocus[section]' => sprintf( 'post[%s][%d]', $post->post_type, $post->ID ),
 				self::PREVIEW_POST_NONCE_QUERY_VAR => wp_create_nonce( self::PREVIEW_POST_NONCE_ACTION ),
 			),
