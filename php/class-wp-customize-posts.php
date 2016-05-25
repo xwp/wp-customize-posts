@@ -852,19 +852,19 @@ final class WP_Customize_Posts {
 			wp_send_json_error( 'customize_not_allowed' );
 		}
 
-		if ( empty( $_POST['params'] ) ) {
+		if ( empty( $_POST['params'] ) || ! is_array( $_POST['params'] ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'missing_params' );
 		}
 
-		$params = $_POST['params'];
+		$params = wp_unslash( $_POST['params'] );
 
 		if ( empty( $params['post_type'] ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'missing_post_type_param' );
 		}
 
-		$post_type_object = get_post_type_object( wp_unslash( $params['post_type'] ) );
+		$post_type_object = get_post_type_object( $params['post_type'] );
 		if ( ! $post_type_object || ! current_user_can( $post_type_object->cap->create_posts ) ) {
 			status_header( 403 );
 			wp_send_json_error( 'insufficient_post_permissions' );
