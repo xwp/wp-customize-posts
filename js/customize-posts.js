@@ -57,6 +57,31 @@
 	} );
 
 	/**
+	 * Get the post preview URL.
+	 *
+	 * @param {object} params - Parameters to configure the preview URL.
+	 * @return {string) Preview URL.
+	 */
+	component.getPreviewUrl = function( params ) {
+		var url = api.settings.url.home,
+		    args = {};
+
+		params = params || {};
+
+		args.preview = true;
+		if ( 'page' === params.post_type ) {
+			args.page_id = params.post_id;
+		} else {
+			args.p = params.post_id;
+			if ( 'post' !== params.post_type ) {
+				args.post_type = params.post_type;
+			}
+		}
+
+		return url + '?' + $.param( args );
+	};
+
+	/**
 	 * Insert a new stubbed `auto-draft` post.
 	 *
 	 * @param {object} params - Parameters to configure the setting.

@@ -154,29 +154,8 @@
 			} );
 
 			sectionNavigationButton.on( 'click', function( event ) {
-				var request;
-
 				event.preventDefault();
-
-				request = wp.ajax.post( 'customize-posts-navigation', {
-					'customize-posts-nonce': api.Posts.data.nonce,
-					'wp_customize': 'on',
-					'setting_id': setting.id
-				} );
-
-				request.done( function( response ) {
-					api.previewer.previewUrl( response.url );
-				} );
-
-				request.fail( function( response ) {
-					var error = response.responseJSON.data;
-
-					if ( 'undefined' !== typeof response.responseJSON.data.message ) {
-						error = response.responseJSON.data.message;
-					}
-
-					console.error( error );
-				} );
+				api.previewer.previewUrl( api.Posts.getPreviewUrl( section.params ) );
 			} );
 		},
 
