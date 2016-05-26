@@ -230,16 +230,18 @@
 		 * @returns {wp.customize.Control}
 		 */
 		addContentControl: function() {
-			var section = this, control, setting = api( section.id ),
-			preview = $( '#customize-preview' ),
-			editorPane = $( '#customize-posts-content-editor-pane' ),
-			editorFrame = $( '#customize-posts-content_ifr' ),
-			mceTools = $( '#wp-customize-posts-content-editor-tools' ),
-			mceToolbar = $( '.mce-toolbar-grp' ),
-			mceStatusbar = $( '.mce-statusbar' ),
-			dragbar = $( '#customize-posts-content-editor-dragbar' ),
-			collapse = $( '.collapse-sidebar' ),
-			resizeHeight;
+			var section = this,
+			    control,
+			    setting = api( section.id ),
+			    preview = $( '#customize-preview' ),
+			    editorPane = $( '#customize-posts-content-editor-pane' ),
+			    editorFrame = $( '#customize-posts-content_ifr' ),
+			    mceTools = $( '#wp-customize-posts-content-editor-tools' ),
+			    mceToolbar = $( '.mce-toolbar-grp' ),
+			    mceStatusbar = $( '.mce-statusbar' ),
+			    dragbar = $( '#customize-posts-content-editor-dragbar' ),
+			    collapse = $( '.collapse-sidebar' ),
+			    resizeHeight;
 
 			control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
 				params: {
