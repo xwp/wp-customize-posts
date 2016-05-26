@@ -707,8 +707,19 @@ final class WP_Customize_Posts {
 	 * @return string
 	 */
 	public function post_link_draft( $permalink, $post ) {
-		if ( $post instanceof WP_Post && in_array( get_post_status( $post->ID ), self::$draft_status, true ) ) {
-			$permalink = Edit_Post_Preview::get_preview_post_link( $post );
+		if ( $post instanceof WP_Post ) {
+			remove_filter( 'post_link', array( $this, 'post_link_draft' ), 10 );
+			remove_filter( 'post_type_link', array( $this, 'post_link_draft' ), 10 );
+			$old_permalink = get_permalink( $post->ID );
+			add_filter( 'post_link', array( $this, 'post_link_draft' ), 10, 2 );
+			add_filter( 'post_type_link', array( $this, 'post_link_draft' ), 10, 2 );
+
+			$post_status_match = in_array( get_post_status( $post->ID ), self::$draft_status, true );
+			$post_slug_mismatch = get_option( 'permalink_structure' ) && basename( $old_permalink ) !== $post->post_name;
+
+			if ( $post_status_match || $post_slug_mismatch ) {
+				$permalink = Edit_Post_Preview::get_preview_post_link( $post );
+			}
 		}
 
 		return $permalink;
@@ -726,8 +737,17 @@ final class WP_Customize_Posts {
 	public function page_link_draft( $link, $post_id ) {
 		$post = get_post( $post_id );
 
-		if ( $post instanceof WP_Post && in_array( get_post_status( $post->ID ), self::$draft_status, true ) ) {
-			$link = Edit_Post_Preview::get_preview_post_link( $post );
+		if ( $post instanceof WP_Post ) {
+			remove_filter( 'page_link', array( $this, 'page_link_draft' ), 10 );
+			$old_permalink = get_permalink( $post->ID );
+			add_filter( 'page_link', array( $this, 'page_link_draft' ), 10, 2 );
+
+			$post_status_match = in_array( get_post_status( $post->ID ), self::$draft_status, true );
+			$post_slug_mismatch = get_option( 'permalink_structure' ) && basename( $old_permalink ) !== $post->post_name;
+
+			if ( $post_status_match || $post_slug_mismatch ) {
+				$link = Edit_Post_Preview::get_preview_post_link( $post );
+			}
 		}
 
 		return $link;
