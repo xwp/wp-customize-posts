@@ -432,7 +432,7 @@
 
 			// Resize the editor.
 			dragbar.on( 'mousedown', function() {
-				$( document ).on( 'mousemove', function( event ) {
+				$( document ).on( 'mousemove.customize-posts-editor', function( event ) {
 					event.preventDefault();
 					$( document.body ).addClass( 'customize-posts-content-editor-pane-resize' );
 					editorFrame.css( 'pointer-events', 'none' );
@@ -442,7 +442,7 @@
 
 			// Remove editor resize.
 			dragbar.on( 'mouseup', function() {
-				$( document ).unbind( 'mousemove' );
+				$( document ).off( 'mousemove.customize-posts-editor' );
 				$( document.body ).removeClass( 'customize-posts-content-editor-pane-resize' );
 				editorFrame.css( 'pointer-events', '' );
 			} );
