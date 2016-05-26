@@ -1,5 +1,5 @@
 /* global wp, tinyMCE */
-/* eslint consistent-this: [ "error", "section" ], no-magic-numbers: [ "error", { "ignore": [0,1,4,8,56,782] } ] */
+/* eslint consistent-this: [ "error", "section" ], no-magic-numbers: [ "error", { "ignore": [0,1] } ] */
 
 (function( api, $ ) {
 	'use strict';
@@ -389,6 +389,10 @@
 				    sectionContent = $( '[id^=accordion-panel-posts] ul.accordion-section-content' ),
 				    minScroll = 40,
 				    maxScroll = 1,
+				    mobileWidth = 782,
+				    collapseMinSpacing = 56,
+				    collapseBottomOutsideEditor = 8,
+				    collapseBottomInsideEditor = 4,
 				    args = {};
 
 				if ( ! $( document.body ).hasClass( 'customize-posts-content-editor-pane-open' ) ) {
@@ -417,13 +421,13 @@
 				preview.css( 'bottom', args.height );
 				editorPane.css( 'height', args.height );
 				editorFrame.css( 'height', args.height - args.components );
-				collapse.css( 'bottom', args.height + 8 );
+				collapse.css( 'bottom', args.height + collapseBottomOutsideEditor );
 
-				if ( 56 > windowHeight - args.height ) {
-					collapse.css( 'bottom', mceStatusbar.outerHeight() + 4 );
+				if ( collapseMinSpacing > windowHeight - args.height ) {
+					collapse.css( 'bottom', mceStatusbar.outerHeight() + collapseBottomInsideEditor );
 				}
 
-				if ( windowWidth <= 782 ) {
+				if ( windowWidth <= mobileWidth ) {
 					sectionContent.css( 'padding-bottom', args.height );
 				} else {
 					sectionContent.css( 'padding-bottom', '' );
