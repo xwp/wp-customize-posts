@@ -162,7 +162,7 @@ class Edit_Post_Preview {
 	 * @return string $customize_url
 	 */
 	public function get_customize_url( $post = null ) {
-		if ( ! is_a( $post, 'WP_Post' ) ) {
+		if ( ! ( $post instanceof WP_Post ) ) {
 			$post = $this->get_previewed_post();
 		}
 
