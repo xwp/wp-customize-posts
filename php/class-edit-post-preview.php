@@ -170,9 +170,7 @@ class Edit_Post_Preview {
 			return false;
 		}
 
-		$id_param = ( 'page' === $post->post_type ) ? 'page_id' : 'p';
-
-		$url = get_preview_post_link( $post, array(), get_permalink( $post->ID ) . '?preview=true&' . $id_param . '=' . $post->ID );
+		$url = get_preview_post_link( $post );
 		$customize_url = add_query_arg(
 			array(
 				'url' => urlencode( $url ),
