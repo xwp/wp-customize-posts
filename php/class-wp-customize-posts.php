@@ -556,23 +556,30 @@ final class WP_Customize_Posts {
 	 * Render rich text editor.
 	 */
 	public function render_editor() {
-		echo '<div class="customize-posts-dragbar"></div><div id="customize-posts-content-editor-pane">';
+		?>
+		<div id="customize-posts-content-editor-pane">
+			<div id="customize-posts-content-editor-dragbar">
+				<span class="screen-reader-text"><?php _e( 'Resize Editor', 'customize-posts' ); ?></span>
+			</div>
 
-		// The settings passed in here are derived from those used in edit-form-advanced.php.
-		wp_editor( '', 'customize-posts-content', array(
-			'_content_editor_dfw' => false,
-			'drag_drop_upload' => true,
-			'tabfocus_elements' => 'content-html,save-post',
-			'editor_height' => 200,
-			'default_editor' => 'tinymce',
-			'tinymce' => array(
-				'resize' => false,
-				'wp_autoresize_on' => false,
-				'add_unload_trigger' => false,
-			),
-		) );
+			<?php
+			// The settings passed in here are derived from those used in edit-form-advanced.php.
+			wp_editor( '', 'customize-posts-content', array(
+				'_content_editor_dfw' => false,
+				'drag_drop_upload' => true,
+				'tabfocus_elements' => 'content-html,save-post',
+				'editor_height' => 200,
+				'default_editor' => 'tinymce',
+				'tinymce' => array(
+					'resize' => false,
+					'wp_autoresize_on' => false,
+					'add_unload_trigger' => false,
+				),
+			) );
+			?>
 
-		echo '</div>';
+		</div>
+		<?php
 	}
 
 	/**

@@ -1,5 +1,5 @@
 /* global wp, tinyMCE */
-/* eslint consistent-this: [ "error", "section" ], no-magic-numbers: [ "error", { "ignore": [1] } ] */
+/* eslint consistent-this: [ "error", "section" ], no-magic-numbers: [ "error", { "ignore": [1,4,8,50,56,782] } ] */
 
 (function( api, $ ) {
 	'use strict';
@@ -237,7 +237,8 @@
 			mceTools = $( '#wp-customize-posts-content-editor-tools' ),
 			mceToolbar = $( '.mce-toolbar-grp' ),
 			mceStatusbar = $( '.mce-statusbar' ),
-			dragbar = $( '.customize-posts-dragbar' ),
+			dragbar = $( '#customize-posts-content-editor-dragbar' ),
+			collapse = $( '.collapse-sidebar' ),
 			resizeHeight;
 
 			control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
@@ -315,6 +316,7 @@
 					editor.setContent( wp.editor.autop( setting().post_content ) );
 					editor.on( 'input change keyup', control.onVisualEditorChange );
 					textarea.on( 'input', control.onTextEditorChange );
+					control.resizeEditor( window.innerHeight - editorPane.height() );
 				} else {
 					editor.off( 'input change keyup', control.onVisualEditorChange );
 					textarea.off( 'input', control.onTextEditorChange );
@@ -322,6 +324,8 @@
 					// Cancel link and force a click event to exit fullscreen & kitchen sink mode.
 					editor.execCommand( 'wp_link_cancel' );
 					$( '.mce-active' ).click();
+					preview.css( 'bottom', '' );
+					collapse.css( 'bottom', '' );
 				}
 			} );
 
@@ -334,7 +338,6 @@
 				} else {
 					api.Posts.postIdInput.val( '' );
 					control.editorExpanded.set( false );
-					preview.css( 'bottom', '' );
 				}
 			} );
 
@@ -346,16 +349,13 @@
 				control.editorExpanded.set( ! control.editorExpanded() );
 				if ( control.editorExpanded() ) {
 					editor.focus();
-					preview.css( 'bottom', resizeHeight );
-				} else {
-					preview.css( 'bottom', '' );
 				}
 			} );
 
 			/**
 			 * Expand the editor and focus on it when the post content control is focused.
 			 *
-			 * @param args
+			 * @param {object} args
 			 */
 			control.focus = function( args ) {
 				var editor = tinyMCE.get( 'customize-posts-content' );
@@ -365,61 +365,80 @@
 			};
 
 			/**
-			 * Vertically Resize Expanded Post Editor
+			 * Vertically Resize Expanded Post Editor.
+			 *
+			 * @param {integer} position - The position of the post editor from the top of the browser window.
+			 * @returns {void}
 			 */
-			control.editorResize = function( previewBottomOffset, visualEditorHeight, textEditorHeight, dragbarBottomOffset ) {
-				preview.css( 'bottom', previewBottomOffset );
-				editorPane.css( 'height', visualEditorHeight );
-				editorFrame.css( 'height', textEditorHeight );
-				dragbar.css( 'bottom', dragbarBottomOffset  );
+			control.resizeEditor = function( position ) {
+				var windowHeight = window.innerHeight,
+				    windowWidth = window.innerWidth,
+				    sectionContent = $( '[id^=accordion-panel-posts] ul.accordion-section-content' ),
+				    minScroll = 40,
+				    maxScroll = 1,
+				    args = {};
+
+				if ( ! $( document.body ).hasClass( 'customize-posts-content-editor-pane-open' ) ) {
+					return;
+				}
+
+				if ( ! _.isNaN( position ) ) {
+					resizeHeight = windowHeight - position;
+				}
+
+				args.height = resizeHeight;
+				args.components = mceTools.outerHeight() + mceToolbar.outerHeight() + mceStatusbar.outerHeight();
+
+				if ( resizeHeight < minScroll ) {
+					args.height = minScroll;
+				}
+
+				if ( resizeHeight > windowHeight - maxScroll ) {
+					args.height = windowHeight - maxScroll;
+				}
+
+				if ( windowHeight < editorPane.outerHeight() ) {
+					args.height = windowHeight;
+				}
+
+				preview.css( 'bottom', args.height );
+				editorPane.css( 'height', args.height );
+				editorFrame.css( 'height', args.height - args.components );
+				collapse.css( 'bottom', args.height + 8 );
+
+				if ( 56 > windowHeight - args.height ) {
+					collapse.css( 'bottom', mceStatusbar.outerHeight() + 4 );
+				}
+
+				if ( windowWidth <= 782 ) {
+					sectionContent.css( 'padding-bottom', args.height );
+				} else {
+					sectionContent.css( 'padding-bottom', '' );
+				}
 			};
 
+			// Resize the editor.
 			dragbar.on( 'mousedown', function() {
-				var windowHeight = window.innerHeight,
-				editorComponentsCombinedHeight = mceTools.outerHeight() + mceToolbar.outerHeight() + mceStatusbar.outerHeight(),
-				minScroll = 39, // Min px of editor to retain
-				maxScroll = 3, // Min px of preview to retain
-				dragbarBottomOffset = 1; // Vertically center the dragbar
-
-				event.preventDefault();
-				preview.prepend( '<div id="customize-posts-draghelper"></div>' );
-
-				$( document ).on( 'mousemove', function() {
-					var maxHeight;
-
-					resizeHeight = windowHeight - event.pageY;
+				$( document ).on( 'mousemove', function( event ) {
+					event.preventDefault();
+					$( document.body ).addClass( 'customize-posts-content-editor-pane-resize' );
 					editorFrame.css( 'pointer-events', 'none' );
-
-					if ( resizeHeight < minScroll ) {
-						control.editorResize( minScroll, minScroll, minScroll - editorComponentsCombinedHeight, minScroll - dragbarBottomOffset );
-					} else if ( resizeHeight > ( windowHeight - maxScroll ) ) {
-						maxHeight = windowHeight - maxScroll;
-						control.editorResize( maxHeight, maxHeight, maxHeight - editorComponentsCombinedHeight, maxHeight - dragbarBottomOffset );
-					} else {
-						control.editorResize( resizeHeight, resizeHeight, resizeHeight - editorComponentsCombinedHeight, resizeHeight - dragbarBottomOffset );
-					}
+					control.resizeEditor( event.pageY );
 				} );
 			} );
 
-			$( document ).on( 'mouseup', dragbar, function() {
+			// Remove editor resize.
+			dragbar.on( 'mouseup', function() {
 				$( document ).unbind( 'mousemove' );
-				$( '#customize-posts-draghelper' ).remove();
+				$( document.body ).removeClass( 'customize-posts-content-editor-pane-resize' );
 				editorFrame.css( 'pointer-events', '' );
 			} );
 
-			// Do not allow expanded editor to vertically push out of viewport on resize
+			// Resize the editor when the viewport changes.
 			$( window ).on( 'resize', function() {
-				var windowHeight = window.innerHeight,
-				editor = $( '#customize-posts-content-editor-pane' ),
-				editorComponentsCombinedHeight = mceTools.outerHeight() + mceToolbar.outerHeight() + mceStatusbar.outerHeight(),
-				dragbarOffset = 1,
-				minScroll = 39;  // Min px of editor to retain
-
-				if ( windowHeight < minScroll ) {
-					control.editorResize( minScroll, minScroll, minScroll - editorComponentsCombinedHeight, minScroll - dragbarOffset );
-				} else if ( windowHeight < editor.outerHeight() ) {
-					control.editorResize( windowHeight, windowHeight, windowHeight - editorComponentsCombinedHeight, windowHeight - dragbarOffset );
-				}
+				_.delay( function() {
+					control.resizeEditor( window.innerHeight - editorPane.height() );
+				}, 50 );
 			} );
 
 			// Override preview trying to de-activate control not present in preview context.
