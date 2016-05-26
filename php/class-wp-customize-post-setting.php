@@ -247,10 +247,11 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	 * @see wp_insert_post()
 	 *
 	 * @param array $post_data   The value to sanitize.
-	 * @return string|array|null|WP_Error Null if an input isn't valid, otherwise the sanitized value.
+	 * @return array|WP_Error|null Sanitized post array or WP_Error if invalid (or null if not WP 4.6-alpha).
 	 */
 	public function sanitize( $post_data ) {
 		global $wpdb;
+		$can_wp_error = method_exists( 'WP_Customize_Setting', 'validate' );
 
 		$post_data = array_merge( $this->default, $post_data );
 
@@ -258,12 +259,13 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		$post_type_obj = get_post_type_object( $this->post_type );
 
 		if ( ! empty( $post_data['post_type'] ) && $post_data['post_type'] !== $this->post_type ) {
-			return new WP_Error( 'bad_post_type' );
+			return $can_wp_error ? new WP_Error( 'bad_post_type' ) : null;
 		}
 		$post_data['post_type'] = $this->post_type;
 
 		if ( $update ) {
 			// Check post lock.
+			require_once ABSPATH . 'wp-admin/includes/post.php';
 			$locked_user = wp_check_post_lock( $this->post_id );
 			if ( $locked_user ) {
 				$user = get_user_by( 'ID', $locked_user );
@@ -271,7 +273,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 					__( 'Post is currently locked by %s.', 'customize-posts' ),
 					$user ? $user->display_name : __( '(unknown user)', 'customize-posts' )
 				);
-				return new WP_Error( 'post_locked', $error_message );
+				return $can_wp_error ? new WP_Error( 'post_locked', $error_message ) : null;
 			}
 
 			// Check post update conflict.
@@ -292,7 +294,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 					$user ? $user->display_name : __( '(unknown user)', 'customize-posts' )
 				);
 				$this->posts_component->update_conflicted_settings[ $this->id ] = $this;
-				return new WP_Error( 'post_update_conflict', $error_message );
+				return $can_wp_error ? new WP_Error( 'post_update_conflict', $error_message ) : null;
 			}
 		}
 
@@ -309,7 +311,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 
 		/** This filter is documented in wp-includes/post.php */
 		if ( apply_filters( 'wp_insert_post_empty_content', $maybe_empty, $post_data ) ) {
-			return new WP_Error( 'empty_content', __( 'Content, title, and excerpt are empty.', 'customize-posts' ) );
+			return $can_wp_error ? new WP_Error( 'empty_content', __( 'Content, title, and excerpt are empty.', 'customize-posts' ) ) : null;
 		}
 
 		if ( empty( $post_data['post_status'] ) ) {
@@ -361,7 +363,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		$aa = substr( $post_data['post_date'], 0, 4 );
 		$valid_date = wp_checkdate( $mm, $jj, $aa, $post_data['post_date'] );
 		if ( ! $valid_date ) {
-			return new WP_Error( 'invalid_date', __( 'Whoops, the provided date is invalid.', 'customize-posts' ) );
+			return $can_wp_error ? new WP_Error( 'invalid_date', __( 'Whoops, the provided date is invalid.', 'customize-posts' ) ) : null;
 		}
 
 		if ( empty( $post_data['post_date_gmt'] ) || '0000-00-00 00:00:00' === $post_data['post_date_gmt'] ) {

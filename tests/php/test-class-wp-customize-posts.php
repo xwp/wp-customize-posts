@@ -198,6 +198,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 			'transport' => 'postMessage',
 			'sanitize_callback' => 'sanitize_key',
 			'sanitize_js_callback' => 'sanitize_key',
+			'validate_callback' => array( $this, 'validate_setting' ),
 			'setting_class' => 'WP_Customize_Postmeta_Setting',
 		);
 		$this->posts->register_post_type_meta( 'post', 'timezone', $args );
@@ -216,6 +217,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertEquals( $args['transport'], $setting->transport );
 		$this->assertEquals( $args['sanitize_callback'], $setting->sanitize_callback );
 		$this->assertEquals( $args['sanitize_js_callback'], $setting->sanitize_js_callback );
+		$this->assertEquals( $args['validate_callback'], $setting->validate_callback );
 		$this->assertInstanceOf( $args['setting_class'], $setting );
 	}
 

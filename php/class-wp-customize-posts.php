@@ -182,6 +182,7 @@ final class WP_Customize_Posts {
 				'transport' => null,
 				'sanitize_callback' => null,
 				'sanitize_js_callback' => null,
+				'validate_callback' => null,
 				'setting_class' => 'WP_Customize_Postmeta_Setting',
 			),
 			$setting_args
@@ -529,7 +530,6 @@ final class WP_Customize_Posts {
 				'fieldAuthorLabel' => __( 'Author', 'customize-posts' ),
 				'noTitle' => __( '(no title)', 'customize-posts' ),
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
-				'overrideButtonText' => __( 'Override', 'customize-posts' ),
 				'openEditor' => __( 'Open Editor', 'customize-posts' ),
 				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
 			),
@@ -630,6 +630,19 @@ final class WP_Customize_Posts {
 			<button class="customize-posts-navigation dashicons dashicons-visibility" tabindex="0">
 				<span class="screen-reader-text"><?php esc_html_e( 'Preview', 'customize-posts' ); ?> {{ data.label }}</span>
 			</button>
+		</script>
+
+		<script type="text/html" id="tmpl-customize-post-section-notifications">
+			<ul>
+				<# _.each( data.notifications, function( notification ) { #>
+					<li class="notice notice-{{ notification.type || 'info' }} {{ data.altNotice ? 'notice-alt' : '' }}" data-code="{{ notification.code }}" data-type="{{ notification.type }}">
+						<# if ( /post_update_conflict/.test( notification.code ) ) { #>
+							<button class="button override-post-conflict" type="button"><?php esc_html_e( 'Override', 'customize-posts' ); ?></button>
+						<# } #>
+						{{ notification.message || notification.code }}
+					</li>
+				<# } ); #>
+			</ul>
 		</script>
 		<?php
 	}

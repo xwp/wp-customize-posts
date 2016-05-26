@@ -143,6 +143,7 @@ class Test_WP_Customize_Page_Template_Controller extends WP_UnitTestCase {
 	 */
 	public function test_sanitize_setting() {
 		switch_theme( 'twentytwelve' );
+		$can_wp_error = method_exists( 'WP_Customize_Setting', 'validate' );
 
 		$controller = new WP_Customize_Page_Template_Controller();
 		$post = get_post( $this->factory()->post->create() );
@@ -150,16 +151,18 @@ class Test_WP_Customize_Page_Template_Controller extends WP_UnitTestCase {
 		$setting = new WP_Customize_Postmeta_Setting( $this->wp_customize, $setting_id );
 
 		$value = 'default';
-		$this->assertEquals( $value, $controller->sanitize_setting( $value, $setting, false ) );
+		$this->assertEquals( $value, $controller->sanitize_setting( $value, $setting ) );
 
 		$value = 'page-templates/full-width.php';
-		$this->assertEquals( $value, $controller->sanitize_setting( $value, $setting, false ) );
+		$this->assertEquals( $value, $controller->sanitize_setting( $value, $setting ) );
 
 		$value = '../page-templates/bad.php';
-		$this->assertNull( $controller->sanitize_setting( $value, $setting, false ) );
-
-		$sanitized = $controller->sanitize_setting( $value, $setting, true );
-		$this->assertInstanceOf( 'WP_Error', $sanitized );
-		$this->assertEquals( 'invalid_page_template', $sanitized->get_error_code() );
+		if ( $can_wp_error ) {
+			$sanitized = $controller->sanitize_setting( $value, $setting );
+			$this->assertInstanceOf( 'WP_Error', $sanitized );
+			$this->assertEquals( 'invalid_page_template', $sanitized->get_error_code() );
+		} else {
+			$this->assertNull( $controller->sanitize_setting( $value, $setting ) );
+		}
 	}
 }

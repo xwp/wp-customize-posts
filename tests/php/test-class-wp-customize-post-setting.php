@@ -315,12 +315,15 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	 */
 	public function test_sanitize_bad_post_type() {
 		$setting = $this->create_post_setting();
+		$can_wp_error = method_exists( 'WP_Customize_Setting', 'validate' );
 
-		$data = $setting->sanitize( array( 'post_type' => 'bad' ), false );
-		$this->assertArrayNotHasKey( 'post_type', $data );
-		$data = $setting->sanitize( array( 'post_type' => 'bad' ), true );
-		$this->assertInstanceOf( 'WP_Error', $data );
-		$this->assertEquals( 'bad_post_type', $data->get_error_code() );
+		$data = $setting->sanitize( array( 'post_type' => 'bad' ) );
+		if ( $can_wp_error ) {
+			$this->assertInstanceOf( 'WP_Error', $data );
+			$this->assertEquals( 'bad_post_type', $data->get_error_code() );
+		} else {
+			$this->assertNull( $data );
+		}
 	}
 
 	/**

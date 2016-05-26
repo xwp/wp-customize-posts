@@ -213,7 +213,7 @@ abstract class WP_Customize_Postmeta_Controller {
 	 * @return mixed|null Sanitized value or `null` if invalid.
 	 */
 	public function sanitize_setting( $meta_value, WP_Customize_Postmeta_Setting $setting ) {
-		unset( $setting, $strict );
+		unset( $setting );
 		return $meta_value;
 	}
 
@@ -227,7 +227,7 @@ abstract class WP_Customize_Postmeta_Controller {
 	 * @param WP_Error                      $validity   Validity.
 	 * @param string                        $meta_value The value to sanitize.
 	 * @param WP_Customize_Postmeta_Setting $setting    Setting.
-	 * @return mixed|null Sanitized value or `null` if invalid.
+	 * @return WP_Error Validity.
 	 */
 	public function validate_setting( $validity, $meta_value, WP_Customize_Postmeta_Setting $setting ) {
 		unset( $setting, $meta_value );

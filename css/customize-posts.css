@@ -1,7 +1,3 @@
-/* In case Customize Setting Validation is not active */
-div.customize-setting-validation-message.error {
-	display: none;
-}
 
 .customize-posts-panel-notice {
 	color: #555;
@@ -10,12 +6,7 @@ div.customize-setting-validation-message.error {
 	border-top: 1px solid #ddd;
 }
 
-.customize-section-title > div.customize-setting-validation-message {
-	border-top: 1px solid #ddd;
-	margin-top: 0;
-	margin-bottom: 0;
-}
-.customize-setting-validation-message .override-post-conflict {
+.customize-control-notifications-container .override-post-conflict {
 	margin-left: 1ex;
 	float: right;
 }
