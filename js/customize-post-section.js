@@ -432,6 +432,9 @@
 
 			// Resize the editor.
 			dragbar.on( 'mousedown', function() {
+				if ( ! section.expanded() ) {
+					return;
+				}
 				$( document ).on( 'mousemove.customize-posts-editor', function( event ) {
 					event.preventDefault();
 					$( document.body ).addClass( 'customize-posts-content-editor-pane-resize' );
@@ -442,6 +445,9 @@
 
 			// Remove editor resize.
 			dragbar.on( 'mouseup', function() {
+				if ( ! section.expanded() ) {
+					return;
+				}
 				$( document ).off( 'mousemove.customize-posts-editor' );
 				$( document.body ).removeClass( 'customize-posts-content-editor-pane-resize' );
 				editorFrame.css( 'pointer-events', '' );
@@ -449,6 +455,9 @@
 
 			// Resize the editor when the viewport changes.
 			$( window ).on( 'resize', function() {
+				if ( ! section.expanded() ) {
+					return;
+				}
 				_.delay( function() {
 					control.resizeEditor( window.innerHeight - editorPane.height() );
 				}, 50 );
