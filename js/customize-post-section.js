@@ -170,7 +170,9 @@
 			if ( postTypeObj.supports.title ) {
 				section.addTitleControl();
 			}
-			section.addSlugControl();
+			if ( postTypeObj.supports.title || postTypeObj.supports.slug ) {
+				section.addSlugControl();
+			}
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
 			}
