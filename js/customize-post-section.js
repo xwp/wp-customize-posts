@@ -1,5 +1,5 @@
 /* global wp, tinyMCE */
-/* eslint consistent-this: [ "error", "section" ], no-magic-numbers: [ "error", { "ignore": [0,1,4,8,50,56,782] } ] */
+/* eslint consistent-this: [ "error", "section" ], no-magic-numbers: [ "error", { "ignore": [0,1,4,8,56,782] } ] */
 
 (function( api, $ ) {
 	'use strict';
@@ -455,12 +455,13 @@
 
 			// Resize the editor when the viewport changes.
 			$( window ).on( 'resize', function() {
+				var resizeDelay = 50;
 				if ( ! section.expanded() ) {
 					return;
 				}
 				_.delay( function() {
 					control.resizeEditor( window.innerHeight - editorPane.height() );
-				}, 50 );
+				}, resizeDelay );
 			} );
 
 			// Override preview trying to de-activate control not present in preview context.
