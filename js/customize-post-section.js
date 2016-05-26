@@ -1,5 +1,5 @@
 /* global wp, tinyMCE */
-/* eslint consistent-this: [ "error", "section" ], no-magic-numbers: [ "error", { "ignore": [1,4,8,50,56,782] } ] */
+/* eslint consistent-this: [ "error", "section" ], no-magic-numbers: [ "error", { "ignore": [0,1,4,8,50,56,782] } ] */
 
 (function( api, $ ) {
 	'use strict';
@@ -86,7 +86,11 @@
 		},
 
 		/**
+		 * Ready.
+		 *
 		 * @todo Defer embedding section until panel is expanded?
+		 *
+		 * @returns {void}
 		 */
 		ready: function() {
 			var section = this;
@@ -104,6 +108,8 @@
 
 		/**
 		 * Keep the title updated in the UI when the title updates in the setting.
+		 *
+		 * @returns {void}
 		 */
 		setupTitleUpdating: function() {
 			var section = this, setting = api( section.id ), sectionContainer, sectionOuterTitleElement,
@@ -187,7 +193,7 @@
 		/**
 		 * Add post title control.
 		 *
-		 * @returns {wp.customize.Control}
+		 * @returns {wp.customize.Control} Added control.
 		 */
 		addTitleControl: function() {
 			var section = this, control, setting = api( section.id );
@@ -227,7 +233,7 @@
 		 *
 		 * @todo It is hacky how the dynamic control is overloaded to connect to the shared TinyMCE editor.
 		 *
-		 * @returns {wp.customize.Control}
+		 * @returns {wp.customize.Control} Added control.
 		 */
 		addContentControl: function() {
 			var section = this,
@@ -265,6 +271,8 @@
 
 			/**
 			 * Update the setting value when the editor changes its state.
+			 *
+			 * @returns {void}
 			 */
 			control.onVisualEditorChange = function() {
 				var value, editor;
@@ -280,6 +288,8 @@
 
 			/**
 			 * Update the setting value when the editor changes its state.
+			 *
+			 * @returns {void}
 			 */
 			control.onTextEditorChange = function() {
 				if ( control.editorSyncSuspended ) {
@@ -357,7 +367,8 @@
 			/**
 			 * Expand the editor and focus on it when the post content control is focused.
 			 *
-			 * @param {object} args
+			 * @param {object} args Focus args.
+			 * @returns {void}
 			 */
 			control.focus = function( args ) {
 				var editor = tinyMCE.get( 'customize-posts-content' );
@@ -369,7 +380,7 @@
 			/**
 			 * Vertically Resize Expanded Post Editor.
 			 *
-			 * @param {integer} position - The position of the post editor from the top of the browser window.
+			 * @param {int} position - The position of the post editor from the top of the browser window.
 			 * @returns {void}
 			 */
 			control.resizeEditor = function( position ) {
@@ -472,7 +483,7 @@
 		/**
 		 * Add post excerpt control.
 		 *
-		 * @returns {wp.customize.Control}
+		 * @returns {wp.customize.Control} Added control.
 		 */
 		addExcerptControl: function() {
 			var section = this, control, setting = api( section.id );
@@ -510,7 +521,7 @@
 		/**
 		 * Add discussion fields (comments and ping status fields) control.
 		 *
-		 * @returns {wp.customize.Control}
+		 * @returns {wp.customize.Control} Added control.
 		 */
 		addDiscussionFieldsControl: function() {
 			var section = this, postTypeObj, control, setting = api( section.id );
@@ -548,7 +559,7 @@
 		/**
 		 * Add post author control.
 		 *
-		 * @returns {wp.customize.Control}
+		 * @returns {wp.customize.Control} Added control.
 		 */
 		addAuthorControl: function() {
 			var section = this, control, setting = api( section.id );
@@ -586,6 +597,8 @@
 
 		/**
 		 * Set up setting validation.
+		 *
+		 * @returns {void}
 		 */
 		setupSettingValidation: function() {
 			var section = this, setting = api( section.id );
@@ -656,6 +669,8 @@
 
 		/**
 		 * Reset all of the validation messages for all of the post fields in the section.
+		 *
+		 * @returns {void}
 		 */
 		resetPostFieldControlSettingValidationMessages: function() {
 			var section = this;
@@ -671,7 +686,7 @@
 		/**
 		 * Allow an active section to be contextually active even when it has no active controls.
 		 *
-		 * @returns {boolean}
+		 * @returns {boolean} Active.
 		 */
 		isContextuallyActive: function() {
 			var section = this;
