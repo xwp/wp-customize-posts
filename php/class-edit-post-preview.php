@@ -124,7 +124,7 @@ class Edit_Post_Preview {
 	 * @return array $rebuild_actions
 	 */
 	public function add_edit_customizer_to_row_actions( $actions, $post ) {
-		if ( ! is_a( $post, 'WP_Post' ) ) {
+		if ( ! ( $post instanceof WP_Post ) ) {
 			return false;
 		}
 
