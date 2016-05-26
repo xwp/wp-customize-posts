@@ -1,5 +1,5 @@
 /* global wp, tinyMCE */
-/* eslint consistent-this: [ "error", "section" ], no-magic-numbers: [ "error", { "ignore": [0,1] } ] */
+/* eslint consistent-this: [ "error", "section" ], no-magic-numbers: [ "error", { "ignore": [-1,0,1] } ] */
 
 (function( api, $ ) {
 	'use strict';
@@ -198,7 +198,7 @@
 		 *
 		 * @param {string} code                            Notification code.
 		 * @param {wp.customize.Notification} notification Notification object.
-		 * @returns {wp.customize.Notification|null}
+		 * @returns {wp.customize.Notification|null} Notification if not bypassed.
 		 */
 		addPostFieldControlNotification: function( code, notification ) {
 			if ( -1 !== code.indexOf( ':' ) ) {
@@ -247,7 +247,7 @@
 		/**
 		 * Add post slug control.
 		 *
-		 * @returns {wp.customize.Control}
+		 * @returns {wp.customize.Control} Added control.
 		 */
 		addSlugControl: function() {
 			var section = this, control, setting = api( section.id );
