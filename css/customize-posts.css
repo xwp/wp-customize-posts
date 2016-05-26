@@ -90,10 +90,15 @@
 	z-index: 20;
 	background: #f1f1f1;
 	display: block;
-	-webkit-transition: bottom 0.2s;
-	transition: bottom 0.2s;
-
-	/* @todo This should have visibility:hidden to ensure accessible when closed. */
+	-webkit-transition: all 0.2s;
+	transition: all 0.2s;
+	visibility: hidden;
+}
+ 
+body.customize-posts-content-editor-pane-resize #customize-preview,
+body.customize-posts-content-editor-pane-resize #customize-posts-content-editor-pane {
+	-webkit-transition: none;
+	transition: none;
 }
 
 body.mce-fullscreen.customize-posts-content-editor-pane-open #customize-posts-content-editor-pane {
@@ -102,6 +107,7 @@ body.mce-fullscreen.customize-posts-content-editor-pane-open #customize-posts-co
 
 body.customize-posts-content-editor-pane-open #customize-posts-content-editor-pane {
 	bottom: 0;
+	visibility: inherit;
 }
 
 #customize-posts-content-editor-pane .wp-editor-tools {
@@ -134,6 +140,28 @@ body.mce-fullscreen.customize-posts-content-editor-pane-open div.mce-fullscreen 
 	border-left: 0;
 }
 
+/* vertical resize bar */
+#customize-posts-content-editor-dragbar {
+	top: 0;
+	cursor: row-resize;
+	display: block;
+	height: 4px;
+	position: absolute;
+	width: 100%;
+	z-index: 21;
+}
+
+body.customize-posts-content-editor-pane-resize #customize-preview:before {
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	position: absolute;
+	height: 100%;
+	width: 100%;
+	z-index: 999999;
+}
+
 /* @todo Mobile support for rich text editor */
 
 .wp-customizer .ui-autocomplete.wplink-autocomplete {
@@ -155,18 +183,19 @@ body.mce-fullscreen.customize-posts-content-editor-pane-open div.mce-fullscreen 
 	z-index: 500100 !important; /* originally 100100, but z-index of .wp-full-overlay is 500000 */
 }
 
-@media screen and ( max-width: 782px ) {
-	body.customize-posts-content-editor-pane-open #customize-theme-controls [id^=accordion-panel-posts] ul.accordion-section-content {
-		padding-bottom: 300px;
-	}
-}
-
 .customize-posts-content-editor-pane-open .wp-full-overlay.collapsed .wp-full-overlay-sidebar {
 	z-index: 30;
 }
 .customize-posts-content-editor-pane-open .wp-full-overlay.collapsed .collapse-sidebar {
 	bottom: 308px;
 }
+.customize-posts-content-editor-pane-open .wp-full-overlay.expanded .collapse-sidebar {
+	bottom: 0 !important;
+}
+.customize-posts-content-editor-pane-resize .wp-full-overlay.collapsed .collapse-sidebar {
+	-webkit-transition: none;
+	transition: none;
+}
 .customize-posts-content-editor-pane-open.mce-fullscreen .wp-full-overlay.collapsed .collapse-sidebar {
-	bottom: 8px;
+	bottom: 8px !important;
 }

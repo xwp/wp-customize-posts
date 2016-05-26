@@ -1,5 +1,5 @@
 /* global wp, tinyMCE */
-/* eslint consistent-this: [ "error", "section" ], no-magic-numbers: [ "error", { "ignore": [1] } ] */
+/* eslint consistent-this: [ "error", "section" ], no-magic-numbers: [ "error", { "ignore": [0,1] } ] */
 
 (function( api, $ ) {
 	'use strict';
@@ -86,7 +86,11 @@
 		},
 
 		/**
+		 * Ready.
+		 *
 		 * @todo Defer embedding section until panel is expanded?
+		 *
+		 * @returns {void}
 		 */
 		ready: function() {
 			var section = this;
@@ -104,6 +108,8 @@
 
 		/**
 		 * Keep the title updated in the UI when the title updates in the setting.
+		 *
+		 * @returns {void}
 		 */
 		setupTitleUpdating: function() {
 			var section = this, setting = api( section.id ), sectionContainer, sectionOuterTitleElement,
@@ -205,7 +211,7 @@
 		/**
 		 * Add post title control.
 		 *
-		 * @returns {wp.customize.Control}
+		 * @returns {wp.customize.Control} Added control.
 		 */
 		addTitleControl: function() {
 			var section = this, control, setting = api( section.id );
@@ -290,10 +296,21 @@
 		 *
 		 * @todo It is hacky how the dynamic control is overloaded to connect to the shared TinyMCE editor.
 		 *
-		 * @returns {wp.customize.Control}
+		 * @returns {wp.customize.Control} Added control.
 		 */
 		addContentControl: function() {
-			var section = this, control, setting = api( section.id );
+			var section = this,
+			    control,
+			    setting = api( section.id ),
+			    preview = $( '#customize-preview' ),
+			    editorPane = $( '#customize-posts-content-editor-pane' ),
+			    editorFrame = $( '#customize-posts-content_ifr' ),
+			    mceTools = $( '#wp-customize-posts-content-editor-tools' ),
+			    mceToolbar = $( '.mce-toolbar-grp' ),
+			    mceStatusbar = $( '.mce-statusbar' ),
+			    dragbar = $( '#customize-posts-content-editor-dragbar' ),
+			    collapse = $( '.collapse-sidebar' ),
+			    resizeHeight;
 
 			control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
 				params: {
@@ -317,6 +334,8 @@
 
 			/**
 			 * Update the setting value when the editor changes its state.
+			 *
+			 * @returns {void}
 			 */
 			control.onVisualEditorChange = function() {
 				var value, editor;
@@ -332,6 +351,8 @@
 
 			/**
 			 * Update the setting value when the editor changes its state.
+			 *
+			 * @returns {void}
 			 */
 			control.onTextEditorChange = function() {
 				if ( control.editorSyncSuspended ) {
@@ -370,6 +391,7 @@
 					editor.setContent( wp.editor.autop( setting().post_content ) );
 					editor.on( 'input change keyup', control.onVisualEditorChange );
 					textarea.on( 'input', control.onTextEditorChange );
+					control.resizeEditor( window.innerHeight - editorPane.height() );
 				} else {
 					editor.off( 'input change keyup', control.onVisualEditorChange );
 					textarea.off( 'input', control.onTextEditorChange );
@@ -377,6 +399,8 @@
 					// Cancel link and force a click event to exit fullscreen & kitchen sink mode.
 					editor.execCommand( 'wp_link_cancel' );
 					$( '.mce-active' ).click();
+					preview.css( 'bottom', '' );
+					collapse.css( 'bottom', '' );
 				}
 			} );
 
@@ -406,7 +430,8 @@
 			/**
 			 * Expand the editor and focus on it when the post content control is focused.
 			 *
-			 * @param args
+			 * @param {object} args Focus args.
+			 * @returns {void}
 			 */
 			control.focus = function( args ) {
 				var editor = tinyMCE.get( 'customize-posts-content' );
@@ -414,6 +439,97 @@
 				control.editorExpanded.set( true );
 				editor.focus();
 			};
+
+			/**
+			 * Vertically Resize Expanded Post Editor.
+			 *
+			 * @param {int} position - The position of the post editor from the top of the browser window.
+			 * @returns {void}
+			 */
+			control.resizeEditor = function( position ) {
+				var windowHeight = window.innerHeight,
+				    windowWidth = window.innerWidth,
+				    sectionContent = $( '[id^=accordion-panel-posts] ul.accordion-section-content' ),
+				    minScroll = 40,
+				    maxScroll = 1,
+				    mobileWidth = 782,
+				    collapseMinSpacing = 56,
+				    collapseBottomOutsideEditor = 8,
+				    collapseBottomInsideEditor = 4,
+				    args = {};
+
+				if ( ! $( document.body ).hasClass( 'customize-posts-content-editor-pane-open' ) ) {
+					return;
+				}
+
+				if ( ! _.isNaN( position ) ) {
+					resizeHeight = windowHeight - position;
+				}
+
+				args.height = resizeHeight;
+				args.components = mceTools.outerHeight() + mceToolbar.outerHeight() + mceStatusbar.outerHeight();
+
+				if ( resizeHeight < minScroll ) {
+					args.height = minScroll;
+				}
+
+				if ( resizeHeight > windowHeight - maxScroll ) {
+					args.height = windowHeight - maxScroll;
+				}
+
+				if ( windowHeight < editorPane.outerHeight() ) {
+					args.height = windowHeight;
+				}
+
+				preview.css( 'bottom', args.height );
+				editorPane.css( 'height', args.height );
+				editorFrame.css( 'height', args.height - args.components );
+				collapse.css( 'bottom', args.height + collapseBottomOutsideEditor );
+
+				if ( collapseMinSpacing > windowHeight - args.height ) {
+					collapse.css( 'bottom', mceStatusbar.outerHeight() + collapseBottomInsideEditor );
+				}
+
+				if ( windowWidth <= mobileWidth ) {
+					sectionContent.css( 'padding-bottom', args.height );
+				} else {
+					sectionContent.css( 'padding-bottom', '' );
+				}
+			};
+
+			// Resize the editor.
+			dragbar.on( 'mousedown', function() {
+				if ( ! section.expanded() ) {
+					return;
+				}
+				$( document ).on( 'mousemove.customize-posts-editor', function( event ) {
+					event.preventDefault();
+					$( document.body ).addClass( 'customize-posts-content-editor-pane-resize' );
+					editorFrame.css( 'pointer-events', 'none' );
+					control.resizeEditor( event.pageY );
+				} );
+			} );
+
+			// Remove editor resize.
+			dragbar.on( 'mouseup', function() {
+				if ( ! section.expanded() ) {
+					return;
+				}
+				$( document ).off( 'mousemove.customize-posts-editor' );
+				$( document.body ).removeClass( 'customize-posts-content-editor-pane-resize' );
+				editorFrame.css( 'pointer-events', '' );
+			} );
+
+			// Resize the editor when the viewport changes.
+			$( window ).on( 'resize', function() {
+				var resizeDelay = 50;
+				if ( ! section.expanded() ) {
+					return;
+				}
+				_.delay( function() {
+					control.resizeEditor( window.innerHeight - editorPane.height() );
+				}, resizeDelay );
+			} );
 
 			// Override preview trying to de-activate control not present in preview context.
 			control.active.validate = function() {
@@ -442,7 +558,7 @@
 		/**
 		 * Add post excerpt control.
 		 *
-		 * @returns {wp.customize.Control}
+		 * @returns {wp.customize.Control} Added control.
 		 */
 		addExcerptControl: function() {
 			var section = this, control, setting = api( section.id );
@@ -478,7 +594,7 @@
 		/**
 		 * Add discussion fields (comments and ping status fields) control.
 		 *
-		 * @returns {wp.customize.Control}
+		 * @returns {wp.customize.Control} Added control.
 		 */
 		addDiscussionFieldsControl: function() {
 			var section = this, postTypeObj, control, setting = api( section.id );
@@ -514,7 +630,7 @@
 		/**
 		 * Add post author control.
 		 *
-		 * @returns {wp.customize.Control}
+		 * @returns {wp.customize.Control} Added control.
 		 */
 		addAuthorControl: function() {
 			var section = this, control, setting = api( section.id );
@@ -550,6 +666,8 @@
 
 		/**
 		 * Set up setting validation.
+		 *
+		 * @returns {void}
 		 */
 		setupSettingValidation: function() {
 			var section = this, setting = api( section.id ), debouncedRenderNotifications;
@@ -642,6 +760,8 @@
 
 		/**
 		 * Reset all of the validation messages for all of the post fields in the section.
+		 *
+		 * @returns {void}
 		 */
 		resetPostFieldControlErrorNotifications: function() {
 			var section = this;
@@ -659,7 +779,7 @@
 		/**
 		 * Allow an active section to be contextually active even when it has no active controls.
 		 *
-		 * @returns {boolean}
+		 * @returns {boolean} Active.
 		 */
 		isContextuallyActive: function() {
 			var section = this;
