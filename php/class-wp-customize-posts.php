@@ -89,7 +89,7 @@ final class WP_Customize_Posts {
 		add_filter( 'customize_snapshot_save', array( $this, 'transition_customize_draft' ) );
 		add_filter( 'post_link', array( $this, 'post_link_draft' ), 10, 2 );
 		add_filter( 'post_type_link', array( $this, 'post_link_draft' ), 10, 2 );
-		add_filter( 'page_link', array( $this, 'page_link_draft' ), 10, 2 );
+		add_filter( 'page_link', array( $this, 'post_link_draft' ), 10, 2 );
 		add_action( 'wp_ajax_customize-posts-add-new', array( $this, 'ajax_add_new_post' ) );
 
 		$this->preview = new WP_Customize_Posts_Preview( $this );
@@ -522,6 +522,7 @@ final class WP_Customize_Posts {
 				/* translators: &#9656; is the unicode right-pointing triangle, and %s is the section title in the Customizer */
 				'sectionCustomizeActionTpl' => __( 'Customizing &#9656; %s', 'customize-posts' ),
 				'fieldTitleLabel' => __( 'Title', 'customize-posts' ),
+				'fieldSlugLabel' => __( 'Slug', 'customize-posts' ),
 				'fieldContentLabel' => __( 'Content', 'customize-posts' ),
 				'fieldExcerptLabel' => __( 'Excerpt', 'customize-posts' ),
 				'fieldDiscussionLabel' => __( 'Discussion', 'customize-posts' ),
@@ -701,35 +702,15 @@ final class WP_Customize_Posts {
 	 *
 	 * @access public
 	 *
-	 * @param string  $permalink The post's permalink.
-	 * @param WP_Post $post      The post in question.
+	 * @param string      $permalink The post's permalink.
+	 * @param int|WP_Post $post      The post in question.
 	 * @return string
 	 */
 	public function post_link_draft( $permalink, $post ) {
-		if ( $post instanceof WP_Post && in_array( get_post_status( $post->ID ), self::$draft_status, true ) ) {
-			$permalink = Edit_Post_Preview::get_preview_post_link( $post );
+		if ( is_customize_preview() ) {
+			$permalink = Edit_Post_Preview::get_preview_post_link( get_post( $post ) );
 		}
-
 		return $permalink;
-	}
-
-	/**
-	 * Filter the preview permalink for a page.
-	 *
-	 * @access public
-	 *
-	 * @param string $link    The page's permalink.
-	 * @param int    $post_id The ID of the page.
-	 * @return string
-	 */
-	public function page_link_draft( $link, $post_id ) {
-		$post = get_post( $post_id );
-
-		if ( $post instanceof WP_Post && in_array( get_post_status( $post->ID ), self::$draft_status, true ) ) {
-			$link = Edit_Post_Preview::get_preview_post_link( $post );
-		}
-
-		return $link;
 	}
 
 	/**

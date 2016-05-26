@@ -212,6 +212,22 @@
 		return section;
 	};
 
+	/**
+	 * Emulate sanitize_title_with_dashes().
+	 *
+	 * @todo This can be more verbose, supporting Unicode.
+	 *
+	 * @param {string} title Title
+	 * @returns {string} slug
+	 */
+	component.sanitizeTitleWithDashes = function sanitizeTitleWithDashes( title ) {
+		var slug = $.trim( title ).toLowerCase();
+		slug = slug.replace( /[^a-z0-9\-_]+/g, '-' );
+		slug = slug.replace( /--+/g, '-' );
+		slug = slug.replace( /^-+|-+$/g, '' );
+		return slug;
+	};
+
 	api.bind( 'ready', function() {
 
 		// Add a post_ID input for editor integrations (like Shortcake) to be able to know the post being edited.
