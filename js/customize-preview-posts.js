@@ -64,9 +64,24 @@
 						}
 					} else {
 						partial = new api.previewPosts.PostFieldPartial( schema.id, { params: schema.params } );
-						partial.renderContent = function() {
-							api.selectiveRefresh.requestFullRefresh();
-							return true;
+
+						/**
+						 * Suppress wasted partial refreshes for partials that lack selectors.
+						 *
+						 * For example, since the post_name field is not normally
+						 * displayed, suppress refreshing changes.
+						 *
+						 * @returns {jQuery.promise} Promise.
+						 */
+						partial.refresh = function refreshWithoutSelector() {
+							var deferred = $.Deferred();
+							if ( this.params.fallbackRefresh ) {
+								api.selectiveRefresh.requestFullRefresh();
+								deferred.resolve();
+							} else {
+								deferred.reject();
+							}
+							return deferred.promise();
 						};
 						api.selectiveRefresh.partial.add( partial.id, partial );
 					}

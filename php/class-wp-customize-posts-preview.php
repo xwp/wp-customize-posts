@@ -522,7 +522,7 @@ final class WP_Customize_Posts_Preview {
 				'selector' => '.entry-title',
 			),
 			'post_name' => array(
-				'fallback_refresh' => true,
+				'fallback_refresh' => false,
 			),
 			'post_content' => array(
 				'selector' => '.entry-content',
