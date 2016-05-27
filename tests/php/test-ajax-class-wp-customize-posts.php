@@ -68,24 +68,64 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 	}
 
 	/**
-	 * Testing ajax_add_new_post
+	 * Testing successful ajax_add_new_post
 	 *
 	 * @see WP_Customize_Posts::ajax_add_new_post()
 	 */
-	function test_ajax_add_new_post() {
-		$_POST = array(
+	function test_ajax_add_new_post_success() {
+		$post_data_params = array(
+			'post_type' => 'post',
+			'post_title' => '(untitled)',
+			'menu_order' => 1,
+		);
+
+		$_POST = wp_slash( array(
 			'action' => 'customize-posts',
 			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
-			'params' => array(
-				'post_type' => 'post',
-			),
-		);
+			'params' => $post_data_params,
+		) );
 		$this->make_ajax_call( 'customize-posts-add-new' );
 
 		// Get the results.
 		$response = json_decode( $this->_last_response, true );
+
+		$this->assertTrue( $response['success'] );
 		$this->assertArrayHasKey( 'sectionId', $response['data'] );
 		$this->assertArrayHasKey( 'url', $response['data'] );
+		$this->assertArrayHasKey( 'settings', $response['data'] );
+		$this->assertCount( 1, $response['data']['settings'] );
+		$setting_params = current( $response['data']['settings'] );
+
+		unset( $post_data_params['post_type'] );
+		foreach ( $post_data_params as $key => $value ) {
+			$this->assertEquals( $value, $setting_params['value'][ $key ] );
+		}
+		$this->assertArrayNotHasKey( 'ID', $setting_params['value'] );
+		$this->assertArrayNotHasKey( 'filter', $setting_params['value'] );
+	}
+
+	/**
+	 * Testing successful ajax_add_new_post
+	 *
+	 * @see WP_Customize_Posts::ajax_add_new_post()
+	 */
+	function test_ajax_add_new_post_failure() {
+		$post_data_params = array(
+			'post_type' => 'post',
+			'menu_order' => 1,
+		);
+
+		$_POST = wp_slash( array(
+			'action' => 'customize-posts',
+			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
+			'params' => $post_data_params,
+		) );
+		$this->make_ajax_call( 'customize-posts-add-new' );
+
+		// Get the results.
+		$response = json_decode( $this->_last_response, true );
+
+		$this->assertFalse( $response['success'] );
 	}
 
 	/**
