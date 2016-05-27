@@ -203,7 +203,10 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		}
 
 		if ( $this->is_previewed ) {
-			$post_data = array_merge( $post_data, $this->post_value( array() ) );
+			$input_value = $this->post_value( array() );
+			if ( null !== $input_value ) {
+				$post_data = array_merge( $post_data, $input_value );
+			}
 		}
 
 		$post_data = $this->normalize_post_data( $post_data );
