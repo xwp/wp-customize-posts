@@ -90,7 +90,7 @@ final class WP_Customize_Posts {
 		add_filter( 'post_link', array( $this, 'post_link_draft' ), 10, 2 );
 		add_filter( 'post_type_link', array( $this, 'post_link_draft' ), 10, 2 );
 		add_filter( 'page_link', array( $this, 'post_link_draft' ), 10, 2 );
-		add_action( 'wp_ajax_customize-posts-add-new', array( $this, 'ajax_add_new_post' ) );
+		add_action( 'wp_ajax_customize-posts-insert-auto-draft', array( $this, 'ajax_insert_auto_draft_post' ) );
 
 		$this->preview = new WP_Customize_Posts_Preview( $this );
 	}
@@ -759,10 +759,10 @@ final class WP_Customize_Posts {
 	/**
 	 * Ajax handler for adding a new post.
 	 *
-	 * @action wp_ajax_customize-posts-add-new
+	 * @action wp_ajax_customize-posts-insert-auto-draft
 	 * @access public
 	 */
-	public function ajax_add_new_post() {
+	public function ajax_insert_auto_draft_post() {
 		if ( ! check_ajax_referer( 'customize-posts', 'customize-posts-nonce', false ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'bad_nonce' );

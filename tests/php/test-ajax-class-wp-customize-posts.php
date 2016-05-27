@@ -76,11 +76,11 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 	}
 
 	/**
-	 * Testing successful ajax_add_new_post
+	 * Testing successful ajax_insert_auto_draft_post
 	 *
-	 * @see WP_Customize_Posts::ajax_add_new_post()
+	 * @see WP_Customize_Posts::ajax_insert_auto_draft_post()
 	 */
-	function test_ajax_add_new_post_success() {
+	function test_ajax_insert_auto_draft_post_success() {
 		add_theme_support( 'post-thumbnails' );
 		$this->posts_component->register_meta();
 
@@ -89,7 +89,7 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
 			'post_type' => 'post',
 		) );
-		$this->make_ajax_call( 'customize-posts-add-new' );
+		$this->make_ajax_call( 'customize-posts-insert-auto-draft' );
 
 		// Get the results.
 		$response = json_decode( $this->_last_response, true );
@@ -106,11 +106,11 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 	}
 
 	/**
-	 * Testing successful ajax_add_new_post
+	 * Testing successful ajax_insert_auto_draft_post
 	 *
-	 * @see WP_Customize_Posts::ajax_add_new_post()
+	 * @see WP_Customize_Posts::ajax_insert_auto_draft_post()
 	 */
-	function test_ajax_add_new_post_failure() {
+	function test_ajax_insert_auto_draft_post_failure() {
 		$post_data_params = array(
 			'post_type' => 'post',
 			'menu_order' => 1,
@@ -121,7 +121,7 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
 			'params' => $post_data_params,
 		) );
-		$this->make_ajax_call( 'customize-posts-add-new' );
+		$this->make_ajax_call( 'customize-posts-insert-auto-draft' );
 
 		// Get the results.
 		$response = json_decode( $this->_last_response, true );
@@ -130,12 +130,12 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 	}
 
 	/**
-	 * Testing ajax_add_new_post bad_nonce check
+	 * Testing ajax_insert_auto_draft_post bad_nonce check
 	 *
-	 * @see WP_Customize_Posts::ajax_add_new_post()
+	 * @see WP_Customize_Posts::ajax_insert_auto_draft_post()
 	 */
-	function test_ajax_add_new_post_bad_nonce() {
-		$this->make_ajax_call( 'customize-posts-add-new' );
+	function test_ajax_insert_auto_draft_post_bad_nonce() {
+		$this->make_ajax_call( 'customize-posts-insert-auto-draft' );
 
 		// Get the results.
 		$response = json_decode( $this->_last_response, true );
@@ -148,17 +148,17 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 	}
 
 	/**
-	 * Testing ajax_add_new_post customize_not_allowed check
+	 * Testing ajax_insert_auto_draft_post customize_not_allowed check
 	 *
-	 * @see WP_Customize_Posts::ajax_add_new_post()
+	 * @see WP_Customize_Posts::ajax_insert_auto_draft_post()
 	 */
-	function test_ajax_add_new_post_customize_not_allowed() {
+	function test_ajax_insert_auto_draft_post_customize_not_allowed() {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
 		$_POST = array(
 			'action' => 'customize-posts',
 			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
 		);
-		$this->make_ajax_call( 'customize-posts-add-new' );
+		$this->make_ajax_call( 'customize-posts-insert-auto-draft' );
 
 		// Get the results.
 		$response = json_decode( $this->_last_response, true );
@@ -171,16 +171,16 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 	}
 
 	/**
-	 * Testing ajax_add_new_post missing_post_type check
+	 * Testing ajax_insert_auto_draft_post missing_post_type check
 	 *
-	 * @see WP_Customize_Posts::ajax_add_new_post()
+	 * @see WP_Customize_Posts::ajax_insert_auto_draft_post()
 	 */
-	function test_ajax_add_new_post_missing_post_type() {
+	function test_ajax_insert_auto_draft_post_missing_post_type() {
 		$_POST = array(
 			'action' => 'customize-posts',
 			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
 		);
-		$this->make_ajax_call( 'customize-posts-add-new' );
+		$this->make_ajax_call( 'customize-posts-insert-auto-draft' );
 
 		// Get the results.
 		$response = json_decode( $this->_last_response, true );
@@ -193,11 +193,11 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 	}
 
 	/**
-	 * Testing ajax_add_new_post insufficient_post_permissions check
+	 * Testing ajax_insert_auto_draft_post insufficient_post_permissions check
 	 *
-	 * @see WP_Customize_Posts::ajax_add_new_post()
+	 * @see WP_Customize_Posts::ajax_insert_auto_draft_post()
 	 */
-	function test_ajax_add_new_post_insufficient_post_permissions() {
+	function test_ajax_insert_auto_draft_post_insufficient_post_permissions() {
 		remove_filter( 'user_has_cap', array( $GLOBALS['customize_posts_plugin'], 'grant_customize_capability' ), 10 );
 		$role = get_role( 'administrator' );
 		$role->add_cap( 'customize' );
@@ -209,7 +209,7 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
 			'post_type' => 'post',
 		);
-		$this->make_ajax_call( 'customize-posts-add-new' );
+		$this->make_ajax_call( 'customize-posts-insert-auto-draft' );
 
 		// Get the results.
 		$response = json_decode( $this->_last_response, true );

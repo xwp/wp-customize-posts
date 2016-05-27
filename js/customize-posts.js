@@ -94,7 +94,7 @@
 	component.insertAutoDraftPost = function( postType ) {
 		var request, deferred = $.Deferred();
 
-		request = wp.ajax.post( 'customize-posts-add-new', {
+		request = wp.ajax.post( 'customize-posts-insert-auto-draft', {
 			'customize-posts-nonce': api.Posts.data.nonce,
 			'wp_customize': 'on',
 			'post_type': postType
