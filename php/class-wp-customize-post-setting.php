@@ -182,6 +182,10 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			$post_data['post_excerpt'] = preg_replace( '/\r\n/', "\n", $post_data['post_excerpt'] );
 		}
 
+		$post_data = wp_array_slice_assoc(
+			$post_data,
+			array_keys( $this->default )
+		);
 		return $post_data;
 	}
 
@@ -213,11 +217,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	 * @return array
 	 */
 	public function get_post_data( WP_Post $post ) {
-		$post_data = wp_array_slice_assoc(
-			$post->to_array(),
-			array_keys( $this->default )
-		);
-		$post_data = $this->normalize_post_data( $post_data );
+		$post_data = $this->normalize_post_data( $post->to_array() );
 		return $post_data;
 	}
 
