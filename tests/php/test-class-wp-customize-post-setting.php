@@ -349,7 +349,9 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$this->assertInternalType( 'array', $lock );
 		$this->assertEquals( $other_user_id, wp_check_post_lock( $setting->post_id ) );
 
-		$error = $setting->sanitize( array( 'post_title' => 'Locked?' ), true );
+		$this->assertInternalType( 'array', $setting->sanitize( array( 'post_title' => 'Locked?' ) ) );
+		do_action( 'customize_save_validation_before', $this->wp_customize );
+		$error = $setting->sanitize( array( 'post_title' => 'Locked?' ) );
 		if ( $has_setting_validation ) {
 			$this->assertInstanceOf( 'WP_Error', $error );
 			$this->assertEquals( 'post_locked', $error->get_error_code() );
@@ -375,13 +377,16 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 			$setting->value(),
 			compact( 'post_modified_gmt', 'post_modified' )
 		);
-		$this->assertInternalType( 'array', $setting->sanitize( $dirty_value, true ) );
+		$this->assertInternalType( 'array', $setting->sanitize( $dirty_value ) );
 
 		$post_title = 'Override post title';
 		$dirty_value = array_merge(
 			$setting->value(),
 			compact( 'post_modified_gmt', 'post_modified', 'post_title' )
 		);
+
+		$this->assertInternalType( 'array', $setting->sanitize( $dirty_value ) );
+		do_action( 'customize_save_validation_before', $this->wp_customize );
 		$error = $setting->sanitize( $dirty_value, true );
 		if ( $has_setting_validation ) {
 			$this->assertInstanceOf( 'WP_Error', $error );
@@ -471,7 +476,6 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		) );
 		$this->assertNotEmpty( $sanitized['post_date_gmt'] );
 		$this->assertNotEmpty( $sanitized['post_date'] );
-
 
 		$sanitized = $setting->sanitize( array_merge(
 			$setting->value(),

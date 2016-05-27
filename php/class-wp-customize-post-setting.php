@@ -266,7 +266,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		}
 		$post_data['post_type'] = $this->post_type;
 
-		if ( $update ) {
+		if ( $update && did_action( 'customize_save_validation_before' ) ) {
 			// Check post lock.
 			require_once ABSPATH . 'wp-admin/includes/post.php';
 			$locked_user = wp_check_post_lock( $this->post_id );
