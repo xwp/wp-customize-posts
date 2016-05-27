@@ -299,10 +299,15 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	 * @see WP_Customize_Post_Setting::sanitize()
 	 */
 	public function test_sanitize_empty_content() {
+		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 		$setting = $this->create_post_setting();
 		$error = $setting->sanitize( array( 'post_title' => '', 'post_content' => '' ), true );
-		$this->assertInstanceOf( 'WP_Error', $error );
-		$this->assertEquals( 'empty_content', $error->get_error_code() );
+		if ( $has_setting_validation ) {
+			$this->assertInstanceOf( 'WP_Error', $error );
+			$this->assertEquals( 'empty_content', $error->get_error_code() );
+		} else {
+			$this->assertNull( $error );
+		}
 		add_filter( 'wp_insert_post_empty_content', '__return_false' );
 		$data = $setting->sanitize( array( 'post_title' => '', 'post_content' => '' ), true );
 		$this->assertInternalType( 'array', $data );
@@ -315,10 +320,10 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	 */
 	public function test_sanitize_bad_post_type() {
 		$setting = $this->create_post_setting();
-		$can_wp_error = method_exists( 'WP_Customize_Setting', 'validate' );
+		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 
 		$data = $setting->sanitize( array( 'post_type' => 'bad' ) );
-		if ( $can_wp_error ) {
+		if ( $has_setting_validation ) {
 			$this->assertInstanceOf( 'WP_Error', $data );
 			$this->assertEquals( 'bad_post_type', $data->get_error_code() );
 		} else {
@@ -332,6 +337,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	 * @see WP_Customize_Post_Setting::sanitize()
 	 */
 	public function test_sanitize_locked_post() {
+		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 		$other_user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
 		$setting = $this->create_post_setting( array(
 			'post_author' => $other_user_id,
@@ -344,8 +350,12 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$this->assertEquals( $other_user_id, wp_check_post_lock( $setting->post_id ) );
 
 		$error = $setting->sanitize( array( 'post_title' => 'Locked?' ), true );
-		$this->assertInstanceOf( 'WP_Error', $error );
-		$this->assertEquals( 'post_locked', $error->get_error_code() );
+		if ( $has_setting_validation ) {
+			$this->assertInstanceOf( 'WP_Error', $error );
+			$this->assertEquals( 'post_locked', $error->get_error_code() );
+		} else {
+			$this->assertNull( $error );
+		}
 	}
 
 	/**
@@ -354,6 +364,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	 * @see WP_Customize_Post_Setting::sanitize()
 	 */
 	public function test_sanitize_post_conflict() {
+		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 		$setting = $this->create_post_setting();
 
 		$diff = -60;
@@ -372,8 +383,12 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 			compact( 'post_modified_gmt', 'post_modified', 'post_title' )
 		);
 		$error = $setting->sanitize( $dirty_value, true );
-		$this->assertInstanceOf( 'WP_Error', $error );
-		$this->assertEquals( 'post_update_conflict', $error->get_error_code() );
+		if ( $has_setting_validation ) {
+			$this->assertInstanceOf( 'WP_Error', $error );
+			$this->assertEquals( 'post_update_conflict', $error->get_error_code() );
+		} else {
+			$this->assertNull( $error );
+		}
 	}
 
 	/**
@@ -442,6 +457,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	 * @see WP_Customize_Post_Setting::sanitize()
 	 */
 	public function test_sanitize_default_post_date() {
+		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 		$setting = $this->create_post_setting( array(
 			'post_status' => 'publish',
 		) );
@@ -463,7 +479,11 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 				'post_date' => '9999-99-99',
 			)
 		), true );
-		$this->assertInstanceOf( 'WP_Error', $sanitized );
+		if ( $has_setting_validation ) {
+			$this->assertInstanceOf( 'WP_Error', $sanitized );
+		} else {
+			$this->assertNull( $sanitized );
+		}
 	}
 
 	/**

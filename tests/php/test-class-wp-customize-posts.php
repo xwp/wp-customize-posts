@@ -217,7 +217,9 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertEquals( $args['transport'], $setting->transport );
 		$this->assertEquals( $args['sanitize_callback'], $setting->sanitize_callback );
 		$this->assertEquals( $args['sanitize_js_callback'], $setting->sanitize_js_callback );
-		$this->assertEquals( $args['validate_callback'], $setting->validate_callback );
+		if ( method_exists( 'WP_Customize_Setting', 'validate' ) ) {
+			$this->assertEquals( $args['validate_callback'], $setting->validate_callback );
+		}
 		$this->assertInstanceOf( $args['setting_class'], $setting );
 	}
 

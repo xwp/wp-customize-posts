@@ -142,7 +142,7 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 	 * @return mixed|WP_Error|null Sanitized post array or WP_Error if invalid (or null if not WP 4.6-alpha).
 	 */
 	public function sanitize( $meta_value ) {
-		$can_wp_error = method_exists( 'WP_Customize_Setting', 'validate' );
+		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 
 		$meta_type = 'post';
 		$object_id = $this->post_id;
@@ -162,13 +162,13 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 			$meta_value = sanitize_meta( $meta_key, $meta_value, $meta_type );
 		}
 		if ( is_wp_error( $meta_value ) ) {
-			return $can_wp_error ? $meta_value : null;
+			return $has_setting_validation ? $meta_value : null;
 		}
 
 		/** This filter is documented in wp-includes/meta.php */
 		$check = apply_filters( "update_{$meta_type}_metadata", null, $object_id, $meta_key, $meta_value, $prev_value );
 		if ( null !== $check ) {
-			return $can_wp_error ? new WP_Error( 'not_allowed', sprintf( __( 'Update to post meta "%s" blocked.', 'customize-posts' ), $meta_key ) ) : null;
+			return $has_setting_validation ? new WP_Error( 'not_allowed', sprintf( __( 'Update to post meta "%s" blocked.', 'customize-posts' ), $meta_key ) ) : null;
 		}
 
 		return $meta_value;

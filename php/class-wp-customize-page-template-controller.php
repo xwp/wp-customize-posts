@@ -109,9 +109,10 @@ class WP_Customize_Page_Template_Controller extends WP_Customize_Postmeta_Contro
 	public function sanitize_setting( $page_template, WP_Customize_Postmeta_Setting $setting ) {
 		$post = get_post( $setting->post_id );
 		$page_templates = wp_get_theme()->get_page_templates( $post );
+		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 
 		if ( 'default' !== $page_template && ! isset( $page_templates[ $page_template ] ) ) {
-			return new WP_Error( 'invalid_page_template', __( 'The page template is invalid.', 'customize-posts' ) );
+			return $has_setting_validation ? new WP_Error( 'invalid_page_template', __( 'The page template is invalid.', 'customize-posts' ) ) : null;
 		}
 		return $page_template;
 	}

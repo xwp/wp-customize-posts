@@ -382,6 +382,7 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	 */
 	public function sanitize_setting( $attachment_id, WP_Customize_Postmeta_Setting $setting ) {
 		unset( $setting );
+		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 
 		$is_valid = (
 			'' === $attachment_id
@@ -397,7 +398,7 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 		 * So $attachment_id is either a valid attachment ID, -1, or false.
 		 */
 		if ( ! $is_valid  ) {
-			return new WP_Error( 'invalid_attachment_id', __( 'The attachment is invalid.', 'customize-posts' ) );
+			return $has_setting_validation ? new WP_Error( 'invalid_attachment_id', __( 'The attachment is invalid.', 'customize-posts' ) ) : null;
 		}
 
 		$attachment_id = $this->sanitize_value( $attachment_id );

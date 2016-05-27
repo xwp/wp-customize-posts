@@ -143,7 +143,7 @@ class Test_WP_Customize_Page_Template_Controller extends WP_UnitTestCase {
 	 */
 	public function test_sanitize_setting() {
 		switch_theme( 'twentytwelve' );
-		$can_wp_error = method_exists( 'WP_Customize_Setting', 'validate' );
+		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 
 		$controller = new WP_Customize_Page_Template_Controller();
 		$post = get_post( $this->factory()->post->create() );
@@ -157,7 +157,7 @@ class Test_WP_Customize_Page_Template_Controller extends WP_UnitTestCase {
 		$this->assertEquals( $value, $controller->sanitize_setting( $value, $setting ) );
 
 		$value = '../page-templates/bad.php';
-		if ( $can_wp_error ) {
+		if ( $has_setting_validation ) {
 			$sanitized = $controller->sanitize_setting( $value, $setting );
 			$this->assertInstanceOf( 'WP_Error', $sanitized );
 			$this->assertEquals( 'invalid_page_template', $sanitized->get_error_code() );

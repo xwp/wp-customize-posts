@@ -265,10 +265,10 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 			'sanitize_callback' => array( $this->plugin->page_template_controller, 'sanitize_setting' )
 		) );
 
-		$can_validate_wp_error = method_exists( 'WP_Customize_Setting', 'validate' );
+		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 
 		$this->assertEquals( 'default', $setting->sanitize( 'default' ) );
-		if ( $can_validate_wp_error ) {
+		if ( $has_setting_validation ) {
 			$error = $setting->sanitize( 'bad-template.php' );
 			$this->assertInstanceOf( 'WP_Error', $error );
 			$this->assertEquals( 'invalid_page_template', $error->get_error_code() );
