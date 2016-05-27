@@ -21,6 +21,13 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 	public $wp_customize;
 
 	/**
+	 * Posts component.
+	 *
+	 * @var WP_Customize_Posts
+	 */
+	public $posts_component;
+
+	/**
 	 * Setup.
 	 *
 	 * @inheritdoc
@@ -34,6 +41,7 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 		$GLOBALS['wp_customize'] = new WP_Customize_Manager();
 		// @codingStandardsIgnoreStop
 		$this->wp_customize = $GLOBALS['wp_customize'];
+		$this->posts_component = $this->wp_customize->posts;
 
 		$_SERVER['REQUEST_METHOD'] = 'POST';
 		$_REQUEST['wp_customize'] = 'on';
@@ -73,16 +81,13 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 	 * @see WP_Customize_Posts::ajax_add_new_post()
 	 */
 	function test_ajax_add_new_post_success() {
-		$post_data_params = array(
-			'post_type' => 'post',
-			'post_title' => '(untitled)',
-			'menu_order' => 1,
-		);
+		add_theme_support( 'post-thumbnails' );
+		$this->posts_component->register_meta();
 
 		$_POST = wp_slash( array(
 			'action' => 'customize-posts',
 			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
-			'params' => $post_data_params,
+			'post_type' => 'post',
 		) );
 		$this->make_ajax_call( 'customize-posts-add-new' );
 
@@ -91,17 +96,13 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 
 		$this->assertTrue( $response['success'] );
 		$this->assertArrayHasKey( 'sectionId', $response['data'] );
+		$this->assertArrayHasKey( 'postId', $response['data'] );
+		$this->assertArrayHasKey( 'postSettingId', $response['data'] );
 		$this->assertArrayHasKey( 'url', $response['data'] );
 		$this->assertArrayHasKey( 'settings', $response['data'] );
-		$this->assertCount( 1, $response['data']['settings'] );
-		$setting_params = current( $response['data']['settings'] );
-
-		unset( $post_data_params['post_type'] );
-		foreach ( $post_data_params as $key => $value ) {
-			$this->assertEquals( $value, $setting_params['value'][ $key ] );
-		}
-		$this->assertArrayNotHasKey( 'ID', $setting_params['value'] );
-		$this->assertArrayNotHasKey( 'filter', $setting_params['value'] );
+		$this->assertArrayHasKey( $response['data']['postSettingId'], $response['data']['settings'] );
+		$postmeta_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $response['data']['postId'] ), '_thumbnail_id' );
+		$this->assertArrayHasKey( $postmeta_setting_id, $response['data']['settings'] );
 	}
 
 	/**
@@ -185,7 +186,7 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 		$response = json_decode( $this->_last_response, true );
 		$expected_results = array(
 			'success' => false,
-			'data'    => 'missing_params',
+			'data'    => 'missing_post_type',
 		);
 
 		$this->assertSame( $expected_results, $response );
@@ -206,9 +207,7 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 		$_POST = array(
 			'action' => 'customize-posts',
 			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
-			'params' => array(
-				'post_type' => 'post',
-			),
+			'post_type' => 'post',
 		);
 		$this->make_ajax_call( 'customize-posts-add-new' );
 

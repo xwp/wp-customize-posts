@@ -757,31 +757,6 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Validate post data.
-	 *
-	 * @param array $params Unsanitized post data.
-	 * @return true|WP_Error True if sanitized and valid, or WP_Error otherwise.
-	 */
-	public function validate_post_setting_value( $params ) {
-		$mock_post = new WP_Post( (object) array(
-			'ID' => 0,
-			'post_type' => $params['post_type'],
-		) );
-		$mock_post_setting = new WP_Customize_Post_Setting( $this->manager, WP_Customize_Post_Setting::get_post_setting_id( $mock_post ) );
-		$sanitized_params = $mock_post_setting->sanitize( $params );
-		if ( is_null( $sanitized_params ) ) {
-			$validity = new WP_Error( 'invalid_value', __( 'Invalid post params.', 'customize-posts' ) );
-		} elseif ( is_wp_error( $sanitized_params ) ) {
-			$validity = $sanitized_params;
-		} elseif ( method_exists( 'WP_Customize_Setting', 'validate' ) ) {
-			$validity = $mock_post_setting->validate( $sanitized_params );
-		} else {
-			$validity = true;
-		}
-		return $validity;
-	}
-
-	/**
 	 * Ajax handler for adding a new post.
 	 *
 	 * @action wp_ajax_customize-posts-add-new
@@ -798,19 +773,12 @@ final class WP_Customize_Posts {
 			wp_send_json_error( 'customize_not_allowed' );
 		}
 
-		if ( empty( $_POST['params'] ) || ! is_array( $_POST['params'] ) ) {
+		if ( empty( $_POST['post_type'] ) ) {
 			status_header( 400 );
-			wp_send_json_error( 'missing_params' );
+			wp_send_json_error( 'missing_post_type' );
 		}
 
-		$params = wp_unslash( $_POST['params'] );
-
-		if ( empty( $params['post_type'] ) ) {
-			status_header( 400 );
-			wp_send_json_error( 'missing_post_type_param' );
-		}
-
-		$post_type_object = get_post_type_object( $params['post_type'] );
+		$post_type_object = get_post_type_object( wp_unslash( $_POST['post_type'] ) );
 		if ( ! $post_type_object || ! current_user_can( $post_type_object->cap->create_posts ) ) {
 			status_header( 403 );
 			wp_send_json_error( 'insufficient_post_permissions' );
@@ -819,15 +787,6 @@ final class WP_Customize_Posts {
 			$singular_name = $post_type_object->labels->singular_name;
 		} else {
 			$singular_name = __( 'Post', 'customize-posts' );
-		}
-
-		// Validate that the setting be valid before attempting to create an auto-draft for it.
-		$validity = $this->validate_post_setting_value( $params );
-		if ( is_wp_error( $validity ) ) {
-			$data = array(
-				'message' => sprintf( __( '%1$s could not be created: %2$s', 'customize-posts' ), $singular_name, $validity->get_error_message() ),
-			);
-			wp_send_json_error( $data );
 		}
 
 		$r = $this->insert_auto_draft_post( $post_type_object->name );
@@ -844,13 +803,10 @@ final class WP_Customize_Posts {
 			$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
 			$setting_ids = array( $post_setting_id );
 			$this->manager->add_dynamic_settings( $setting_ids );
-
-			$this->manager->set_post_value( $post_setting_id, $params );
 			$post_setting = $this->manager->get_setting( $post_setting_id );
 			if ( ! $post_setting ) {
 				wp_send_json_error( array( 'message' => __( 'Failed to create setting', 'customize-posts' ) ) );
 			}
-			$post_setting->preview();
 
 			$setting_ids = array_merge( $setting_ids, $this->register_post_type_meta_settings( $post->ID ) );
 			foreach ( $setting_ids as $setting_id ) {
@@ -878,6 +834,7 @@ final class WP_Customize_Posts {
 			}
 			$data = array(
 				'postId' => $post->ID,
+				'postSettingId' => $post_setting_id,
 				'settings' => $exported_settings,
 				'sectionId' => WP_Customize_Post_Setting::get_post_setting_id( $post ),
 				'url' => Edit_Post_Preview::get_preview_post_link( $post ),

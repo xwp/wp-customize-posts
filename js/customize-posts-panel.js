@@ -88,15 +88,19 @@
 					button.prop( 'disabled', true );
 
 					postData = {
-						post_type: panel.postType,
 						post_status: 'publish'
 					};
 					if ( postObj.supports.title ) {
 						postData.post_title = api.Posts.data.l10n.noTitle;
 					}
 
-					promise = api.Posts.insertAutoDraftPost( postData );
+					promise = api.Posts.insertAutoDraftPost( panel.postType );
 					promise.done( function( data ) {
+						data.setting.set( _.extend(
+							{},
+							data.setting.get(),
+							postData
+						) );
 
 						// Navigate to the newly-created post if it is public; otherwise, refresh the preview.
 						if ( postObj['public'] && data.url ) {
