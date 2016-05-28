@@ -413,6 +413,38 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Get the post status choices array.
+	 *
+	 * @return array
+	 */
+	public function get_post_status_choices() {
+		$choices = array(
+			array(
+				'value' => 'draft',
+				'text'  => __( 'Draft', 'customize-posts' ),
+			),
+			array(
+				'value' => 'pending',
+				'text'  => __( 'Pending Review', 'customize-posts' ),
+			),
+			array(
+				'value' => 'private',
+				'text'  => __( 'Private', 'customize-posts' ),
+			),
+			array(
+				'value' => 'publish',
+				'text'  => __( 'Published', 'customize-posts' ),
+			),
+			array(
+				'value' => 'trash',
+				'text'  => __( 'Trash', 'customize-posts' ),
+			),
+		);
+
+		return $choices;
+	}
+
+	/**
 	 * Get the author choices array.
 	 *
 	 * @return array
@@ -517,12 +549,14 @@ final class WP_Customize_Posts {
 		$exports = array(
 			'nonce' => wp_create_nonce( 'customize-posts' ),
 			'postTypes' => $post_types,
+			'postStatusChoices' => $this->get_post_status_choices(),
 			'authorChoices' => $this->get_author_choices(),
 			'l10n' => array(
 				/* translators: &#9656; is the unicode right-pointing triangle, and %s is the section title in the Customizer */
 				'sectionCustomizeActionTpl' => __( 'Customizing &#9656; %s', 'customize-posts' ),
 				'fieldTitleLabel' => __( 'Title', 'customize-posts' ),
 				'fieldSlugLabel' => __( 'Slug', 'customize-posts' ),
+				'fieldPostStatusLabel' => __( 'Post Status', 'customize-posts' ),
 				'fieldContentLabel' => __( 'Content', 'customize-posts' ),
 				'fieldExcerptLabel' => __( 'Excerpt', 'customize-posts' ),
 				'fieldDiscussionLabel' => __( 'Discussion', 'customize-posts' ),
@@ -637,6 +671,10 @@ final class WP_Customize_Posts {
 			<button class="customize-posts-navigation dashicons dashicons-visibility" tabindex="0">
 				<span class="screen-reader-text"><?php esc_html_e( 'Preview', 'customize-posts' ); ?> {{ data.label }}</span>
 			</button>
+		</script>
+
+		<script id="tmpl-customize-posts-trashed" type="text/html">
+			<span class="customize-posts-trashed">(<?php esc_html_e( 'Trashed', 'customize-posts' ); ?>)</span>
 		</script>
 		<?php
 	}

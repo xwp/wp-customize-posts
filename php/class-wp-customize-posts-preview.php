@@ -171,10 +171,11 @@ final class WP_Customize_Posts_Preview {
 	 *
 	 * @access public
 	 *
-	 * @param \WP_Query $query The query.
+	 * @param \WP_Query $query     The query.
+	 * @param boolean   $published Whether to return the published posts. Default 'true'.
 	 * @return array
 	 */
-	public function get_previewed_posts_for_query( WP_Query $query ) {
+	public function get_previewed_posts_for_query( WP_Query $query, $published = true ) {
 		$query_vars = $query->query_vars;
 
 		if ( empty( $query_vars['post_type'] ) ) {
@@ -209,6 +210,10 @@ final class WP_Customize_Posts_Preview {
 
 				$post_status_match = in_array( $post_data['post_status'], $query_vars['post_status'], true );
 
+				if ( false === $published ) {
+					$post_status_match = ! in_array( $post_data['post_status'], array( 'publish', 'private' ), true );
+				}
+
 				if ( $post_status_match && $post_type_match ) {
 					$post_ids[] = intval( $matches['post_id'] );
 				}
@@ -232,9 +237,12 @@ final class WP_Customize_Posts_Preview {
 		global $wpdb;
 
 		if ( ! $query->is_admin && ! $query->is_singular() ) {
-			$post_ids = $this->get_previewed_posts_for_query( $query );
-			if ( ! empty( $post_ids ) ) {
-				$post__in = implode( ',', array_map( 'absint', $post_ids ) );
+			$post__not_in = implode( ',', array_map( 'absint', $this->get_previewed_posts_for_query( $query, false ) ) );
+			if ( ! empty( $post__not_in ) ) {
+				$where .= " AND {$wpdb->posts}.ID NOT IN ($post__not_in)";
+			}
+			$post__in = implode( ',', array_map( 'absint', $this->get_previewed_posts_for_query( $query ) ) );
+			if ( ! empty( $post__in ) ) {
 				$where .= " OR {$wpdb->posts}.ID IN ($post__in)";
 			}
 		}
@@ -523,6 +531,9 @@ final class WP_Customize_Posts_Preview {
 			),
 			'post_name' => array(
 				'fallback_refresh' => false,
+			),
+			'post_status' => array(
+				'fallback_refresh' => true,
 			),
 			'post_content' => array(
 				'selector' => '.entry-content',

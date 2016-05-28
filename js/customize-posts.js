@@ -228,6 +228,25 @@
 		return slug;
 	};
 
+	/**
+	 * Handle receiving customized-posts-purge-trash messages from the preview.
+	 *
+	 * @param {boolean} singular Whether or not we are previewing a single post.
+	 * @returns {void}
+	 */
+	component.purgeTrash = function( singular ) {
+		api.section.each( function( section ) {
+			if ( section.extended( component.PostSection ) && 'trash' === api( section.id ).get().post_status ) {
+				api.section.remove( section.id );
+				section.collapse();
+				section.panel.set( false );
+				if ( true === singular ) {
+					api.previewer.previewUrl( api.settings.url.home );
+				}
+			}
+		} );
+	};
+
 	api.bind( 'ready', function() {
 
 		// Add a post_ID input for editor integrations (like Shortcake) to be able to know the post being edited.
@@ -235,6 +254,7 @@
 		$( 'body' ).append( component.postIdInput );
 
 		api.previewer.bind( 'customized-posts', component.receivePreviewData );
+		api.previewer.bind( 'customized-posts-purge-trash', component.purgeTrash );
 
 		/**
 		 * Focus on the section requested from the preview.
@@ -249,7 +269,7 @@
 		} );
 
 		/**
-		 * Focus on the section requested from the preview.
+		 * Focus on the control requested from the preview.
 		 *
 		 * @todo This can be merged into Core to correspond with focus-control-for-setting.
 		 */

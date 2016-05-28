@@ -121,7 +121,7 @@
 			customizeActionElement = sectionInnerTitleElement.find( '.customize-action' ).first();
 			setting.bind( function( newPostData, oldPostData ) {
 				var title;
-				if ( newPostData.post_title !== oldPostData.post_title ) {
+				if ( newPostData.post_title !== oldPostData.post_title && 'trash' !== newPostData.post_status ) {
 					title = newPostData.post_title || api.Posts.data.l10n.noTitle;
 					sectionOuterTitleElement.text( title );
 					sectionInnerTitleElement.text( title );
@@ -179,6 +179,9 @@
 			if ( postTypeObj.supports.title || postTypeObj.supports.slug ) {
 				section.addSlugControl();
 			}
+
+			section.addPostStatusControl();
+
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
 			}
@@ -281,6 +284,96 @@
 		},
 
 		/**
+		 * Add post status control.
+		 *
+		 * @returns {wp.customize.Control} Added control.
+		 */
+		addPostStatusControl: function() {
+			var section = this, control, setting = api( section.id ), sectionContainer, sectionTitle;
+
+			sectionContainer = section.container.closest( '.accordion-section' );
+			sectionTitle = sectionContainer.find( '.accordion-section-title:first' );
+
+			control = new api.controlConstructor.dynamic( section.id + '[post_status]', {
+				params: {
+					section: section.id,
+					priority: 20,
+					label: api.Posts.data.l10n.fieldPostStatusLabel,
+					active: true,
+					settings: {
+						'default': setting.id
+					},
+					field_type: 'select',
+					setting_property: 'post_status',
+					choices: api.Posts.data.postStatusChoices
+				}
+			} );
+
+			/**
+			 * Update the UI when a post is trasitioned from/to trash.
+			 *
+			 * @param {bool} trashed - Whether or not the post_status is 'trash'.
+			 * @returns {void}
+			 */
+			control.toggleTrash = function( trashed ) {
+				var findElements, sectionElements,
+				    template = $( wp.template( 'customize-posts-trashed' )() ),
+				    trashedClass = '.customize-posts-trashed';
+
+				findElements = 'input, textarea, .button, select:not([data-customize-setting-property-link="post_status"])';
+				sectionElements = sectionContainer.find( findElements );
+
+				sectionContainer.toggleClass( 'is-trashed', trashed );
+				sectionElements.attr( 'disabled', trashed );
+				if ( true === trashed ) {
+					if ( 0 === sectionTitle.find( trashedClass ).length ) {
+						sectionTitle.append( template );
+					}
+				} else {
+					sectionContainer.find( '.customize-posts-trashed' ).remove();
+				}
+			};
+
+			/**
+			 * Update the status UI when the setting changes its state.
+			 */
+			setting.bind( function( newPostData, oldPostData ) {
+				if ( newPostData.post_status !== oldPostData.post_status ) {
+					control.toggleTrash( 'trash' === newPostData.post_status );
+				}
+			} );
+
+			// Override preview trying to de-activate control not present in preview context.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.post_status = control;
+			api.control.add( control.id, control );
+
+			// Initialize the trashed UI.
+			api.panel( 'posts[' + section.params.post_type + ']' ).expanded.bind( function() {
+				control.toggleTrash( 'trash' === setting.get().post_status );
+			} );
+
+			control.deferred.embedded.done( function() {
+				var embeddedDelay = 50;
+
+				_.delay( function() {
+					control.toggleTrash( 'trash' === setting.get().post_status );
+				}, embeddedDelay );
+			} );
+
+			// Remove the setting from the settingValidationMessages since it is not specific to this field.
+			if ( control.settingValidationMessages ) {
+				control.settingValidationMessages.remove( setting.id );
+				control.settingValidationMessages.add( control.id, new api.Value( '' ) );
+			}
+			return control;
+		},
+
+		/**
 		 * Add post content control.
 		 *
 		 * @todo It is hacky how the dynamic control is overloaded to connect to the shared TinyMCE editor.
@@ -304,7 +397,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
 				params: {
 					section: section.id,
-					priority: 20,
+					priority: 25,
 					label: api.Posts.data.l10n.fieldContentLabel,
 					active: true,
 					settings: {
