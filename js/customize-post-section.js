@@ -368,10 +368,8 @@
 				}, embeddedDelay );
 			} );
 
-			// Remove the setting from the settingValidationMessages since it is not specific to this field.
-			if ( control.settingValidationMessages ) {
-				control.settingValidationMessages.remove( setting.id );
-				control.settingValidationMessages.add( control.id, new api.Value( '' ) );
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
 			}
 			return control;
 		},
