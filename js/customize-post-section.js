@@ -179,9 +179,9 @@
 			if ( postTypeObj.supports.title || postTypeObj.supports.slug ) {
 				section.addSlugControl();
 			}
-
-			section.addPostStatusControl();
-
+			if ( 'undefined' === typeof EditPostPreviewCustomize ) {
+				section.addPostStatusControl();
+			}
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
 			}
