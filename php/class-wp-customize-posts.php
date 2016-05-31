@@ -780,9 +780,15 @@ final class WP_Customize_Posts {
 		}
 
 		add_filter( 'wp_insert_post_empty_content', '__return_false' );
+		$date_local = current_time( 'mysql', 0 );
+		$date_gmt = current_time( 'mysql', 1 );
 		$args = array(
 			'post_status' => 'auto-draft',
-			'post_type'   => $post_type,
+			'post_type' => $post_type,
+			'post_date' => $date_local,
+			'post_date_gmt' => $date_gmt,
+			'post_modified' => $date_local,
+			'post_modified_gmt' => $date_gmt,
 		);
 		$r = wp_insert_post( wp_slash( $args ), true );
 		remove_filter( 'wp_insert_post_empty_content', '__return_false' );
