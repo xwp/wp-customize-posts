@@ -327,18 +327,10 @@
 			 * @returns {void}
 			 */
 			control.toggleTrash = function( trashed ) {
-				var findElements, sectionElements,
-				    template = $( wp.template( 'customize-posts-trashed' )() ),
-				    trashedClass = '.customize-posts-trashed';
-
-				findElements = 'input, textarea, .button, select:not([data-customize-setting-property-link="post_status"])';
-				sectionElements = sectionContainer.find( findElements );
-
 				sectionContainer.toggleClass( 'is-trashed', trashed );
-				sectionElements.attr( 'disabled', trashed );
 				if ( true === trashed ) {
-					if ( 0 === sectionTitle.find( trashedClass ).length ) {
-						sectionTitle.append( template );
+					if ( 0 === sectionTitle.find( '.customize-posts-trashed' ).length ) {
+						sectionTitle.append( wp.template( 'customize-posts-trashed' )() );
 					}
 				} else {
 					sectionContainer.find( '.customize-posts-trashed' ).remove();
