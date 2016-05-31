@@ -286,6 +286,8 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 				&&
 				! empty( $post_data['post_modified_gmt'] )
 				&&
+				'0000-00-00 00:00:00' !== $post_data['post_modified_gmt']
+				&&
 				$post_data['post_modified_gmt'] < $post->post_modified_gmt
 				&&
 				$this->is_post_data_conflicted( $post, $post_data )
