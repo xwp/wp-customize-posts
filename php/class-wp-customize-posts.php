@@ -90,7 +90,7 @@ final class WP_Customize_Posts {
 		add_filter( 'post_link', array( $this, 'post_link_draft' ), 10, 2 );
 		add_filter( 'post_type_link', array( $this, 'post_link_draft' ), 10, 2 );
 		add_filter( 'page_link', array( $this, 'post_link_draft' ), 10, 2 );
-		add_action( 'wp_ajax_customize-posts-add-new', array( $this, 'ajax_add_new_post' ) );
+		add_action( 'wp_ajax_customize-posts-insert-auto-draft', array( $this, 'ajax_insert_auto_draft_post' ) );
 
 		$this->preview = new WP_Customize_Posts_Preview( $this );
 	}
@@ -182,6 +182,7 @@ final class WP_Customize_Posts {
 				'transport' => null,
 				'sanitize_callback' => null,
 				'sanitize_js_callback' => null,
+				'validate_callback' => null,
 				'setting_class' => 'WP_Customize_Postmeta_Setting',
 			),
 			$setting_args
@@ -563,7 +564,6 @@ final class WP_Customize_Posts {
 				'fieldAuthorLabel' => __( 'Author', 'customize-posts' ),
 				'noTitle' => __( '(no title)', 'customize-posts' ),
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
-				'overrideButtonText' => __( 'Override', 'customize-posts' ),
 				'openEditor' => __( 'Open Editor', 'customize-posts' ),
 				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
 			),
@@ -676,6 +676,19 @@ final class WP_Customize_Posts {
 		<script id="tmpl-customize-posts-trashed" type="text/html">
 			<span class="customize-posts-trashed">(<?php esc_html_e( 'Trashed', 'customize-posts' ); ?>)</span>
 		</script>
+
+		<script type="text/html" id="tmpl-customize-post-section-notifications">
+			<ul>
+				<# _.each( data.notifications, function( notification ) { #>
+					<li class="notice notice-{{ notification.type || 'info' }} {{ data.altNotice ? 'notice-alt' : '' }}" data-code="{{ notification.code }}" data-type="{{ notification.type }}">
+						<# if ( /post_update_conflict/.test( notification.code ) ) { #>
+							<button class="button override-post-conflict" type="button"><?php esc_html_e( 'Override', 'customize-posts' ); ?></button>
+						<# } #>
+						{{ notification.message || notification.code }}
+					</li>
+				<# } ); #>
+			</ul>
+		</script>
 		<?php
 	}
 
@@ -784,10 +797,10 @@ final class WP_Customize_Posts {
 	/**
 	 * Ajax handler for adding a new post.
 	 *
-	 * @action wp_ajax_customize-posts-add-new
+	 * @action wp_ajax_customize-posts-insert-auto-draft
 	 * @access public
 	 */
-	public function ajax_add_new_post() {
+	public function ajax_insert_auto_draft_post() {
 		if ( ! check_ajax_referer( 'customize-posts', 'customize-posts-nonce', false ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'bad_nonce' );
@@ -798,33 +811,25 @@ final class WP_Customize_Posts {
 			wp_send_json_error( 'customize_not_allowed' );
 		}
 
-		if ( empty( $_POST['params'] ) || ! is_array( $_POST['params'] ) ) {
+		if ( empty( $_POST['post_type'] ) ) {
 			status_header( 400 );
-			wp_send_json_error( 'missing_params' );
+			wp_send_json_error( 'missing_post_type' );
 		}
 
-		$params = wp_unslash( $_POST['params'] );
-
-		if ( empty( $params['post_type'] ) ) {
-			status_header( 400 );
-			wp_send_json_error( 'missing_post_type_param' );
-		}
-
-		$post_type_object = get_post_type_object( $params['post_type'] );
+		$post_type_object = get_post_type_object( wp_unslash( $_POST['post_type'] ) );
 		if ( ! $post_type_object || ! current_user_can( $post_type_object->cap->create_posts ) ) {
 			status_header( 403 );
 			wp_send_json_error( 'insufficient_post_permissions' );
+		}
+		if ( ! empty( $post_type_object->labels->singular_name ) ) {
+			$singular_name = $post_type_object->labels->singular_name;
+		} else {
+			$singular_name = __( 'Post', 'customize-posts' );
 		}
 
 		$r = $this->insert_auto_draft_post( $post_type_object->name );
 		if ( is_wp_error( $r ) ) {
 			$error = $r;
-			if ( ! empty( $post_type_object->labels->singular_name ) ) {
-				$singular_name = $post_type_object->labels->singular_name;
-			} else {
-				$singular_name = __( 'Post', 'customize-posts' );
-			}
-
 			$data = array(
 				'message' => sprintf( __( '%1$s could not be created: %2$s', 'customize-posts' ), $singular_name, $error->get_error_message() ),
 			);
@@ -836,10 +841,10 @@ final class WP_Customize_Posts {
 			$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
 			$setting_ids = array( $post_setting_id );
 			$this->manager->add_dynamic_settings( $setting_ids );
-
-			$this->manager->set_post_value( $post_setting_id, $params );
 			$post_setting = $this->manager->get_setting( $post_setting_id );
-			$post_setting->preview();
+			if ( ! $post_setting ) {
+				wp_send_json_error( array( 'message' => __( 'Failed to create setting', 'customize-posts' ) ) );
+			}
 
 			$setting_ids = array_merge( $setting_ids, $this->register_post_type_meta_settings( $post->ID ) );
 			foreach ( $setting_ids as $setting_id ) {
@@ -867,6 +872,7 @@ final class WP_Customize_Posts {
 			}
 			$data = array(
 				'postId' => $post->ID,
+				'postSettingId' => $post_setting_id,
 				'settings' => $exported_settings,
 				'sectionId' => WP_Customize_Post_Setting::get_post_setting_id( $post ),
 				'url' => Edit_Post_Preview::get_preview_post_link( $post ),

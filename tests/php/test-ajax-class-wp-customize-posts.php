@@ -21,6 +21,13 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 	public $wp_customize;
 
 	/**
+	 * Posts component.
+	 *
+	 * @var WP_Customize_Posts
+	 */
+	public $posts_component;
+
+	/**
 	 * Setup.
 	 *
 	 * @inheritdoc
@@ -34,6 +41,7 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 		$GLOBALS['wp_customize'] = new WP_Customize_Manager();
 		// @codingStandardsIgnoreStop
 		$this->wp_customize = $GLOBALS['wp_customize'];
+		$this->posts_component = $this->wp_customize->posts;
 
 		$_SERVER['REQUEST_METHOD'] = 'POST';
 		$_REQUEST['wp_customize'] = 'on';
@@ -68,33 +76,66 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 	}
 
 	/**
-	 * Testing ajax_add_new_post
+	 * Testing successful ajax_insert_auto_draft_post
 	 *
-	 * @see WP_Customize_Posts::ajax_add_new_post()
+	 * @see WP_Customize_Posts::ajax_insert_auto_draft_post()
 	 */
-	function test_ajax_add_new_post() {
-		$_POST = array(
+	function test_ajax_insert_auto_draft_post_success() {
+		add_theme_support( 'post-thumbnails' );
+		$this->posts_component->register_meta();
+
+		$_POST = wp_slash( array(
 			'action' => 'customize-posts',
 			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
-			'params' => array(
-				'post_type' => 'post',
-			),
-		);
-		$this->make_ajax_call( 'customize-posts-add-new' );
+			'post_type' => 'post',
+		) );
+		$this->make_ajax_call( 'customize-posts-insert-auto-draft' );
 
 		// Get the results.
 		$response = json_decode( $this->_last_response, true );
+
+		$this->assertTrue( $response['success'] );
 		$this->assertArrayHasKey( 'sectionId', $response['data'] );
+		$this->assertArrayHasKey( 'postId', $response['data'] );
+		$this->assertArrayHasKey( 'postSettingId', $response['data'] );
 		$this->assertArrayHasKey( 'url', $response['data'] );
+		$this->assertArrayHasKey( 'settings', $response['data'] );
+		$this->assertArrayHasKey( $response['data']['postSettingId'], $response['data']['settings'] );
+		$postmeta_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $response['data']['postId'] ), '_thumbnail_id' );
+		$this->assertArrayHasKey( $postmeta_setting_id, $response['data']['settings'] );
 	}
 
 	/**
-	 * Testing ajax_add_new_post bad_nonce check
+	 * Testing successful ajax_insert_auto_draft_post
 	 *
-	 * @see WP_Customize_Posts::ajax_add_new_post()
+	 * @see WP_Customize_Posts::ajax_insert_auto_draft_post()
 	 */
-	function test_ajax_add_new_post_bad_nonce() {
-		$this->make_ajax_call( 'customize-posts-add-new' );
+	function test_ajax_insert_auto_draft_post_failure() {
+		$post_data_params = array(
+			'post_type' => 'post',
+			'menu_order' => 1,
+		);
+
+		$_POST = wp_slash( array(
+			'action' => 'customize-posts',
+			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
+			'params' => $post_data_params,
+		) );
+		$this->make_ajax_call( 'customize-posts-insert-auto-draft' );
+
+		// Get the results.
+		$response = json_decode( $this->_last_response, true );
+
+		$this->assertFalse( $response['success'] );
+	}
+
+	/**
+	 * Testing ajax_insert_auto_draft_post bad_nonce check
+	 *
+	 * @see WP_Customize_Posts::ajax_insert_auto_draft_post()
+	 */
+	function test_ajax_insert_auto_draft_post_bad_nonce() {
+		$this->make_ajax_call( 'customize-posts-insert-auto-draft' );
 
 		// Get the results.
 		$response = json_decode( $this->_last_response, true );
@@ -107,17 +148,17 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 	}
 
 	/**
-	 * Testing ajax_add_new_post customize_not_allowed check
+	 * Testing ajax_insert_auto_draft_post customize_not_allowed check
 	 *
-	 * @see WP_Customize_Posts::ajax_add_new_post()
+	 * @see WP_Customize_Posts::ajax_insert_auto_draft_post()
 	 */
-	function test_ajax_add_new_post_customize_not_allowed() {
+	function test_ajax_insert_auto_draft_post_customize_not_allowed() {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
 		$_POST = array(
 			'action' => 'customize-posts',
 			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
 		);
-		$this->make_ajax_call( 'customize-posts-add-new' );
+		$this->make_ajax_call( 'customize-posts-insert-auto-draft' );
 
 		// Get the results.
 		$response = json_decode( $this->_last_response, true );
@@ -130,33 +171,33 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 	}
 
 	/**
-	 * Testing ajax_add_new_post missing_post_type check
+	 * Testing ajax_insert_auto_draft_post missing_post_type check
 	 *
-	 * @see WP_Customize_Posts::ajax_add_new_post()
+	 * @see WP_Customize_Posts::ajax_insert_auto_draft_post()
 	 */
-	function test_ajax_add_new_post_missing_post_type() {
+	function test_ajax_insert_auto_draft_post_missing_post_type() {
 		$_POST = array(
 			'action' => 'customize-posts',
 			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
 		);
-		$this->make_ajax_call( 'customize-posts-add-new' );
+		$this->make_ajax_call( 'customize-posts-insert-auto-draft' );
 
 		// Get the results.
 		$response = json_decode( $this->_last_response, true );
 		$expected_results = array(
 			'success' => false,
-			'data'    => 'missing_params',
+			'data'    => 'missing_post_type',
 		);
 
 		$this->assertSame( $expected_results, $response );
 	}
 
 	/**
-	 * Testing ajax_add_new_post insufficient_post_permissions check
+	 * Testing ajax_insert_auto_draft_post insufficient_post_permissions check
 	 *
-	 * @see WP_Customize_Posts::ajax_add_new_post()
+	 * @see WP_Customize_Posts::ajax_insert_auto_draft_post()
 	 */
-	function test_ajax_add_new_post_insufficient_post_permissions() {
+	function test_ajax_insert_auto_draft_post_insufficient_post_permissions() {
 		remove_filter( 'user_has_cap', array( $GLOBALS['customize_posts_plugin'], 'grant_customize_capability' ), 10 );
 		$role = get_role( 'administrator' );
 		$role->add_cap( 'customize' );
@@ -166,11 +207,9 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 		$_POST = array(
 			'action' => 'customize-posts',
 			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
-			'params' => array(
-				'post_type' => 'post',
-			),
+			'post_type' => 'post',
 		);
-		$this->make_ajax_call( 'customize-posts-add-new' );
+		$this->make_ajax_call( 'customize-posts-insert-auto-draft' );
 
 		// Get the results.
 		$response = json_decode( $this->_last_response, true );

@@ -88,16 +88,16 @@
 	/**
 	 * Insert a new stubbed `auto-draft` post.
 	 *
-	 * @param {object} params - Parameters to configure the setting.
-	 * @return {Promise} Promise resolved with the added section.
+	 * @param {string} postType Post type to create.
+	 * @return {jQuery.promise} Promise resolved with the added section.
 	 */
-	component.insertAutoDraftPost = function( params ) {
+	component.insertAutoDraftPost = function( postType ) {
 		var request, deferred = $.Deferred();
 
-		request = wp.ajax.post( 'customize-posts-add-new', {
+		request = wp.ajax.post( 'customize-posts-insert-auto-draft', {
 			'customize-posts-nonce': api.Posts.data.nonce,
 			'wp_customize': 'on',
-			'params': params || {}
+			'post_type': postType
 		} );
 
 		request.done( function( response ) {
@@ -106,7 +106,10 @@
 				deferred.rejectWith( 'no_sections' );
 			} else {
 				deferred.resolve( _.extend(
-					{ section: sections[0] },
+					{
+						section: sections[0],
+						setting: api( sections[0].id )
+					},
 					response
 				) );
 			}

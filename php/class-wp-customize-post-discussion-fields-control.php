@@ -73,8 +73,6 @@ class WP_Customize_Post_Discussion_Fields_Control extends WP_Customize_Dynamic_C
 			</label>
 			</p>
 		<# } #>
-
-		<div class="customize-setting-validation-message error" aria-live="assertive"></div>
 		<?php
 	}
 }
