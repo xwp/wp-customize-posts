@@ -259,7 +259,7 @@
 
 		// Track some of the recieved preview data from `customized-posts`.
 		component.previewedQuery = new api.Value( {} );
-		api.previewer.bind( 'customized-posts', function ( data ) {
+		api.previewer.bind( 'customized-posts', function( data ) {
 			var query = {};
 			_.each( [ 'isSingular', 'isPostPreview', 'queriedPostId' ], function( key ) {
 				if ( ! _.isUndefined( data[ key ] ) ) {
