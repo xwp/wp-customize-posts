@@ -321,9 +321,9 @@
 			} );
 
 			/**
-			 * Update the UI when a post is trasitioned from/to trash.
+			 * Update the UI when a post is transitioned from/to trash.
 			 *
-			 * @param {bool} trashed - Whether or not the post_status is 'trash'.
+			 * @param {boolean} trashed - Whether or not the post_status is 'trash'.
 			 * @returns {void}
 			 */
 			control.toggleTrash = function( trashed ) {
