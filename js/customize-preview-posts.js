@@ -150,10 +150,6 @@
 	};
 
 	api.bind( 'preview-ready', function() {
-		api.bind( 'saved', function() {
-			api.preview.send( 'customized-posts-purge-trash', api.previewPosts.data.isSingular );
-		} );
-
 		api.preview.bind( 'active', function() {
 			var settings = {};
 

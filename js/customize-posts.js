@@ -232,18 +232,17 @@
 	};
 
 	/**
-	 * Handle receiving customized-posts-purge-trash messages from the preview.
+	 * Handle purging the trash after Customize `saved`.
 	 *
-	 * @param {boolean} singular Whether or not we are previewing a single post.
 	 * @returns {void}
 	 */
-	component.purgeTrash = function( singular ) {
+	component.purgeTrash = function() {
 		api.section.each( function( section ) {
 			if ( section.extended( component.PostSection ) && 'trash' === api( section.id ).get().post_status ) {
 				api.section.remove( section.id );
 				section.collapse();
 				section.panel.set( false );
-				if ( true === singular ) {
+				if ( ! _.isUndefined( component.previewedQuery ) && true === component.previewedQuery.get().isSingular ) {
 					api.previewer.previewUrl( api.settings.url.home );
 				}
 			}
@@ -257,7 +256,23 @@
 		$( 'body' ).append( component.postIdInput );
 
 		api.previewer.bind( 'customized-posts', component.receivePreviewData );
-		api.previewer.bind( 'customized-posts-purge-trash', component.purgeTrash );
+
+		// Track some of the recieved preview data from `customized-posts`.
+		component.previewedQuery = new api.Value( {} );
+		api.previewer.bind( 'customized-posts', function ( data ) {
+			var query = {};
+			_.each( [ 'isSingular', 'isPostPreview', 'queriedPostId' ], function( key ) {
+				if ( ! _.isUndefined( data[ key ] ) ) {
+					query[ key ] = data[ key ];
+				}
+			} );
+			component.previewedQuery.set( query );
+		} );
+
+		// Purge trashed posts.
+		api.bind( 'saved', function() {
+			component.purgeTrash();
+		} );
 
 		/**
 		 * Focus on the section requested from the preview.
