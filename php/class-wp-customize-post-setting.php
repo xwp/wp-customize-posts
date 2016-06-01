@@ -503,12 +503,23 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			$data['post_status'] = 'publish';
 		}
 
-		$result = wp_update_post( wp_slash( $data ), true );
-
-		if ( is_wp_error( $result ) ) {
-			// @todo Amend customize_save_response
-			return false;
+		$is_trashed = 'trash' === $data['post_status'];
+		if ( $is_trashed ) {
+			unset( $data['post_status'] );
 		}
-		return true;
+
+		if ( $is_trashed ) {
+			add_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
+		}
+		$r = wp_update_post( wp_slash( $data ), true );
+		$result = is_wp_error( $r );
+
+		if ( $result && $is_trashed ) {
+			$result = wp_trash_post( $is_trashed );
+		}
+		if ( $is_trashed ) {
+			remove_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
+		}
+		return $result;
 	}
 }
