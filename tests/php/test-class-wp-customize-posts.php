@@ -297,7 +297,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 * @see WP_Customize_Posts::current_user_can_edit_post()
 	 */
 	public function test_current_user_can_edit_post() {
-		wp_set_current_user( self::factory()->user->create( array( 'role' => 'contibutor' ) ) );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'contributor' ) ) );
 		$posts = new WP_Customize_Posts( $this->wp_customize );
 		$this->assertFalse( $posts->current_user_can_edit_post( $this->post_id ) );
 		wp_set_current_user( $this->user_id );
@@ -426,5 +426,23 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	public function test_insert_auto_draft_post_returns_error() {
 		$r = $this->posts->insert_auto_draft_post( 'fake' );
 		$this->assertInstanceOf( 'WP_Error', $r );
+	}
+
+	/**
+	 * Ensure that an auto-draft post has the expected fields.
+	 *
+	 * @see WP_Customize_Posts::insert_auto_draft_post()
+	 */
+	public function test_insert_auto_draft_post_has_expected_fields() {
+		global $wp_customize;
+		$wp_customize->start_previewing_theme();
+		$this->assertTrue( is_customize_preview() );
+		$post = $this->posts->insert_auto_draft_post( 'post' );
+		$this->assertEquals( 'auto-draft', $post->post_status );
+		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_date );
+		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_date_gmt );
+		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_modified );
+		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_modified_gmt );
+		$this->assertEquals( sprintf( '%s?p=%d', home_url( '/' ), $post->ID ), $post->guid );
 	}
 }
