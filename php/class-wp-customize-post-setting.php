@@ -505,12 +505,18 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 
 		$is_trashed = 'trash' === $data['post_status'];
 		if ( $is_trashed ) {
-			unset( $data['post_status'] );
+			add_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
+
+			/*
+			 * Do not transition the post_status to trash, use the current value.
+			 *
+			 * If we were to unset `$data['post_status']`, the post would not be
+			 * properly purged from the Customizer pane. And if we transitioned the
+			 * status in `wp_update_post()` then `wp_trash_post()` would return false.
+			 */
+			$data['post_status'] = get_post_status( $this->post_id );
 		}
 
-		if ( $is_trashed ) {
-			add_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
-		}
 		$r = wp_update_post( wp_slash( $data ), true );
 		$result = ! is_wp_error( $r );
 
@@ -518,6 +524,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			$result = wp_trash_post( $this->post_id );
 			remove_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
 		}
+
 		return $result;
 	}
 }
