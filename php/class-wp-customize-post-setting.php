@@ -306,7 +306,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		$post_data = sanitize_post( $post_data, 'db' );
 		$initial_sanitized_post_data = $post_data;
 
-		$maybe_empty = 'attachment' !== $this->post_type
+		$maybe_empty = 'trash' !== $post_data['post_status'] && 'attachment' !== $this->post_type
 			&& empty( $post_data['post_content'] ) && empty( $post_data['post_title'] ) && empty( $post_data['post_excerpt'] )
 			&& post_type_supports( $this->post_type, 'editor' )
 			&& post_type_supports( $this->post_type, 'title' )
