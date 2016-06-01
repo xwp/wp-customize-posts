@@ -306,14 +306,14 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		$post_data = sanitize_post( $post_data, 'db' );
 		$initial_sanitized_post_data = $post_data;
 
-		$maybe_empty = 'trash' !== $post_data['post_status'] && 'attachment' !== $this->post_type
+		$maybe_empty = 'attachment' !== $this->post_type
 			&& empty( $post_data['post_content'] ) && empty( $post_data['post_title'] ) && empty( $post_data['post_excerpt'] )
 			&& post_type_supports( $this->post_type, 'editor' )
 			&& post_type_supports( $this->post_type, 'title' )
 			&& post_type_supports( $this->post_type, 'excerpt' );
 
 		/** This filter is documented in wp-includes/post.php */
-		if ( apply_filters( 'wp_insert_post_empty_content', $maybe_empty, $post_data ) ) {
+		if ( 'trash' !== $post_data['post_status'] && apply_filters( 'wp_insert_post_empty_content', $maybe_empty, $post_data ) ) {
 			return $has_setting_validation ? new WP_Error( 'empty_content', __( 'Content, title, and excerpt are empty.', 'customize-posts' ) ) : null;
 		}
 
@@ -514,10 +514,8 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		$r = wp_update_post( wp_slash( $data ), true );
 		$result = ! is_wp_error( $r );
 
-		if ( $result && $is_trashed ) {
-			$result = wp_trash_post( $this->post_id );
-		}
 		if ( $is_trashed ) {
+			$result = wp_trash_post( $this->post_id );
 			remove_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
 		}
 		return $result;

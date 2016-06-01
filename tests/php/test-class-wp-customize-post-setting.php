@@ -301,7 +301,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	public function test_sanitize_empty_content() {
 		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 		$setting = $this->create_post_setting();
-		$error = $setting->sanitize( array( 'post_title' => '', 'post_content' => '' ), true );
+		$error = $setting->sanitize( array( 'post_title' => '', 'post_content' => '' ) );
 		if ( $has_setting_validation ) {
 			$this->assertInstanceOf( 'WP_Error', $error );
 			$this->assertEquals( 'empty_content', $error->get_error_code() );
@@ -309,8 +309,19 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 			$this->assertNull( $error );
 		}
 		add_filter( 'wp_insert_post_empty_content', '__return_false' );
-		$data = $setting->sanitize( array( 'post_title' => '', 'post_content' => '' ), true );
+		$data = $setting->sanitize( array( 'post_title' => '', 'post_content' => '' ) );
 		$this->assertInternalType( 'array', $data );
+	}
+
+	/**
+	 * Test validate trashing empty content.
+	 *
+	 * @see WP_Customize_Post_Setting::sanitize()
+	 */
+	public function test_sanitize_trashed_empty_content() {
+		$setting = $this->create_post_setting();
+		$result = $setting->sanitize( array( 'post_title' => '', 'post_content' => '', 'post_status' => 'trash' ) );
+		$this->assertInternalType( 'array', $result );
 	}
 
 	/**
@@ -610,5 +621,4 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	function handle_action_trashed_post( $post_id ) {
 		$this->trashed_post_id = $post_id;
 	}
-
 }
