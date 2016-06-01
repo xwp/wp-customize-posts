@@ -19,6 +19,13 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	protected $wp_customize;
 
 	/**
+	 * Component.
+	 *
+	 * @var WP_Customize_Posts
+	 */
+	protected $posts_component;
+
+	/**
 	 * User ID.
 	 *
 	 * @var int
@@ -40,6 +47,8 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$GLOBALS['wp_customize'] = new WP_Customize_Manager();
 		// @codingStandardsIgnoreStop
 		$this->wp_customize = $GLOBALS['wp_customize'];
+
+		$this->posts_component = $this->wp_customize->posts;
 	}
 
 	/**
@@ -620,5 +629,32 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	 */
 	function handle_action_trashed_post( $post_id ) {
 		$this->trashed_post_id = $post_id;
+	}
+
+	/**
+	 * Test filtering save response to export saved values.
+	 *
+	 * @see WP_Customize_Posts::filter_customize_save_response_to_export_saved_values()
+	 */
+	public function test_filter_customize_save_response_to_export_saved_values() {
+		$original_data = array(
+			'post_title' => 'Foo',
+		);
+		$setting = $this->create_post_setting( $original_data );
+
+		$override_data = array_merge(
+			$setting->value(),
+			array(
+				'post_title' => 'Bar',
+			)
+		);
+		$setting->manager->set_post_value( $setting->id, $override_data );
+		$setting->manager->register_dynamic_settings();
+
+		$setting->save();
+		$result = $this->posts_component->filter_customize_save_response_to_export_saved_values( array() );
+		$this->assertArrayHasKey( 'saved_post_setting_values', $result );
+		$this->assertArrayHasKey( $setting->id, $result['saved_post_setting_values'] );
+		$this->assertEquals( 'Bar', $result['saved_post_setting_values'][ $setting->id ]['post_title'] );
 	}
 }
