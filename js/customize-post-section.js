@@ -1,5 +1,5 @@
 /* global wp, tinyMCE */
-/* eslint consistent-this: [ "error", "section" ], no-magic-numbers: [ "error", { "ignore": [0,1] } ] */
+/* eslint consistent-this: [ "error", "section" ], no-magic-numbers: [ "error", { "ignore": [-1,0,1] } ] */
 
 (function( api, $ ) {
 	'use strict';
@@ -121,7 +121,7 @@
 			customizeActionElement = sectionInnerTitleElement.find( '.customize-action' ).first();
 			setting.bind( function( newPostData, oldPostData ) {
 				var title;
-				if ( newPostData.post_title !== oldPostData.post_title ) {
+				if ( newPostData.post_title !== oldPostData.post_title && 'trash' !== newPostData.post_status ) {
 					title = newPostData.post_title || api.Posts.data.l10n.noTitle;
 					sectionOuterTitleElement.text( title );
 					sectionInnerTitleElement.text( title );
@@ -179,6 +179,9 @@
 			if ( postTypeObj.supports.title || postTypeObj.supports.slug ) {
 				section.addSlugControl();
 			}
+			if ( 'undefined' === typeof EditPostPreviewCustomize ) {
+				section.addPostStatusControl();
+			}
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
 			}
@@ -190,6 +193,21 @@
 			}
 			if ( postTypeObj.supports.author ) {
 				section.addAuthorControl();
+			}
+		},
+
+		/**
+		 * Prevent notifications for settings from being added to post field control notifications.
+		 *
+		 * @param {string} code                            Notification code.
+		 * @param {wp.customize.Notification} notification Notification object.
+		 * @returns {wp.customize.Notification|null} Notification if not bypassed.
+		 */
+		addPostFieldControlNotification: function( code, notification ) {
+			if ( -1 !== code.indexOf( ':' ) ) {
+				return null;
+			} else {
+				return api.Values.prototype.add.call( this, code, notification );
 			}
 		},
 
@@ -223,10 +241,8 @@
 			section.postFieldControls.post_title = control;
 			api.control.add( control.id, control );
 
-			// Remove the setting from the settingValidationMessages since it is not specific to this field.
-			if ( control.settingValidationMessages ) {
-				control.settingValidationMessages.remove( setting.id );
-				control.settingValidationMessages.add( control.id, new api.Value( '' ) );
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
 			}
 			return control;
 		},
@@ -234,7 +250,7 @@
 		/**
 		 * Add post slug control.
 		 *
-		 * @returns {wp.customize.Control}
+		 * @returns {wp.customize.Control} Added control.
 		 */
 		addSlugControl: function() {
 			var section = this, control, setting = api( section.id );
@@ -272,10 +288,88 @@
 			section.postFieldControls.post_name = control;
 			api.control.add( control.id, control );
 
-			// Remove the setting from the settingValidationMessages since it is not specific to this field.
-			if ( control.settingValidationMessages ) {
-				control.settingValidationMessages.remove( setting.id );
-				control.settingValidationMessages.add( control.id, new api.Value( '' ) );
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
+			}
+			return control;
+		},
+
+		/**
+		 * Add post status control.
+		 *
+		 * @returns {wp.customize.Control} Added control.
+		 */
+		addPostStatusControl: function() {
+			var section = this, control, setting = api( section.id ), sectionContainer, sectionTitle;
+
+			sectionContainer = section.container.closest( '.accordion-section' );
+			sectionTitle = sectionContainer.find( '.accordion-section-title:first' );
+
+			control = new api.controlConstructor.dynamic( section.id + '[post_status]', {
+				params: {
+					section: section.id,
+					priority: 20,
+					label: api.Posts.data.l10n.fieldPostStatusLabel,
+					active: true,
+					settings: {
+						'default': setting.id
+					},
+					field_type: 'select',
+					setting_property: 'post_status',
+					choices: api.Posts.data.postStatusChoices
+				}
+			} );
+
+			/**
+			 * Update the UI when a post is transitioned from/to trash.
+			 *
+			 * @param {boolean} trashed - Whether or not the post_status is 'trash'.
+			 * @returns {void}
+			 */
+			control.toggleTrash = function( trashed ) {
+				sectionContainer.toggleClass( 'is-trashed', trashed );
+				if ( true === trashed ) {
+					if ( 0 === sectionTitle.find( '.customize-posts-trashed' ).length ) {
+						sectionTitle.append( wp.template( 'customize-posts-trashed' )() );
+					}
+				} else {
+					sectionContainer.find( '.customize-posts-trashed' ).remove();
+				}
+			};
+
+			/**
+			 * Update the status UI when the setting changes its state.
+			 */
+			setting.bind( function( newPostData, oldPostData ) {
+				if ( newPostData.post_status !== oldPostData.post_status ) {
+					control.toggleTrash( 'trash' === newPostData.post_status );
+				}
+			} );
+
+			// Override preview trying to de-activate control not present in preview context.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.post_status = control;
+			api.control.add( control.id, control );
+
+			// Initialize the trashed UI.
+			api.panel( 'posts[' + section.params.post_type + ']' ).expanded.bind( function() {
+				control.toggleTrash( 'trash' === setting.get().post_status );
+			} );
+
+			control.deferred.embedded.done( function() {
+				var embeddedDelay = 50;
+
+				_.delay( function() {
+					control.toggleTrash( 'trash' === setting.get().post_status );
+				}, embeddedDelay );
+			} );
+
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
 			}
 			return control;
 		},
@@ -304,7 +398,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
 				params: {
 					section: section.id,
-					priority: 20,
+					priority: 25,
 					label: api.Posts.data.l10n.fieldContentLabel,
 					active: true,
 					settings: {
@@ -538,10 +632,8 @@
 				control.container.append( control.editorToggleExpandButton );
 			} );
 
-			// Remove the setting from the settingValidationMessages since it is not specific to this field.
-			if ( control.settingValidationMessages ) {
-				control.settingValidationMessages.remove( setting.id );
-				control.settingValidationMessages.add( control.id, new api.Value( '' ) );
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
 			}
 			return control;
 		},
@@ -576,10 +668,8 @@
 			section.postFieldControls.post_excerpt = control;
 			api.control.add( control.id, control );
 
-			// Remove the setting from the settingValidationMessages since it is not specific to this field.
-			if ( control.settingValidationMessages ) {
-				control.settingValidationMessages.remove( setting.id );
-				control.settingValidationMessages.add( control.id, new api.Value( '' ) );
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
 			}
 			return control;
 		},
@@ -614,10 +704,8 @@
 			section.postFieldControls.post_discussion_fields = control;
 			api.control.add( control.id, control );
 
-			// Remove the setting from the settingValidationMessages since it is not specific to this field.
-			if ( control.settingValidationMessages ) {
-				control.settingValidationMessages.remove( setting.id );
-				control.settingValidationMessages.add( control.id, new api.Value( '' ) );
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
 			}
 			return control;
 		},
@@ -653,10 +741,8 @@
 			section.postFieldControls.post_author = control;
 			api.control.add( control.id, control );
 
-			// Remove the setting from the settingValidationMessages since it is not specific to this field.
-			if ( control.settingValidationMessages ) {
-				control.settingValidationMessages.remove( setting.id );
-				control.settingValidationMessages.add( control.id, new api.Value( '' ) );
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
 			}
 			return control;
 		},
@@ -667,39 +753,65 @@
 		 * @returns {void}
 		 */
 		setupSettingValidation: function() {
-			var section = this, setting = api( section.id );
-			if ( ! setting.validationMessage ) {
+			var section = this, setting = api( section.id ), debouncedRenderNotifications;
+			if ( ! setting.notifications ) {
 				return;
 			}
 
-			section.validationMessageElement = $( '<div class="customize-setting-validation-message error" aria-live="assertive"></div>' );
-			section.container.find( '.customize-section-title' ).append( section.validationMessageElement );
-			setting.validationMessage.bind( function( message ) {
-				var template = wp.template( 'customize-setting-validation-message' );
-				section.validationMessageElement.empty().append( $.trim(
-					template( { messages: [ message ] } )
-				) );
-				if ( message ) {
-					section.validationMessageElement.slideDown( 'fast' );
-				} else {
-					section.validationMessageElement.slideUp( 'fast' );
-				}
-				section.container.toggleClass( 'customize-setting-invalid', '' !== message );
+			// Add the notifications API.
+			section.notifications = new api.Values({ defaultConstructor: api.Notification });
+			section.notificationsContainer = $( '<div class="customize-control-notifications-container"></div>' );
+			section.notificationsTemplate = wp.template( 'customize-post-section-notifications' );
+			section.container.find( '.customize-section-title' ).after( section.notificationsContainer );
+			section.getNotificationsContainerElement = function() {
+				return section.notificationsContainer;
+			};
+			section.renderNotifications = api.Control.prototype.renderNotifications;
+
+			// Sync setting notifications into the section notifications
+			setting.notifications.bind( 'add', function( settingNotification ) {
+				var notification = new api.Notification( setting.id + ':' + settingNotification.code, settingNotification );
+				section.notifications.add( notification.code, notification );
+			} );
+			setting.notifications.bind( 'remove', function( settingNotification ) {
+				section.notifications.remove( setting.id + ':' + settingNotification.code );
 			} );
 
+			/*
+			 * Render notifications when the collection is updated.
+			 * Note that this debounced/deferred rendering is needed for two reasons:
+			 * 1) The 'remove' event is triggered just _before_ the notification is actually removed.
+			 * 2) Improve performance when adding/removing multiple notifications at a time.
+			 */
+			debouncedRenderNotifications = _.debounce( function renderNotifications() {
+				section.renderNotifications();
+			} );
+			section.notifications.bind( 'add', function( notification ) {
+				wp.a11y.speak( notification.message, 'assertive' );
+				debouncedRenderNotifications();
+			} );
+			section.notifications.bind( 'remove', debouncedRenderNotifications );
+			section.renderNotifications();
+
 			// Dismiss conflict block when clicking on button.
-			section.validationMessageElement.on( 'click', '.override-post-conflict', function( e ) {
+			section.notificationsContainer.on( 'click', '.override-post-conflict', function( e ) {
 				var ourValue;
 				e.preventDefault();
 				ourValue = _.clone( setting.get() );
 				ourValue.post_modified_gmt = '';
 				setting.set( ourValue );
-				section.resetPostFieldControlSettingValidationMessages();
+
+				_.each( section.postFieldControls, function( control ) {
+					if ( control.notifications ) {
+						control.notifications.remove( 'post_update_conflict' );
+					}
+				} );
+				setting.notifications.remove( 'post_update_conflict' );
 			} );
 
 			// Detect conflict errors.
 			api.bind( 'error', function( response ) {
-				var theirValue, ourValue, overrideButton, wasOverrideButtonAdded = false;
+				var theirValue, ourValue;
 				if ( ! response.update_conflicted_setting_values ) {
 					return;
 				}
@@ -709,27 +821,23 @@
 				}
 				ourValue = setting.get();
 				_.each( theirValue, function( theirFieldValue, fieldId ) {
-					var control, validationMessage;
+					var control, notification;
 					if ( 'post_modified' === fieldId || 'post_modified_gmt' === fieldId || theirFieldValue === ourValue[ fieldId ] ) {
 						return;
 					}
 					control = api.control( setting.id + '[' + fieldId + ']' );
-					if ( control && control.settingValidationMessages && control.settingValidationMessages.has( control.id ) ) {
-						validationMessage = api.Posts.data.l10n.theirChange.replace( '%s', String( theirFieldValue ) );
-						control.settingValidationMessages( control.id ).set( validationMessage );
-
-						if ( ! wasOverrideButtonAdded ) {
-							overrideButton = $( '<button class="button override-post-conflict" type="button"></button>' );
-							overrideButton.text( api.Posts.data.l10n.overrideButtonText );
-							section.validationMessageElement.find( 'li:first' ).prepend( overrideButton );
-							wasOverrideButtonAdded = true;
-						}
+					if ( control && control.notifications ) {
+						notification = new api.Notification( 'post_update_conflict', {
+							message: api.Posts.data.l10n.theirChange.replace( '%s', String( theirFieldValue ) )
+						} );
+						control.notifications.remove( notification.code );
+						control.notifications.add( notification.code, notification );
 					}
 				} );
 			} );
 
 			api.bind( 'save', function() {
-				section.resetPostFieldControlSettingValidationMessages();
+				section.resetPostFieldControlErrorNotifications();
 			} );
 		},
 
@@ -738,12 +846,14 @@
 		 *
 		 * @returns {void}
 		 */
-		resetPostFieldControlSettingValidationMessages: function() {
+		resetPostFieldControlErrorNotifications: function() {
 			var section = this;
 			_.each( section.postFieldControls, function( postFieldControl ) {
-				if ( postFieldControl.settingValidationMessages ) {
-					postFieldControl.settingValidationMessages.each( function( validationMessage ) {
-						validationMessage.set( '' );
+				if ( postFieldControl.notifications ) {
+					postFieldControl.notifications.each( function( notification ) {
+						if ( 'error' === notification.type ) {
+							postFieldControl.notifications.remove( notification.code );
+						}
 					} );
 				}
 			} );

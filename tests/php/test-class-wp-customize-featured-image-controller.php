@@ -280,8 +280,13 @@ class Test_WP_Customize_Featured_Image_Controller extends WP_UnitTestCase {
 		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $controller->meta_key );
 		$setting = new WP_Customize_Postmeta_Setting( $this->wp_customize, $setting_id );
 
-		$this->assertEquals( '', $controller->sanitize_setting( 'bad', $setting, false ) );
-		$this->assertInstanceOf( 'WP_Error', $controller->sanitize_setting( 'bad', $setting, true ) );
+		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
+		if ( $has_setting_validation ) {
+			$error = $controller->sanitize_setting( 'bad', $setting );
+			$this->assertInstanceOf( 'WP_Error', $error );
+		} else {
+			$this->assertEquals( '', $controller->sanitize_setting( 'bad', $setting ) );
+		}
 	}
 
 	/**

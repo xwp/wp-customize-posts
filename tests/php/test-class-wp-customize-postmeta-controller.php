@@ -86,6 +86,7 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 		$this->assertEmpty( $stub->post_types );
 		$this->assertNull( $stub->post_type_supports );
 		$this->assertEquals( array( $stub, 'sanitize_setting' ), $stub->sanitize_callback );
+		$this->assertEquals( array( $stub, 'validate_setting' ), $stub->validate_callback );
 		$this->assertEquals( array( $stub, 'js_value' ), $stub->sanitize_js_callback );
 		$this->assertEquals( 'postMessage', $stub->setting_transport );
 		$this->assertEquals( '', $stub->default );
@@ -103,6 +104,7 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 			'post_types' => array( 'post', 'page' ),
 			'post_type_supports' => 'editor',
 			'sanitize_callback' => 'sanitize_text_field',
+			'validate_callback' => array( $this, 'validate_setting_blocking_shouting' ),
 			'sanitize_js_callback' => 'intval',
 			'setting_transport' => 'refresh',
 			'default' => 'Hello world!',
@@ -261,18 +263,96 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 		$args = array(
 			'meta_key' => 'foo',
 			'post_types' => array( 'post' ),
+			'sanitize_callback' => array( $this, 'sanitize_setting_blocking_shouting' ),
+			'sanitize_js_callback' => array( $this, 'sanitize_js_setting_prepend' ),
 		);
 		/** @var WP_Customize_Postmeta_Controller $stub */
 		$stub = $this->getMockForAbstractClass( 'WP_Customize_Postmeta_Controller', array( $args ) );
+		$stub->register_meta( $this->wp_customize->posts );
 
 		$post = get_post( $this->factory()->post->create() );
 		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $args['meta_key'] );
-		$setting = new WP_Customize_Postmeta_Setting( $this->wp_customize, $setting_id );
+		$this->wp_customize->set_post_value( $setting_id, 'OK!' );
+		$this->wp_customize->register_dynamic_settings();
+		$setting = $this->wp_customize->get_setting( $setting_id );
+		$this->assertNotEmpty( $setting );
 
-		$values = array( 'hi', 123, array( 'foo' => 'bar' ) );
-		foreach( $values as $value ) {
-			$this->assertEquals( $value, $stub->sanitize_setting( $value, $setting ) );
-			$this->assertEquals( $value, $stub->js_value( $value, $setting ) );
+		$this->assertEquals( 'ok!', $setting->sanitize( 'OK!' ) );
+		$this->assertStringStartsWith( 'js-value', $setting->js_value( 'OK!' ) );
+	}
+
+	/**
+	 * Test validate_setting().
+	 *
+	 * @see WP_Customize_Postmeta_Controller::validate_setting()
+	 */
+	public function test_validate_setting() {
+		if ( ! method_exists( 'WP_Customize_Setting', 'validate' ) ) {
+			$this->markTestSkipped( 'Requires 4.6-alpha' );
 		}
+
+		$args = array(
+			'meta_key' => 'foo',
+			'post_types' => array( 'post' ),
+			'validate_callback' => array( $this, 'validate_setting_blocking_shouting' ),
+		);
+		/** @var WP_Customize_Postmeta_Controller $stub */
+		$stub = $this->getMockForAbstractClass( 'WP_Customize_Postmeta_Controller', array( $args ) );
+		$stub->register_meta( $this->wp_customize->posts );
+
+		$post = get_post( $this->factory()->post->create() );
+		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $args['meta_key'] );
+		$this->wp_customize->set_post_value( $setting_id, 'ok!' );
+		$this->wp_customize->register_dynamic_settings();
+		$setting = $this->wp_customize->get_setting( $setting_id );
+		$this->assertNotEmpty( $setting );
+
+		$validity = $setting->validate( 'ok' );
+		$this->assertTrue( $validity );
+
+		$validity = $setting->validate( 'OK!' );
+		$this->assertInstanceOf( 'WP_Error', $validity );
+		$this->assertEquals( 'shout_error', $validity->get_error_code() );
+	}
+
+	/**
+	 * Sanitize a Customize setting value.
+	 *
+	 * @param mixed                $value    Value of the setting.
+	 * @param WP_Customize_Setting $setting  WP_Customize_Setting instance.
+	 * @return mixed sanitized value.
+	 */
+	public function sanitize_setting_blocking_shouting( $value, $setting ) {
+		unset( $setting );
+		if ( is_string( $value ) ) {
+			$value = strtolower( $value );
+		}
+		return $value;
+	}
+
+	/**
+	 * Callback for js_value().
+	 *
+	 * @param string $value Value.
+	 * @return string Prepended value.
+	 */
+	public function sanitize_js_setting_prepend( $value ) {
+		return 'js-value-' . $value;
+	}
+
+	/**
+	 * Validate a Customize setting value.
+	 *
+	 * @param WP_Error             $validity Filtered from `true` to `WP_Error` when invalid.
+	 * @param mixed                $value    Value of the setting.
+	 * @param WP_Customize_Setting $setting  WP_Customize_Setting instance.
+	 * @return WP_Error Validity.
+	 */
+	public function validate_setting_blocking_shouting( $validity, $value, $setting ) {
+		unset( $setting );
+		if ( is_string( $value ) && false !== strpos( $value, '!' ) ) {
+			$validity->add( 'shout_error', 'Do not shout' );
+		}
+		return $validity;
 	}
 }

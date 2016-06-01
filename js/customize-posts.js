@@ -88,16 +88,16 @@
 	/**
 	 * Insert a new stubbed `auto-draft` post.
 	 *
-	 * @param {object} params - Parameters to configure the setting.
-	 * @return {Promise} Promise resolved with the added section.
+	 * @param {string} postType Post type to create.
+	 * @return {jQuery.promise} Promise resolved with the added section.
 	 */
-	component.insertAutoDraftPost = function( params ) {
+	component.insertAutoDraftPost = function( postType ) {
 		var request, deferred = $.Deferred();
 
-		request = wp.ajax.post( 'customize-posts-add-new', {
+		request = wp.ajax.post( 'customize-posts-insert-auto-draft', {
 			'customize-posts-nonce': api.Posts.data.nonce,
 			'wp_customize': 'on',
-			'params': params || {}
+			'post_type': postType
 		} );
 
 		request.done( function( response ) {
@@ -106,7 +106,10 @@
 				deferred.rejectWith( 'no_sections' );
 			} else {
 				deferred.resolve( _.extend(
-					{ section: sections[0] },
+					{
+						section: sections[0],
+						setting: api( sections[0].id )
+					},
 					response
 				) );
 			}
@@ -228,6 +231,49 @@
 		return slug;
 	};
 
+	/**
+	 * Handle purging the trash after Customize `saved`.
+	 *
+	 * @returns {void}
+	 */
+	component.purgeTrash = function purgeTrash() {
+		api.section.each( function( section ) {
+			if ( section.extended( component.PostSection ) && 'trash' === api( section.id ).get().post_status ) {
+				api.section.remove( section.id );
+				section.collapse();
+				section.panel.set( false );
+				if ( ! _.isUndefined( component.previewedQuery ) && true === component.previewedQuery.get().isSingular ) {
+					api.previewer.previewUrl( api.settings.url.home );
+				}
+			}
+		} );
+	};
+
+	/**
+	 * Update settings quietly.
+	 *
+	 * Update all of the settings without causing the overall dirty state to change.
+	 *
+	 * This was originally part of the Customize Setting Validation plugin.
+	 *
+	 * @link https://github.com/xwp/wp-customize-setting-validation/blob/2e5ddc66a870ad7b1aee5f8e414bad4b78e120d2/js/customize-setting-validation.js#L186-L209
+	 *
+	 * @param {object} settingValues Setting IDs mapped to values.
+	 * @return {void}
+	 */
+	component.updateSettingsQuietly = function updateSettingsQuietly( settingValues ) {
+		var wasSaved = api.state( 'saved' ).get();
+		_.each( settingValues, function( value, settingId ) {
+			var setting = api( settingId ), wasDirty;
+			if ( setting && ! _.isEqual( setting.get(), value ) ) {
+				wasDirty = setting._dirty;
+				setting.set( value );
+				setting._dirty = wasDirty;
+			}
+		} );
+		api.state( 'saved' ).set( wasSaved );
+	};
+
 	api.bind( 'ready', function() {
 
 		// Add a post_ID input for editor integrations (like Shortcake) to be able to know the post being edited.
@@ -235,6 +281,27 @@
 		$( 'body' ).append( component.postIdInput );
 
 		api.previewer.bind( 'customized-posts', component.receivePreviewData );
+
+		// Track some of the recieved preview data from `customized-posts`.
+		component.previewedQuery = new api.Value( {} );
+		api.previewer.bind( 'customized-posts', function( data ) {
+			var query = {};
+			_.each( [ 'isSingular', 'isPostPreview', 'queriedPostId' ], function( key ) {
+				if ( ! _.isUndefined( data[ key ] ) ) {
+					query[ key ] = data[ key ];
+				}
+			} );
+			component.previewedQuery.set( query );
+		} );
+
+		// Purge trashed posts and update client settings with saved values from server.
+		api.bind( 'saved', function( data ) {
+			if ( data.saved_post_setting_values ) {
+				component.updateSettingsQuietly( data.saved_post_setting_values );
+			}
+
+			component.purgeTrash();
+		} );
 
 		/**
 		 * Focus on the section requested from the preview.
@@ -249,7 +316,7 @@
 		} );
 
 		/**
-		 * Focus on the section requested from the preview.
+		 * Focus on the control requested from the preview.
 		 *
 		 * @todo This can be merged into Core to correspond with focus-control-for-setting.
 		 */

@@ -19,6 +19,13 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	protected $wp_customize;
 
 	/**
+	 * Component.
+	 *
+	 * @var WP_Customize_Posts
+	 */
+	protected $posts_component;
+
+	/**
 	 * User ID.
 	 *
 	 * @var int
@@ -40,6 +47,8 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$GLOBALS['wp_customize'] = new WP_Customize_Manager();
 		// @codingStandardsIgnoreStop
 		$this->wp_customize = $GLOBALS['wp_customize'];
+
+		$this->posts_component = $this->wp_customize->posts;
 	}
 
 	/**
@@ -299,13 +308,29 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	 * @see WP_Customize_Post_Setting::sanitize()
 	 */
 	public function test_sanitize_empty_content() {
+		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 		$setting = $this->create_post_setting();
-		$error = $setting->sanitize( array( 'post_title' => '', 'post_content' => '' ), true );
-		$this->assertInstanceOf( 'WP_Error', $error );
-		$this->assertEquals( 'empty_content', $error->get_error_code() );
+		$error = $setting->sanitize( array( 'post_title' => '', 'post_content' => '' ) );
+		if ( $has_setting_validation ) {
+			$this->assertInstanceOf( 'WP_Error', $error );
+			$this->assertEquals( 'empty_content', $error->get_error_code() );
+		} else {
+			$this->assertNull( $error );
+		}
 		add_filter( 'wp_insert_post_empty_content', '__return_false' );
-		$data = $setting->sanitize( array( 'post_title' => '', 'post_content' => '' ), true );
+		$data = $setting->sanitize( array( 'post_title' => '', 'post_content' => '' ) );
 		$this->assertInternalType( 'array', $data );
+	}
+
+	/**
+	 * Test validate trashing empty content.
+	 *
+	 * @see WP_Customize_Post_Setting::sanitize()
+	 */
+	public function test_sanitize_trashed_empty_content() {
+		$setting = $this->create_post_setting();
+		$result = $setting->sanitize( array( 'post_title' => '', 'post_content' => '', 'post_status' => 'trash' ) );
+		$this->assertInternalType( 'array', $result );
 	}
 
 	/**
@@ -315,12 +340,15 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	 */
 	public function test_sanitize_bad_post_type() {
 		$setting = $this->create_post_setting();
+		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 
-		$data = $setting->sanitize( array( 'post_type' => 'bad' ), false );
-		$this->assertArrayNotHasKey( 'post_type', $data );
-		$data = $setting->sanitize( array( 'post_type' => 'bad' ), true );
-		$this->assertInstanceOf( 'WP_Error', $data );
-		$this->assertEquals( 'bad_post_type', $data->get_error_code() );
+		$data = $setting->sanitize( array( 'post_type' => 'bad' ) );
+		if ( $has_setting_validation ) {
+			$this->assertInstanceOf( 'WP_Error', $data );
+			$this->assertEquals( 'bad_post_type', $data->get_error_code() );
+		} else {
+			$this->assertNull( $data );
+		}
 	}
 
 	/**
@@ -329,6 +357,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	 * @see WP_Customize_Post_Setting::sanitize()
 	 */
 	public function test_sanitize_locked_post() {
+		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 		$other_user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
 		$setting = $this->create_post_setting( array(
 			'post_author' => $other_user_id,
@@ -340,9 +369,15 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$this->assertInternalType( 'array', $lock );
 		$this->assertEquals( $other_user_id, wp_check_post_lock( $setting->post_id ) );
 
-		$error = $setting->sanitize( array( 'post_title' => 'Locked?' ), true );
-		$this->assertInstanceOf( 'WP_Error', $error );
-		$this->assertEquals( 'post_locked', $error->get_error_code() );
+		$this->assertInternalType( 'array', $setting->sanitize( array( 'post_title' => 'Locked?' ) ) );
+		do_action( 'customize_save_validation_before', $this->wp_customize );
+		$error = $setting->sanitize( array( 'post_title' => 'Locked?' ) );
+		if ( $has_setting_validation ) {
+			$this->assertInstanceOf( 'WP_Error', $error );
+			$this->assertEquals( 'post_locked', $error->get_error_code() );
+		} else {
+			$this->assertNull( $error );
+		}
 	}
 
 	/**
@@ -351,6 +386,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	 * @see WP_Customize_Post_Setting::sanitize()
 	 */
 	public function test_sanitize_post_conflict() {
+		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 		$setting = $this->create_post_setting();
 
 		$diff = -60;
@@ -361,16 +397,23 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 			$setting->value(),
 			compact( 'post_modified_gmt', 'post_modified' )
 		);
-		$this->assertInternalType( 'array', $setting->sanitize( $dirty_value, true ) );
+		$this->assertInternalType( 'array', $setting->sanitize( $dirty_value ) );
 
 		$post_title = 'Override post title';
 		$dirty_value = array_merge(
 			$setting->value(),
 			compact( 'post_modified_gmt', 'post_modified', 'post_title' )
 		);
+
+		$this->assertInternalType( 'array', $setting->sanitize( $dirty_value ) );
+		do_action( 'customize_save_validation_before', $this->wp_customize );
 		$error = $setting->sanitize( $dirty_value, true );
-		$this->assertInstanceOf( 'WP_Error', $error );
-		$this->assertEquals( 'post_update_conflict', $error->get_error_code() );
+		if ( $has_setting_validation ) {
+			$this->assertInstanceOf( 'WP_Error', $error );
+			$this->assertEquals( 'post_update_conflict', $error->get_error_code() );
+		} else {
+			$this->assertNull( $error );
+		}
 	}
 
 	/**
@@ -439,6 +482,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	 * @see WP_Customize_Post_Setting::sanitize()
 	 */
 	public function test_sanitize_default_post_date() {
+		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 		$setting = $this->create_post_setting( array(
 			'post_status' => 'publish',
 		) );
@@ -453,14 +497,17 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$this->assertNotEmpty( $sanitized['post_date_gmt'] );
 		$this->assertNotEmpty( $sanitized['post_date'] );
 
-
 		$sanitized = $setting->sanitize( array_merge(
 			$setting->value(),
 			array(
 				'post_date' => '9999-99-99',
 			)
 		), true );
-		$this->assertInstanceOf( 'WP_Error', $sanitized );
+		if ( $has_setting_validation ) {
+			$this->assertInstanceOf( 'WP_Error', $sanitized );
+		} else {
+			$this->assertNull( $sanitized );
+		}
 	}
 
 	/**
@@ -512,7 +559,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	 *
 	 * @see WP_Customize_Post_Setting::update()
 	 */
-	function test_save() {
+	function test_save_change() {
 		$original_data = array(
 			'post_title' => 'Food',
 		);
@@ -538,5 +585,76 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$setting = new WP_Customize_Post_Setting( $this->wp_customize, $setting_id );
 		$this->wp_customize->set_post_value( $setting_id, $setting->default );
 		$setting->save();
+	}
+
+	/**
+	 * Test update() for trashing.
+	 *
+	 * @see WP_Customize_Post_Setting::update()
+	 */
+	function test_save_trash() {
+		add_action( 'trashed_post', array( $this, 'handle_action_trashed_post' ) );
+		$original_data = array(
+			'post_title' => 'Food',
+		);
+		$setting = $this->create_post_setting( $original_data );
+
+		$override_data = array_merge(
+			$setting->value(),
+			array(
+				'post_status' => 'trash',
+			)
+		);
+		$setting->manager->set_post_value( $setting->id, $override_data );
+
+		$trash_post_count = did_action( 'trashed_post' );
+		$setting->save();
+		$post = get_post( $setting->post_id );
+		$this->assertEquals( 'trash', $post->post_status );
+		$this->assertEquals( $setting->post_id, $this->trashed_post_id );
+		$this->assertEquals( $trash_post_count + 1, did_action( 'trashed_post' ) );
+	}
+
+	/**
+	 * Trashed post ID.
+	 *
+	 * @var int
+	 */
+	public $trashed_post_id;
+
+	/**
+	 * Capture the post ID for a trashed post.
+	 *
+	 * @param int $post_id
+	 */
+	function handle_action_trashed_post( $post_id ) {
+		$this->trashed_post_id = $post_id;
+	}
+
+	/**
+	 * Test filtering save response to export saved values.
+	 *
+	 * @see WP_Customize_Posts::filter_customize_save_response_to_export_saved_values()
+	 */
+	public function test_filter_customize_save_response_to_export_saved_values() {
+		$original_data = array(
+			'post_title' => 'Foo',
+		);
+		$setting = $this->create_post_setting( $original_data );
+
+		$override_data = array_merge(
+			$setting->value(),
+			array(
+				'post_title' => 'Bar',
+			)
+		);
+		$setting->manager->set_post_value( $setting->id, $override_data );
+		$setting->manager->register_dynamic_settings();
+
+		$setting->save();
+		$result = $this->posts_component->filter_customize_save_response_to_export_saved_values( array() );
+		$this->assertArrayHasKey( 'saved_post_setting_values', $result );
+		$this->assertArrayHasKey( $setting->id, $result['saved_post_setting_values'] );
+		$this->assertEquals( 'Bar', $result['saved_post_setting_values'][ $setting->id ]['post_title'] );
 	}
 }

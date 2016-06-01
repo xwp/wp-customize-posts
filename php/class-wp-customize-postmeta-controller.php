@@ -56,6 +56,13 @@ abstract class WP_Customize_Postmeta_Controller {
 	public $sanitize_js_callback;
 
 	/**
+	 * Setting validate callback.
+	 *
+	 * @var callable
+	 */
+	public $validate_callback;
+
+	/**
 	 * Setting transport.
 	 *
 	 * @var string
@@ -94,6 +101,9 @@ abstract class WP_Customize_Postmeta_Controller {
 		if ( ! isset( $this->sanitize_js_callback ) ) {
 			$this->sanitize_js_callback = array( $this, 'js_value' );
 		}
+		if ( ! isset( $this->validate_callback ) ) {
+			$this->validate_callback = array( $this, 'validate_setting' );
+		}
 
 		add_action( 'customize_posts_register_meta', array( $this, 'register_meta' ) );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_customize_pane_scripts' ) );
@@ -129,6 +139,7 @@ abstract class WP_Customize_Postmeta_Controller {
 			$setting_args = array(
 				'sanitize_callback' => $this->sanitize_callback,
 				'sanitize_js_callback' => $this->sanitize_js_callback,
+				'validate_callback' => $this->validate_callback,
 				'transport' => $this->setting_transport,
 				'theme_supports' => $this->theme_supports,
 				'default' => $this->default,
@@ -191,7 +202,7 @@ abstract class WP_Customize_Postmeta_Controller {
 	}
 
 	/**
-	 * Sanitize (and validate) an input.
+	 * Sanitize an input.
 	 *
 	 * Callback for `customize_sanitize_post_meta_{$meta_key}` filter.
 	 *
@@ -199,12 +210,28 @@ abstract class WP_Customize_Postmeta_Controller {
 	 *
 	 * @param string                        $meta_value The value to sanitize.
 	 * @param WP_Customize_Postmeta_Setting $setting    Setting.
-	 * @param bool                          $strict     Whether validation is being done. This is part of the proposed patch in in #34893.
-	 * @return mixed|null Null if an input isn't valid, otherwise the sanitized value.
+	 * @return mixed|null Sanitized value or `null` if invalid.
 	 */
-	public function sanitize_setting( $meta_value, WP_Customize_Postmeta_Setting $setting, $strict = false ) {
-		unset( $setting, $strict );
+	public function sanitize_setting( $meta_value, WP_Customize_Postmeta_Setting $setting ) {
+		unset( $setting );
 		return $meta_value;
+	}
+
+	/**
+	 * Validate an input.
+	 *
+	 * Callback for `customize_validate_post_meta_{$meta_key}` filter.
+	 *
+	 * @see update_metadata()
+	 *
+	 * @param WP_Error                      $validity   Validity.
+	 * @param string                        $meta_value The value to sanitize.
+	 * @param WP_Customize_Postmeta_Setting $setting    Setting.
+	 * @return WP_Error Validity.
+	 */
+	public function validate_setting( $validity, $meta_value, WP_Customize_Postmeta_Setting $setting ) {
+		unset( $setting, $meta_value );
+		return $validity;
 	}
 
 	/**

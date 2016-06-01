@@ -182,6 +182,10 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			$post_data['post_excerpt'] = preg_replace( '/\r\n/', "\n", $post_data['post_excerpt'] );
 		}
 
+		$post_data = wp_array_slice_assoc(
+			$post_data,
+			array_keys( $this->default )
+		);
 		return $post_data;
 	}
 
@@ -199,7 +203,10 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		}
 
 		if ( $this->is_previewed ) {
-			$post_data = array_merge( $post_data, $this->post_value( array() ) );
+			$input_value = $this->post_value( array() );
+			if ( null !== $input_value ) {
+				$post_data = array_merge( $post_data, $input_value );
+			}
 		}
 
 		$post_data = $this->normalize_post_data( $post_data );
@@ -213,11 +220,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	 * @return array
 	 */
 	public function get_post_data( WP_Post $post ) {
-		$post_data = wp_array_slice_assoc(
-			$post->to_array(),
-			array_keys( $this->default )
-		);
-		$post_data = $this->normalize_post_data( $post_data );
+		$post_data = $this->normalize_post_data( $post->to_array() );
 		return $post_data;
 	}
 
@@ -247,29 +250,25 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	 * @see wp_insert_post()
 	 *
 	 * @param array $post_data   The value to sanitize.
-	 * @param bool  $strict      Whether validation is being done. This is part of the proposed patch in in #34893.
-	 * @return string|array|null|WP_Error Null if an input isn't valid, otherwise the sanitized value. WP_Error returned if `$strict`.
+	 * @return array|WP_Error|null Sanitized post array or WP_Error if invalid (or null if not WP 4.6-alpha).
 	 */
-	public function sanitize( $post_data, $strict = false ) {
+	public function sanitize( $post_data ) {
 		global $wpdb;
+		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 
 		$post_data = array_merge( $this->default, $post_data );
-
-		// The customize_validate_settings action is part of the Customize Setting Validation plugin.
-		if ( ! $strict && doing_action( 'customize_validate_settings' ) ) {
-			$strict = true;
-		}
 
 		$update = ( $this->post_id > 0 );
 		$post_type_obj = get_post_type_object( $this->post_type );
 
-		if ( $strict && ! empty( $post_data['post_type'] ) && $post_data['post_type'] !== $this->post_type ) {
-			return new WP_Error( 'bad_post_type' );
+		if ( ! empty( $post_data['post_type'] ) && $post_data['post_type'] !== $this->post_type ) {
+			return $has_setting_validation ? new WP_Error( 'bad_post_type' ) : null;
 		}
 		$post_data['post_type'] = $this->post_type;
 
-		if ( $strict && $update ) {
+		if ( $update && did_action( 'customize_save_validation_before' ) ) {
 			// Check post lock.
+			require_once ABSPATH . 'wp-admin/includes/post.php';
 			$locked_user = wp_check_post_lock( $this->post_id );
 			if ( $locked_user ) {
 				$user = get_user_by( 'ID', $locked_user );
@@ -277,7 +276,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 					__( 'Post is currently locked by %s.', 'customize-posts' ),
 					$user ? $user->display_name : __( '(unknown user)', 'customize-posts' )
 				);
-				return new WP_Error( 'post_locked', $error_message );
+				return $has_setting_validation ? new WP_Error( 'post_locked', $error_message ) : null;
 			}
 
 			// Check post update conflict.
@@ -298,7 +297,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 					$user ? $user->display_name : __( '(unknown user)', 'customize-posts' )
 				);
 				$this->posts_component->update_conflicted_settings[ $this->id ] = $this;
-				return new WP_Error( 'post_update_conflict', $error_message );
+				return $has_setting_validation ? new WP_Error( 'post_update_conflict', $error_message ) : null;
 			}
 		}
 
@@ -314,8 +313,8 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			&& post_type_supports( $this->post_type, 'excerpt' );
 
 		/** This filter is documented in wp-includes/post.php */
-		if ( $strict && apply_filters( 'wp_insert_post_empty_content', $maybe_empty, $post_data ) ) {
-			return new WP_Error( 'empty_content', __( 'Content, title, and excerpt are empty.', 'customize-posts' ) );
+		if ( 'trash' !== $post_data['post_status'] && apply_filters( 'wp_insert_post_empty_content', $maybe_empty, $post_data ) ) {
+			return $has_setting_validation ? new WP_Error( 'empty_content', __( 'Content, title, and excerpt are empty.', 'customize-posts' ) ) : null;
 		}
 
 		if ( empty( $post_data['post_status'] ) ) {
@@ -367,11 +366,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		$aa = substr( $post_data['post_date'], 0, 4 );
 		$valid_date = wp_checkdate( $mm, $jj, $aa, $post_data['post_date'] );
 		if ( ! $valid_date ) {
-			if ( $strict ) {
-				return new WP_Error( 'invalid_date', __( 'Whoops, the provided date is invalid.', 'customize-posts' ) );
-			} else {
-				$post_data['post_date'] = '';
-			}
+			return $has_setting_validation ? new WP_Error( 'invalid_date', __( 'Whoops, the provided date is invalid.', 'customize-posts' ) ) : null;
 		}
 
 		if ( empty( $post_data['post_date_gmt'] ) || '0000-00-00 00:00:00' === $post_data['post_date_gmt'] ) {
@@ -508,12 +503,28 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			$data['post_status'] = 'publish';
 		}
 
-		$result = wp_update_post( wp_slash( $data ), true );
+		$is_trashed = 'trash' === $data['post_status'];
+		if ( $is_trashed ) {
+			add_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
 
-		if ( is_wp_error( $result ) ) {
-			// @todo Amend customize_save_response
-			return false;
+			/*
+			 * Do not transition the post_status to trash, use the current value.
+			 *
+			 * If we were to unset `$data['post_status']`, the post would not be
+			 * properly purged from the Customizer pane. And if we transitioned the
+			 * status in `wp_update_post()` then `wp_trash_post()` would return false.
+			 */
+			$data['post_status'] = get_post_status( $this->post_id );
 		}
-		return true;
+
+		$r = wp_update_post( wp_slash( $data ), true );
+		$result = ! is_wp_error( $r );
+
+		if ( $is_trashed ) {
+			$result = wp_trash_post( $this->post_id );
+			remove_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
+		}
+
+		return $result;
 	}
 }

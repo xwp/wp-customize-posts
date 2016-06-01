@@ -198,6 +198,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 			'transport' => 'postMessage',
 			'sanitize_callback' => 'sanitize_key',
 			'sanitize_js_callback' => 'sanitize_key',
+			'validate_callback' => array( $this, 'validate_setting' ),
 			'setting_class' => 'WP_Customize_Postmeta_Setting',
 		);
 		$this->posts->register_post_type_meta( 'post', 'timezone', $args );
@@ -216,6 +217,9 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertEquals( $args['transport'], $setting->transport );
 		$this->assertEquals( $args['sanitize_callback'], $setting->sanitize_callback );
 		$this->assertEquals( $args['sanitize_js_callback'], $setting->sanitize_js_callback );
+		if ( method_exists( 'WP_Customize_Setting', 'validate' ) ) {
+			$this->assertEquals( $args['validate_callback'], $setting->validate_callback );
+		}
 		$this->assertInstanceOf( $args['setting_class'], $setting );
 	}
 
@@ -293,7 +297,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 * @see WP_Customize_Posts::current_user_can_edit_post()
 	 */
 	public function test_current_user_can_edit_post() {
-		wp_set_current_user( self::factory()->user->create( array( 'role' => 'contibutor' ) ) );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'contributor' ) ) );
 		$posts = new WP_Customize_Posts( $this->wp_customize );
 		$this->assertFalse( $posts->current_user_can_edit_post( $this->post_id ) );
 		wp_set_current_user( $this->user_id );
@@ -422,5 +426,35 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	public function test_insert_auto_draft_post_returns_error() {
 		$r = $this->posts->insert_auto_draft_post( 'fake' );
 		$this->assertInstanceOf( 'WP_Error', $r );
+	}
+
+	/**
+	 * Ensure that an auto-draft post has the expected fields.
+	 *
+	 * @see WP_Customize_Posts::insert_auto_draft_post()
+	 */
+	public function test_insert_auto_draft_post_has_expected_fields() {
+		global $wp_customize;
+		$wp_customize->start_previewing_theme();
+		$this->assertTrue( is_customize_preview() );
+		$post = $this->posts->insert_auto_draft_post( 'post' );
+		$this->assertEquals( 'auto-draft', $post->post_status );
+		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_date );
+		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_date_gmt );
+		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_modified );
+		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_modified_gmt );
+		$this->assertEquals( sprintf( '%s?p=%d', home_url( '/' ), $post->ID ), $post->guid );
+	}
+
+	/**
+	 * Check filtering the post link in the preview.
+	 *
+	 * @see WP_Customize_Posts::post_link_draft()]
+	 */
+	public function test_post_link_draft() {
+		global $wp_customize;
+		$this->assertNotContains( 'preview=true', get_permalink( $this->post_id ) );
+		$wp_customize->start_previewing_theme();
+		$this->assertContains( 'preview=true', get_permalink( $this->post_id ) );
 	}
 }
