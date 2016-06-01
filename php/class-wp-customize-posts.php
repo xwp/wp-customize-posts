@@ -50,13 +50,6 @@ final class WP_Customize_Posts {
 	public $supports = array();
 
 	/**
-	 * Draft post status.
-	 *
-	 * @var array
-	 */
-	private static $draft_status = array( 'auto-draft', 'customize-draft' );
-
-	/**
 	 * Whether the post link filters are being suppressed.
 	 *
 	 * @var bool
