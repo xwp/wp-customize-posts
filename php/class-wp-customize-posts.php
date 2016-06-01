@@ -57,6 +57,13 @@ final class WP_Customize_Posts {
 	private static $draft_status = array( 'auto-draft', 'customize-draft' );
 
 	/**
+	 * Whether the post link filters are being suppressed.
+	 *
+	 * @var bool
+	 */
+	public $suppress_post_link_filters = false;
+
+	/**
 	 * Initial loader.
 	 *
 	 * @access public
@@ -758,7 +765,7 @@ final class WP_Customize_Posts {
 	 * @return string
 	 */
 	public function post_link_draft( $permalink, $post ) {
-		if ( is_customize_preview() ) {
+		if ( is_customize_preview() && ! $this->suppress_post_link_filters ) {
 			$permalink = Edit_Post_Preview::get_preview_post_link( get_post( $post ) );
 		}
 		return $permalink;
@@ -780,6 +787,7 @@ final class WP_Customize_Posts {
 		}
 
 		add_filter( 'wp_insert_post_empty_content', '__return_false' );
+		$this->suppress_post_link_filters = true;
 		$date_local = current_time( 'mysql', 0 );
 		$date_gmt = current_time( 'mysql', 1 );
 		$args = array(
@@ -792,6 +800,7 @@ final class WP_Customize_Posts {
 		);
 		$r = wp_insert_post( wp_slash( $args ), true );
 		remove_filter( 'wp_insert_post_empty_content', '__return_false' );
+		$this->suppress_post_link_filters = false;
 
 		if ( is_wp_error( $r ) ) {
 			return $r;
