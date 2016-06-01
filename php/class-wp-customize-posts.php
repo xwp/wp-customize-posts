@@ -753,12 +753,12 @@ final class WP_Customize_Posts {
 			if ( 'auto-draft' === $setting['value']['post_status'] ) {
 				$post_status = 'customize-draft';
 
-				add_filter( 'wp_insert_post_empty_content', '__return_false' );
+				add_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
 				$result = wp_update_post( array(
 					'ID' => intval( $matches['post_id'] ),
 					'post_status' => $post_status,
 				), true );
-				remove_filter( 'wp_insert_post_empty_content', '__return_false' );
+				remove_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
 
 				// @todo Amend customize_save_response if error.
 				if ( ! is_wp_error( $result ) ) {
@@ -801,7 +801,7 @@ final class WP_Customize_Posts {
 			return new WP_Error( 'unknown_post_type', __( 'Unknown post type', 'customize-posts' ) );
 		}
 
-		add_filter( 'wp_insert_post_empty_content', '__return_false' );
+		add_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
 		$this->suppress_post_link_filters = true;
 		$date_local = current_time( 'mysql', 0 );
 		$date_gmt = current_time( 'mysql', 1 );
@@ -814,7 +814,7 @@ final class WP_Customize_Posts {
 			'post_modified_gmt' => $date_gmt,
 		);
 		$r = wp_insert_post( wp_slash( $args ), true );
-		remove_filter( 'wp_insert_post_empty_content', '__return_false' );
+		remove_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
 		$this->suppress_post_link_filters = false;
 
 		if ( is_wp_error( $r ) ) {
