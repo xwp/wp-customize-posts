@@ -512,10 +512,10 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			add_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
 		}
 		$r = wp_update_post( wp_slash( $data ), true );
-		$result = is_wp_error( $r );
+		$result = ! is_wp_error( $r );
 
 		if ( $result && $is_trashed ) {
-			$result = wp_trash_post( $is_trashed );
+			$result = wp_trash_post( $this->post_id );
 		}
 		if ( $is_trashed ) {
 			remove_filter( 'wp_insert_post_empty_content', '__return_false', 100 );

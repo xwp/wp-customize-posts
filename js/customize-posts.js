@@ -296,11 +296,11 @@
 
 		// Purge trashed posts and update client settings with saved values from server.
 		api.bind( 'saved', function( data ) {
-			component.purgeTrash();
-
 			if ( data.saved_post_setting_values ) {
 				component.updateSettingsQuietly( data.saved_post_setting_values );
 			}
+
+			component.purgeTrash();
 		} );
 
 		/**
