@@ -539,7 +539,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	 *
 	 * @see WP_Customize_Post_Setting::update()
 	 */
-	function test_save() {
+	function test_save_change() {
 		$original_data = array(
 			'post_title' => 'Food',
 		);
@@ -566,4 +566,49 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$this->wp_customize->set_post_value( $setting_id, $setting->default );
 		$setting->save();
 	}
+
+	/**
+	 * Test update() for trashing.
+	 *
+	 * @see WP_Customize_Post_Setting::update()
+	 */
+	function test_save_trash() {
+		add_action( 'trashed_post', array( $this, 'handle_action_trashed_post' ) );
+		$original_data = array(
+			'post_title' => 'Food',
+		);
+		$setting = $this->create_post_setting( $original_data );
+
+		$override_data = array_merge(
+			$setting->value(),
+			array(
+				'post_status' => 'trash',
+			)
+		);
+		$setting->manager->set_post_value( $setting->id, $override_data );
+
+		$trash_post_count = did_action( 'trashed_post' );
+		$setting->save();
+		$post = get_post( $setting->post_id );
+		$this->assertEquals( 'trash', $post->post_status );
+		$this->assertEquals( $setting->post_id, $this->trashed_post_id );
+		$this->assertEquals( $trash_post_count + 1, did_action( 'trashed_post' ) );
+	}
+
+	/**
+	 * Trashed post ID.
+	 *
+	 * @var int
+	 */
+	public $trashed_post_id;
+
+	/**
+	 * Capture the post ID for a trashed post.
+	 *
+	 * @param int $post_id
+	 */
+	function handle_action_trashed_post( $post_id ) {
+		$this->trashed_post_id = $post_id;
+	}
+
 }
