@@ -236,7 +236,7 @@
 	 *
 	 * @returns {void}
 	 */
-	component.purgeTrash = function() {
+	component.purgeTrash = function purgeTrash() {
 		api.section.each( function( section ) {
 			if ( section.extended( component.PostSection ) && 'trash' === api( section.id ).get().post_status ) {
 				api.section.remove( section.id );
@@ -247,6 +247,31 @@
 				}
 			}
 		} );
+	};
+
+	/**
+	 * Update settings quietly.
+	 *
+	 * Update all of the settings without causing the overall dirty state to change.
+	 *
+	 * This was originally part of the Customize Setting Validation plugin.
+	 *
+	 * @link https://github.com/xwp/wp-customize-setting-validation/blob/2e5ddc66a870ad7b1aee5f8e414bad4b78e120d2/js/customize-setting-validation.js#L186-L209
+	 *
+	 * @param {object} settingValues Setting IDs mapped to values.
+	 * @return {void}
+	 */
+	component.updateSettingsQuietly = function updateSettingsQuietly( settingValues ) {
+		var wasSaved = api.state( 'saved' ).get();
+		_.each( settingValues, function( value, settingId ) {
+			var setting = api( settingId ), wasDirty;
+			if ( setting && ! _.isEqual( setting.get(), value ) ) {
+				wasDirty = setting._dirty;
+				setting.set( value );
+				setting._dirty = wasDirty;
+			}
+		} );
+		api.state( 'saved' ).set( wasSaved );
 	};
 
 	api.bind( 'ready', function() {
@@ -269,9 +294,13 @@
 			component.previewedQuery.set( query );
 		} );
 
-		// Purge trashed posts.
-		api.bind( 'saved', function() {
+		// Purge trashed posts and update client settings with saved values from server.
+		api.bind( 'saved', function( data ) {
 			component.purgeTrash();
+
+			if ( data.saved_post_setting_values ) {
+				component.updateSettingsQuietly( data.saved_post_setting_values );
+			}
 		} );
 
 		/**

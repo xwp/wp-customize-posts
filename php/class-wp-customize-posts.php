@@ -84,6 +84,7 @@ final class WP_Customize_Posts {
 		add_filter( 'customize_dynamic_setting_args', array( $this, 'filter_customize_dynamic_setting_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_setting_class', array( $this, 'filter_customize_dynamic_setting_class' ), 5, 3 );
 		add_filter( 'customize_save_response', array( $this, 'filter_customize_save_response_for_conflicts' ), 10, 2 );
+		add_filter( 'customize_save_response', array( $this, 'filter_customize_save_response_to_export_saved_values' ), 10, 2 );
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_templates' ) );
 		add_action( 'init', array( $this, 'register_customize_draft' ) );
 		add_filter( 'customize_snapshot_save', array( $this, 'transition_customize_draft' ) );
@@ -507,6 +508,27 @@ final class WP_Customize_Posts {
 			$response['update_conflicted_setting_values'] = array();
 			foreach ( $this->update_conflicted_settings as $setting_id => $setting ) {
 				$response['update_conflicted_setting_values'][ $setting_id ] = $setting->value();
+			}
+		}
+		return $response;
+	}
+
+	/**
+	 * Return the saved sanitized values for posts and postmeta to update in the client.
+	 *
+	 * This was originally in the Customize Setting Validation plugin.
+	 *
+	 * @link https://github.com/xwp/wp-customize-setting-validation/blob/2e5ddc66a870ad7b1aee5f8e414bad4b78e120d2/php/class-plugin.php#L283-L317
+	 *
+	 * @param array $response Response.
+	 * @return array
+	 */
+	public function filter_customize_save_response_to_export_saved_values( $response ) {
+		$response['saved_post_setting_values'] = array();
+		foreach ( array_keys( $this->manager->unsanitized_post_values() ) as $setting_id ) {
+			$setting = $this->manager->get_setting( $setting_id );
+			if ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting ) {
+				$response['saved_post_setting_values'][ $setting->id ] = $setting->value();
 			}
 		}
 		return $response;
