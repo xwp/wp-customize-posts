@@ -445,4 +445,16 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_modified_gmt );
 		$this->assertEquals( sprintf( '%s?p=%d', home_url( '/' ), $post->ID ), $post->guid );
 	}
+
+	/**
+	 * Check filtering the post link in the preview.
+	 *
+	 * @see WP_Customize_Posts::post_link_draft()]
+	 */
+	public function test_post_link_draft() {
+		global $wp_customize;
+		$this->assertNotContains( 'preview=true', get_permalink( $this->post_id ) );
+		$wp_customize->start_previewing_theme();
+		$this->assertContains( 'preview=true', get_permalink( $this->post_id ) );
+	}
 }
