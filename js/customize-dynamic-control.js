@@ -27,8 +27,8 @@
 				args.params.content.attr( 'class', 'customize-control customize-control-' + args.params.type );
 			}
 
-			api.Control.prototype.initialize.call( control, id, args );
 			control.propertyElements = [];
+			api.Control.prototype.initialize.call( control, id, args );
 		},
 
 		/**
