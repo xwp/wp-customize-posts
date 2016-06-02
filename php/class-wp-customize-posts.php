@@ -750,7 +750,7 @@ final class WP_Customize_Posts {
 			if ( ! preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches ) ) {
 				continue;
 			}
-			if ( 'auto-draft' === $setting['value']['post_status'] ) {
+			if ( 'auto-draft' === get_post_status( $matches['post_id'] ) ) {
 				$post_status = 'customize-draft';
 
 				add_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
