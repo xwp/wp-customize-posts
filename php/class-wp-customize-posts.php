@@ -88,6 +88,7 @@ final class WP_Customize_Posts {
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_templates' ) );
 		add_action( 'init', array( $this, 'register_customize_draft' ) );
 		add_filter( 'customize_snapshot_save', array( $this, 'transition_customize_draft' ) );
+		add_action( 'pre_get_posts', array( $this, 'preview_customize_draft' ) );
 		add_filter( 'post_link', array( $this, 'post_link_draft' ), 10, 2 );
 		add_filter( 'post_type_link', array( $this, 'post_link_draft' ), 10, 2 );
 		add_filter( 'page_link', array( $this, 'post_link_draft' ), 10, 2 );
@@ -763,6 +764,27 @@ final class WP_Customize_Posts {
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Allow the `customize-draft` status to be previewed in a Snapshot by logged-out users.
+	 *
+	 * @action pre_get_posts
+	 * @access public
+	 *
+	 * @param WP_Query $query The WP_Query instance (passed by reference).
+	 */
+	public function preview_customize_draft( $query ) {
+		if ( ! empty( $query->query_vars['preview'] ) && ! is_user_logged_in() && isset( $_REQUEST['customize_snapshot_uuid'] ) ) {
+			if ( ! empty( $query->query_vars['p'] ) ) {
+				$post_status = get_post_status( $query->query_vars['p'] );
+			} elseif ( ! empty( $query->query_vars['page_id'] ) ) {
+				$post_status = get_post_status( $query->query_vars['page_id'] );
+			}
+			if ( isset( $post_status ) && 'customize-draft' === $post_status ) {
+				$query->set( 'post_status', $post_status );
+			}
+		}
 	}
 
 	/**
