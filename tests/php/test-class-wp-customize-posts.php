@@ -432,7 +432,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 *
 	 * @see WP_Customize_Posts::preview_customize_draft()
 	 */
-	public function test_preview_customize_draft() {
+	public function test_preview_customize_draft_post() {
 		$this->posts->register_customize_draft();
 		$post = $this->posts->insert_auto_draft_post( 'post' );
 		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
@@ -451,6 +451,35 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertTrue( $GLOBALS['wp_query']->is_preview );
 		$this->assertEquals( 'true', $GLOBALS['wp_query']->query_vars['preview'] );
 		$this->assertEquals( $post->ID, $GLOBALS['wp_query']->query_vars['p'] );
+		$this->assertEquals( 'customize-draft', $GLOBALS['wp_query']->query_vars['post_status'] );
+
+		unset( $_REQUEST['customize_snapshot_uuid'] );
+	}
+
+	/**
+	 * Test preview_customize_draft method.
+	 *
+	 * @see WP_Customize_Posts::preview_customize_draft()
+	 */
+	public function test_preview_customize_draft_page() {
+		$this->posts->register_customize_draft();
+		$post = $this->posts->insert_auto_draft_post( 'page' );
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+		$data[ $setting_id ] = array(
+			'value' => array(
+				'post_title' => 'Preview Page',
+				'post_status' => 'publish',
+			),
+		);
+		$this->posts->transition_customize_draft( $data );
+
+		$GLOBALS['current_user'] = null;
+		$_REQUEST['customize_snapshot_uuid'] = '12345';
+		$this->go_to( home_url( '?page_id=' . $post->ID . '&preview=true' ) );
+
+		$this->assertTrue( $GLOBALS['wp_query']->is_preview );
+		$this->assertEquals( 'true', $GLOBALS['wp_query']->query_vars['preview'] );
+		$this->assertEquals( $post->ID, $GLOBALS['wp_query']->query_vars['page_id'] );
 		$this->assertEquals( 'customize-draft', $GLOBALS['wp_query']->query_vars['post_status'] );
 
 		unset( $_REQUEST['customize_snapshot_uuid'] );
