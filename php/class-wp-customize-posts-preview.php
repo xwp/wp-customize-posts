@@ -177,12 +177,12 @@ final class WP_Customize_Posts_Preview {
 			if ( ! empty( $post_data['post_password'] ) ) {
 
 				/** This filter is documented in wp-includes/post-template.php */
-				$protected_title_format = apply_filters( 'protected_title_format', __( 'Protected: %s' ), $mock_post );
+				$protected_title_format = apply_filters( 'protected_title_format', __( 'Protected: %s', 'customize-posts' ), $mock_post );
 				$title = sprintf( $protected_title_format, $title );
 			} elseif ( isset( $post_data['post_status'] ) && 'private' === $post_data['post_status'] ) {
 
 				/** This filter is documented in wp-includes/post-template.php */
-				$private_title_format = apply_filters( 'private_title_format', __( 'Private: %s' ), $mock_post );
+				$private_title_format = apply_filters( 'private_title_format', __( 'Private: %s', 'customize-posts' ), $mock_post );
 				$title = sprintf( $private_title_format, $title );
 			}
 		}
