@@ -145,6 +145,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertTrue( $preview->add_preview_filters() );
 		$this->assertEquals( 10, has_action( 'the_post', array( $preview, 'preview_setup_postdata' ) ) );
 		$this->assertEquals( 1000, has_filter( 'the_posts', array( $preview, 'filter_the_posts_to_preview_settings' ) ) );
+		$this->assertEquals( 1, has_filter( 'the_title', array( $preview, 'filter_the_title' ) ) );
 		$this->assertEquals( 1000, has_filter( 'get_post_metadata', array( $preview, 'filter_get_post_meta_to_preview' ) ) );
 		$this->assertEquals( 10, has_filter( 'posts_where', array( $preview, 'filter_posts_where_to_include_previewed_posts' ) ) );
 		$this->assertEquals( 10, has_filter( 'wp_setup_nav_menu_item', array( $preview, 'filter_nav_menu_item_to_set_url' ) ) );
@@ -188,6 +189,51 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertNotContains( 'test_preview_setup_postdata', get_the_content() );
 		$preview->preview_setup_postdata( $post );
 		$this->assertContains( 'test_preview_setup_postdata', get_the_content() );
+	}
+
+	/**
+	 * Test filter_the_title().
+	 *
+	 * @see WP_Customize_Posts_Preview::filter_the_title()
+	 */
+	public function test_filter_the_title() {
+		global $post;
+		$post = get_post( $this->post_id );
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+		$override_title = 'Hello--world';
+		$this->wp_customize->set_post_value( $setting_id, array_merge(
+			$post->to_array(),
+			array(
+				'post_title' => $override_title,
+			)
+		) );
+		$this->wp_customize->register_dynamic_settings();
+		$post_setting = $this->wp_customize->get_setting( $setting_id );
+		$post_setting->preview();
+		setup_postdata( $post );
+		$this->assertEquals( $override_title, $post->post_title );
+		$this->assertEquals( wptexturize( $override_title ), get_the_title( $post ) );
+
+		// Ensure that private prefix is applied.
+		$this->wp_customize->set_post_value( $setting_id, array_merge(
+			$post->to_array(),
+			array(
+				'post_status' => 'private',
+			)
+		) );
+		setup_postdata( $post );
+		$this->assertEquals( 'Private: ' . wptexturize( $override_title ), get_the_title( $post ) );
+
+		// Ensure that password prefix is applied.
+		$this->wp_customize->set_post_value( $setting_id, array_merge(
+			$post->to_array(),
+			array(
+				'post_status' => 'publish',
+				'post_password' => 'foood',
+			)
+		) );
+		setup_postdata( $post );
+		$this->assertEquals( 'Protected: ' . wptexturize( $override_title ), get_the_title( $post ) );
 	}
 
 	/**
