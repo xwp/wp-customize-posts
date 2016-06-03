@@ -751,19 +751,14 @@ final class WP_Customize_Posts {
 				continue;
 			}
 			if ( 'auto-draft' === get_post_status( $matches['post_id'] ) ) {
-				$post_status = 'customize-draft';
-
 				add_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
 				$result = wp_update_post( array(
 					'ID' => intval( $matches['post_id'] ),
-					'post_status' => $post_status,
+					'post_status' => 'customize-draft',
 				), true );
 				remove_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
 
 				// @todo Amend customize_save_response if error.
-				if ( ! is_wp_error( $result ) ) {
-					$data[ $id ]['value']['post_status'] = $post_status;
-				}
 			}
 		}
 

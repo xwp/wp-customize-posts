@@ -208,20 +208,10 @@ final class WP_Customize_Posts_Preview {
 					)
 				);
 
-				$customize_draft = 'customize-draft' === $post_data['post_status'];
-
-				$post_status_match = (
-					in_array( $post_data['post_status'], $query_vars['post_status'], true )
-					||
-					$customize_draft
-				);
+				$post_status_match = in_array( $post_data['post_status'], $query_vars['post_status'], true );
 
 				if ( false === $published ) {
-					$post_status_match = (
-						! in_array( $post_data['post_status'], array( 'publish', 'private' ), true )
-						&&
-						! $customize_draft
-					);
+					$post_status_match = ! in_array( $post_data['post_status'], array( 'publish', 'private' ), true );
 				}
 
 				if ( $post_status_match && $post_type_match ) {
