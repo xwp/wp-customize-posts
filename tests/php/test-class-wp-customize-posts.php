@@ -443,9 +443,9 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 			),
 		);
 		$this->posts->transition_customize_draft( $data );
+		$this->posts->customize_draft_post_ids[] = $post->ID;
 
 		$GLOBALS['current_user'] = null;
-		$_REQUEST['customize_snapshot_uuid'] = '12345';
 		$this->go_to( home_url( '?p=' . $post->ID . '&preview=true' ) );
 
 		$this->assertTrue( $GLOBALS['wp_query']->is_preview );
@@ -472,9 +472,9 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 			),
 		);
 		$this->posts->transition_customize_draft( $data );
+		$this->posts->customize_draft_post_ids[] = $post->ID;
 
 		$GLOBALS['current_user'] = null;
-		$_REQUEST['customize_snapshot_uuid'] = '12345';
 		$this->go_to( home_url( '?page_id=' . $post->ID . '&preview=true' ) );
 
 		$this->assertTrue( $GLOBALS['wp_query']->is_preview );

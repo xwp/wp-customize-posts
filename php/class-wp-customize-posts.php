@@ -57,6 +57,13 @@ final class WP_Customize_Posts {
 	public $suppress_post_link_filters = false;
 
 	/**
+	 * Customize draft post IDs.
+	 *
+	 * @var array
+	 */
+	public $customize_draft_post_ids = array();
+
+	/**
 	 * Initial loader.
 	 *
 	 * @access public
@@ -88,6 +95,7 @@ final class WP_Customize_Posts {
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_templates' ) );
 		add_action( 'init', array( $this, 'register_customize_draft' ) );
 		add_filter( 'customize_snapshot_save', array( $this, 'transition_customize_draft' ) );
+		add_action( 'after_setup_theme', array( $this, 'preview_customize_draft_post_ids' ) );
 		add_action( 'pre_get_posts', array( $this, 'preview_customize_draft' ) );
 		add_filter( 'post_link', array( $this, 'post_link_draft' ), 10, 2 );
 		add_filter( 'post_type_link', array( $this, 'post_link_draft' ), 10, 2 );
@@ -767,6 +775,25 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Set the previewed `customize-draft` post IDs.
+	 *
+	 * @action after_setup_theme
+	 * @access public
+	 */
+	public function preview_customize_draft_post_ids() {
+		$this->customize_draft_post_ids = array();
+		foreach ( $this->manager->unsanitized_post_values() as $id => $post_data ) {
+			if ( ! preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches ) ) {
+				continue;
+			}
+			$post_id = intval( $matches['post_id'] );
+			if ( 'customize-draft' === get_post_status( $post_id ) ) {
+				$this->customize_draft_post_ids[] = $post_id;
+			}
+		}
+	}
+
+	/**
 	 * Allow the `customize-draft` status to be previewed in a Snapshot by logged-out users.
 	 *
 	 * @action pre_get_posts
@@ -775,14 +802,18 @@ final class WP_Customize_Posts {
 	 * @param WP_Query $query The WP_Query instance (passed by reference).
 	 */
 	public function preview_customize_draft( $query ) {
-		if ( ! empty( $query->query_vars['preview'] ) && ! is_user_logged_in() && isset( $_REQUEST['customize_snapshot_uuid'] ) ) {
-			if ( ! empty( $query->query_vars['p'] ) ) {
-				$post_status = get_post_status( $query->query_vars['p'] );
-			} elseif ( ! empty( $query->query_vars['page_id'] ) ) {
-				$post_status = get_post_status( $query->query_vars['page_id'] );
+		if ( $query->is_preview && ! is_user_logged_in() ) {
+			$query_vars = $query->query_vars;
+			$post_id = 0;
+
+			if ( ! empty( $query_vars['p'] ) ) {
+				$post_id = $query_vars['p'];
+			} elseif ( ! empty( $query_vars['page_id'] ) ) {
+				$post_id = $query_vars['page_id'];
 			}
-			if ( isset( $post_status ) && 'customize-draft' === $post_status ) {
-				$query->set( 'post_status', $post_status );
+
+			if ( in_array( $post_id, $this->customize_draft_post_ids, true ) ) {
+				$query->set( 'post_status', 'customize-draft' );
 			}
 		}
 	}
