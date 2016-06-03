@@ -198,6 +198,8 @@ final class WP_Customize_Posts_Preview {
 					continue;
 				}
 
+				$statuses = $query_vars['post_status'];
+
 				$post_type_match = (
 					in_array( $matches['post_type'], $query_vars['post_type'], true )
 					||
@@ -208,7 +210,12 @@ final class WP_Customize_Posts_Preview {
 					)
 				);
 
-				$post_status_match = in_array( $post_data['post_status'], $query_vars['post_status'], true );
+				$post_type_obj = get_post_type_object( $matches['post_type'] );
+				if ( $post_type_obj && current_user_can( $post_type_obj->cap->read_private_posts, $matches['post_id'] ) ) {
+					$statuses[] = 'private';
+				}
+
+				$post_status_match = in_array( $post_data['post_status'], $statuses, true );
 
 				if ( false === $published ) {
 					$post_status_match = ! in_array( $post_data['post_status'], array( 'publish', 'private' ), true );
