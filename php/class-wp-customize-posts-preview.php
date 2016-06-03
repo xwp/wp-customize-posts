@@ -307,7 +307,7 @@ final class WP_Customize_Posts_Preview {
 	public function filter_posts_where_to_include_previewed_posts( $where, $query ) {
 		global $wpdb;
 
-		if ( ! $query->is_admin && ! $query->is_singular() ) {
+		if ( ! $query->is_singular() ) {
 			$post__not_in = implode( ',', array_map( 'absint', $this->get_previewed_posts_for_query( $query, false ) ) );
 			if ( ! empty( $post__not_in ) ) {
 				$where .= " AND {$wpdb->posts}.ID NOT IN ($post__not_in)";
