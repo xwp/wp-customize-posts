@@ -55,13 +55,6 @@ class Test_WP_Customize_Post_Field_Partial extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Filter the author description.
-	 */
-	public function author_description() {
-		return 'Post author bio';
-	}
-
-	/**
 	 * Test __construct().
 	 *
 	 * @see WP_Customize_Post_Field_Partial::__construct()
@@ -112,14 +105,10 @@ class Test_WP_Customize_Post_Field_Partial extends WP_UnitTestCase {
 		$this->assertEquals( $post_id, $partial->post_id );
 		$this->assertEquals( $post->post_type, $partial->post_type );
 		$this->assertEquals( 'post_title', $partial->field_id );
-		$this->assertFalse( $partial->container_inclusive );
-		$this->assertTrue( $partial->fallback_refresh );
 
 		$id = sprintf( 'post[%s][%d][%s][%s]', $post->post_type, $post->ID, 'post_title', 'heading' );
 		$partial = new WP_Customize_Post_Field_Partial( $this->wp_customize->selective_refresh, $id );
 		$this->assertEquals( 'heading', $partial->placement );
-		$this->assertTrue( $partial->container_inclusive );
-		$this->assertFalse( $partial->fallback_refresh );
 	}
 
 	/**
@@ -245,16 +234,35 @@ class Test_WP_Customize_Post_Field_Partial extends WP_UnitTestCase {
 	 *
 	 * @see WP_Customize_Post_Field_Partial::render_callback()
 	 */
-	public function test_render_callback_post_author_bio() {
-		$post = get_post( $this->factory()->post->create() );
-		$id = sprintf( 'post[%s][%d][%s][%s]', $post->post_type, $post->ID, 'post_author', 'author-bio' );
+	public function test_render_callback_ping_status() {
+		$post = get_post( self::factory()->post->create() );
+		$id = sprintf( 'post[%s][%d][%s]', $post->post_type, $post->ID, 'ping_status' );
 		$partial = new WP_Customize_Post_Field_Partial( $this->wp_customize->selective_refresh, $id );
 
-		add_filter( 'get_the_author_description', array( $this, 'author_description' ) );
+		// Not `is_single`.
+		$rendered = $partial->render();
+		$this->assertEmpty( $rendered );
+
+		// Go to the single post.
 		$this->go_to( get_permalink( $post->ID ) );
 		$rendered = $partial->render();
-		$this->assertContains( 'Post author bio', $rendered );
-		remove_filter( 'get_the_author_description', array( $this, 'author_description' ) );
+		$this->assertContains( '<div id="comments" class="comments-area">', $rendered );
+		$this->assertContains( '<textarea id="comment"', $rendered );
+
+		// No comments & closed no partial is rendered.
+		wp_update_post( array( 'ID' => $post->ID, 'comment_status' => 'closed' ) );
+		$rendered = $partial->render();
+		$this->assertEmpty( $rendered );
+
+		// Has comments & closed the partial is rendered without the form.
+		$comment = self::factory()->comment->create( array(
+			'comment_post_ID' => $post->ID,
+			'comment_content' => '1',
+			'comment_date_gmt' => date( 'Y-m-d H:i:s', time() - 100 ),
+		) );
+		$rendered = $partial->render();
+		$this->assertContains( '<div id="comments" class="comments-area">', $rendered );
+		$this->assertNotContains( '<textarea id="comment"', $rendered );
 	}
 
 	/**
@@ -270,6 +278,22 @@ class Test_WP_Customize_Post_Field_Partial extends WP_UnitTestCase {
 		$this->go_to( get_permalink( $post->ID ) );
 		$rendered = $partial->render();
 		$this->assertContains( '<a class="url fn n"', $rendered );
+	}
+
+	/**
+	 * Test render_callback().
+	 *
+	 * @see WP_Customize_Post_Field_Partial::render_callback()
+	 */
+	public function test_render_callback_post_author_avatar() {
+		$post = get_post( $this->factory()->post->create() );
+		$id = sprintf( 'post[%s][%d][%s][%s]', $post->post_type, $post->ID, 'post_author', 'avatar' );
+		$partial = new WP_Customize_Post_Field_Partial( $this->wp_customize->selective_refresh, $id );
+
+		$this->go_to( get_permalink( $post->ID ) );
+		$rendered = $partial->render();
+		$this->assertContains( '<img', $rendered );
+		$this->assertContains( "height='96' width='96'", $rendered );
 	}
 
 	/**

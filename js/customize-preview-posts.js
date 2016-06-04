@@ -1,4 +1,5 @@
-/*global wp, _wpCustomizePreviewPostsData, JSON */
+/* global wp, _wpCustomizePreviewPostsData, JSON */
+
 ( function( api, $ ) {
 	'use strict';
 
@@ -26,7 +27,6 @@
 	api.previewPosts.addPartials = function( settings ) {
 
 		_.each( settings, function( setting, id ) {
-			var partial;
 
 			if ( ! api.has( id ) ) {
 				api.create( id, setting.value, {
@@ -36,102 +36,102 @@
 
 			if ( 'post' === setting.type ) {
 
-				// Post field partial for post_title.
-				partial = new api.previewPosts.PostFieldPartial( id + '[post_title]', {
-					params: {
-						settings: [ id ]
-					}
-				} );
-				api.selectiveRefresh.partial.add( partial.id, partial );
+				// Add the partials.
+				_.each( api.previewPosts.partialSchema( id ), function( schema ) {
+					var partial, addPartial, matches, baseSelector, idPattern = /^post\[(.+?)]\[(-?\d+)]\[(.+?)](?:\[(.+?)])?$/;
 
-				// Post field partial for post_content.
-				partial = new api.previewPosts.PostFieldPartial( id + '[post_content]', {
-					params: {
-						settings: [ id ]
+					matches = schema.id.match( idPattern );
+					if ( ! matches ) {
+						throw new Error( 'Bad PostFieldPartial id. Expected post[:post_type][:post_id][:field_id]' );
 					}
-				} );
-				api.selectiveRefresh.partial.add( partial.id, partial );
 
-				// Post field partial for post_excerpt.
-				partial = new api.previewPosts.PostFieldPartial( id + '[post_excerpt]', {
-					params: {
-						settings: [ id ]
-					}
-				} );
-				api.selectiveRefresh.partial.add( partial.id, partial );
-
-				// Post field partial for comment_status comments-area.
-				if ( api.previewPosts.data.isSingular ) {
-					partial = new api.previewPosts.PostFieldPartial( id + '[comment_status][comments-area]', {
-						params: {
-							settings: [ id ],
-							containerInclusive: true,
-							fallbackRefresh: true
+					if ( schema.params.selector ) {
+						if ( ! schema.params.bodySelector ) {
+							baseSelector = '.hentry.post-' + String( parseInt( matches[2], 10 ) ) + '.type-' + matches[1];
+						} else {
+							baseSelector = '.postid-' + String( parseInt( matches[2], 10 ) ) + '.single-' + matches[1];
 						}
-					} );
-					api.selectiveRefresh.partial.add( partial.id, partial );
-				}
+						schema.params.selector = baseSelector + ' ' + schema.params.selector;
 
-				// Post field partial for comment_status comments-link.
-				partial = new api.previewPosts.PostFieldPartial( id + '[comment_status][comments-link]', {
-					params: {
-						settings: [ id ],
-						containerInclusive: true,
-						fallbackRefresh: false
-					}
-				} );
-				partial.fallback = function() {
-					if ( ! this.params.fallbackRefresh && 0 === this.placements().length && ! api.previewPosts.data.isSingular ) {
-						api.selectiveRefresh.requestFullRefresh();
+						addPartial =
+							! schema.params.singularOnly && ! schema.params.archiveOnly ||
+							schema.params.singularOnly && api.previewPosts.data.isSingular ||
+							schema.params.archiveOnly && ! api.previewPosts.data.isSingular;
+
+						if ( addPartial ) {
+							partial = new api.previewPosts.PostFieldPartial( schema.id, { params: schema.params } );
+							api.selectiveRefresh.partial.add( partial.id, partial );
+						}
 					} else {
-						api.previewPosts.PostFieldPartial.prototype.refresh.call( this );
-					}
-				};
-				api.selectiveRefresh.partial.add( partial.id, partial );
+						partial = new api.previewPosts.PostFieldPartial( schema.id, { params: schema.params } );
 
-				// Post field partial for ping_status.
-				partial = new api.previewPosts.PostFieldPartial( id + '[ping_status]', {
-					params: {
-						settings: [ id ],
-						containerInclusive: true,
-						fallbackRefresh: false
+						/**
+						 * Suppress wasted partial refreshes for partials that lack selectors.
+						 *
+						 * For example, since the post_name field is not normally
+						 * displayed, suppress refreshing changes.
+						 *
+						 * @returns {jQuery.promise} Promise.
+						 */
+						partial.refresh = function refreshWithoutSelector() {
+							var deferred = $.Deferred();
+							if ( this.params.fallbackRefresh ) {
+								api.selectiveRefresh.requestFullRefresh();
+								deferred.resolve();
+							} else {
+								deferred.reject();
+							}
+							return deferred.promise();
+						};
+						api.selectiveRefresh.partial.add( partial.id, partial );
 					}
 				} );
-				api.selectiveRefresh.partial.add( partial.id, partial );
-
-				// Post field partial for post_author author-bio.
-				partial = new api.previewPosts.PostFieldPartial( id + '[post_author][author-bio]', {
-					params: {
-						settings: [ id ],
-						containerInclusive: true,
-						fallbackRefresh: true
-					}
-				} );
-				api.selectiveRefresh.partial.add( partial.id, partial );
-
-				// Post field partial for post_author byline.
-				partial = new api.previewPosts.PostFieldPartial( id + '[post_author][byline]', {
-					params: {
-						settings: [ id ],
-						containerInclusive: true,
-						fallbackRefresh: false
-					}
-				} );
-				api.selectiveRefresh.partial.add( partial.id, partial );
-
-				// Post field partial for post_author avatar.
-				partial = new api.previewPosts.PostFieldPartial( id + '[post_author][avatar]', {
-					params: {
-						settings: [ id ],
-						containerInclusive: true,
-						fallbackRefresh: false
-					}
-				} );
-				api.selectiveRefresh.partial.add( partial.id, partial );
 			}
 
 			// @todo Trigger event for plugins and postmeta controllers.
 		} );
+	};
+
+	/**
+	 * Geneate the partial schema.
+	 *
+	 * @param {string} id
+	 */
+	api.previewPosts.partialSchema = function( id ) {
+		var partialSchema = [];
+
+		_.each( api.previewPosts.data.partialSchema, function( params, key ) {
+			var partialId, idParts;
+
+			idParts = key.replace( /]/g, '' ).split( /\[/ );
+			partialId = id + '[' + idParts.join( '][' ) + ']';
+
+			params.settings = [ id ];
+			partialSchema.push( {
+				id: partialId,
+				params: api.previewPosts.snakeToCamel( params )
+			} );
+		} );
+
+		return partialSchema;
+	};
+
+	/**
+	 * Convert the schema snakecase params to camelcase.
+	 *
+	 * @param {object} params
+	 */
+	api.previewPosts.snakeToCamel = function( params ) {
+		var newParams = {};
+
+		_.each( params, function( value, key ) {
+			var i = key.replace( /_\w/g, function( str ) {
+				return str[1].toUpperCase();
+			} );
+			newParams[ i ] = value;
+		} );
+
+		return newParams;
 	};
 
 	/**

@@ -104,19 +104,15 @@ class WP_Customize_Page_Template_Controller extends WP_Customize_Postmeta_Contro
 	 *
 	 * @param string                        $page_template The value to sanitize.
 	 * @param WP_Customize_Postmeta_Setting $setting       Setting.
-	 * @param bool                          $strict        Whether validation is being done. This is part of the proposed patch in in #34893.
-	 * @return mixed|null Null if an input isn't valid, otherwise the sanitized value.
+	 * @return mixed|WP_Error Sanitized value or WP_Error if invalid valid.
 	 */
-	public function sanitize_setting( $page_template, WP_Customize_Postmeta_Setting $setting, $strict = false ) {
+	public function sanitize_setting( $page_template, WP_Customize_Postmeta_Setting $setting ) {
 		$post = get_post( $setting->post_id );
 		$page_templates = wp_get_theme()->get_page_templates( $post );
+		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 
 		if ( 'default' !== $page_template && ! isset( $page_templates[ $page_template ] ) ) {
-			if ( $strict ) {
-				return new WP_Error( 'invalid_page_template', __( 'The page template is invalid.', 'customize-posts' ) );
-			} else {
-				return null;
-			}
+			return $has_setting_validation ? new WP_Error( 'invalid_page_template', __( 'The page template is invalid.', 'customize-posts' ) ) : null;
 		}
 		return $page_template;
 	}

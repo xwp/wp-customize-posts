@@ -1,4 +1,4 @@
-/*global jQuery, wp, _, _wpCustomizePostsExports, console */
+/* global jQuery, wp, _, _wpCustomizePostsExports, console */
 
 (function( api, $ ) {
 	'use strict';
@@ -57,31 +57,116 @@
 	} );
 
 	/**
-	 * Handle receiving customized-posts messages from the preview.
+	 * Get the post preview URL.
 	 *
-	 * @param {object} data
+	 * @param {object} params - Parameters to configure the preview URL.
+	 * @param {number} params.post_id - Post ID to preview.
+	 * @param {string} [params.post_type] - Post type to preview.
+	 * @return {string} Preview URL.
 	 */
-	component.receivePreviewData = function( data ) {
-		_.each( data.settings, function( setting, id ) {
+	component.getPreviewUrl = function( params ) {
+		var url = api.settings.url.home,
+		    args = {};
 
-			if ( ! api.has( id ) ) {
-				api.create( id, id, setting.value, {
-					transport: setting.transport,
-					previewer: api.previewer,
-					dirty: setting.dirty
-				} );
+		if ( ! params || ! params.post_id ) {
+			throw new Error( 'Missing params' );
+		}
+
+		args.preview = true;
+		if ( 'page' === params.post_type ) {
+			args.page_id = params.post_id;
+		} else {
+			args.p = params.post_id;
+			if ( params.post_type && 'post' !== params.post_type ) {
+				args.post_type = params.post_type;
 			}
+		}
 
-			if ( 'post' === setting.type ) {
-				component.addPostSection( id );
+		return url + '?' + $.param( args );
+	};
+
+	/**
+	 * Insert a new stubbed `auto-draft` post.
+	 *
+	 * @param {string} postType Post type to create.
+	 * @return {jQuery.promise} Promise resolved with the added section.
+	 */
+	component.insertAutoDraftPost = function( postType ) {
+		var request, deferred = $.Deferred();
+
+		request = wp.ajax.post( 'customize-posts-insert-auto-draft', {
+			'customize-posts-nonce': api.Posts.data.nonce,
+			'wp_customize': 'on',
+			'post_type': postType
+		} );
+
+		request.done( function( response ) {
+			var sections = component.receivePreviewData( response );
+			if ( 0 === sections.length ) {
+				deferred.rejectWith( 'no_sections' );
+			} else {
+				deferred.resolve( _.extend(
+					{
+						section: sections[0],
+						setting: api( sections[0].id )
+					},
+					response
+				) );
 			}
 		} );
+
+		request.fail( function( response ) {
+			var error = response || '';
+
+			if ( 'undefined' !== typeof response.message ) {
+				error = response.message;
+			}
+
+			console.error( error );
+			deferred.rejectWith( error );
+		} );
+
+		return deferred.promise();
+	};
+
+	/**
+	 * Handle receiving customized-posts messages from the preview.
+	 *
+	 * @param {object} data Data from preview.
+	 * @return {wp.customize.Section[]} Sections added.
+	 */
+	component.receivePreviewData = function( data ) {
+		var sections = [], section, setting;
+
+		_.each( data.settings, function( settingArgs, id ) {
+
+			if ( ! api.has( id ) ) {
+				setting = api.create( id, id, settingArgs.value, {
+					transport: settingArgs.transport,
+					previewer: api.previewer,
+					dirty: settingArgs.dirty
+				} );
+				if ( settingArgs.dirty ) {
+					setting.callbacks.fireWith( setting, [ setting.get(), {} ] );
+				}
+			}
+
+			if ( 'post' === settingArgs.type ) {
+				section = component.addPostSection( id );
+				if ( section ) {
+					sections.push( section );
+				}
+			}
+		} );
+
+		return sections;
 	};
 
 	/**
 	 * Handle adding post setting.
 	 *
-	 * @param {string} id
+	 * @param {string} id - Section ID (same as post setting ID).
+	 * @return {wp.customize.Section|null} Added (or existing) section, or null if not able to be added.
 	 */
 	component.addPostSection = function( id ) {
 		var section, sectionId, panelId, sectionType, postId, postType, idParts, Constructor, htmlParser;
@@ -91,14 +176,17 @@
 			if ( 'undefined' !== typeof console && console.error ) {
 				console.error( 'Unrecognized post type: ' + postType );
 			}
-			return;
+			return null;
+		}
+		if ( ! component.data.postTypes[ postType ].show_in_customizer ) {
+			return null;
 		}
 		postId = parseInt( idParts[2], 10 );
 		if ( ! postId ) {
 			if ( 'undefined' !== typeof console && console.error ) {
 				console.error( 'Bad post id: ' + idParts[2] );
 			}
-			return;
+			return null;
 		}
 
 		sectionType = 'post[' + postType + ']';
@@ -106,7 +194,7 @@
 		sectionId = id;
 
 		if ( api.section.has( sectionId ) ) {
-			return;
+			return api.section( sectionId );
 		}
 
 		Constructor = api.sectionConstructor[ sectionType ] || api.sectionConstructor.post;
@@ -123,6 +211,67 @@
 			}
 		});
 		api.section.add( sectionId, section );
+
+		return section;
+	};
+
+	/**
+	 * Emulate sanitize_title_with_dashes().
+	 *
+	 * @todo This can be more verbose, supporting Unicode.
+	 *
+	 * @param {string} title Title
+	 * @returns {string} slug
+	 */
+	component.sanitizeTitleWithDashes = function sanitizeTitleWithDashes( title ) {
+		var slug = $.trim( title ).toLowerCase();
+		slug = slug.replace( /[^a-z0-9\-_]+/g, '-' );
+		slug = slug.replace( /--+/g, '-' );
+		slug = slug.replace( /^-+|-+$/g, '' );
+		return slug;
+	};
+
+	/**
+	 * Handle purging the trash after Customize `saved`.
+	 *
+	 * @returns {void}
+	 */
+	component.purgeTrash = function purgeTrash() {
+		api.section.each( function( section ) {
+			if ( section.extended( component.PostSection ) && 'trash' === api( section.id ).get().post_status ) {
+				api.section.remove( section.id );
+				section.collapse();
+				section.panel.set( false );
+				if ( ! _.isUndefined( component.previewedQuery ) && true === component.previewedQuery.get().isSingular ) {
+					api.previewer.previewUrl( api.settings.url.home );
+				}
+			}
+		} );
+	};
+
+	/**
+	 * Update settings quietly.
+	 *
+	 * Update all of the settings without causing the overall dirty state to change.
+	 *
+	 * This was originally part of the Customize Setting Validation plugin.
+	 *
+	 * @link https://github.com/xwp/wp-customize-setting-validation/blob/2e5ddc66a870ad7b1aee5f8e414bad4b78e120d2/js/customize-setting-validation.js#L186-L209
+	 *
+	 * @param {object} settingValues Setting IDs mapped to values.
+	 * @return {void}
+	 */
+	component.updateSettingsQuietly = function updateSettingsQuietly( settingValues ) {
+		var wasSaved = api.state( 'saved' ).get();
+		_.each( settingValues, function( value, settingId ) {
+			var setting = api( settingId ), wasDirty;
+			if ( setting && ! _.isEqual( setting.get(), value ) ) {
+				wasDirty = setting._dirty;
+				setting.set( value );
+				setting._dirty = wasDirty;
+			}
+		} );
+		api.state( 'saved' ).set( wasSaved );
 	};
 
 	api.bind( 'ready', function() {
@@ -132,6 +281,27 @@
 		$( 'body' ).append( component.postIdInput );
 
 		api.previewer.bind( 'customized-posts', component.receivePreviewData );
+
+		// Track some of the recieved preview data from `customized-posts`.
+		component.previewedQuery = new api.Value( {} );
+		api.previewer.bind( 'customized-posts', function( data ) {
+			var query = {};
+			_.each( [ 'isSingular', 'isPostPreview', 'queriedPostId' ], function( key ) {
+				if ( ! _.isUndefined( data[ key ] ) ) {
+					query[ key ] = data[ key ];
+				}
+			} );
+			component.previewedQuery.set( query );
+		} );
+
+		// Purge trashed posts and update client settings with saved values from server.
+		api.bind( 'saved', function( data ) {
+			if ( data.saved_post_setting_values ) {
+				component.updateSettingsQuietly( data.saved_post_setting_values );
+			}
+
+			component.purgeTrash();
+		} );
 
 		/**
 		 * Focus on the section requested from the preview.
@@ -146,7 +316,7 @@
 		} );
 
 		/**
-		 * Focus on the section requested from the preview.
+		 * Focus on the control requested from the preview.
 		 *
 		 * @todo This can be merged into Core to correspond with focus-control-for-setting.
 		 */

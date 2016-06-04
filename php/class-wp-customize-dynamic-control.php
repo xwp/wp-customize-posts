@@ -143,7 +143,6 @@ class WP_Customize_Dynamic_Control extends WP_Customize_Control {
 				/>
 			<# } #>
 		<# } #>
-		<div class="customize-setting-validation-message error" aria-live="assertive"></div>
 		<?php
 	}
 }

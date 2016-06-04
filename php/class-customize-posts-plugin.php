@@ -64,6 +64,7 @@ class Customize_Posts_Plugin {
 		add_action( 'wp_default_styles', array( $this, 'register_styles' ), 11 );
 		add_filter( 'user_has_cap', array( $this, 'grant_customize_capability' ), 10, 3 );
 		add_filter( 'customize_loaded_components', array( $this, 'filter_customize_loaded_components' ), 100, 2 );
+		add_action( 'customize_register', array( $this, 'load_support_classes' ) );
 
 		require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-controller.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-page-template-controller.php';
@@ -115,6 +116,32 @@ class Customize_Posts_Plugin {
 	}
 
 	/**
+	 * Load theme and plugin compatibility classes.
+	 *
+	 * @codeCoverageIgnore
+	 *
+	 * @param WP_Customize_Manager $wp_customize Manager.
+	 */
+	function load_support_classes( $wp_customize ) {
+
+		// Theme & Plugin Support.
+		require_once dirname( __FILE__ ) . '/class-customize-posts-support.php';
+		require_once dirname( __FILE__ ) . '/class-customize-posts-plugin-support.php';
+		require_once dirname( __FILE__ ) . '/class-customize-posts-theme-support.php';
+
+		foreach ( array( 'theme', 'plugin' ) as $type ) {
+			foreach ( glob( dirname( __FILE__ ) . '/' . $type . '-support/class-*.php' ) as $file_path ) {
+				require_once $file_path;
+
+				$class_name = str_replace( '-', '_', preg_replace( '/^class-(.+)\.php$/', '$1', basename( $file_path ) ) );
+				if ( class_exists( $class_name ) ) {
+					$wp_customize->posts->add_support( new $class_name( $wp_customize->posts ) );
+				}
+			}
+		}
+	}
+
+	/**
 	 * Show error dependency failure notice.
 	 */
 	function show_core_version_dependency_failure() {
@@ -132,34 +159,33 @@ class Customize_Posts_Plugin {
 	 */
 	public function register_scripts( WP_Scripts $wp_scripts ) {
 		$suffix = ( SCRIPT_DEBUG ? '' : '.min' ) . '.js';
-		$plugin_dir_url = plugin_dir_url( dirname( __FILE__ ) );
 
 		$handle = 'customize-controls-patched-36521';
-		$src = $plugin_dir_url . 'js/customize-controls-patched-36521' . $suffix;
+		$src = plugins_url( 'js/customize-controls-patched-36521' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'customize-controls' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		$handle = 'customize-posts-panel';
-		$src = $plugin_dir_url . 'js/customize-posts-panel' . $suffix;
+		$src = plugins_url( 'js/customize-posts-panel' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'customize-controls' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		$handle = 'customize-post-section';
-		$src = $plugin_dir_url . 'js/customize-post-section' . $suffix;
+		$src = plugins_url( 'js/customize-post-section' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'customize-controls' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		$handle = 'customize-dynamic-control';
-		$src = $plugin_dir_url . 'js/customize-dynamic-control' . $suffix;
+		$src = plugins_url( 'js/customize-dynamic-control' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'customize-controls' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		$handle = 'customize-posts';
-		$src = $plugin_dir_url . 'js/customize-posts' . $suffix;
+		$src = plugins_url( 'js/customize-posts' . $suffix, dirname( __FILE__ ) );
 		$deps = array(
 			'jquery',
 			'wp-backbone',
@@ -176,57 +202,57 @@ class Customize_Posts_Plugin {
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		$handle = 'customize-post-field-partial';
-		$src = $plugin_dir_url . 'js/customize-post-field-partial' . $suffix;
+		$src = plugins_url( 'js/customize-post-field-partial' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'customize-selective-refresh' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		$handle = 'customize-preview-posts';
-		$src = $plugin_dir_url . 'js/customize-preview-posts' . $suffix;
+		$src = plugins_url( 'js/customize-preview-posts' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'jquery', 'customize-preview', 'customize-post-field-partial' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		$handle = 'edit-post-preview-admin';
-		$src = $plugin_dir_url . 'js/edit-post-preview-admin' . $suffix;
+		$src = plugins_url( 'js/edit-post-preview-admin' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'post' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		$handle = 'edit-post-preview-customize';
-		$src = $plugin_dir_url . 'js/edit-post-preview-customize' . $suffix;
+		$src = plugins_url( 'js/edit-post-preview-customize' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'customize-controls' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		// Page templates.
 		$handle = 'customize-page-template';
-		$src = $plugin_dir_url . 'js/customize-page-template' . $suffix;
+		$src = plugins_url( 'js/customize-page-template' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'customize-controls', 'customize-posts' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		$handle = 'edit-post-preview-admin-page-template';
-		$src = $plugin_dir_url . 'js/edit-post-preview-admin-page-template' . $suffix;
+		$src = plugins_url( 'js/edit-post-preview-admin-page-template' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'edit-post-preview-admin' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		// Featured images.
 		$handle = 'customize-featured-image';
-		$src = $plugin_dir_url . 'js/customize-featured-image' . $suffix;
+		$src = plugins_url( 'js/customize-featured-image' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'customize-controls', 'customize-posts' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		$handle = 'edit-post-preview-admin-featured-image';
-		$src = $plugin_dir_url . 'js/edit-post-preview-admin-featured-image' . $suffix;
+		$src = plugins_url( 'js/edit-post-preview-admin-featured-image' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'edit-post-preview-admin' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		$handle = 'customize-preview-featured-image';
-		$src = $plugin_dir_url . 'js/customize-preview-featured-image' . $suffix;
+		$src = plugins_url( 'js/customize-preview-featured-image' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'customize-preview', 'customize-selective-refresh' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
@@ -239,16 +265,15 @@ class Customize_Posts_Plugin {
 	 */
 	public function register_styles( WP_Styles $wp_styles ) {
 		$suffix = ( SCRIPT_DEBUG ? '' : '.min' ) . '.css';
-		$plugin_dir_url = plugin_dir_url( dirname( __FILE__ ) );
 
 		$handle = 'customize-posts';
-		$src = $plugin_dir_url . 'css/customize-posts' . $suffix;
+		$src = plugins_url( 'css/customize-posts' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'wp-admin' );
 		$version = $this->version;
 		$wp_styles->add( $handle, $src, $deps, $version );
 
 		$handle = 'edit-post-preview-customize';
-		$src = $plugin_dir_url . 'css/edit-post-preview-customize' . $suffix;
+		$src = plugins_url( 'css/edit-post-preview-customize' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'customize-controls' );
 		$wp_styles->add( $handle, $src, $deps, $this->version );
 	}

@@ -7,7 +7,7 @@
  */
 
 /**
- * Class WP_Customize_Posts
+ * Class Test_WP_Customize_Posts
  */
 class Test_WP_Customize_Posts extends WP_UnitTestCase {
 
@@ -198,6 +198,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 			'transport' => 'postMessage',
 			'sanitize_callback' => 'sanitize_key',
 			'sanitize_js_callback' => 'sanitize_key',
+			'validate_callback' => array( $this, 'validate_setting' ),
 			'setting_class' => 'WP_Customize_Postmeta_Setting',
 		);
 		$this->posts->register_post_type_meta( 'post', 'timezone', $args );
@@ -216,6 +217,9 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertEquals( $args['transport'], $setting->transport );
 		$this->assertEquals( $args['sanitize_callback'], $setting->sanitize_callback );
 		$this->assertEquals( $args['sanitize_js_callback'], $setting->sanitize_js_callback );
+		if ( method_exists( 'WP_Customize_Setting', 'validate' ) ) {
+			$this->assertEquals( $args['validate_callback'], $setting->validate_callback );
+		}
 		$this->assertInstanceOf( $args['setting_class'], $setting );
 	}
 
@@ -234,7 +238,11 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->do_customize_boot_actions();
 		foreach ( $posts->get_post_types() as $post_type_object ) {
 			$panel_id = sprintf( 'posts[%s]', $post_type_object->name );
-			$this->assertInstanceOf( 'WP_Customize_Posts_Panel', $posts->manager->get_panel( $panel_id ) );
+			if ( empty( $post_type_object->show_in_customizer ) ) {
+				$this->assertNull( $posts->manager->get_panel( $panel_id ) );
+			} else {
+				$this->assertInstanceOf( 'WP_Customize_Posts_Panel', $posts->manager->get_panel( $panel_id ) );
+			}
 		}
 	}
 
@@ -289,7 +297,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 * @see WP_Customize_Posts::current_user_can_edit_post()
 	 */
 	public function test_current_user_can_edit_post() {
-		wp_set_current_user( self::factory()->user->create( array( 'role' => 'contibutor' ) ) );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'contributor' ) ) );
 		$posts = new WP_Customize_Posts( $this->wp_customize );
 		$this->assertFalse( $posts->current_user_can_edit_post( $this->post_id ) );
 		wp_set_current_user( $this->user_id );
@@ -350,5 +358,170 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertEquals( 10, $this->posts->sanitize_post_id( '10k' ) );
 		$this->assertEquals( 0, $this->posts->sanitize_post_id( 'no' ) );
 		$this->assertEquals( -2, $this->posts->sanitize_post_id( '-2' ) );
+	}
+
+	/**
+	 * Test templates are rendered.
+	 *
+	 * @see WP_Customize_Posts::render_templates()
+	 */
+	public function test_render_templates() {
+		ob_start();
+		$this->posts->render_templates();
+		$markup = ob_get_contents();
+		ob_end_clean();
+		$this->assertContains( '<script type="text/html" id="tmpl-customize-posts-add-new">', $markup );
+		$this->assertContains( '<li class="customize-posts-add-new">', $markup );
+		$this->assertContains( '<button class="button-secondary add-new-post-stub">', $markup );
+	}
+
+	/**
+	 * Test register_customize_draft method.
+	 *
+	 * @see WP_Customize_Posts::register_customize_draft()
+	 */
+	public function test_register_customize_draft() {
+		$this->posts->register_customize_draft();
+		global $wp_post_statuses;
+		$this->assertArrayHasKey( 'customize-draft', $wp_post_statuses );
+	}
+
+	/**
+	 * Test transition_customize_draft method.
+	 *
+	 * @see WP_Customize_Posts::transition_customize_draft()
+	 */
+	public function test_transition_customize_draft() {
+		$post_setting = $this->posts->insert_auto_draft_post( 'post' );
+		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post_setting );
+		$page_setting = $this->posts->insert_auto_draft_post( 'page' );
+		$page_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $page_setting );
+
+		$data = array();
+		$data['some_other_id'] = array(
+			'value' => array(
+				'some_key' => 'Some Value',
+			),
+		);
+		$data[ $post_setting_id ] = array(
+			'value' => array(
+				'post_title' => 'Testing Post Publish',
+				'post_status' => 'publish',
+			),
+		);
+		$data[ $page_setting_id ] = array(
+			'value' => array(
+				'post_title' => 'Testing Page Draft',
+				'post_status' => 'draft',
+			),
+		);
+
+		$this->assertEquals( 'auto-draft', get_post_status( $post_setting->ID ) );
+		$this->assertEquals( 'auto-draft', get_post_status( $page_setting->ID ) );
+
+		$expected = $this->posts->transition_customize_draft( $data );
+		$this->assertEquals( 'Testing Post Publish', $expected[ $post_setting_id ]['value']['post_title'] );
+		$this->assertEquals( 'publish', $expected[ $post_setting_id ]['value']['post_status'] );
+		$this->assertEquals( 'draft', $expected[ $page_setting_id ]['value']['post_status'] );
+		$this->assertEquals( 'customize-draft', get_post_status( $post_setting->ID ) );
+		$this->assertEquals( 'customize-draft', get_post_status( $page_setting->ID ) );
+	}
+
+	/**
+	 * Test preview_customize_draft method.
+	 *
+	 * @see WP_Customize_Posts::preview_customize_draft()
+	 */
+	public function test_preview_customize_draft_post() {
+		$this->posts->register_customize_draft();
+		$post = $this->posts->insert_auto_draft_post( 'post' );
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+		$data[ $setting_id ] = array(
+			'value' => array(
+				'post_title' => 'Preview Post',
+				'post_status' => 'publish',
+			),
+		);
+		$this->posts->transition_customize_draft( $data );
+		$this->posts->customize_draft_post_ids[] = $post->ID;
+
+		$GLOBALS['current_user'] = null;
+		$this->go_to( home_url( '?p=' . $post->ID . '&preview=true' ) );
+
+		$this->assertTrue( $GLOBALS['wp_query']->is_preview );
+		$this->assertEquals( 'true', $GLOBALS['wp_query']->query_vars['preview'] );
+		$this->assertEquals( $post->ID, $GLOBALS['wp_query']->query_vars['p'] );
+		$this->assertEquals( 'customize-draft', $GLOBALS['wp_query']->query_vars['post_status'] );
+
+		unset( $_REQUEST['customize_snapshot_uuid'] );
+	}
+
+	/**
+	 * Test preview_customize_draft method.
+	 *
+	 * @see WP_Customize_Posts::preview_customize_draft()
+	 */
+	public function test_preview_customize_draft_page() {
+		$this->posts->register_customize_draft();
+		$post = $this->posts->insert_auto_draft_post( 'page' );
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+		$data[ $setting_id ] = array(
+			'value' => array(
+				'post_title' => 'Preview Page',
+				'post_status' => 'publish',
+			),
+		);
+		$this->posts->transition_customize_draft( $data );
+		$this->posts->customize_draft_post_ids[] = $post->ID;
+
+		$GLOBALS['current_user'] = null;
+		$this->go_to( home_url( '?page_id=' . $post->ID . '&preview=true' ) );
+
+		$this->assertTrue( $GLOBALS['wp_query']->is_preview );
+		$this->assertEquals( 'true', $GLOBALS['wp_query']->query_vars['preview'] );
+		$this->assertEquals( $post->ID, $GLOBALS['wp_query']->query_vars['page_id'] );
+		$this->assertEquals( 'customize-draft', $GLOBALS['wp_query']->query_vars['post_status'] );
+
+		unset( $_REQUEST['customize_snapshot_uuid'] );
+	}
+
+	/**
+	 * Test insert_auto_draft_post method.
+	 *
+	 * @see WP_Customize_Posts::insert_auto_draft_post()
+	 */
+	public function test_insert_auto_draft_post_returns_error() {
+		$r = $this->posts->insert_auto_draft_post( 'fake' );
+		$this->assertInstanceOf( 'WP_Error', $r );
+	}
+
+	/**
+	 * Ensure that an auto-draft post has the expected fields.
+	 *
+	 * @see WP_Customize_Posts::insert_auto_draft_post()
+	 */
+	public function test_insert_auto_draft_post_has_expected_fields() {
+		global $wp_customize;
+		$wp_customize->start_previewing_theme();
+		$this->assertTrue( is_customize_preview() );
+		$post = $this->posts->insert_auto_draft_post( 'post' );
+		$this->assertEquals( 'auto-draft', $post->post_status );
+		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_date );
+		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_date_gmt );
+		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_modified );
+		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_modified_gmt );
+		$this->assertEquals( sprintf( '%s?p=%d', home_url( '/' ), $post->ID ), $post->guid );
+	}
+
+	/**
+	 * Check filtering the post link in the preview.
+	 *
+	 * @see WP_Customize_Posts::post_link_draft()]
+	 */
+	public function test_post_link_draft() {
+		global $wp_customize;
+		$this->assertNotContains( 'preview=true', get_permalink( $this->post_id ) );
+		$wp_customize->start_previewing_theme();
+		$this->assertContains( 'preview=true', get_permalink( $this->post_id ) );
 	}
 }
