@@ -12,7 +12,6 @@
 class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 
 	/**
-
 	 * Customize Manager instance.
 	 *
 	 * @var WP_Customize_Manager
@@ -453,6 +452,47 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertEquals( $preview_meta_value, $preview->filter_get_post_meta_to_preview( null, $this->post_id, $meta_key, true ) );
 		$meta_values = $preview->filter_get_post_meta_to_preview( null, $this->post_id, '', true );
 		$this->assertEquals( array( maybe_serialize( $preview_meta_value ) ), $meta_values[ $meta_key ] );
+	}
+
+	/**
+	 * Ensure that previewing a postmeta set to an empty array works.
+	 *
+	 * There is an issue in core with `get_post_meta()` and a true `$single`
+	 * parameter. If the value was filtered to be an empty array, a PHP notice
+	 * is raised because `$check[0]` does not exist.
+	 *
+	 *     $check = apply_filters( "get_{$meta_type}_metadata", null, $object_id, $meta_key, $single );
+	 *     if ( null !== $check ) {
+	 *         if ( $single && is_array( $check ) )
+	 *             return $check[0];
+	 *         else
+	 *             return $check;
+	 *     }
+	 *
+	 * @link https://github.com/xwp/wordpress-develop/blob/91859d209822f654dd3881b722bdeaf95acf7b1e/src/wp-includes/meta.php#L486-L492
+	 */
+	public function test_previewing_empty_array() {
+
+		$preview = $this->posts_component->preview;
+		$meta_key = 'foo_ids';
+		$initial_value = array( 1, 2, 3 );
+		update_post_meta( $this->post_id, $meta_key, $initial_value );
+		$this->posts_component->register_post_type_meta( 'post', $meta_key );
+		$preview->filter_get_post_meta_to_add_dynamic_postmeta_settings( null, $this->post_id );
+
+		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $this->post_id ), $meta_key );
+		$setting = $this->wp_customize->get_setting( $setting_id );
+		$this->assertEquals( $initial_value, $setting->value() );
+		$this->assertEquals( $initial_value, $setting->js_value() );
+		$this->assertEquals( array( $initial_value ), get_post_meta( $this->post_id, $meta_key, false ) );
+
+		$this->wp_customize->set_post_value( $setting_id, array() );
+		$setting->preview();
+		$this->assertEquals( array(), $setting->value() );
+		$this->assertEquals( array(), $setting->js_value() );
+
+		// Note that `get_post_meta( $this->post_id, $meta_key, true )` would cause "Undefined offset: 0" notice.
+		$this->assertEquals( array( array() ), get_post_meta( $this->post_id, $meta_key, false ) );
 	}
 
 	/**
