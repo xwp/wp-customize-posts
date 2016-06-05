@@ -261,10 +261,12 @@ final class WP_Customize_Posts_Preview {
 				if ( ! preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches ) ) {
 					continue;
 				}
-
+				$post_id = intval( $matches['post_id'] );
 				$statuses = $query_vars['post_status'];
 
 				$post_type_match = (
+					empty( $query_vars['post_type'] )
+					||
 					in_array( $matches['post_type'], $query_vars['post_type'], true )
 					||
 					(
@@ -275,18 +277,21 @@ final class WP_Customize_Posts_Preview {
 				);
 
 				$post_type_obj = get_post_type_object( $matches['post_type'] );
-				if ( $post_type_obj && current_user_can( $post_type_obj->cap->read_private_posts, $matches['post_id'] ) ) {
+				if ( $post_type_obj && current_user_can( $post_type_obj->cap->read_private_posts, $post_id ) ) {
 					$statuses[] = 'private';
 				}
 
-				$post_status_match = in_array( $post_data['post_status'], $statuses, true );
-
-				if ( false === $published ) {
+				if ( empty( $query_vars['post_status'] ) ) {
+					$post_status_match = true;
+				} elseif ( false === $published ) {
 					$post_status_match = ! in_array( $post_data['post_status'], array( 'publish', 'private' ), true );
+				} else {
+					$post_status_match = in_array( $post_data['post_status'], $statuses, true );
 				}
 
-				if ( $post_status_match && $post_type_match ) {
-					$post_ids[] = intval( $matches['post_id'] );
+				$post__in_match = empty( $query_vars['post__in'] ) || in_array( $post_id, $query_vars['post__in'], true );
+				if ( $post_status_match && $post_type_match && $post__in_match ) {
+					$post_ids[] = $post_id;
 				}
 			}
 		}
@@ -312,7 +317,7 @@ final class WP_Customize_Posts_Preview {
 			if ( ! empty( $post__not_in ) ) {
 				$where .= " AND {$wpdb->posts}.ID NOT IN ($post__not_in)";
 			}
-			$post__in = implode( ',', array_map( 'absint', $this->get_previewed_posts_for_query( $query ) ) );
+			$post__in = implode( ',', array_map( 'absint', $this->get_previewed_posts_for_query( $query, true ) ) );
 			if ( ! empty( $post__in ) ) {
 				$where .= " OR {$wpdb->posts}.ID IN ($post__in)";
 			}
