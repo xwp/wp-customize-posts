@@ -392,8 +392,11 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 * @see WP_Customize_Posts::transition_customize_draft()
 	 */
 	public function test_transition_customize_draft() {
-		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $this->posts->insert_auto_draft_post( 'post' ) );
-		$page_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $this->posts->insert_auto_draft_post( 'page' ) );
+		$post_setting = $this->posts->insert_auto_draft_post( 'post' );
+		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post_setting );
+		$page_setting = $this->posts->insert_auto_draft_post( 'page' );
+		$page_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $page_setting );
+
 		$data = array();
 		$data['some_other_id'] = array(
 			'value' => array(
@@ -402,20 +405,84 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		);
 		$data[ $post_setting_id ] = array(
 			'value' => array(
-				'post_title' => 'Testing Post Draft',
-				'post_status' => 'auto-draft',
+				'post_title' => 'Testing Post Publish',
+				'post_status' => 'publish',
 			),
 		);
 		$data[ $page_setting_id ] = array(
 			'value' => array(
 				'post_title' => 'Testing Page Draft',
-				'post_status' => 'auto-draft',
+				'post_status' => 'draft',
 			),
 		);
+
+		$this->assertEquals( 'auto-draft', get_post_status( $post_setting->ID ) );
+		$this->assertEquals( 'auto-draft', get_post_status( $page_setting->ID ) );
+
 		$expected = $this->posts->transition_customize_draft( $data );
-		$this->assertEquals( 'Testing Post Draft', $expected[ $post_setting_id ]['value']['post_title'] );
-		$this->assertEquals( 'customize-draft', $expected[ $post_setting_id ]['value']['post_status'] );
-		$this->assertEquals( 'customize-draft', $expected[ $page_setting_id ]['value']['post_status'] );
+		$this->assertEquals( 'Testing Post Publish', $expected[ $post_setting_id ]['value']['post_title'] );
+		$this->assertEquals( 'publish', $expected[ $post_setting_id ]['value']['post_status'] );
+		$this->assertEquals( 'draft', $expected[ $page_setting_id ]['value']['post_status'] );
+		$this->assertEquals( 'customize-draft', get_post_status( $post_setting->ID ) );
+		$this->assertEquals( 'customize-draft', get_post_status( $page_setting->ID ) );
+	}
+
+	/**
+	 * Test preview_customize_draft method.
+	 *
+	 * @see WP_Customize_Posts::preview_customize_draft()
+	 */
+	public function test_preview_customize_draft_post() {
+		$this->posts->register_customize_draft();
+		$post = $this->posts->insert_auto_draft_post( 'post' );
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+		$data[ $setting_id ] = array(
+			'value' => array(
+				'post_title' => 'Preview Post',
+				'post_status' => 'publish',
+			),
+		);
+		$this->posts->transition_customize_draft( $data );
+		$this->posts->customize_draft_post_ids[] = $post->ID;
+
+		$GLOBALS['current_user'] = null;
+		$this->go_to( home_url( '?p=' . $post->ID . '&preview=true' ) );
+
+		$this->assertTrue( $GLOBALS['wp_query']->is_preview );
+		$this->assertEquals( 'true', $GLOBALS['wp_query']->query_vars['preview'] );
+		$this->assertEquals( $post->ID, $GLOBALS['wp_query']->query_vars['p'] );
+		$this->assertEquals( 'customize-draft', $GLOBALS['wp_query']->query_vars['post_status'] );
+
+		unset( $_REQUEST['customize_snapshot_uuid'] );
+	}
+
+	/**
+	 * Test preview_customize_draft method.
+	 *
+	 * @see WP_Customize_Posts::preview_customize_draft()
+	 */
+	public function test_preview_customize_draft_page() {
+		$this->posts->register_customize_draft();
+		$post = $this->posts->insert_auto_draft_post( 'page' );
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+		$data[ $setting_id ] = array(
+			'value' => array(
+				'post_title' => 'Preview Page',
+				'post_status' => 'publish',
+			),
+		);
+		$this->posts->transition_customize_draft( $data );
+		$this->posts->customize_draft_post_ids[] = $post->ID;
+
+		$GLOBALS['current_user'] = null;
+		$this->go_to( home_url( '?page_id=' . $post->ID . '&preview=true' ) );
+
+		$this->assertTrue( $GLOBALS['wp_query']->is_preview );
+		$this->assertEquals( 'true', $GLOBALS['wp_query']->query_vars['preview'] );
+		$this->assertEquals( $post->ID, $GLOBALS['wp_query']->query_vars['page_id'] );
+		$this->assertEquals( 'customize-draft', $GLOBALS['wp_query']->query_vars['post_status'] );
+
+		unset( $_REQUEST['customize_snapshot_uuid'] );
 	}
 
 	/**

@@ -84,6 +84,7 @@ final class WP_Customize_Posts_Preview {
 		}
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_preview_settings' ), 1000 );
 		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
+		add_filter( 'the_title', array( $this, 'filter_the_title' ), 1, 2 );
 		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_preview' ), 1000, 4 );
 		add_filter( 'posts_where', array( $this, 'filter_posts_where_to_include_previewed_posts' ), 10, 2 );
 		add_filter( 'wp_setup_nav_menu_item', array( $this, 'filter_nav_menu_item_to_set_url' ) );
@@ -124,6 +125,69 @@ final class WP_Customize_Posts_Preview {
 			setup_postdata( $post );
 			$prevent_setup_postdata_recursion = false;
 		}
+	}
+
+	/**
+	 * Retrieve post title and filter according to the current Customizer state.
+	 *
+	 * This is necessary because the is currently no filter yet in WP to mutate
+	 * the underling post object. This specifically was noticed in the `get_the_title()`
+	 * call in `WP_REST_Posts_Controller::prepare_item_for_response()`.
+	 *
+	 * @link https://github.com/xwp/wp-customize-posts/issues/96
+	 * @link https://core.trac.wordpress.org/ticket/12955
+	 *
+	 * @param string      $title Filtered title.
+	 * @param int|WP_Post $post Optional. Post ID or WP_Post object. Default is global $post.
+	 * @return string Title.
+	 */
+	public function filter_the_title( $title, $post ) {
+		if ( empty( $post ) ) {
+			return $title;
+		}
+		$post = get_post( $post );
+		if ( empty( $post ) ) {
+			return $title;
+		}
+
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+		$setting = $this->component->manager->get_setting( $setting_id );
+
+		if ( ! ( $setting instanceof WP_Customize_Post_Setting ) ) {
+			return $title;
+		}
+		$post_data = $setting->post_value();
+		if ( ! is_array( $post_data ) || ! isset( $post_data['post_title'] ) ) {
+			return $title;
+		}
+
+		$title = $post_data['post_title'];
+
+		/*
+		 * Begin code modified from get_the_title():
+		 * https://github.com/xwp/wordpress-develop/blob/6792df6fab87063e0564148c6634aaa0ed3156b4/src/wp-includes/post-template.php#L113-L148
+		 */
+
+		if ( ! is_admin() ) {
+			$mock_post = new WP_Post( (object) array_merge(
+				$post->to_array(),
+				$post_data
+			) );
+
+			if ( ! empty( $post_data['post_password'] ) ) {
+
+				/** This filter is documented in wp-includes/post-template.php */
+				$protected_title_format = apply_filters( 'protected_title_format', __( 'Protected: %s', 'customize-posts' ), $mock_post );
+				$title = sprintf( $protected_title_format, $title );
+			} elseif ( isset( $post_data['post_status'] ) && 'private' === $post_data['post_status'] ) {
+
+				/** This filter is documented in wp-includes/post-template.php */
+				$private_title_format = apply_filters( 'private_title_format', __( 'Private: %s', 'customize-posts' ), $mock_post );
+				$title = sprintf( $private_title_format, $title );
+			}
+		}
+
+		return $title;
 	}
 
 	/**
@@ -197,8 +261,12 @@ final class WP_Customize_Posts_Preview {
 				if ( ! preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches ) ) {
 					continue;
 				}
+				$post_id = intval( $matches['post_id'] );
+				$statuses = $query_vars['post_status'];
 
 				$post_type_match = (
+					empty( $query_vars['post_type'] )
+					||
 					in_array( $matches['post_type'], $query_vars['post_type'], true )
 					||
 					(
@@ -208,14 +276,22 @@ final class WP_Customize_Posts_Preview {
 					)
 				);
 
-				$post_status_match = in_array( $post_data['post_status'], $query_vars['post_status'], true );
-
-				if ( false === $published ) {
-					$post_status_match = ! in_array( $post_data['post_status'], array( 'publish', 'private' ), true );
+				$post_type_obj = get_post_type_object( $matches['post_type'] );
+				if ( $post_type_obj && current_user_can( $post_type_obj->cap->read_private_posts, $post_id ) ) {
+					$statuses[] = 'private';
 				}
 
-				if ( $post_status_match && $post_type_match ) {
-					$post_ids[] = intval( $matches['post_id'] );
+				if ( empty( $query_vars['post_status'] ) ) {
+					$post_status_match = true;
+				} elseif ( false === $published ) {
+					$post_status_match = ! in_array( $post_data['post_status'], array( 'publish', 'private' ), true );
+				} else {
+					$post_status_match = in_array( $post_data['post_status'], $statuses, true );
+				}
+
+				$post__in_match = empty( $query_vars['post__in'] ) || in_array( $post_id, $query_vars['post__in'], true );
+				if ( $post_status_match && $post_type_match && $post__in_match ) {
+					$post_ids[] = $post_id;
 				}
 			}
 		}
@@ -236,12 +312,12 @@ final class WP_Customize_Posts_Preview {
 	public function filter_posts_where_to_include_previewed_posts( $where, $query ) {
 		global $wpdb;
 
-		if ( ! $query->is_admin && ! $query->is_singular() ) {
+		if ( ! $query->is_singular() ) {
 			$post__not_in = implode( ',', array_map( 'absint', $this->get_previewed_posts_for_query( $query, false ) ) );
 			if ( ! empty( $post__not_in ) ) {
 				$where .= " AND {$wpdb->posts}.ID NOT IN ($post__not_in)";
 			}
-			$post__in = implode( ',', array_map( 'absint', $this->get_previewed_posts_for_query( $query ) ) );
+			$post__in = implode( ',', array_map( 'absint', $this->get_previewed_posts_for_query( $query, true ) ) );
 			if ( ! empty( $post__in ) ) {
 				$where .= " OR {$wpdb->posts}.ID IN ($post__in)";
 			}

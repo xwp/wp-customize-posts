@@ -186,6 +186,11 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			$post_data,
 			array_keys( $this->default )
 		);
+
+		if ( 'customize-draft' === $post_data['post_status'] || 'auto-draft' === $post_data['post_status'] ) {
+			$post_data['post_status'] = 'publish';
+		}
+
 		return $post_data;
 	}
 
@@ -498,10 +503,6 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 
 		$data['ID'] = $this->post_id;
 		$data['post_type'] = $this->post_type;
-
-		if ( 'customize-draft' === $data['post_status'] || 'auto-draft' === $data['post_status'] ) {
-			$data['post_status'] = 'publish';
-		}
 
 		$is_trashed = 'trash' === $data['post_status'];
 		if ( $is_trashed ) {
