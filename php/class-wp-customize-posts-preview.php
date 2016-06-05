@@ -729,12 +729,16 @@ final class WP_Customize_Posts_Preview {
 				continue;
 			}
 			if ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting ) {
-				$results['customize_post_settings'][ $setting->id ] = array(
-					'value' => $setting->value(),
-					'transport' => $setting->transport,
-					'dirty' => $setting->dirty,
-					'type' => $setting->type,
-				);
+				if ( method_exists( $setting, 'json' ) ) { // New in 4.6-alpha.
+					$results['customize_post_settings'][ $setting->id ] = $setting->json();
+				} else {
+					$results['customize_post_settings'][ $setting->id ] = array(
+						'value' => $setting->js_value(),
+						'transport' => $setting->transport,
+						'dirty' => $setting->dirty,
+						'type' => $setting->type,
+					);
+				}
 			}
 		}
 
