@@ -242,6 +242,7 @@
 				api.section.remove( section.id );
 				section.active.set( false );
 				section.collapse();
+				section.container.remove();
 				if ( ! _.isUndefined( component.previewedQuery ) && true === component.previewedQuery.get().isSingular ) {
 					api.previewer.previewUrl( api.settings.url.home );
 				}
