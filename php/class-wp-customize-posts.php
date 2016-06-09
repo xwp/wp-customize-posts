@@ -516,7 +516,7 @@ final class WP_Customize_Posts {
 		if ( ! empty( $this->update_conflicted_settings ) ) {
 			$response['update_conflicted_setting_values'] = array();
 			foreach ( $this->update_conflicted_settings as $setting_id => $setting ) {
-				$response['update_conflicted_setting_values'][ $setting_id ] = $setting->value();
+				$response['update_conflicted_setting_values'][ $setting_id ] = $setting->js_value();
 			}
 		}
 		return $response;
@@ -537,7 +537,7 @@ final class WP_Customize_Posts {
 		foreach ( array_keys( $this->manager->unsanitized_post_values() ) as $setting_id ) {
 			$setting = $this->manager->get_setting( $setting_id );
 			if ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting ) {
-				$response['saved_post_setting_values'][ $setting->id ] = $setting->value();
+				$response['saved_post_setting_values'][ $setting->id ] = $setting->js_value();
 			}
 		}
 		return $response;
