@@ -615,6 +615,33 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$this->assertEquals( $trash_post_count + 1, did_action( 'trashed_post' ) );
 	}
 
+
+	/**
+	 * Test update() for trashing auto-draft posts (which means delete).
+	 *
+	 * @see WP_Customize_Post_Setting::update()
+	 */
+	function test_save_trashed_auto_draft() {
+		foreach ( array( 'auto-draft', 'customize-draft' ) as $post_status ) {
+			$original_data = compact( 'post_status' );
+			$setting = $this->create_post_setting( $original_data );
+
+			$override_data = array_merge(
+				$setting->value(),
+				array(
+					'post_status' => 'trash',
+				)
+			);
+			$setting->manager->set_post_value( $setting->id, $override_data );
+
+			$trash_post_count = did_action( 'trashed_post' );
+			$setting->save();
+			$post = get_post( $setting->post_id );
+			$this->assertNull( $post );
+			$this->assertEquals( $trash_post_count, did_action( 'trashed_post' ) );
+		}
+	}
+
 	/**
 	 * Trashed post ID.
 	 *
