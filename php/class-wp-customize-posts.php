@@ -93,7 +93,6 @@ final class WP_Customize_Posts {
 		add_filter( 'customize_save_response', array( $this, 'filter_customize_save_response_for_conflicts' ), 10, 2 );
 		add_filter( 'customize_save_response', array( $this, 'filter_customize_save_response_to_export_saved_values' ), 10, 2 );
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_templates' ) );
-		add_action( 'init', array( $this, 'register_customize_draft' ) );
 		add_filter( 'customize_snapshot_save', array( $this, 'transition_customize_draft' ) );
 		add_action( 'after_setup_theme', array( $this, 'preview_customize_draft_post_ids' ) );
 		add_action( 'pre_get_posts', array( $this, 'preview_customize_draft' ) );
@@ -721,24 +720,6 @@ final class WP_Customize_Posts {
 			</ul>
 		</script>
 		<?php
-	}
-
-	/**
-	 * Register the `customize-draft` post status.
-	 *
-	 * @action init
-	 * @access public
-	 */
-	public function register_customize_draft() {
-		register_post_status( 'customize-draft', array(
-			'label'                     => 'customize-draft',
-			'public'                    => false,
-			'internal'                  => true,
-			'protected'                 => true,
-			'exclude_from_search'       => true,
-			'show_in_admin_all_list'    => false,
-			'show_in_admin_status_list' => false,
-		) );
 	}
 
 	/**

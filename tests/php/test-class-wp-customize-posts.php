@@ -376,17 +376,6 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test register_customize_draft method.
-	 *
-	 * @see WP_Customize_Posts::register_customize_draft()
-	 */
-	public function test_register_customize_draft() {
-		$this->posts->register_customize_draft();
-		global $wp_post_statuses;
-		$this->assertArrayHasKey( 'customize-draft', $wp_post_statuses );
-	}
-
-	/**
 	 * Test transition_customize_draft method.
 	 *
 	 * @see WP_Customize_Posts::transition_customize_draft()
@@ -433,7 +422,6 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 * @see WP_Customize_Posts::preview_customize_draft()
 	 */
 	public function test_preview_customize_draft_post() {
-		$this->posts->register_customize_draft();
 		$post = $this->posts->insert_auto_draft_post( 'post' );
 		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
 		$data[ $setting_id ] = array(
@@ -462,7 +450,6 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 * @see WP_Customize_Posts::preview_customize_draft()
 	 */
 	public function test_preview_customize_draft_page() {
-		$this->posts->register_customize_draft();
 		$post = $this->posts->insert_auto_draft_post( 'page' );
 		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
 		$data[ $setting_id ] = array(

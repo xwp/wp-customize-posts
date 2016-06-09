@@ -62,6 +62,7 @@ class Customize_Posts_Plugin {
 
 		add_action( 'wp_default_scripts', array( $this, 'register_scripts' ), 11 );
 		add_action( 'wp_default_styles', array( $this, 'register_styles' ), 11 );
+		add_action( 'init', array( $this, 'register_customize_draft' ) );
 		add_filter( 'user_has_cap', array( $this, 'grant_customize_capability' ), 10, 3 );
 		add_filter( 'customize_loaded_components', array( $this, 'filter_customize_loaded_components' ), 100, 2 );
 		add_action( 'customize_register', array( $this, 'load_support_classes' ) );
@@ -81,6 +82,24 @@ class Customize_Posts_Plugin {
 	function has_required_core_version() {
 		$has_required_wp_version = version_compare( str_replace( array( '-src' ), '', $GLOBALS['wp_version'] ), '4.5-beta2', '>=' );
 		return $has_required_wp_version;
+	}
+
+	/**
+	 * Register the `customize-draft` post status.
+	 *
+	 * @action init
+	 * @access public
+	 */
+	public function register_customize_draft() {
+		register_post_status( 'customize-draft', array(
+			'label'                     => 'customize-draft',
+			'public'                    => false,
+			'internal'                  => true,
+			'protected'                 => true,
+			'exclude_from_search'       => true,
+			'show_in_admin_all_list'    => false,
+			'show_in_admin_status_list' => false,
+		) );
 	}
 
 	/**
