@@ -93,6 +93,17 @@ class Test_Customize_Posts_Plugin extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test register_customize_draft method.
+	 *
+	 * @see Customize_Posts_Plugin::register_customize_draft()
+	 */
+	public function test_register_customize_draft() {
+		$this->plugin->register_customize_draft();
+		global $wp_post_statuses;
+		$this->assertArrayHasKey( 'customize-draft', $wp_post_statuses );
+	}
+
+	/**
 	 * Test that the user caps are modified.
 	 *
 	 * @see Customize_Posts_Plugin::grant_customize_capability()
