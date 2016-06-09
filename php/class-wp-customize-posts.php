@@ -755,22 +755,21 @@ final class WP_Customize_Posts {
 	 * @return array
 	 */
 	public function transition_customize_draft( $data ) {
+		global $wpdb;
 		foreach ( $data as $id => $setting ) {
 			if ( ! preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches ) ) {
 				continue;
 			}
-			if ( 'auto-draft' === get_post_status( $matches['post_id'] ) ) {
-				add_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
-				$result = wp_update_post( array(
-					'ID' => intval( $matches['post_id'] ),
-					'post_status' => 'customize-draft',
-				), true );
-				remove_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
-
-				// @todo Amend customize_save_response if error.
+			$post = get_post( $matches['post_id'] );
+			if ( 'auto-draft' === $post->post_status ) {
+				$wpdb->update(
+					$wpdb->posts,
+					array( 'post_status' => 'customize-draft' ),
+					array( 'ID' => $matches['post_id'] )
+				);
+				clean_post_cache( $matches['post_id'] );
 			}
 		}
-
 		return $data;
 	}
 
