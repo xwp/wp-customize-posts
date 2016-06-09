@@ -570,8 +570,8 @@ final class WP_Customize_Posts {
 				) ),
 				array(
 					'current_user_can' => array(
-						'create_posts' => current_user_can( $post_type_obj->cap->create_posts ),
-						'delete_posts' => current_user_can( $post_type_obj->cap->delete_posts ),
+						'create_posts' => isset( $post_type_obj->cap->create_posts ) && current_user_can( $post_type_obj->cap->create_posts ),
+						'delete_posts' => isset( $post_type_obj->cap->delete_posts ) && current_user_can( $post_type_obj->cap->delete_posts ),
 					),
 				)
 			);
