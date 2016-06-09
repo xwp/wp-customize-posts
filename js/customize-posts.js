@@ -240,8 +240,8 @@
 		api.section.each( function( section ) {
 			if ( section.extended( component.PostSection ) && 'trash' === api( section.id ).get().post_status ) {
 				api.section.remove( section.id );
+				section.active.set( false );
 				section.collapse();
-				section.panel.set( false );
 				if ( ! _.isUndefined( component.previewedQuery ) && true === component.previewedQuery.get().isSingular ) {
 					api.previewer.previewUrl( api.settings.url.home );
 				}
