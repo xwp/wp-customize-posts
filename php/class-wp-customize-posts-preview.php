@@ -233,6 +233,8 @@ final class WP_Customize_Posts_Preview {
 	/**
 	 * Get current posts being previewed which should be included in the given query.
 	 *
+	 * @todo The $published flag is likely a vestigate of when this was specifically for post_status. Refactoring needed.
+	 *
 	 * @access public
 	 *
 	 * @param \WP_Query $query     The query.
@@ -256,42 +258,97 @@ final class WP_Customize_Posts_Preview {
 
 		$post_ids = array();
 		$settings = $this->component->manager->unsanitized_post_values();
-		if ( ! empty( $settings ) ) {
-			foreach ( (array) $settings as $id => $post_data ) {
-				if ( ! preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches ) ) {
-					continue;
-				}
-				$post_id = intval( $matches['post_id'] );
-				$statuses = $query_vars['post_status'];
+		foreach ( $settings as $id => $setting_value ) {
+			$is_match = (
+				preg_match( WP_Customize_Postmeta_Setting::SETTING_ID_PATTERN, $id, $matches )
+				||
+				preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches )
+			);
+			if ( ! $is_match ) {
+				continue;
+			}
+			$statuses = $query_vars['post_status'];
+			$setting_post_id = $matches['post_id'];
+			$setting_post_type = $matches['post_type'];
+			$setting_post_meta_key = isset( $matches['meta_key'] ) ? $matches['meta_key'] : null;
+			$setting_type = $setting_post_meta_key ? 'postmeta' : 'post';
 
+			if ( 'post' === $setting_type ) {
+				// Post type match.
 				$post_type_match = (
 					empty( $query_vars['post_type'] )
 					||
-					in_array( $matches['post_type'], $query_vars['post_type'], true )
+					in_array( $setting_post_type, $query_vars['post_type'], true )
 					||
 					(
 						in_array( 'any', $query_vars['post_type'], true )
 						&&
-						in_array( $matches['post_type'], get_post_types( array( 'exclude_from_search' => false ) ), true )
+						in_array( $setting_post_type, get_post_types( array( 'exclude_from_search' => false ) ), true )
 					)
 				);
 
-				$post_type_obj = get_post_type_object( $matches['post_type'] );
-				if ( $post_type_obj && current_user_can( $post_type_obj->cap->read_private_posts, $post_id ) ) {
+				// Post status match.
+				$post_type_obj = get_post_type_object( $setting_post_type );
+				if ( $post_type_obj && current_user_can( $post_type_obj->cap->read_private_posts, $setting_post_id ) ) {
 					$statuses[] = 'private';
 				}
-
 				if ( empty( $query_vars['post_status'] ) ) {
 					$post_status_match = true;
 				} elseif ( false === $published ) {
-					$post_status_match = ! in_array( $post_data['post_status'], array( 'publish', 'private' ), true );
+					$post_status_match = ! in_array( $setting_value['post_status'], array( 'publish', 'private' ), true );
 				} else {
-					$post_status_match = in_array( $post_data['post_status'], $statuses, true );
+					$post_status_match = in_array( $setting_value['post_status'], $statuses, true );
 				}
 
-				$post__in_match = empty( $query_vars['post__in'] ) || in_array( $post_id, $query_vars['post__in'], true );
+				// Post IN match.
+				$post__in_match = empty( $query_vars['post__in'] ) || in_array( $setting_post_id, $query_vars['post__in'], true );
 				if ( $post_status_match && $post_type_match && $post__in_match ) {
-					$post_ids[] = $post_id;
+					$post_ids[] = $setting_post_id;
+				}
+			} elseif ( $published && ! empty( $query->meta_query ) && ! empty( $query->meta_query->queries ) ) { // @todo The $published flag is probably an indication of something awry.
+				$meta_queries = $query->meta_query->queries;
+				$relation = $meta_queries['relation'];
+				unset( $meta_queries['relation'] );
+				$matched_queries = array();
+
+				foreach ( $meta_queries as $meta_query ) {
+					if ( empty( $meta_query['key'] ) || $meta_query['key'] !== $setting_post_meta_key ) {
+						continue;
+					}
+
+					if ( ! isset( $meta_query['value'] ) || '' === $meta_query['value'] ) {
+						$matched_queries[] = true;
+						continue;
+					}
+
+					if ( empty( $meta_query['compare'] ) ) {
+						$meta_query['compare'] = '=';
+					}
+					if ( '=' === $meta_query['compare'] ) {
+						$matched_queries[] = ( (string) $setting_value === (string) $meta_query['value'] );
+					} elseif ( '>=' === $meta_query['compare'] ) {
+						$matched_queries[] = ( (string) $setting_value >= (string) $meta_query['value'] );
+					} elseif ( '<=' === $meta_query['compare'] ) {
+						$matched_queries[] = ( (string) $setting_value <= (string) $meta_query['value'] );
+					} elseif ( '>' === $meta_query['compare'] ) {
+						$matched_queries[] = ( (string) (string) $setting_value > $meta_query['value']  );
+					} elseif ( '<' === $meta_query['compare'] ) {
+						$matched_queries[] = ( (string) $setting_value < (string) $meta_query['value'] );
+					} else {
+						$matched_queries[] = false;
+					}
+				}
+
+				if ( 'AND' === $relation ) {
+					if ( in_array( false, $matched_queries, true ) ) {
+						$matched_queries = array();
+					}
+				} else {
+					$matched_queries = array_filter( $matched_queries );
+				}
+
+				if ( ! empty( $matched_queries ) ) {
+					$post_ids[] = $setting_post_id;
 				}
 			}
 		}
@@ -312,6 +369,7 @@ final class WP_Customize_Posts_Preview {
 	public function filter_posts_where_to_include_previewed_posts( $where, $query ) {
 		global $wpdb;
 
+		// @todo There are undoubtedly hundreds of possible conditions that are not being accounted for in regards to all of the possible query vars a WP_Query can take.
 		if ( ! $query->is_singular() ) {
 			$post__not_in = implode( ',', array_map( 'absint', $this->get_previewed_posts_for_query( $query, false ) ) );
 			if ( ! empty( $post__not_in ) ) {

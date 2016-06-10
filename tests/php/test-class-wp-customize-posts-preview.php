@@ -383,7 +383,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 				)
 			),
 		) );
-		$this->assertCount( 2, $query_post_with_compound_meta_query->posts );
+		$this->assertCount( 1, $query_post_with_compound_meta_query->posts );
 	}
 
 	/**
