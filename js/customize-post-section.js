@@ -73,6 +73,7 @@
 				args.params.priority = defaultSectionPriorities[ args.params.post_type ];
 			}
 
+			section.contentsEmbedded = $.Deferred();
 			api.Section.prototype.initialize.call( section, id, args );
 
 			section.active.validate = function( active ) {
@@ -88,22 +89,58 @@
 		/**
 		 * Ready.
 		 *
-		 * @todo Defer embedding section until panel is expanded?
-		 *
 		 * @returns {void}
 		 */
 		ready: function() {
-			var section = this;
+			var section = this, shouldExpandNow = section.expanded();
 
 			section.setupTitleUpdating();
-			section.setupSettingValidation();
-			section.setupPostNavigation();
-			section.setupControls();
+
+			section.contentsEmbedded.done( function() {
+				section.embedSectionContents();
+			} );
 
 			// @todo If postTypeObj.hierarchical, then allow the sections to be re-ordered by drag and drop (add grabber control).
 
 			api.Section.prototype.ready.call( section );
 
+			if ( api.settings.autofocus.section === section.id ) {
+				shouldExpandNow = true;
+			}
+			if ( api.settings.autofocus.control && 0 === api.settings.autofocus.control.replace( /^postmeta/, 'post' ).indexOf( section.id ) ) {
+				shouldExpandNow = true;
+			}
+
+			// Embed now if it is already expanded or if the section or a control
+			function handleExpand( expanded ) {
+				if ( expanded ) {
+					section.contentsEmbedded.resolve();
+					section.expanded.unbind( handleExpand );
+				}
+			}
+			if ( shouldExpandNow ) {
+				section.contentsEmbedded.resolve();
+			} else {
+				section.expanded.bind( handleExpand );
+			}
+
+			// @todo If postTypeObj.hierarchical, then allow the sections to be re-ordered by drag and drop (add grabber control).
+
+			api.Section.prototype.ready.call( section );
+		},
+
+		/**
+		 * Embed the section contents.
+		 *
+		 * This is called once the section is expanded, when section.contentsEmbedded is resolved.
+		 *
+		 * @return {void}
+		 */
+		embedSectionContents: function embedSectionContents() {
+			var section = this;
+			section.setupSettingValidation();
+			section.setupPostNavigation();
+			section.setupControls();
 		},
 
 		/**
