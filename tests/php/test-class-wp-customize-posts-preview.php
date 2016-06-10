@@ -281,7 +281,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test get_previewed_drafts method.
+	 * Test get_previewed_posts_for_query method.
 	 *
 	 * @see WP_Customize_Posts_Preview::get_previewed_posts_for_query()
 	 */
@@ -316,6 +316,74 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$query = new WP_Query( array( 'post_type' => 'any' ) );
 		$wp_the_query = $query;
 		$this->assertEquals( array( $post->ID, $page->ID ), $this->posts_component->preview->get_previewed_posts_for_query( $query ) );
+	}
+
+	/**
+	 * Test querying posts based on meta queries.
+	 *
+	 * @see WP_Customize_Posts_Preview::get_previewed_posts_for_query()
+	 * @see WP_Customize_Posts_Preview::filter_posts_where_to_include_previewed_posts()
+	 */
+	public function test_get_previewed_post_for_meta_query() {
+		$meta_key = 'index';
+		$post_type = 'post';
+		$this->posts_component->register_post_type_meta( $post_type, $meta_key );
+
+		$post_data = array();
+		foreach ( array( 'foo', 'bar', 'baz' ) as $i => $name ) {
+			$post_id = $this->factory()->post->create( array( 'post_title' => $name ) );
+			$post = get_post( $post_id );
+			$postmeta_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $meta_key );
+			$this->wp_customize->set_post_value( $postmeta_setting_id, (string) $i );
+			list( $postmeta_setting ) = $this->wp_customize->add_dynamic_settings( array( $postmeta_setting_id ) );
+			$this->assertEquals( $postmeta_setting_id, $postmeta_setting->id );
+			$post_data[ $name ] = array(
+				'post' => $post,
+				'postmeta_setting' => $postmeta_setting,
+				'index' => (string) $i,
+			);
+			$postmeta_setting->preview();
+			$this->assertEquals( $post_data[ $name ][ $meta_key ], get_post_meta( $post_id, $meta_key, true ) );
+		}
+
+		$query_post_with_index_meta = new WP_Query( array(
+			'post_type' => $post_type,
+			'meta_key' => $meta_key,
+		) );
+		$this->assertCount( count( $post_data ), $query_post_with_index_meta->posts );
+
+		$query_post_with_index_1 = new WP_Query( array(
+			'post_type' => $post_type,
+			'meta_key' => $meta_key,
+			'meta_value' => '1',
+		) );
+		$this->assertCount( 1, $query_post_with_index_1->posts );
+
+		$query_post_with_index_gte_1 = new WP_Query( array(
+			'post_type' => $post_type,
+			'meta_key' => $meta_key,
+			'meta_value' => '1',
+			'meta_compare' => '>='
+		) );
+		$this->assertCount( 2, $query_post_with_index_gte_1->posts );
+
+		$query_post_with_compound_meta_query = new WP_Query( array(
+			'post_type' => $post_type,
+			'meta_query' => array(
+				'relation' => 'AND',
+				array(
+					'key'      => $meta_key,
+					'value'    => '0',
+					'compare'  => '>',
+				),
+				array(
+					'key'      => $meta_key,
+					'value'    => '2',
+					'compare'  => '<',
+				)
+			),
+		) );
+		$this->assertCount( 2, $query_post_with_compound_meta_query->posts );
 	}
 
 	/**
