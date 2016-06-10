@@ -103,6 +103,19 @@ class Test_WP_Customize_Post_Section extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Ensure that the expected capability is used for the post sections.
+	 *
+	 * @see WP_Customize_Post_Section::__construct()
+	 */
+	public function test_section_capability() {
+		$page_id = $this->factory()->post->create( array( 'post_type' => 'page' ) );
+		$page = get_post( $page_id );
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $page );
+		$section = new WP_Customize_Post_Section( $this->wp_customize, $setting_id );
+		$this->assertEquals( get_post_type_object( 'page' )->cap->edit_posts, $section->capability );
+	}
+
+	/**
 	 * Test export data to JS.
 	 *
 	 * @see WP_Customize_Post_Section::json()
