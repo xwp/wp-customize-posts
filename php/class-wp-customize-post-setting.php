@@ -505,6 +505,13 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		$data['post_type'] = $this->post_type;
 
 		$is_trashed = 'trash' === $data['post_status'];
+		$is_auto_draft = in_array( get_post_status( $this->post_id ), array( 'auto-draft', 'customize-draft' ), true );
+
+		// If trashing an auto-draft, just delete it straight-away and short-circuit.
+		if ( $is_trashed && $is_auto_draft ) {
+			return false !== wp_delete_post( $this->post_id, true );
+		}
+
 		if ( $is_trashed ) {
 			add_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
 
