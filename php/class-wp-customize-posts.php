@@ -588,6 +588,8 @@ final class WP_Customize_Posts {
 				'fieldTitleLabel' => __( 'Title', 'customize-posts' ),
 				'fieldSlugLabel' => __( 'Slug', 'customize-posts' ),
 				'fieldPostStatusLabel' => __( 'Post Status', 'customize-posts' ),
+				'movePostToTrashLabel' => __( 'Move to Trash', 'customize-posts' ),
+				'deletePostLabel' => __( 'Delete', 'customize-posts' ),
 				'fieldContentLabel' => __( 'Content', 'customize-posts' ),
 				'fieldExcerptLabel' => __( 'Excerpt', 'customize-posts' ),
 				'fieldDiscussionLabel' => __( 'Discussion', 'customize-posts' ),

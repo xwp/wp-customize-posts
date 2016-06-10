@@ -300,7 +300,7 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addPostStatusControl: function() {
-			var section = this, control, setting = api( section.id ), sectionContainer, sectionTitle;
+			var section = this, control, setting = api( section.id ), sectionContainer, sectionTitle, trashLink;
 
 			sectionContainer = section.container.closest( '.accordion-section' );
 			sectionTitle = sectionContainer.find( '.accordion-section-title:first' );
@@ -318,6 +318,20 @@
 					setting_property: 'post_status',
 					choices: api.Posts.data.postStatusChoices
 				}
+			} );
+
+			control.deferred.embedded.done( function() {
+				trashLink = $( '<a href="" class="trash"></a>' );
+				trashLink.text( api.Posts.data.l10n.movePostToTrashLabel );
+				control.container.find( 'select' ).after( trashLink );
+				trashLink.click( function( e ) {
+					e.preventDefault();
+					control.setting.set( _.extend(
+						{},
+						control.setting.get(),
+						{ post_status: 'trash' }
+					) );
+				} );
 			} );
 
 			/**
