@@ -192,7 +192,9 @@
 
 			// Hide the link when the post is currently in the preview.
 			api.previewer.bind( 'customized-posts', function( data ) {
-				sectionNavigationButton.toggle( section.params.post_id !== data.queriedPostId );
+				if ( ! _.isUndefined( data.queriedPostId ) ) {
+					sectionNavigationButton.toggle( section.params.post_id !== data.queriedPostId );
+				}
 			} );
 
 			sectionNavigationButton.on( 'click', function( event ) {
