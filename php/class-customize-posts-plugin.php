@@ -179,11 +179,15 @@ class Customize_Posts_Plugin {
 	public function register_scripts( WP_Scripts $wp_scripts ) {
 		$suffix = ( SCRIPT_DEBUG ? '' : '.min' ) . '.js';
 
-		$handle = 'customize-controls-patched-36521';
-		$src = plugins_url( 'js/customize-controls-patched-36521' . $suffix, dirname( __FILE__ ) );
-		$deps = array( 'customize-controls' );
-		$in_footer = 1;
-		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+		require_once ABSPATH . WPINC . '/class-wp-customize-setting.php';
+		$is_gte_wp46_beta = method_exists( 'WP_Customize_Setting', 'validate' );
+		if ( ! $is_gte_wp46_beta ) {
+			$handle = 'customize-controls-patched-36521';
+			$src = plugins_url( 'js/customize-controls-patched-36521' . $suffix, dirname( __FILE__ ) );
+			$deps = array( 'customize-controls' );
+			$in_footer = 1;
+			$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+		}
 
 		$handle = 'customize-posts-panel';
 		$src = plugins_url( 'js/customize-posts-panel' . $suffix, dirname( __FILE__ ) );
@@ -214,7 +218,7 @@ class Customize_Posts_Plugin {
 			'customize-dynamic-control',
 			'underscore',
 		);
-		if ( version_compare( str_replace( array( '-src' ), '', $GLOBALS['wp_version'] ), '4.6-beta1', '<' ) ) {
+		if ( ! $is_gte_wp46_beta ) {
 			$deps[] = 'customize-controls-patched-36521';
 		}
 		$in_footer = 1;
