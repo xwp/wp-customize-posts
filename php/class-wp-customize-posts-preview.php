@@ -64,8 +64,6 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'customize_dynamic_partial_args', array( $this, 'filter_customize_dynamic_partial_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_partial_class', array( $this, 'filter_customize_dynamic_partial_class' ), 10, 3 );
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_add_dynamic_post_settings_and_sections' ), 1000 );
-		add_filter( 'comments_open', array( $this, 'filter_preview_comments_open' ), 10, 2 );
-		add_filter( 'pings_open', array( $this, 'filter_preview_pings_open' ), 10, 2 );
 		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_add_dynamic_postmeta_settings' ), 1000, 2 );
 		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
 		add_filter( 'edit_post_link', array( $this, 'filter_edit_post_link' ), 10, 2 );
@@ -88,6 +86,8 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_preview' ), 1000, 4 );
 		add_filter( 'posts_where', array( $this, 'filter_posts_where_to_include_previewed_posts' ), 10, 2 );
 		add_filter( 'wp_setup_nav_menu_item', array( $this, 'filter_nav_menu_item_to_set_url' ) );
+		add_filter( 'comments_open', array( $this, 'filter_preview_comments_open' ), 10, 2 );
+		add_filter( 'pings_open', array( $this, 'filter_preview_pings_open' ), 10, 2 );
 		$this->has_preview_filters = true;
 		return true;
 	}
@@ -729,12 +729,16 @@ final class WP_Customize_Posts_Preview {
 				continue;
 			}
 			if ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting ) {
-				$results['customize_post_settings'][ $setting->id ] = array(
-					'value' => $setting->value(),
-					'transport' => $setting->transport,
-					'dirty' => $setting->dirty,
-					'type' => $setting->type,
-				);
+				if ( method_exists( $setting, 'json' ) ) { // New in 4.6-alpha.
+					$results['customize_post_settings'][ $setting->id ] = $setting->json();
+				} else {
+					$results['customize_post_settings'][ $setting->id ] = array(
+						'value' => $setting->js_value(),
+						'transport' => $setting->transport,
+						'dirty' => $setting->dirty,
+						'type' => $setting->type,
+					);
+				}
 			}
 		}
 

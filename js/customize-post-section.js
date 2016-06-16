@@ -62,6 +62,9 @@
 			if ( ! args.params.title ) {
 				args.params.title = api.Posts.data.l10n.noTitle;
 			}
+			api( id, function( setting ) {
+				setting.findControls = section.findPostSettingControls;
+			} );
 
 			section.postFieldControls = {};
 
@@ -73,6 +76,7 @@
 				args.params.priority = defaultSectionPriorities[ args.params.post_type ];
 			}
 
+			section.contentsEmbedded = $.Deferred();
 			api.Section.prototype.initialize.call( section, id, args );
 
 			section.active.validate = function( active ) {
@@ -88,22 +92,58 @@
 		/**
 		 * Ready.
 		 *
-		 * @todo Defer embedding section until panel is expanded?
-		 *
 		 * @returns {void}
 		 */
 		ready: function() {
-			var section = this;
+			var section = this, shouldExpandNow = section.expanded();
 
 			section.setupTitleUpdating();
-			section.setupSettingValidation();
-			section.setupPostNavigation();
-			section.setupControls();
+
+			section.contentsEmbedded.done( function() {
+				section.embedSectionContents();
+			} );
 
 			// @todo If postTypeObj.hierarchical, then allow the sections to be re-ordered by drag and drop (add grabber control).
 
 			api.Section.prototype.ready.call( section );
 
+			if ( api.settings.autofocus.section === section.id ) {
+				shouldExpandNow = true;
+			}
+			if ( api.settings.autofocus.control && 0 === api.settings.autofocus.control.replace( /^postmeta/, 'post' ).indexOf( section.id ) ) {
+				shouldExpandNow = true;
+			}
+
+			// Embed now if it is already expanded or if the section or a control
+			function handleExpand( expanded ) {
+				if ( expanded ) {
+					section.contentsEmbedded.resolve();
+					section.expanded.unbind( handleExpand );
+				}
+			}
+			if ( shouldExpandNow ) {
+				section.contentsEmbedded.resolve();
+			} else {
+				section.expanded.bind( handleExpand );
+			}
+
+			// @todo If postTypeObj.hierarchical, then allow the sections to be re-ordered by drag and drop (add grabber control).
+
+			api.Section.prototype.ready.call( section );
+		},
+
+		/**
+		 * Embed the section contents.
+		 *
+		 * This is called once the section is expanded, when section.contentsEmbedded is resolved.
+		 *
+		 * @return {void}
+		 */
+		embedSectionContents: function embedSectionContents() {
+			var section = this;
+			section.setupSettingValidation();
+			section.setupPostNavigation();
+			section.setupControls();
 		},
 
 		/**
@@ -155,7 +195,9 @@
 
 			// Hide the link when the post is currently in the preview.
 			api.previewer.bind( 'customized-posts', function( data ) {
-				sectionNavigationButton.toggle( section.params.post_id !== data.queriedPostId );
+				if ( ! _.isUndefined( data.queriedPostId ) ) {
+					sectionNavigationButton.toggle( section.params.post_id !== data.queriedPostId );
+				}
 			} );
 
 			sectionNavigationButton.on( 'click', function( event ) {
@@ -197,18 +239,56 @@
 		},
 
 		/**
-		 * Prevent notifications for settings from being added to post field control notifications.
+		 * Prevent notifications for settings from being added to post field control notifications
+		 * unless the notification is specifically for this control's setting property.
 		 *
+		 * @this {wp.customize.Control}
 		 * @param {string} code                            Notification code.
 		 * @param {wp.customize.Notification} notification Notification object.
 		 * @returns {wp.customize.Notification|null} Notification if not bypassed.
 		 */
-		addPostFieldControlNotification: function( code, notification ) {
-			if ( -1 !== code.indexOf( ':' ) ) {
-				return null;
-			} else {
+		addPostFieldControlNotification: function addPostFieldControlNotification( code, notification ) {
+			var isSettingNotification, isSettingPropertyNotification;
+			isSettingNotification = -1 !== code.indexOf( ':' ) || notification.data && notification.data.setting; // Note that sniffing for ':' is deprecated as of #36944.
+			isSettingPropertyNotification = notification.data && notification.data.setting_property === this.setting_property;
+			if ( isSettingPropertyNotification || ! isSettingNotification ) {
 				return api.Values.prototype.add.call( this, code, notification );
+			} else {
+				return null;
 			}
+		},
+
+		/**
+		 * Find controls associated with this setting.
+		 *
+		 * Filter the list of controls down to just those that have setting properties
+		 * that correspond to setting properties listed among the data in notifications,
+		 * if there are any.
+		 *
+		 * @this {wp.customize.Setting}
+		 * @returns {wp.customize.Control[]} Controls associated with setting.
+		 */
+		findPostSettingControls: function findPostSettingControls() {
+			var settingPropertyControls = [], controls, settingProperties = [];
+			controls = api.Setting.prototype.findControls.call( this );
+
+			this.notifications.each( function( notification ) {
+				if ( notification.data && notification.data.setting_property ) {
+					settingProperties.push( notification.data.setting_property );
+				}
+			} );
+
+			_.each( controls, function( control ) {
+				if ( -1 !== _.indexOf( settingProperties, control.params.setting_property ) ) {
+					settingPropertyControls.push( control );
+				}
+			} );
+
+			if ( settingPropertyControls.length > 0 ) {
+				controls = settingPropertyControls;
+			}
+
+			return controls;
 		},
 
 		/**
@@ -243,6 +323,7 @@
 
 			if ( control.notifications ) {
 				control.notifications.add = section.addPostFieldControlNotification;
+				control.notifications.setting_property = control.params.setting_property;
 			}
 			return control;
 		},
@@ -290,6 +371,7 @@
 
 			if ( control.notifications ) {
 				control.notifications.add = section.addPostFieldControlNotification;
+				control.notifications.setting_property = control.params.setting_property;
 			}
 			return control;
 		},
@@ -370,6 +452,7 @@
 
 			if ( control.notifications ) {
 				control.notifications.add = section.addPostFieldControlNotification;
+				control.notifications.setting_property = control.params.setting_property;
 			}
 			return control;
 		},
@@ -634,6 +717,7 @@
 
 			if ( control.notifications ) {
 				control.notifications.add = section.addPostFieldControlNotification;
+				control.notifications.setting_property = control.params.setting_property;
 			}
 			return control;
 		},
@@ -670,6 +754,7 @@
 
 			if ( control.notifications ) {
 				control.notifications.add = section.addPostFieldControlNotification;
+				control.notifications.setting_property = control.params.setting_property;
 			}
 			return control;
 		},
@@ -706,6 +791,7 @@
 
 			if ( control.notifications ) {
 				control.notifications.add = section.addPostFieldControlNotification;
+				control.notifications.setting_property = control.params.setting_property;
 			}
 			return control;
 		},
@@ -743,6 +829,7 @@
 
 			if ( control.notifications ) {
 				control.notifications.add = section.addPostFieldControlNotification;
+				control.notifications.setting_property = control.params.setting_property;
 			}
 			return control;
 		},
@@ -771,7 +858,9 @@
 			// Sync setting notifications into the section notifications
 			setting.notifications.bind( 'add', function( settingNotification ) {
 				var notification = new api.Notification( setting.id + ':' + settingNotification.code, settingNotification );
-				section.notifications.add( notification.code, notification );
+				if ( ! settingNotification.data || ! settingNotification.data.setting_property || ! api.control.has( section.id + '[' + settingNotification.data.setting_property + ']' ) ) {
+					section.notifications.add( notification.code, notification );
+				}
 			} );
 			setting.notifications.bind( 'remove', function( settingNotification ) {
 				section.notifications.remove( setting.id + ':' + settingNotification.code );
@@ -851,7 +940,7 @@
 			_.each( section.postFieldControls, function( postFieldControl ) {
 				if ( postFieldControl.notifications ) {
 					postFieldControl.notifications.each( function( notification ) {
-						if ( 'error' === notification.type ) {
+						if ( 'error' === notification.type && ( ! notification.data || ! notification.data.from_server ) ) {
 							postFieldControl.notifications.remove( notification.code );
 						}
 					} );

@@ -319,7 +319,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 
 		/** This filter is documented in wp-includes/post.php */
 		if ( 'trash' !== $post_data['post_status'] && apply_filters( 'wp_insert_post_empty_content', $maybe_empty, $post_data ) ) {
-			return $has_setting_validation ? new WP_Error( 'empty_content', __( 'Content, title, and excerpt are empty.', 'customize-posts' ) ) : null;
+			return $has_setting_validation ? new WP_Error( 'empty_content', __( 'Content, title, and excerpt are empty.', 'customize-posts' ), array( 'setting_property' => 'post_content' ) ) : null;
 		}
 
 		if ( empty( $post_data['post_status'] ) ) {
@@ -371,7 +371,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		$aa = substr( $post_data['post_date'], 0, 4 );
 		$valid_date = wp_checkdate( $mm, $jj, $aa, $post_data['post_date'] );
 		if ( ! $valid_date ) {
-			return $has_setting_validation ? new WP_Error( 'invalid_date', __( 'Whoops, the provided date is invalid.', 'customize-posts' ) ) : null;
+			return $has_setting_validation ? new WP_Error( 'invalid_date', __( 'Whoops, the provided date is invalid.', 'customize-posts' ), array( 'setting_property' => 'post_date' ) ) : null;
 		}
 
 		if ( empty( $post_data['post_date_gmt'] ) || '0000-00-00 00:00:00' === $post_data['post_date_gmt'] ) {
@@ -505,6 +505,13 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		$data['post_type'] = $this->post_type;
 
 		$is_trashed = 'trash' === $data['post_status'];
+		$is_auto_draft = in_array( get_post_status( $this->post_id ), array( 'auto-draft', 'customize-draft' ), true );
+
+		// If trashing an auto-draft, just delete it straight-away and short-circuit.
+		if ( $is_trashed && $is_auto_draft ) {
+			return false !== wp_delete_post( $this->post_id, true );
+		}
+
 		if ( $is_trashed ) {
 			add_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
 

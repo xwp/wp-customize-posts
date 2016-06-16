@@ -16,7 +16,8 @@ var CustomizePageTemplate = (function( api ) {
 	/**
 	 * Init component.
 	 *
-	 * @param {object} [configData]
+	 * @param {object} [configData] Config data.
+	 * @return {void}
 	 */
 	component.init = function( configData ) {
 		if ( 'undefined' !== typeof configData ) {
@@ -27,27 +28,29 @@ var CustomizePageTemplate = (function( api ) {
 
 	/**
 	 * Extend existing sections and future sections added with the page template control.
+	 *
+	 * @return {void}
 	 */
 	component.extendSections = function() {
-		api.section.each( function( section ) {
-			component.addControl( section );
-		} );
-		api.section.bind( 'add', function( section ) {
-			component.addControl( section );
-		} );
+		function addSectionControls( section ) {
+			if ( section.extended( api.Posts.PostSection ) ) {
+				section.contentsEmbedded.done( function addControl() {
+					component.addControl( section );
+				} );
+			}
+		}
+		api.section.each( addSectionControls );
+		api.section.bind( 'add', addSectionControls );
 	};
 
 	/**
 	 * Add the page template control to the given section.
 	 *
-	 * @param {wp.customize.Section} section
+	 * @param {wp.customize.Section} section Section.
 	 * @returns {wp.customize.Control|null} The control.
 	 */
 	component.addControl = function( section ) {
 		var supports, control, controlId, settingId, isActiveCallback;
-		if ( ! section.extended( api.Posts.PostSection ) ) {
-			return null;
-		}
 		supports = api.Posts.data.postTypes[ section.params.post_type ].supports;
 		if ( ! supports['page-attributes'] ) {
 			return null;

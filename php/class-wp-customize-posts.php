@@ -93,7 +93,6 @@ final class WP_Customize_Posts {
 		add_filter( 'customize_save_response', array( $this, 'filter_customize_save_response_for_conflicts' ), 10, 2 );
 		add_filter( 'customize_save_response', array( $this, 'filter_customize_save_response_to_export_saved_values' ), 10, 2 );
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_templates' ) );
-		add_action( 'init', array( $this, 'register_customize_draft' ) );
 		add_filter( 'customize_snapshot_save', array( $this, 'transition_customize_draft' ) );
 		add_action( 'after_setup_theme', array( $this, 'preview_customize_draft_post_ids' ) );
 		add_action( 'pre_get_posts', array( $this, 'preview_customize_draft' ) );
@@ -516,7 +515,7 @@ final class WP_Customize_Posts {
 		if ( ! empty( $this->update_conflicted_settings ) ) {
 			$response['update_conflicted_setting_values'] = array();
 			foreach ( $this->update_conflicted_settings as $setting_id => $setting ) {
-				$response['update_conflicted_setting_values'][ $setting_id ] = $setting->value();
+				$response['update_conflicted_setting_values'][ $setting_id ] = $setting->js_value();
 			}
 		}
 		return $response;
@@ -537,7 +536,7 @@ final class WP_Customize_Posts {
 		foreach ( array_keys( $this->manager->unsanitized_post_values() ) as $setting_id ) {
 			$setting = $this->manager->get_setting( $setting_id );
 			if ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting ) {
-				$response['saved_post_setting_values'][ $setting->id ] = $setting->value();
+				$response['saved_post_setting_values'][ $setting->id ] = $setting->js_value();
 			}
 		}
 		return $response;
@@ -571,8 +570,8 @@ final class WP_Customize_Posts {
 				) ),
 				array(
 					'current_user_can' => array(
-						'create_posts' => current_user_can( $post_type_obj->cap->create_posts ),
-						'delete_posts' => current_user_can( $post_type_obj->cap->delete_posts ),
+						'create_posts' => isset( $post_type_obj->cap->create_posts ) && current_user_can( $post_type_obj->cap->create_posts ),
+						'delete_posts' => isset( $post_type_obj->cap->delete_posts ) && current_user_can( $post_type_obj->cap->delete_posts ),
 					),
 				)
 			);
@@ -724,24 +723,6 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Register the `customize-draft` post status.
-	 *
-	 * @action init
-	 * @access public
-	 */
-	public function register_customize_draft() {
-		register_post_status( 'customize-draft', array(
-			'label'                     => 'customize-draft',
-			'public'                    => false,
-			'internal'                  => true,
-			'protected'                 => true,
-			'exclude_from_search'       => true,
-			'show_in_admin_all_list'    => false,
-			'show_in_admin_status_list' => false,
-		) );
-	}
-
-	/**
 	 * Transition the post status.
 	 *
 	 * This ensures unpublished new posts, which are added to a snapshot, are not
@@ -755,22 +736,21 @@ final class WP_Customize_Posts {
 	 * @return array
 	 */
 	public function transition_customize_draft( $data ) {
+		global $wpdb;
 		foreach ( $data as $id => $setting ) {
 			if ( ! preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches ) ) {
 				continue;
 			}
-			if ( 'auto-draft' === get_post_status( $matches['post_id'] ) ) {
-				add_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
-				$result = wp_update_post( array(
-					'ID' => intval( $matches['post_id'] ),
-					'post_status' => 'customize-draft',
-				), true );
-				remove_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
-
-				// @todo Amend customize_save_response if error.
+			$post = get_post( $matches['post_id'] );
+			if ( 'auto-draft' === $post->post_status ) {
+				$wpdb->update(
+					$wpdb->posts,
+					array( 'post_status' => 'customize-draft' ),
+					array( 'ID' => $matches['post_id'] )
+				);
+				clean_post_cache( $matches['post_id'] );
 			}
 		}
-
 		return $data;
 	}
 

@@ -15,7 +15,8 @@ var CustomizeFeaturedImage = (function( api ) {
 	/**
 	 * Init component.
 	 *
-	 * @param {object} [configData]
+	 * @param {object} [configData] Config data.
+	 * @return {void}
 	 */
 	component.init = function( configData ) {
 		if ( 'undefined' !== typeof configData ) {
@@ -25,28 +26,30 @@ var CustomizeFeaturedImage = (function( api ) {
 	};
 
 	/**
-	 * Extend existing sections and future sections added with the page template control.
+	 * Extend existing sections and future sections added with the featured image control.
+	 *
+	 * @return {void}
 	 */
 	component.extendSections = function() {
-		api.section.each( function( section ) {
-			component.addControl( section );
-		} );
-		api.section.bind( 'add', function( section ) {
-			component.addControl( section );
-		} );
+		function addSectionControls( section ) {
+			if ( section.extended( api.Posts.PostSection ) ) {
+				section.contentsEmbedded.done( function addControl() {
+					component.addControl( section );
+				} );
+			}
+		}
+		api.section.each( addSectionControls );
+		api.section.bind( 'add', addSectionControls );
 	};
 
 	/**
 	 * Add the page template control to the given section.
 	 *
-	 * @param {wp.customize.Section} section
+	 * @param {wp.customize.Section} section Section.
 	 * @returns {wp.customize.Control|null} The control.
 	 */
 	component.addControl = function( section ) {
 		var control, controlId, settingId, postTypeObj, originalInitFrame;
-		if ( ! section.extended( api.Posts.PostSection ) ) {
-			return null;
-		}
 		postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 		if ( ! postTypeObj.supports.thumbnail ) {
 			return null;
@@ -103,6 +106,8 @@ var CustomizeFeaturedImage = (function( api ) {
 		 * Initialize the media frame and preselect
 		 *
 		 * @todo The wp.customize.MediaControl should do this in core.
+		 *
+		 * @return {void}
 		 */
 		control.initFrame = function initFrameAndSetInitialSelection() {
 			originalInitFrame.call( this );

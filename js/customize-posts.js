@@ -240,8 +240,9 @@
 		api.section.each( function( section ) {
 			if ( section.extended( component.PostSection ) && 'trash' === api( section.id ).get().post_status ) {
 				api.section.remove( section.id );
+				section.active.set( false );
 				section.collapse();
-				section.panel.set( false );
+				section.container.remove();
 				if ( ! _.isUndefined( component.previewedQuery ) && true === component.previewedQuery.get().isSingular ) {
 					api.previewer.previewUrl( api.settings.url.home );
 				}
@@ -305,8 +306,6 @@
 
 		/**
 		 * Focus on the section requested from the preview.
-		 *
-		 * @todo This can be merged into Core to correspond with focus-control-for-setting.
 		 */
 		api.previewer.bind( 'focus-section', function( sectionId ) {
 			var section = api.section( sectionId );
@@ -318,14 +317,54 @@
 		/**
 		 * Focus on the control requested from the preview.
 		 *
-		 * @todo This can be merged into Core to correspond with focus-control-for-setting.
+		 * If the control doesn't exist yet, try to determine the section it would
+		 * be part of by parsing its ID, and then if that section exists, expand it.
+		 * Once expanded, try finding the control again, since controls for post
+		 * sections may get embedded only once section.contentsEmbedded is resolved.
+		 *
+		 * @param {string} controlId Control ID.
+		 * @return {void}
 		 */
-		api.previewer.bind( 'focus-control', function( controlId ) {
-			var control = api.control( controlId );
-			if ( control ) {
-				control.focus();
+		function focusControl( controlId ) {
+			var control, section, postSectionId, matches;
+
+			/**
+			 * Attempt focus on the control.
+			 *
+			 * @returns {boolean} Whether the control exists.
+			 */
+			function tryFocus() {
+				control = api.control( controlId );
+				if ( control ) {
+					control.focus();
+					return true;
+				}
+				return false;
 			}
-		} );
+			if ( tryFocus() ) {
+				return;
+			}
+
+			matches = controlId.match( /^post(?:meta)?\[(.+?)]\[(\d+)]/ );
+			if ( ! matches ) {
+				return;
+			}
+			postSectionId = 'post[' + matches[1] + '][' + matches[2] + ']';
+			section = api.section( postSectionId );
+			if ( ! section || ! section.extended( component.PostSection ) ) {
+				return;
+			}
+			section.expand();
+			section.contentsEmbedded.done( function() {
+				var ms = 500;
+
+				// @todo It is not clear why a delay is needed for focus to work. It could be due to focus failing during animation.
+				_.delay( tryFocus, ms );
+			} );
+		}
+
+		component.focusControl = focusControl;
+		api.previewer.bind( 'focus-control', component.focusControl );
 	} );
 
 })( wp.customize, jQuery );
