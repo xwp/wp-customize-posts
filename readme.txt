@@ -58,6 +58,28 @@ The following are listed in reverse chronological order. The first, more recent 
 
 == Changelog ==
 
+= [0.6.1] - 2016-06-16 =
+
+* Send values to JS via `js_value()` and use the settings `json` method if available.
+* Move `comments_open` and `pings_open` filters to the `WP_Customize_Posts_Preview::add_preview_filters` method.
+* Fix `purgeTrash` to ensure trashed post sections do not appear in the Customizer root panel after publishing changes.
+* Ensure the modified date is not changed when transitioning to `customize-draft`.
+* Make sure the `customize-draft` status is always available to Customize Snapshots & `wp-admin`
+* Fix PHP notice generated when a post type is registered without `map_meta_cap`
+* Delete `auto-draft` and `customize-draft` status posts when saving the trash `post_status`
+* Use a post type's `edit_posts` capability for sections
+* Defer embedding a sections contents until expanded
+* Implement `focusControl` support for `deferred-embedded` post section controls
+* Add support for focusing on controls for setting properties when those properties are invalid
+* Prevent `customized-posts` messages sent via `selective-refresh` from effecting `post-navigation` state
+* Improve feature detection for including customize-controls patched for trac-36521
+
+See full commit log: [`0.6.0...0.6.1`](https://github.com/xwp/wp-customize-posts/compare/0.6.0...0.6.1)
+
+Issues in milestone: [`milestone:0.6.1`](https://github.com/xwp/wp-customize-posts/issues?q=milestone%3A0.6.1)
+
+Props: Weston Ruter (<a href="https://github.com/westonruter" class="user-mention">@westonruter</a>), Derek Herman (<a href="https://github.com/valendesigns" class="user-mention">@valendesigns</a>)
+
 = 0.6.0 - 2016-06-02 =
 
 Added:
