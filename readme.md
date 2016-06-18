@@ -10,7 +10,6 @@ Edit posts and postmeta in the Customizer. Stop editing your posts/postmeta blin
 **Tested up to:** 4.6-alpha  
 **Stable tag:** 0.6.1  
 **License:** [GPLv2 or later](http://www.gnu.org/licenses/gpl-2.0.html)  
-**Text Domain:** customize-posts  
 
 [![Build Status](https://travis-ci.org/xwp/wp-customize-posts.svg?branch=master)](https://travis-ci.org/xwp/wp-customize-posts) [![Coverage Status](https://coveralls.io/repos/xwp/wp-customize-posts/badge.svg?branch=master)](https://coveralls.io/github/xwp/wp-customize-posts) [![Built with Grunt](https://cdn.gruntjs.com/builtwith.svg)](http://gruntjs.com) [![devDependency Status](https://david-dm.org/xwp/wp-customize-posts/dev-status.svg)](https://david-dm.org/xwp/wp-customize-posts#info=devDependencies) 
 
@@ -103,6 +102,7 @@ Fixed:
  * Improve compatibility with the WP REST API plugin.
  * Supply a default <code>(no title)</code> placeholder to the post title control for new posts.
  * Filter post and page links in the Customizer to return the preview URL.
+ * Included plugin-support and theme-support PHP files that were inadvertantly omitted from the 0.6.0 build.
 
 See full commit log: [`0.5.0...0.6.0`](https://github.com/xwp/wp-customize-posts/compare/0.5.0...0.6.0)
 
