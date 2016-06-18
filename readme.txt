@@ -6,7 +6,6 @@ Tested up to:      4.6-alpha
 Stable tag:        0.6.1
 License:           GPLv2 or later
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
-Text Domain:       customize-posts
 
 Edit posts and postmeta in the Customizer. Stop editing your posts/postmeta blind!
 
