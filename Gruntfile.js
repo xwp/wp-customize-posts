@@ -62,7 +62,7 @@ module.exports = function( grunt ) {
 					'*.php',
 					'css/*',
 					'js/*',
-					'php/*',
+					'php/**',
 					'readme.txt'
 				],
 				dest: 'build',

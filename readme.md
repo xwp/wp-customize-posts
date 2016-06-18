@@ -103,6 +103,7 @@ Fixed:
  * Improve compatibility with the WP REST API plugin.
  * Supply a default <code>(no title)</code> placeholder to the post title control for new posts.
  * Filter post and page links in the Customizer to return the preview URL.
+ * Included plugin-support and theme-support PHP files that were inadvertantly omitted from the 0.6.0 build.
 
 See full commit log: [`0.5.0...0.6.0`](https://github.com/xwp/wp-customize-posts/compare/0.5.0...0.6.0)
 
