@@ -74,6 +74,7 @@ The following are listed in reverse chronological order. The first, more recent 
 * Add support for focusing on controls for setting properties when those properties are invalid
 * Prevent `customized-posts` messages sent via `selective-refresh` from effecting `post-navigation` state
 * Improve feature detection for including customize-controls patched for trac-36521
+* Included plugin-support and theme-support PHP files that were inadvertantly omitted from the 0.6.0 build.
 
 See full commit log: [`0.6.0...0.6.1`](https://github.com/xwp/wp-customize-posts/compare/0.6.0...0.6.1)
 
@@ -102,7 +103,6 @@ Fixed:
  * Improve compatibility with the WP REST API plugin.
  * Supply a default <code>(no title)</code> placeholder to the post title control for new posts.
  * Filter post and page links in the Customizer to return the preview URL.
- * Included plugin-support and theme-support PHP files that were inadvertantly omitted from the 0.6.0 build.
 
 See full commit log: [`0.5.0...0.6.0`](https://github.com/xwp/wp-customize-posts/compare/0.5.0...0.6.0)
 
