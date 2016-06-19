@@ -210,7 +210,7 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 	/**
 	 * @see WP_Customize_Postmeta_Setting::sanitize()
 	 */
-	function test_sanitize_non_strict() {
+	function test_sanitize() {
 		$post_id = $this->factory()->post->create( array( 'post_type' => 'post') );
 		$meta_key = 'abbreviation';
 		register_meta( 'post', $meta_key, array( $this, 'sanitize_abbreviation' ) );
@@ -230,10 +230,13 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $post_id ), $meta_key );
 		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id );
 		add_filter( 'update_post_metadata', '__return_false' );
-		$this->assertNull( $setting->sanitize( 'nasa' ) );
-		$error = $setting->sanitize( 'nasa', true );
-		$this->assertInstanceOf( 'WP_Error', $error );
-		$this->assertEquals( 'not_allowed', $error->get_error_code() );
+		$error = $setting->sanitize( 'nasa' );
+		if ( ! method_exists( 'WP_Customize_Setting', 'validate' ) ) {
+			$this->assertNull( $error );
+		} else {
+			$this->assertInstanceOf( 'WP_Error', $error );
+			$this->assertEquals( 'not_allowed', $error->get_error_code() );
+		}
 	}
 
 	/**
@@ -262,8 +265,16 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 			'sanitize_callback' => array( $this->plugin->page_template_controller, 'sanitize_setting' )
 		) );
 
+		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
+
 		$this->assertEquals( 'default', $setting->sanitize( 'default' ) );
-		$this->assertNull( $setting->sanitize( 'bad-template.php' ) );
+		if ( $has_setting_validation ) {
+			$error = $setting->sanitize( 'bad-template.php' );
+			$this->assertInstanceOf( 'WP_Error', $error );
+			$this->assertEquals( 'invalid_page_template', $error->get_error_code() );
+		} else {
+			$this->assertNull( $setting->sanitize( 'bad-template.php' ) );
+		}
 		$page_template = 'page-templates/front-page.php';
 		$this->assertEquals( $page_template, $setting->sanitize( $page_template ) );
 	}

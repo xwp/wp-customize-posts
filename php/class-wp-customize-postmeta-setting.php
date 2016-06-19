@@ -124,9 +124,10 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 	public function value() {
 		$meta_key = $this->meta_key;
 		$object_id = $this->post_id;
-		$single = true;
-		$value = get_post_meta( $object_id, $meta_key, $single );
-		if ( '' === $value ) {
+		$single = false;
+		$values = get_post_meta( $object_id, $meta_key, $single );
+		$value = array_shift( $values );
+		if ( ! isset( $value ) ) {
 			$value = $this->default;
 		}
 		return $value;
@@ -139,15 +140,10 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 	 * @access public
 	 *
 	 * @param string $meta_value The value to sanitize.
-	 * @param bool   $strict     Whether validation is being done. This is part of the proposed patch in in #34893.
-	 * @return mixed|null Null if an input isn't valid, otherwise the sanitized value.
+	 * @return mixed|WP_Error|null Sanitized post array or WP_Error if invalid (or null if not WP 4.6-alpha).
 	 */
-	public function sanitize( $meta_value, $strict = false ) {
-
-		// The customize_validate_settings action is part of the Customize Setting Validation plugin.
-		if ( ! $strict && doing_action( 'customize_validate_settings' ) ) {
-			$strict = true;
-		}
+	public function sanitize( $meta_value ) {
+		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 
 		$meta_type = 'post';
 		$object_id = $this->post_id;
@@ -159,23 +155,21 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 		 *
 		 * @param mixed                $meta_value  Value of the setting.
 		 * @param WP_Customize_Setting $this        WP_Customize_Setting instance.
-		 * @param bool                 $strict      Whether validation is being done. This is part of the proposed patch in in #34893.
 		 */
-		$meta_value = apply_filters( "customize_sanitize_{$this->id}", $meta_value, $this, $strict );
+		$meta_value = apply_filters( "customize_sanitize_{$this->id}", $meta_value, $this );
 
 		// Apply sanitization if value didn't fail validation.
 		if ( ! is_wp_error( $meta_value ) && ! is_null( $meta_value ) ) {
 			$meta_value = sanitize_meta( $meta_key, $meta_value, $meta_type );
 		}
+		if ( is_wp_error( $meta_value ) ) {
+			return $has_setting_validation ? $meta_value : null;
+		}
 
 		/** This filter is documented in wp-includes/meta.php */
 		$check = apply_filters( "update_{$meta_type}_metadata", null, $object_id, $meta_key, $meta_value, $prev_value );
 		if ( null !== $check ) {
-			if ( $strict ) {
-				return new WP_Error( 'not_allowed', sprintf( __( 'Update to post meta "%s" blocked.', 'customize-posts' ), $meta_key ) );
-			} else {
-				return null;
-			}
+			return $has_setting_validation ? new WP_Error( 'not_allowed', sprintf( __( 'Update to post meta "%s" blocked.', 'customize-posts' ), $meta_key ) ) : null;
 		}
 
 		return $meta_value;

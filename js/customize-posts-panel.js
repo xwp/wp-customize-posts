@@ -1,5 +1,5 @@
 /* global wp, jQuery */
-/* eslint consistent-this: [ "error", "panel" ] */
+/* eslint consistent-this: [ "error", "panel" ], no-magic-numbers: [ "error", { "ignore": [0,500] } ] */
 
 (function( api, $ ) {
 	'use strict';
@@ -44,6 +44,8 @@
 					} ).length;
 				};
 
+				panel.setupPostAddition();
+
 				/*
 				 * Set the initial visibility state for rendered notice.
 				 * Update the visibility of the notice whenever a reflow happens.
@@ -64,9 +66,92 @@
 		},
 
 		/**
+		 * Add new post stub, which builds the UI & listens for click events.
+		 *
+		 * @return {void}
+		 */
+		setupPostAddition: function() {
+			var panel = this, descriptionContainer, addNewButton, postObj;
+
+			descriptionContainer = panel.container.find( '.panel-meta:first' );
+			addNewButton = wp.template( 'customize-posts-add-new' );
+			postObj = api.Posts.data.postTypes[ panel.postType ];
+
+			if ( postObj.current_user_can.create_posts ) {
+				descriptionContainer.after( addNewButton( {
+					label: postObj.labels.singular_name
+				} ) );
+
+				panel.container.find( '.add-new-post-stub' ).on( 'click', function( event ) {
+					var postData, button = $( this ), promise;
+					event.preventDefault();
+					button.prop( 'disabled', true );
+
+					postData = {
+						post_status: 'publish'
+					};
+					if ( postObj.supports.title ) {
+						postData.post_title = api.Posts.data.l10n.noTitle;
+					}
+
+					promise = api.Posts.insertAutoDraftPost( panel.postType );
+					promise.done( function( data ) {
+						data.setting.set( _.extend(
+							{},
+							data.setting.get(),
+							postData
+						) );
+
+						// Navigate to the newly-created post if it is public; otherwise, refresh the preview.
+						if ( postObj['public'] && data.url ) {
+							api.previewer.previewUrl( data.url );
+						} else {
+							api.previewer.refresh();
+						}
+
+						/**
+						 * Perform a dance to focus on the first control in the section.
+						 *
+						 * There is a race condition where focusing on a control too
+						 * early can result in the focus logic not being able to see
+						 * any visible inputs to focus on.
+						 *
+						 * @returns {void}
+						 */
+						function focusControlOnceFocusable() {
+							var firstControl = data.section.controls()[0];
+							function onChangeActive( isActive ) {
+								if ( isActive ) {
+									data.section.active.unbind( onChangeActive );
+									_.defer( function() {
+										firstControl.focus( {
+											completeCallback: function() {
+												firstControl.container.find( 'input:first' ).select();
+											}
+										} );
+									} );
+								}
+							}
+							if ( firstControl ) {
+								data.section.active.bind( onChangeActive );
+							}
+						}
+
+						data.section.focus( {
+							completeCallback: focusControlOnceFocusable
+						} );
+					} );
+					promise.always( function() {
+						button.prop( 'disabled', false );
+					} );
+				} );
+			}
+		},
+
+		/**
 		 * Allow an active panel to be contextually active even when it has no active controls.
 		 *
-		 * @returns {boolean}
+		 * @returns {boolean} Whether contextually active.
 		 */
 		isContextuallyActive: function() {
 			var panel = this;

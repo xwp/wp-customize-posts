@@ -39,7 +39,6 @@ class Edit_Post_Preview {
 		add_action( 'admin_footer', array( $this, 'add_edit_customizer_button_posts' ) );
 		add_filter( 'post_row_actions', array( $this, 'add_edit_customizer_to_row_actions' ), 10, 2 );
 		add_filter( 'page_row_actions', array( $this, 'add_edit_customizer_to_row_actions' ), 10, 2 );
-
 	}
 
 	/**
@@ -98,6 +97,31 @@ class Edit_Post_Preview {
 	}
 
 	/**
+	 * Generate a preview permalink for a post/page.
+	 *
+	 * @access public
+	 *
+	 * @param WP_Post $post The post in question.
+	 * @return string Edit post link.
+	 */
+	public static function get_preview_post_link( $post ) {
+		$permalink = '';
+
+		if ( $post instanceof WP_Post ) {
+			$id_param = ( 'page' === $post->post_type ) ? 'page_id' : 'p';
+			$args = array();
+			$args['preview'] = true;
+			$args[ $id_param ] = $post->ID;
+			if ( 'page_id' !== $id_param && 'post' !== $post->post_type ) {
+				$args['post_type'] = $post->post_type;
+			}
+			$permalink = get_preview_post_link( $post, $args, home_url( '/' ) );
+		}
+
+		return $permalink;
+	}
+
+	/**
 	 * Enqueue scripts for post edit screen.
 	 */
 	public function enqueue_admin_scripts() {
@@ -105,12 +129,10 @@ class Edit_Post_Preview {
 			return;
 		}
 		wp_enqueue_script( 'edit-post-preview-admin' );
-		$customize_url = self::get_customize_url();
 
 		$data = array(
-			'customize_url' => $customize_url,
+			'customize_url' => self::get_customize_url(),
 		);
-
 		wp_scripts()->add_data( 'edit-post-preview-admin', 'data', sprintf( 'var _editPostPreviewAdminExports = %s;', wp_json_encode( $data ) ) );
 		wp_enqueue_script( 'customize-loader' );
 		wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( function() { EditPostPreviewAdmin.init(); } );', 'after' );
@@ -123,36 +145,52 @@ class Edit_Post_Preview {
 	 * @param object $post Post.
 	 * @return array $rebuild_actions
 	 */
-	public function add_edit_customizer_to_row_actions( $actions, $post ) {
-		if ( ! ( $post instanceof WP_Post ) ) {
+	public function add_edit_customizer_to_row_actions( $actions, \WP_Post $post ) {
+		if ( ! ( $post instanceof \WP_Post ) ) {
 			return false;
 		}
 
-		// We need to make sure the current post type has show_in_customizer to true or if it's default post type is post or page.
-		$post_type_object = get_post_types( array(), 'objects' );
-		if ( ! isset( $post_type_object[ get_post_type() ]->show_in_customizer ) && 'post' !== get_post_type() && 'page' !== get_post_type() || ! current_user_can( 'edit_post', $post->ID ) ) {
-			return $actions;
+		$post_type_object = get_post_type_object( $post->post_type );
+
+		$can_preview = (
+			(
+				! empty( $post_type_object->show_in_customizer )
+				||
+				in_array( $post->post_type, array( 'post', 'page' ), true )
+			)
+			&&
+			current_user_can( 'edit_post', $post->ID )
+		);
+
+		if ( $can_preview ) {
+			$actions = array_merge( array( sprintf( '<a href="%1$s">%2$s</a>', esc_url( self::get_customize_url( $post ) ), esc_html__( 'Customize', 'customize-posts' ) ) ), $actions );
 		}
 
-		// Let's rebuild the start of our array.
-		$rebuild_actions = array();
-		$rebuild_actions['edit'] = $actions['edit'];
-		$rebuild_actions['edit_customizer'] = sprintf( '<a href="%1$s">%2$s</a>', esc_url( self::get_customize_url( $post ) ), esc_html__( 'Edit in Customizer', 'customize-posts' ) );
-
-		return array_merge( $rebuild_actions, $actions );
+		return $actions;
 	}
 
 	/**
 	 * Add the Edit in Customizer button to the edit post screen.
 	 */
 	public function add_edit_customizer_button_posts() {
-		$post_type_object = get_post_types( array(), 'objects' );
-		if ( ! isset( $post_type_object[ get_post_type() ]->show_in_customizer ) && 'post' !== get_post_type() && 'page' !== get_post_type() || '' !== get_current_screen()->action ) {
-			return false;
-		}
+		$post_type_object = get_post_type_object( get_post_type() );
 
-		printf( '<a id="%1$s" class="%2$s" href="%3$s">%4$s</a>', esc_html__( 'customize-button', 'customize-posts' ), esc_html__( 'page-title-action hide-if-no-customize', 'customize-posts' ), esc_url( self::get_customize_url() ), esc_html__( 'Edit in Customizer', 'customize-posts' ) );
-		wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( \'#customize-button\' ).appendTo( \'.wrap h1\' )', 'after' );
+		$can_preview = (
+			! empty( $post_type_object->show_in_customizer )
+			||
+			in_array( get_post_type(), array( 'post', 'page' ), true )
+		);
+
+		if ( $can_preview ) {
+			printf(
+				'<a id="%1$s" class="%2$s" href="%3$s">%4$s</a>',
+				esc_html__( 'customize-button', 'customize-posts' ),
+				esc_html__( 'page-title-action hide-if-no-customize', 'customize-posts' ),
+				esc_url( self::get_customize_url() ),
+				esc_html__( 'Edit in Customizer', 'customize-posts' )
+			);
+			wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( \'#customize-button\' ).appendTo( \'.wrap h1\' )', 'after' );
+		}
 	}
 
 	/**
@@ -170,10 +208,10 @@ class Edit_Post_Preview {
 			return false;
 		}
 
-		$url = get_preview_post_link( $post );
 		$customize_url = add_query_arg(
 			array(
-				'url' => urlencode( $url ),
+				'url' => urlencode( self::get_preview_post_link( $post ) ),
+				'previewed_post' => $post->ID,
 				'autofocus[section]' => sprintf( 'post[%s][%d]', $post->post_type, $post->ID ),
 				self::PREVIEW_POST_NONCE_QUERY_VAR => wp_create_nonce( self::PREVIEW_POST_NONCE_ACTION ),
 			),

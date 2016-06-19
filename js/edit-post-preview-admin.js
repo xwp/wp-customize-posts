@@ -70,6 +70,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 				if ( editor ) {
 					editor.setContent( wp.editor.autop( data[ postSettingId ].post_content ) );
 				}
+				// @todo Handle post-status sync.
 				$( '#content' ).val( data[ postSettingId ].post_content ).trigger( 'change' );
 				$( '#excerpt' ).val( data[ postSettingId ].post_excerpt ).trigger( 'change' );
 				$( '#comment_status' ).prop( 'checked', 'open' === data[ postSettingId ].comment_status ).trigger( 'change' );
