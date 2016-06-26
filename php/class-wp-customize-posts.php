@@ -491,7 +491,7 @@ final class WP_Customize_Posts {
 		$post_id = url_to_postid( $this->manager->get_preview_url() );
 
 		$pages = get_pages( array(
-			'exclude' => array( $post_id )
+			'exclude' => array( $post_id ),
 		) );
 
 		if ( ! empty( $pages ) ) {
