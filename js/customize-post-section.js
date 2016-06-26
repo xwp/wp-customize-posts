@@ -225,7 +225,7 @@
 				section.addPostStatusControl();
 			}
 			if ( postTypeObj.supports['page-attributes'] ) {
-				section.addPageParentControl();
+				section.addPostParentControl();
 			}
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
@@ -461,30 +461,28 @@
 		},
 
 		/**
-		 * Add page parent control.
+		 * Add post parent control.
 		 *
 		 * @returns {wp.customize.Control} Added control.
 		 */
-		addPageParentControl: function() {
+		addPostParentControl: function() {
 			var section = this, control, setting = api( section.id ), sectionContainer, sectionTitle;
 
 			sectionContainer = section.container.closest( '.accordion-section' );
 			sectionTitle = sectionContainer.find( '.accordion-section-title:first' );
 
-			console.log(api.Posts.data);
-
-			control = new api.controlConstructor.dynamic( section.id + '[page_parent]', {
+			control = new api.controlConstructor.dynamic( section.id + '[post_parent]', {
 				params: {
 					section: section.id,
 					priority: 20,
-					label: api.Posts.data.l10n.pageParentLabel,
+					label: api.Posts.data.l10n.postParentLabel,
 					active: true,
 					settings: {
 						'default': setting.id
 					},
 					field_type: 'select',
-					setting_property: 'page_parent',
-					choices: api.Posts.data.pageParentChoices
+					setting_property: 'post_parent',
+					choices: api.Posts.data.postParentChoices
 				}
 			} );
 

@@ -481,6 +481,27 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Get the page parent choices array.
+	 *
+	 * @return array
+	 */
+	public function get_post_parent_choices() {
+		$choices = array();
+		$pages = get_pages();
+
+		if ( ! empty( $pages ) ) {
+			foreach ( (array) $pages as $page ) {
+				$choices[] = array(
+					'value' => (int) $page->ID,
+					'text' => esc_html( sprintf( _x( '%s', 'pages dropdown', 'customize-posts' ), $page->post_title ) ),
+				);
+			}
+		}
+
+		return $choices;
+	}
+
+	/**
 	 * Return whether current user can edit supplied post.
 	 *
 	 * @param WP_Post|int $post Post.
@@ -582,6 +603,7 @@ final class WP_Customize_Posts {
 			'postTypes' => $post_types,
 			'postStatusChoices' => $this->get_post_status_choices(),
 			'authorChoices' => $this->get_author_choices(),
+			'postParentChoices' => $this->get_post_parent_choices(),
 			'l10n' => array(
 				/* translators: &#9656; is the unicode right-pointing triangle, and %s is the section title in the Customizer */
 				'sectionCustomizeActionTpl' => __( 'Customizing &#9656; %s', 'customize-posts' ),
@@ -592,7 +614,7 @@ final class WP_Customize_Posts {
 				'fieldExcerptLabel' => __( 'Excerpt', 'customize-posts' ),
 				'fieldDiscussionLabel' => __( 'Discussion', 'customize-posts' ),
 				'fieldAuthorLabel' => __( 'Author', 'customize-posts' ),
-				'pageParentLabel' => __( 'Page Parent', 'customize-posts' ),
+				'postParentLabel' => __( 'Parent', 'customize-posts' ),
 				'noTitle' => __( '(no title)', 'customize-posts' ),
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
 				'openEditor' => __( 'Open Editor', 'customize-posts' ),
