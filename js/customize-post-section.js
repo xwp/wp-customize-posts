@@ -502,7 +502,6 @@
 			return control;
 		},
 
-
 		/**
 		 * Add post content control.
 		 *
