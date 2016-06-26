@@ -466,10 +466,7 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addPostParentControl: function() {
-			var section = this, control, setting = api( section.id ), sectionContainer, sectionTitle;
-
-			sectionContainer = section.container.closest( '.accordion-section' );
-			sectionTitle = sectionContainer.find( '.accordion-section-title:first' );
+			var section = this, control, setting = api( section.id );
 
 			control = new api.controlConstructor.dynamic( section.id + '[post_parent]', {
 				params: {
