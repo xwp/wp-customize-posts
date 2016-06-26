@@ -487,7 +487,12 @@ final class WP_Customize_Posts {
 	 */
 	public function get_post_parent_choices() {
 		$choices = array();
-		$pages = get_pages();
+
+		$post_id = url_to_postid( $this->manager->get_preview_url() );
+
+		$pages = get_pages( array(
+			'exclude' => array( $post_id )
+		) );
 
 		if ( ! empty( $pages ) ) {
 			foreach ( (array) $pages as $page ) {
