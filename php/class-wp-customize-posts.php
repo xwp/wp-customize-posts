@@ -592,6 +592,7 @@ final class WP_Customize_Posts {
 				'fieldExcerptLabel' => __( 'Excerpt', 'customize-posts' ),
 				'fieldDiscussionLabel' => __( 'Discussion', 'customize-posts' ),
 				'fieldAuthorLabel' => __( 'Author', 'customize-posts' ),
+				'pageParentLabel' => __( 'Page Parent', 'customize-posts' ),
 				'noTitle' => __( '(no title)', 'customize-posts' ),
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
 				'openEditor' => __( 'Open Editor', 'customize-posts' ),
