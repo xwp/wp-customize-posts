@@ -246,6 +246,9 @@
 				if ( ! _.isUndefined( component.previewedQuery ) && true === component.previewedQuery.get().isSingular ) {
 					api.previewer.previewUrl( api.settings.url.home );
 				}
+				if ( 'page' === section.params.post_type ) {
+					section.purgeStaticPageDropDown( section.params.post_id );
+				}
 			}
 		} );
 	};
