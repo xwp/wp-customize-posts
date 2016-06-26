@@ -224,6 +224,9 @@
 			if ( 'undefined' === typeof EditPostPreviewCustomize ) {
 				section.addPostStatusControl();
 			}
+			if ( postTypeObj.supports['page-attributes'] ) {
+				section.addPageParentControl();
+			}
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
 			}
