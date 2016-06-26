@@ -493,7 +493,7 @@ final class WP_Customize_Posts {
 			foreach ( (array) $pages as $page ) {
 				$choices[] = array(
 					'value' => (int) $page->ID,
-					'text' => esc_html( sprintf( _x( '%s', 'pages dropdown', 'customize-posts' ), $page->post_title ) ),
+					'text' => esc_html( sprintf( '%s', $page->post_title ) ),
 				);
 			}
 		}
