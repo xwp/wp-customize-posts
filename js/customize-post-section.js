@@ -461,6 +461,51 @@
 		},
 
 		/**
+		 * Add page parent control.
+		 *
+		 * @returns {wp.customize.Control} Added control.
+		 */
+		addPageParentControl: function() {
+			var section = this, control, setting = api( section.id ), sectionContainer, sectionTitle;
+
+			sectionContainer = section.container.closest( '.accordion-section' );
+			sectionTitle = sectionContainer.find( '.accordion-section-title:first' );
+
+			console.log(api.Posts.data);
+
+			control = new api.controlConstructor.dynamic( section.id + '[page_parent]', {
+				params: {
+					section: section.id,
+					priority: 20,
+					label: api.Posts.data.l10n.pageParentLabel,
+					active: true,
+					settings: {
+						'default': setting.id
+					},
+					field_type: 'select',
+					setting_property: 'page_parent',
+					choices: api.Posts.data.pageParentChoices
+				}
+			} );
+
+			// Override preview trying to de-activate control not present in preview context.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.page_parent = control;
+			api.control.add( control.id, control );
+
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
+				control.notifications.setting_property = control.params.setting_property;
+			}
+			return control;
+		},
+
+
+		/**
 		 * Add post content control.
 		 *
 		 * @todo It is hacky how the dynamic control is overloaded to connect to the shared TinyMCE editor.
