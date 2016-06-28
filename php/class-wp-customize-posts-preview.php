@@ -305,7 +305,7 @@ final class WP_Customize_Posts_Preview {
 				if ( $post_status_match && $post_type_match && $post__in_match ) {
 					$post_ids[] = $setting_post_id;
 				}
-			} elseif ( $published && ! empty( $query->meta_query ) && ! empty( $query->meta_query->queries ) ) { // @todo The $published flag is probably an indication of something awry.
+			} elseif ( ! empty( $query->meta_query ) && ! empty( $query->meta_query->queries ) ) { // @todo The $published flag is probably an indication of something awry.
 				$meta_queries = $query->meta_query->queries;
 				$relation = $meta_queries['relation'];
 				unset( $meta_queries['relation'] );
@@ -322,18 +322,33 @@ final class WP_Customize_Posts_Preview {
 					}
 
 					if ( empty( $meta_query['compare'] ) ) {
-						$meta_query['compare'] = '=';
+						if ( is_array( $meta_query['value'] ) ) {
+							$meta_query['compare'] = 'IN';
+						} else {
+							$meta_query['compare'] = '=';
+						}
 					}
 					if ( '=' === $meta_query['compare'] ) {
-						$matched_queries[] = ( (string) $setting_value === (string) $meta_query['value'] );
+						$compared_flag = ( (string) $setting_value === (string) $meta_query['value'] );
 					} elseif ( '>=' === $meta_query['compare'] ) {
-						$matched_queries[] = ( (string) $setting_value >= (string) $meta_query['value'] );
+						$compared_flag = ( (string) $setting_value >= (string) $meta_query['value'] );
 					} elseif ( '<=' === $meta_query['compare'] ) {
-						$matched_queries[] = ( (string) $setting_value <= (string) $meta_query['value'] );
+						$compared_flag = ( (string) $setting_value <= (string) $meta_query['value'] );
 					} elseif ( '>' === $meta_query['compare'] ) {
-						$matched_queries[] = ( (string) (string) $setting_value > $meta_query['value']  );
+						$compared_flag = ( (string) (string) $setting_value > $meta_query['value'] );
 					} elseif ( '<' === $meta_query['compare'] ) {
-						$matched_queries[] = ( (string) $setting_value < (string) $meta_query['value'] );
+						$compared_flag = ( (string) $setting_value < (string) $meta_query['value'] );
+					} elseif ( 'IN' === $meta_query['compare'] && is_array( $meta_query['value'] ) ) {
+						$compared_flag = in_array( (string) $setting_value, array_map( 'strval', $meta_query['value'] ), true );
+					}
+
+					if ( isset( $compared_flag ) ) {
+						// Check should we include this in IN query or NOT IN query.
+						if ( true === $published ) {
+							$matched_queries[] = $compared_flag;
+						} else {
+							$matched_queries[] = ! $compared_flag;
+						}
 					} else {
 						$matched_queries[] = false;
 					}
