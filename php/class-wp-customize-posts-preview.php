@@ -367,6 +367,23 @@ final class WP_Customize_Posts_Preview {
 				}
 			}
 		}
+		/**
+		 * Filter customize preview posts.
+		 *
+		 * @param array $post_ids Post ids being filtered.
+		 * @param array array {
+		 *     Args.
+		 *
+		 *     @type \WP_Query $query   WP_Query obj.
+		 *     @type array     $settings Field Values in snapshot.
+		 *     @type bool      $publish IN query or NOT IN query.
+		 * }
+		 */
+		$post_ids = apply_filters( 'customize_previewed_posts', $post_ids, array(
+			'query' => $query,
+			'settings' => $settings,
+			'publish' => $published,
+		) );
 
 		return $post_ids;
 	}
