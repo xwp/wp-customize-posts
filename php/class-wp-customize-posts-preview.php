@@ -379,7 +379,7 @@ final class WP_Customize_Posts_Preview {
 		 *     @type bool      $publish IN query or NOT IN query.
 		 * }
 		 */
-		$post_ids = apply_filters( 'customize_previewed_posts', $post_ids, array(
+		$post_ids = apply_filters( 'customize_previewed_posts_for_query', $post_ids, array(
 			'query' => $query,
 			'settings' => $settings,
 			'publish' => $published,
