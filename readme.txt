@@ -6,7 +6,6 @@ Tested up to:      4.6-alpha
 Stable tag:        0.6.1
 License:           GPLv2 or later
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
-Text Domain:       customize-posts
 
 Edit posts and postmeta in the Customizer. Stop editing your posts/postmeta blind!
 
@@ -73,6 +72,7 @@ The following are listed in reverse chronological order. The first, more recent 
 * Add support for focusing on controls for setting properties when those properties are invalid
 * Prevent `customized-posts` messages sent via `selective-refresh` from effecting `post-navigation` state
 * Improve feature detection for including customize-controls patched for trac-36521
+* Included plugin-support and theme-support PHP files that were inadvertantly omitted from the 0.6.0 build.
 
 See full commit log: [`0.6.0...0.6.1`](https://github.com/xwp/wp-customize-posts/compare/0.6.0...0.6.1)
 
