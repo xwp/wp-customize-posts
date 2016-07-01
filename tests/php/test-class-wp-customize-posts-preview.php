@@ -330,26 +330,43 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->posts_component->register_post_type_meta( $post_type, $meta_key );
 
 		$post_data = array();
-		foreach ( array( 'foo', 'bar', 'baz', 'qux' ) as $i => $name ) {
+		foreach ( array( 'foo', 'bar', 'baz', 'qux', 'multi' ) as $i => $name ) {
 			$post_id             = $this->factory()->post->create( array( 'post_title' => $name ) );
 			$post                = get_post( $post_id );
 			$postmeta_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $meta_key );
 			if ( 'qux' === $name ) {
 				$i = 2;
 			}
-			$this->wp_customize->set_post_value( $postmeta_setting_id, (string) $i );
+			if ( 'multi' === $name ) {
+				$this->wp_customize->set_post_value( $postmeta_setting_id, array( '10', '11', '12' ) );
+			} else {
+				$this->wp_customize->set_post_value( $postmeta_setting_id, (string) $i );
+			}
 			list( $postmeta_setting ) = $this->wp_customize->add_dynamic_settings( array( $postmeta_setting_id ) );
 			$this->assertEquals( $postmeta_setting_id, $postmeta_setting->id );
-			$post_data[ $name ] = array(
-				'post' => $post,
-				'postmeta_setting' => $postmeta_setting,
-				'index' => (string) $i,
-			);
+			if ( 'multi' === $name ) {
+				$post_data[ $name ] = array(
+					'post' => $post,
+					'postmeta_setting' => $postmeta_setting,
+					'index' => array( '10', '11', '12' ),
+				);
+			} else {
+				$post_data[ $name ] = array(
+					'post' => $post,
+					'postmeta_setting' => $postmeta_setting,
+					'index' => (string) $i,
+				);
+			}
 			if ( 'qux' === $name ) {
 				add_post_meta( $post_id, $meta_key, '0', true );
 			}
 			$postmeta_setting->preview();
-			$this->assertEquals( $post_data[ $name ][ $meta_key ], get_post_meta( $post_id, $meta_key, true ) );
+			if ( 'multi' === $name ) {
+				$d = get_post_meta( $post_id, $meta_key );
+				$this->assertEquals( $post_data[ $name ][ $meta_key ], array_shift( $d ) );
+			} else {
+				$this->assertEquals( $post_data[ $name ][ $meta_key ], get_post_meta( $post_id, $meta_key, true ) );
+			}
 		}
 
 		$query_post_with_index_meta = new WP_Query( array(
@@ -371,7 +388,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 			'meta_value' => '1',
 			'meta_compare' => '>='
 		) );
-		$this->assertCount( 3, $query_post_with_index_gte_1->posts );
+		$this->assertCount( 4, $query_post_with_index_gte_1->posts );
 
 		$query_post_with_compound_meta_query = new WP_Query( array(
 			'post_type' => $post_type,
@@ -397,13 +414,13 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 				'relation' => 'AND',
 				array(
 					'key' => $meta_key,
-					'value' => array( '1', '2' ),
+					'value' => array( '11', '1', '2' ),
 					'compare' => 'IN',
 				),
 			),
 		) );
 
-		$this->assertCount( 3, $query_post_with_in_query->posts );
+		$this->assertCount( 4, $query_post_with_in_query->posts );
 
 		$query_post_where_actual_meta_and_snapshot_with_zero = new WP_Query( array(
 			'post_type' => $post_type,
@@ -417,6 +434,20 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		) );
 
 		$this->assertCount( 1, $query_post_where_actual_meta_and_snapshot_with_zero->posts );
+
+		$query_post_with_meta_value_as_array_compare_equals = new WP_Query( array(
+			'post_type' => $post_type,
+			'meta_query' => array(
+				'relation' => 'AND',
+				array(
+					'key' => $meta_key,
+					'value' => '11',
+					'compare' => '=',
+				),
+			),
+		) );
+
+		$this->assertCount( 1, $query_post_with_meta_value_as_array_compare_equals->posts );
 	}
 
 	/**
