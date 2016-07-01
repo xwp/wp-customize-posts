@@ -328,18 +328,22 @@ final class WP_Customize_Posts_Preview {
 							$meta_query['compare'] = '=';
 						}
 					}
+					$is_setting_value_array = is_array( $setting_value );
 					if ( '=' === $meta_query['compare'] ) {
-						$compared_flag = ( (string) $setting_value === (string) $meta_query['value'] );
-					} elseif ( '>=' === $meta_query['compare'] ) {
+						$values = $is_setting_value_array ? $setting_value : array( $setting_value );
+						$compared_flag = in_array( $meta_query['value'], array_map( 'strval', $values ), true );
+					} elseif ( '>=' === $meta_query['compare'] && ! $is_setting_value_array ) {
 						$compared_flag = ( (string) $setting_value >= (string) $meta_query['value'] );
-					} elseif ( '<=' === $meta_query['compare'] ) {
+					} elseif ( '<=' === $meta_query['compare'] && ! $is_setting_value_array ) {
 						$compared_flag = ( (string) $setting_value <= (string) $meta_query['value'] );
-					} elseif ( '>' === $meta_query['compare'] ) {
+					} elseif ( '>' === $meta_query['compare'] && ! $is_setting_value_array ) {
 						$compared_flag = ( (string) (string) $setting_value > $meta_query['value'] );
-					} elseif ( '<' === $meta_query['compare'] ) {
+					} elseif ( '<' === $meta_query['compare'] && ! $is_setting_value_array ) {
 						$compared_flag = ( (string) $setting_value < (string) $meta_query['value'] );
 					} elseif ( 'IN' === $meta_query['compare'] && is_array( $meta_query['value'] ) ) {
-						$compared_flag = in_array( (string) $setting_value, array_map( 'strval', $meta_query['value'] ), true );
+						$values = $is_setting_value_array ? $setting_value : array( $setting_value );
+						$common_values = array_intersect( array_map( 'strval', $values ), array_map( 'strval', $meta_query['value'] ) );
+						$compared_flag = empty( $common_values ) ? false : true;
 					}
 
 					if ( isset( $compared_flag ) ) {
