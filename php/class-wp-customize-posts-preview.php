@@ -88,6 +88,7 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'wp_setup_nav_menu_item', array( $this, 'filter_nav_menu_item_to_set_url' ) );
 		add_filter( 'comments_open', array( $this, 'filter_preview_comments_open' ), 10, 2 );
 		add_filter( 'pings_open', array( $this, 'filter_preview_pings_open' ), 10, 2 );
+		add_filter( 'get_post_status', array( $this, 'filter_get_post_status' ), 10, 2 );
 		$this->has_preview_filters = true;
 		return true;
 	}
@@ -743,5 +744,35 @@ final class WP_Customize_Posts_Preview {
 		}
 
 		return $results;
+	}
+
+	/**
+	 * Filter post_status to return snapshot value if available.
+	 *
+	 * @param string $post_status Default status. Used if no changes have been made.
+	 * @param WP_Post $post Post object that may have a new value for post_status
+	 * @return string Value of post_status stored in snapshot, or original value if unchanged.
+	 */
+	public function filter_get_post_status( $post_status, $post ) {
+		if ( empty( $post ) ) {
+			return $post_status;
+		}
+		$post = get_post( $post );
+		if ( empty( $post ) ) {
+			return $post_status;
+		}
+
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+		$setting = $this->component->manager->get_setting( $setting_id );
+
+		if ( ! ( $setting instanceof WP_Customize_Post_Setting ) ) {
+			return $post_status;
+		}
+		$post_data = $setting->post_value();
+		if ( ! is_array( $post_data ) || ! isset( $post_data['post_status'] ) ) {
+			return $post_status;
+		}
+
+		return $post_data['post_status'];
 	}
 }
