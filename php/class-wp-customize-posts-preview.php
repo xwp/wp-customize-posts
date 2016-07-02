@@ -268,7 +268,7 @@ final class WP_Customize_Posts_Preview {
 				continue;
 			}
 			$statuses = $query_vars['post_status'];
-			$setting_post_id = $matches['post_id'];
+			$setting_post_id = intval( $matches['post_id'] );
 			$setting_post_type = $matches['post_type'];
 			$setting_post_meta_key = isset( $matches['meta_key'] ) ? $matches['meta_key'] : null;
 			$setting_type = $setting_post_meta_key ? 'postmeta' : 'post';
