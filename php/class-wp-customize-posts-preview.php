@@ -321,6 +321,10 @@ final class WP_Customize_Posts_Preview {
 						continue;
 					}
 
+					if ( is_array( $meta_query['value'] ) && ! empty( $meta_query['compare'] ) && 'IN' !== $meta_query['compare'] ) {
+						continue;
+					}
+
 					if ( empty( $meta_query['compare'] ) ) {
 						if ( is_array( $meta_query['value'] ) ) {
 							$meta_query['compare'] = 'IN';
@@ -331,7 +335,7 @@ final class WP_Customize_Posts_Preview {
 					$is_setting_value_array = is_array( $setting_value );
 					if ( '=' === $meta_query['compare'] ) {
 						$values = $is_setting_value_array ? $setting_value : array( $setting_value );
-						$compared_flag = in_array( $meta_query['value'], array_map( 'strval', $values ), true );
+						$compared_flag = in_array( (string) $meta_query['value'], array_map( 'strval', $values ), true );
 					} elseif ( '>=' === $meta_query['compare'] && ! $is_setting_value_array ) {
 						$compared_flag = ( (string) $setting_value >= (string) $meta_query['value'] );
 					} elseif ( '<=' === $meta_query['compare'] && ! $is_setting_value_array ) {
