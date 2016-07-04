@@ -831,4 +831,29 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertEquals( 'postmeta', $results['customize_post_settings'][ $postmeta_setting_id ]['type'] );
 		$this->assertEquals( 'post', $results['customize_post_settings'][ $post_setting_id ]['type'] );
 	}
+
+	/**
+	 * Test filter_get_post_status().
+	 *
+	 * @see WP_Customize_Posts_Preview::filter_get_post_status()
+	 */
+	public function test_filter_get_post_status() {
+		global $post;
+		$post = get_post( $this->post_id );
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+		$override_status = 'draft';
+		$this->wp_customize->set_post_value( $setting_id, array_merge(
+			$post->to_array(),
+			array(
+				'post_status' => $override_status,
+			)
+		) );
+		$this->wp_customize->register_dynamic_settings();
+		$post_setting = $this->wp_customize->get_setting( $setting_id );
+		$post_setting->preview();
+		setup_postdata( $post );
+		$this->assertEquals( $override_status, $post->post_status );
+		$this->assertEquals( $override_status, get_post_status( $post ) );
+	}
+
 }
