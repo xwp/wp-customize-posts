@@ -771,7 +771,6 @@
 		 */
 		addDiscussionFieldsControl: function() {
 			var section = this, postTypeObj, control, setting = api( section.id );
-			var postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 			control = new api.controlConstructor.post_discussion_fields( section.id + '[discussion_fields]', {
 				params: {
