@@ -64,6 +64,11 @@
 			}
 			api( id, function( setting ) {
 				setting.findControls = section.findPostSettingControls;
+				setting.bind( function( newPostValue ) {
+					if ( 'page' === args.params.post_type ) {
+						section.syncPageToStaticPageControls( args.params.post_id, newPostValue );
+					}
+				} );
 			} );
 
 			section.postFieldControls = {};
@@ -964,6 +969,94 @@
 		isContextuallyActive: function() {
 			var section = this;
 			return section.active();
+		},
+
+		/**
+		 * Sync page changes to Static Front Page section controls.
+		 *
+		 * @param {number} pageId       Updated page ID.
+		 * @param {Object} newPostData  Updated page data.
+         * @returns {boolean}           Return true or false based.
+		 */
+		syncPageToStaticPageControls: function( pageId, newPostData ) {
+			var section = this;
+			_.each( [ wp.customize.control( 'page_on_front' ), wp.customize.control( 'page_for_posts' ) ], function( controlObject ) {
+                var	pageOnFrontOptions = section.getSelectOptions( controlObject ),
+                    newPage = true;
+
+				if ( 'undefined' === typeof controlObject ) {
+					return false;
+				}
+
+				_.each( pageOnFrontOptions, function( el ) {
+					var elObject = $( el );
+					if ( pageId === parseInt( elObject.val(), 10 ) ) {
+						newPage = false;
+						if ( 'trash' === newPostData.post_status ) {
+							elObject.prop( 'selected', false );
+							elObject.prop( 'disabled', true );
+						} else {
+							elObject.text( newPostData.post_title );
+							elObject.prop( 'disabled', false );
+						}
+						return false;
+					}
+                    return true;
+				});
+
+				if ( newPage ) {
+					controlObject
+						.container
+						.find( 'select' )
+						.append(
+							$( '<option></option>' )
+								.attr( 'value', pageId )
+								.text( newPostData.post_title )
+						);
+				}
+
+                return true;
+			});
+
+            return true;
+		},
+
+		/**
+		 * Remove trashed pages from static page section dropdowns.
+		 *
+		 * @param {number} pageId - Page ID which was trashed.
+         * @returns {boolean}     - Return boolean to pass ESLint check.
+         */
+		purgeStaticPageDropDown: function( pageId ) {
+			var section = this;
+			_.each( [ wp.customize.control( 'page_on_front' ), wp.customize.control( 'page_for_posts' ) ], function( selector ) {
+				var pageOnFrontOptions = section.getSelectOptions( selector );
+				_.each( pageOnFrontOptions, function( el ) {
+					var elObject = $( el );
+					if ( pageId === parseInt( elObject.val(), 10 ) ) {
+						elObject.remove();
+						return false;
+					}
+                    return true;
+				});
+                return true;
+			});
+
+            return true;
+		},
+
+		/**
+		 * Extract options from jQuery object
+		 *
+		 * @param {Object} selectObject - jQuery object of Static Page select boxes
+		 * @returns {boolean|object}    - Returns options of select box if `selectObject` is defined.
+         */
+		getSelectOptions: function( selectObject ) {
+			if ( 'undefined' === typeof selectObject ) {
+				return false;
+			}
+
+			return selectObject.container.find( 'select' ).find( 'option' );
 		}
 	});
 
