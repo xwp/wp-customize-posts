@@ -297,8 +297,8 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addTitleControl: function() {
-			var section = this, control, setting = api( section.id );
-			var postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+			var section = this, control, setting = api( section.id ), postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 			control = new api.controlConstructor.dynamic( section.id + '[post_title]', {
 				params: {
 					section: section.id,
@@ -335,8 +335,8 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addSlugControl: function() {
-			var section = this, control, setting = api( section.id );
-			var postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+			var section = this, control, setting = api( section.id ), postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 			control = new api.controlConstructor.dynamic( section.id + '[post_name]', {
 				params: {
 					section: section.id,
@@ -384,8 +384,8 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addPostStatusControl: function() {
-			var section = this, control, setting = api( section.id ), sectionContainer, sectionTitle;
-			var postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+			var section = this, control, setting = api( section.id ), sectionContainer, sectionTitle, postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 
 			sectionContainer = section.container.closest( '.accordion-section' );
 			sectionTitle = sectionContainer.find( '.accordion-section-title:first' );
@@ -479,8 +479,10 @@
 			    mceStatusbar = $( '.mce-statusbar' ),
 			    dragbar = $( '#customize-posts-content-editor-dragbar' ),
 			    collapse = $( '.collapse-sidebar' ),
-			    resizeHeight;
-			var postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+			    resizeHeight,
+				postTypeObj;
+
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 
 			control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
 				params: {
@@ -732,8 +734,8 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addExcerptControl: function() {
-			var section = this, control, setting = api( section.id );
-			var postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+			var section = this, control, setting = api( section.id ), postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 			control = new api.controlConstructor.dynamic( section.id + '[post_excerpt]', {
 				params: {
 					section: section.id,
@@ -807,8 +809,8 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addAuthorControl: function() {
-			var section = this, control, setting = api( section.id );
-			var postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+			var section = this, control, setting = api( section.id ), postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 			control = new api.controlConstructor.dynamic( section.id + '[post_author]', {
 				params: {
 					section: section.id,
