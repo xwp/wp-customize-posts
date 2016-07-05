@@ -297,12 +297,13 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addTitleControl: function() {
-			var section = this, control, setting = api( section.id );
+			var section = this, control, setting = api( section.id ), postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 			control = new api.controlConstructor.dynamic( section.id + '[post_title]', {
 				params: {
 					section: section.id,
 					priority: 10,
-					label: api.Posts.data.l10n.fieldTitleLabel,
+					label: postTypeObj.labels.title_field ? postTypeObj.labels.title_field : api.Posts.data.l10n.fieldTitleLabel,
 					active: true,
 					settings: {
 						'default': setting.id
@@ -334,12 +335,13 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addSlugControl: function() {
-			var section = this, control, setting = api( section.id );
+			var section = this, control, setting = api( section.id ), postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 			control = new api.controlConstructor.dynamic( section.id + '[post_name]', {
 				params: {
 					section: section.id,
 					priority: 15,
-					label: api.Posts.data.l10n.fieldSlugLabel,
+					label: postTypeObj.labels.slug_field ? postTypeObj.labels.slug_field : api.Posts.data.l10n.fieldSlugLabel,
 					active: true,
 					settings: {
 						'default': setting.id
@@ -382,7 +384,8 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addPostStatusControl: function() {
-			var section = this, control, setting = api( section.id ), sectionContainer, sectionTitle;
+			var section = this, control, setting = api( section.id ), sectionContainer, sectionTitle, postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 
 			sectionContainer = section.container.closest( '.accordion-section' );
 			sectionTitle = sectionContainer.find( '.accordion-section-title:first' );
@@ -391,7 +394,7 @@
 				params: {
 					section: section.id,
 					priority: 20,
-					label: api.Posts.data.l10n.fieldPostStatusLabel,
+					label: postTypeObj.labels.status_field ? postTypeObj.labels.status_field : api.Posts.data.l10n.fieldPostStatusLabel,
 					active: true,
 					settings: {
 						'default': setting.id
@@ -476,13 +479,16 @@
 			    mceStatusbar = $( '.mce-statusbar' ),
 			    dragbar = $( '#customize-posts-content-editor-dragbar' ),
 			    collapse = $( '.collapse-sidebar' ),
-			    resizeHeight;
+			    resizeHeight,
+				postTypeObj;
+
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 
 			control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
 				params: {
 					section: section.id,
 					priority: 25,
-					label: api.Posts.data.l10n.fieldContentLabel,
+					label: postTypeObj.labels.content_field ? postTypeObj.labels.content_field : api.Posts.data.l10n.fieldContentLabel,
 					active: true,
 					settings: {
 						'default': setting.id
@@ -728,12 +734,13 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addExcerptControl: function() {
-			var section = this, control, setting = api( section.id );
+			var section = this, control, setting = api( section.id ), postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 			control = new api.controlConstructor.dynamic( section.id + '[post_excerpt]', {
 				params: {
 					section: section.id,
 					priority: 30,
-					label: api.Posts.data.l10n.fieldExcerptLabel,
+					label: postTypeObj.labels.excerpt_field ? postTypeObj.labels.excerpt_field : api.Posts.data.l10n.fieldExcerptLabel,
 					active: true,
 					settings: {
 						'default': setting.id
@@ -771,7 +778,7 @@
 				params: {
 					section: section.id,
 					priority: 60,
-					label: api.Posts.data.l10n.fieldDiscussionLabel,
+					label: postTypeObj.labels.discussion_field ? postTypeObj.labels.discussion_field : api.Posts.data.l10n.fieldDiscusionLabel,
 					active: true,
 					settings: {
 						'default': setting.id
@@ -802,12 +809,13 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addAuthorControl: function() {
-			var section = this, control, setting = api( section.id );
+			var section = this, control, setting = api( section.id ), postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 			control = new api.controlConstructor.dynamic( section.id + '[post_author]', {
 				params: {
 					section: section.id,
 					priority: 70,
-					label: api.Posts.data.l10n.fieldAuthorLabel,
+					label: postTypeObj.labels.author_field ? postTypeObj.labels.author_field : api.Posts.data.l10n.fieldAuthorLabel,
 					active: true,
 					settings: {
 						'default': setting.id
