@@ -79,13 +79,14 @@
 			section.contentsEmbedded = $.Deferred();
 			api.Section.prototype.initialize.call( section, id, args );
 
-			section.active.validate = function( active ) {
-				var setting = api( section.id );
-				if ( setting ) {
-					return setting._dirty || active;
-				} else {
-					return true;
-				}
+			/*
+			 * Prevent a section added from being hidden due dynamic section
+			 * not being present in the preview, as PHP does not generate the
+			 * sections. This can be eliminated once this core defect is resolved:
+			 * https://core.trac.wordpress.org/ticket/37270
+			 */
+			section.active.validate = function() {
+				return true;
 			};
 		},
 
@@ -313,7 +314,7 @@
 				}
 			} );
 
-			// Override preview trying to de-activate control not present in preview context.
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
 			control.active.validate = function() {
 				return true;
 			};
@@ -362,7 +363,7 @@
 				setting.bind( setPlaceholder );
 			} );
 
-			// Override preview trying to de-activate control not present in preview context.
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
 			control.active.validate = function() {
 				return true;
 			};
@@ -431,7 +432,7 @@
 				}
 			} );
 
-			// Override preview trying to de-activate control not present in preview context.
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
 			control.active.validate = function() {
 				return true;
 			};
@@ -703,7 +704,7 @@
 				}, resizeDelay );
 			} );
 
-			// Override preview trying to de-activate control not present in preview context.
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
 			control.active.validate = function() {
 				return true;
 			};
@@ -750,7 +751,7 @@
 				}
 			} );
 
-			// Override preview trying to de-activate control not present in preview context.
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
 			control.active.validate = function() {
 				return true;
 			};
@@ -787,7 +788,7 @@
 				}
 			} );
 
-			// Override preview trying to de-activate control not present in preview context.
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
 			control.active.validate = function() {
 				return true;
 			};
@@ -826,7 +827,7 @@
 				}
 			} );
 
-			// Override preview trying to de-activate control not present in preview context.
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
 			control.active.validate = function() {
 				return true;
 			};
