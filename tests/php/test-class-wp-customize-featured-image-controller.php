@@ -162,65 +162,7 @@ class Test_WP_Customize_Featured_Image_Controller extends WP_UnitTestCase {
 		$controller = new WP_Customize_Featured_Image_Controller();
 		$controller->setup_selective_refresh();
 		$this->assertEquals( 10, has_filter( 'post_thumbnail_html', array( $controller, 'filter_post_thumbnail_html' ) ) );
-		$this->assertEquals( 10, has_action( 'wp_footer', array( $controller, 'add_partials' ) ) );
 		$this->assertEquals( 10, has_filter( 'customize_dynamic_partial_args', array( $controller, 'filter_customize_dynamic_partial_args' ) ) );
-	}
-
-	/**
-	 * Test add_partials().
-	 *
-	 * @see WP_Customize_Featured_Image_Controller::add_partials()
-	 * @see WP_Customize_Featured_Image_Controller::filter_customize_dynamic_partial_args()
-	 * @see WP_Customize_Featured_Image_Controller::filter_post_thumbnail_html()
-	 */
-	public function test_add_partials() {
-		$controller = new WP_Customize_Featured_Image_Controller();
-		$controller->setup_selective_refresh();
-		$this->assertInternalType( 'array', $controller->add_partials() );
-		$this->assertEmpty( $controller->add_partials() );
-
-		$post = get_post( $this->factory()->post->create() );
-		$attachment_id = $this->factory()->attachment->create_object( 'foo.jpg', 0, array(
-			'post_mime_type' => 'image/jpeg'
-		) );
-
-		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $controller->meta_key );
-		$setting = new WP_Customize_Postmeta_Setting( $this->wp_customize, $setting_id );
-		$this->wp_customize->add_setting( $setting );
-		$partials = $controller->add_partials();
-		$this->assertCount( 1, $partials );
-
-		$partial = array_shift( $partials );
-		$this->assertInstanceOf( 'WP_Customize_Partial', $partial );
-		$this->assertEquals( $setting_id, $partial->id );
-		$this->assertEquals( array( $setting_id ), $partial->settings );
-		$this->assertEquals( array( $controller, 'render_post_thumbnail_partial' ), $partial->render_callback );
-		$this->assertTrue( $partial->container_inclusive );
-		$this->assertEquals( '[data-customize-partial-id="' . $partial->id . '"]', $partial->selector );
-
-		$html = get_the_post_thumbnail( $post->ID );
-		$this->assertEquals( '', $html );
-
-		set_post_thumbnail( $post->ID, $attachment_id );
-		$html = get_the_post_thumbnail( $post->ID );
-		$this->assertContains( sprintf( 'data-customize-partial-id="%s"', $partial->id ), $html );
-		$this->assertContains( 'data-customize-partial-placement-context', $html );
-
-		$partial_html = $controller->render_post_thumbnail_partial( $partial, array() );
-		$this->assertEquals( $partial_html, $html );
-	}
-
-	/**
-	 * Test add_partials() without Customizer.
-	 *
-	 * @see WP_Customize_Featured_Image_Controller::add_partials()
-	 */
-	public function test_add_partials_without_customize() {
-		$controller = new WP_Customize_Featured_Image_Controller();
-		$GLOBALS['wp_customize'] = null;
-		$partials = $controller->add_partials();
-		$this->assertInternalType( 'array', $partials );
-		$this->assertCount( 0, $partials );
 	}
 
 	/**
