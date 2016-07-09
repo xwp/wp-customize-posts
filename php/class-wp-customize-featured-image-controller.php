@@ -286,10 +286,21 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 			'size' => $size,
 			'attr' => $attr,
 		);
+		$post = get_post( $post_id );
+		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, '_thumbnail_id' );
+		$partial_options = array(
+			'params' => array(
+				'primarySetting' => $setting_id,
+				'settings' => array( $setting_id ),
+				'containerInclusive' => true,
+			),
+		);
+
 		$replacement = '$1';
 		$post = get_post( $post_id );
 		$partial_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $this->meta_key );
 		$replacement .= sprintf( ' data-customize-partial-id="%s" ', esc_attr( $partial_id ) );
+		$replacement .= sprintf( ' data-customize-partial-options="%s" ', esc_attr( wp_json_encode( $partial_options ) ) );
 		$replacement .= sprintf( ' data-customize-partial-placement-context="%s" ', esc_attr( wp_json_encode( $context ) ) );
 		$replacement .= ' data-customize-partial-type="featured_image" ';
 		$html = preg_replace( '#(<\w+)#', $replacement, $html, 1 );
