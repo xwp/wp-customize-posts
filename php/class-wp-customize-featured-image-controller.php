@@ -317,6 +317,7 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 		$partial_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $this->meta_key );
 		$replacement .= sprintf( ' data-customize-partial-id="%s" ', esc_attr( $partial_id ) );
 		$replacement .= sprintf( ' data-customize-partial-placement-context="%s" ', esc_attr( wp_json_encode( $context ) ) );
+		$replacement .= ' data-customize-partial-type="featured_image" ';
 		$html = preg_replace( '#(<\w+)#', $replacement, $html, 1 );
 		return $html;
 	}
