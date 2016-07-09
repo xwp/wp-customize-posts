@@ -234,33 +234,7 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	 */
 	public function setup_selective_refresh() {
 		add_filter( 'post_thumbnail_html', array( $this, 'filter_post_thumbnail_html' ), 10, 5 );
-		add_action( 'wp_footer', array( $this, 'add_partials' ) );
 		add_filter( 'customize_dynamic_partial_args', array( $this, 'filter_customize_dynamic_partial_args' ), 10, 2 );
-	}
-
-	/**
-	 * Add partials for the featured image.
-	 *
-	 * @global WP_Customize_Manager $wp_customize
-	 *
-	 * @return array List of WP_Customize_Partial instances added.
-	 */
-	public function add_partials() {
-		global $wp_customize;
-		if ( empty( $wp_customize ) || empty( $wp_customize->selective_refresh ) ) {
-			return array();
-		}
-		$partials = array();
-
-		foreach ( $wp_customize->settings() as $setting ) {
-			if ( $setting instanceof WP_Customize_Postmeta_Setting && $this->meta_key === $setting->meta_key ) {
-				$partial_id = $setting->id;
-				$partial_args = array(); // Note this is populated via WP_Customize_Featured_Image_Controller::filter_customize_dynamic_partial_args().
-				$partials[] = $wp_customize->selective_refresh->add_partial( $partial_id, $partial_args );
-			}
-		}
-
-		return $partials;
 	}
 
 	/**
