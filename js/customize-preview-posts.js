@@ -22,7 +22,8 @@
 	/**
 	 * Ensure that each post setting is added and has corresponding partials.
 	 *
-	 * @param {object} settings
+	 * @param {object} settings Settings.
+	 * @returns {void}
 	 */
 	api.previewPosts.addPartials = function( settings ) {
 
@@ -93,9 +94,10 @@
 	};
 
 	/**
-	 * Geneate the partial schema.
+	 * Generate the partial schema.
 	 *
-	 * @param {string} id
+	 * @param {string} id ID.
+	 * @returns {Array} Partial schema.
 	 */
 	api.previewPosts.partialSchema = function( id ) {
 		var partialSchema = [];
@@ -117,9 +119,10 @@
 	};
 
 	/**
-	 * Convert the schema snakecase params to camelcase.
+	 * Convert the schema snake_case params to camelcase.
 	 *
-	 * @param {object} params
+	 * @param {object} params Snake_cased params.
+	 * @returns {object} CamelCased params.
 	 */
 	api.previewPosts.snakeToCamel = function( params ) {
 		var newParams = {};

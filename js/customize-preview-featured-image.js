@@ -12,7 +12,8 @@ var CustomizePreviewFeaturedImage = (function( api, $ ) {
 	/**
 	 * Init component.
 	 *
-	 * @param {object} [configData]
+	 * @param {object} [configData] Config data.
+	 * @returns {void}
 	 */
 	component.init = function( configData ) {
 		if ( 'undefined' !== typeof configData ) {
@@ -30,7 +31,7 @@ var CustomizePreviewFeaturedImage = (function( api, $ ) {
 		 * the renderContent method will be called which would then do the full
 		 * refresh if the rendered partial is empty.
 		 *
-		 * @returns {jQuery.Promise}
+		 * @returns {jQuery.Promise} Promise.
 		 */
 		refresh: function() {
 			var partial = this, setting, refreshPromise;
@@ -48,22 +49,24 @@ var CustomizePreviewFeaturedImage = (function( api, $ ) {
 		/**
 		 * Refresh the full page if no featured image was rendered.
 		 *
-		 * @todo Remove this?
-		 *
-		 * @param {wp.customize.selectiveRefresh.Placement} placement
+		 * @param {wp.customize.selectiveRefresh.Placement} placement Placement.
+		 * @returns {boolean} Whether selective refresh happened.
 		 */
 		renderContent: function( placement ) {
 			var partial = this;
 			if ( '' === placement.addedContent ) {
 				partial.fallback();
+				return false;
 			} else {
-				api.selectiveRefresh.Partial.prototype.renderContent.call( partial, placement );
+				return api.selectiveRefresh.Partial.prototype.renderContent.call( partial, placement );
 			}
 		}
 	});
 
 	/**
 	 * Register the featured-image partial type.
+	 *
+	 * @returns {void}
 	 */
 	component.registerPartial = function() {
 		api.selectiveRefresh.partialConstructor.featured_image = component.FeaturedImagePartial;
