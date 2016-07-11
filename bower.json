@@ -1,0 +1,7 @@
+{
+  "name": "customize-posts",
+  "homepage": "https://github.com/xwp/wp-customize-posts",
+  "dependencies": {
+    "select2": "~4.0.3"
+  }
+}

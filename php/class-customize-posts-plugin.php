@@ -179,6 +179,14 @@ class Customize_Posts_Plugin {
 	public function register_scripts( WP_Scripts $wp_scripts ) {
 		$suffix = ( SCRIPT_DEBUG ? '' : '.min' ) . '.js';
 
+		$handle = 'select2';
+		if ( ! $wp_scripts->query( $handle, 'registered' ) ) {
+			$src = plugins_url( 'bower_components/select2/dist/js/select2.full' . $suffix, dirname( __FILE__ ) );
+			$deps = array( 'jquery' );
+			$in_footer = 1;
+			$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+		}
+
 		require_once ABSPATH . WPINC . '/class-wp-customize-setting.php';
 		$is_gte_wp46_beta = method_exists( 'WP_Customize_Setting', 'validate' );
 		if ( ! $is_gte_wp46_beta ) {
@@ -288,6 +296,13 @@ class Customize_Posts_Plugin {
 	 */
 	public function register_styles( WP_Styles $wp_styles ) {
 		$suffix = ( SCRIPT_DEBUG ? '' : '.min' ) . '.css';
+
+		$handle = 'select2';
+		if ( ! $wp_styles->query( $handle, 'registered' ) ) {
+			$src = plugins_url( 'bower_components/select2/dist/css/select2' . $suffix, dirname( __FILE__ ) );
+			$deps = array();
+			$wp_styles->add( $handle, $src, $deps, $this->version );
+		}
 
 		$handle = 'customize-posts';
 		$src = plugins_url( 'css/customize-posts' . $suffix, dirname( __FILE__ ) );
