@@ -230,7 +230,6 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 */
 	public function test_register_constructs() {
 		add_action( 'customize_register', array( $this, 'customize_register' ), 15 );
-		add_action( 'customize_register', array( $this, 'customize_register_after' ), 25 );
 
 		$this->wp_customize->set_preview_url( get_permalink( $this->post_id ) );
 		$posts = new WP_Customize_Posts( $this->wp_customize );
@@ -255,19 +254,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Filter to test after registration.
-	 */
-	public function customize_register_after() {
-		$posts = new WP_Customize_Posts( $this->wp_customize );
-		foreach ( $posts->manager->settings() as $setting ) {
-			if ( $setting instanceof WP_Customize_Post_Setting ) {
-				$this->assertInstanceOf( 'WP_Customize_Post_Section', $posts->manager->get_section( $setting->id ) );
-			}
-		}
-	}
-
-	/**
-	 * Test that the previed post is retuned.
+	 * Test that the previewed post is returned.
 	 *
 	 * @see WP_Customize_Posts::get_previewed_post()
 	 */

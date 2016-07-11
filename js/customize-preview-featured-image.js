@@ -6,7 +6,10 @@ var CustomizePreviewFeaturedImage = (function( api, $ ) {
 	'use strict';
 
 	var component = {
-		data: {}
+		data: {
+			partialSelector: '',
+			partialContainerInclusive: true
+		}
 	};
 
 	/**
@@ -19,10 +22,18 @@ var CustomizePreviewFeaturedImage = (function( api, $ ) {
 		if ( 'undefined' !== typeof configData ) {
 			_.extend( component.data, configData );
 		}
-		component.registerPartial();
+		component.registerPartials();
 	};
 
-	component.FeaturedImagePartial = api.selectiveRefresh.Partial.extend({
+	/**
+	 * A partial representing a featured image.
+	 *
+	 * @class
+	 * @augments wp.customize.previewPosts.DeferredPartial
+	 * @augments wp.customize.selectiveRefresh.Partial
+	 * @augments wp.customize.Class
+	 */
+	component.FeaturedImagePartial = api.previewPosts.DeferredPartial.extend({
 
 		/**
 		 * Force fallback (full page refresh) behavior when the featured image is removed.
@@ -50,6 +61,7 @@ var CustomizePreviewFeaturedImage = (function( api, $ ) {
 		 * Refresh the full page if no featured image was rendered.
 		 *
 		 * @param {wp.customize.selectiveRefresh.Placement} placement Placement.
+		 * @param {string}                                  placement.addedContent Added content.
 		 * @returns {boolean} Whether selective refresh happened.
 		 */
 		renderContent: function( placement ) {
@@ -64,12 +76,42 @@ var CustomizePreviewFeaturedImage = (function( api, $ ) {
 	});
 
 	/**
+	 * Add partial for featured image setting.
+	 *
+	 * @param {wp.customize.Value|wp.customize.Setting} setting - Setting which may be for featured image or not.
+	 * @returns {component.FeaturedImagePartial|null} New or existing featured image partial, or null if not relevant setting.
+	 */
+	component.ensurePartialForSetting = function ensurePartialForSetting( setting ) {
+		var ensuredPartial, partialId, matches = setting.id.match( /^postmeta\[.+?]\[(\d+)]\[_thumbnail_id]$/ );
+		if ( ! matches ) {
+			return null;
+		}
+		partialId = setting.id;
+		ensuredPartial = api.selectiveRefresh.partial( partialId );
+		if ( ensuredPartial ) {
+			return ensuredPartial;
+		}
+		ensuredPartial = new component.FeaturedImagePartial( partialId, {
+			params: {
+				selector: component.data.partialSelector,
+				settings: [ setting.id ],
+				primarySetting: setting.id,
+				containerInclusive: component.data.partialContainerInclusive
+			}
+		} );
+		api.selectiveRefresh.partial.add( partialId, ensuredPartial );
+		return ensuredPartial;
+	};
+
+	/**
 	 * Register the featured-image partial type.
 	 *
 	 * @returns {void}
 	 */
-	component.registerPartial = function() {
+	component.registerPartials = function() {
 		api.selectiveRefresh.partialConstructor.featured_image = component.FeaturedImagePartial;
+		api.each( component.ensurePartialForSetting );
+		api.bind( 'add', component.ensurePartialForSetting );
 	};
 
 	if ( 'undefined' !== typeof module ) {

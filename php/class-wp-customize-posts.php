@@ -99,7 +99,9 @@ final class WP_Customize_Posts {
 		add_filter( 'post_link', array( $this, 'post_link_draft' ), 10, 2 );
 		add_filter( 'post_type_link', array( $this, 'post_link_draft' ), 10, 2 );
 		add_filter( 'page_link', array( $this, 'post_link_draft' ), 10, 2 );
+
 		add_action( 'wp_ajax_customize-posts-insert-auto-draft', array( $this, 'ajax_insert_auto_draft_post' ) );
+		add_action( 'wp_ajax_customize-posts-fetch-settings', array( $this, 'ajax_fetch_settings' ) );
 
 		$this->preview = new WP_Customize_Posts_Preview( $this );
 	}
@@ -296,26 +298,6 @@ final class WP_Customize_Posts {
 			// Note the following is an alternative to doing WP_Customize_Manager::register_panel_type().
 			add_action( 'customize_controls_print_footer_scripts', array( $panel, 'print_template' ) );
 		}
-
-		$i = 0;
-		foreach ( $this->manager->settings() as $setting ) {
-			$needs_section = (
-				$setting instanceof WP_Customize_Post_Setting
-				&&
-				! $this->manager->get_section( $setting->id )
-			);
-			if ( $needs_section ) {
-
-				// @todo Should WP_Customize_Post_Section be filterable so that sections for specific post types can be used?
-				$section = new WP_Customize_Post_Section( $this->manager, $setting->id, array(
-					'panel' => sprintf( 'posts[%s]', $setting->post_type ),
-					'post_setting' => $setting,
-					'priority' => $i,
-				) );
-				$this->manager->add_section( $section );
-				$i += 1;
-			}
-		}
 	}
 
 	/**
@@ -392,19 +374,17 @@ final class WP_Customize_Posts {
 	/**
 	 * Add all postmeta settings for all registered postmeta for a given post type instance.
 	 *
-	 * @param int $post_id Post ID.
+	 * @param \WP_Post $post Post ID.
 	 * @return array
 	 */
-	public function register_post_type_meta_settings( $post_id ) {
-		$post = get_post( $post_id );
+	public function register_post_type_meta_settings( $post ) {
 		$setting_ids = array();
-		if ( ! empty( $post ) && isset( $this->registered_post_meta[ $post->post_type ] ) ) {
+		if ( isset( $this->registered_post_meta[ $post->post_type ] ) ) {
 			foreach ( array_keys( $this->registered_post_meta[ $post->post_type ] ) as $key ) {
 				$setting_ids[] = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $key );
 			}
+			$this->manager->add_dynamic_settings( $setting_ids );
 		}
-		$this->manager->add_dynamic_settings( $setting_ids );
-
 		return $setting_ids;
 	}
 
@@ -855,6 +835,51 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Get post/postmeta settings for the given post IDs.
+	 *
+	 * @param int[] $post_ids Post IDs.
+	 * @return WP_Customize_Post_Setting[]|WP_Customize_Postmeta_Setting[] Settings.
+	 */
+	public function get_settings( array $post_ids ) {
+		$query = new \WP_Query( array( 'post__in' => $post_ids ) );
+		$post_setting_ids = array_map( array( 'WP_Customize_Post_Setting', 'get_post_setting_id' ), $query->posts );
+		if ( ! empty( $post_setting_ids ) ) {
+			$this->manager->add_dynamic_settings( $post_setting_ids );
+		}
+		foreach ( $query->posts as $post ) {
+			$this->register_post_type_meta_settings( $post );
+		}
+		$settings = array();
+		foreach ( $this->manager->settings() as $setting ) {
+			if ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting ) {
+				$settings[ $setting->id ] = $setting;
+			}
+		}
+		return $settings;
+	}
+
+	/**
+	 * Get setting params.
+	 *
+	 * This can be replaced with a simple $setting->json() once WP 4.6 is the minimum required version.
+	 *
+	 * @param WP_Customize_Setting $setting Setting.
+	 * @return array Setting params.
+	 */
+	public function get_setting_params( WP_Customize_Setting $setting ) {
+		if ( method_exists( $setting, 'json' ) ) { // New in 4.6-alpha.
+			return $setting->json();
+		} else {
+			return array(
+				'value' => $setting->js_value(),
+				'transport' => $setting->transport,
+				'dirty' => $setting->dirty,
+				'type' => $setting->type,
+			);
+		}
+	}
+
+	/**
 	 * Ajax handler for adding a new post.
 	 *
 	 * @action wp_ajax_customize-posts-insert-auto-draft
@@ -906,7 +931,7 @@ final class WP_Customize_Posts {
 				wp_send_json_error( array( 'message' => __( 'Failed to create setting', 'customize-posts' ) ) );
 			}
 
-			$setting_ids = array_merge( $setting_ids, $this->register_post_type_meta_settings( $post->ID ) );
+			$setting_ids = array_merge( $setting_ids, $this->register_post_type_meta_settings( $post ) );
 			foreach ( $setting_ids as $setting_id ) {
 				$setting = $this->manager->get_setting( $setting_id );
 				if ( ! $setting ) {
@@ -918,17 +943,10 @@ final class WP_Customize_Posts {
 						$setting->preview();
 					}
 				}
-				if ( method_exists( $setting, 'json' ) ) { // New in 4.6-alpha.
-					$exported_settings[ $setting->id ] = $setting->json();
-				} else {
-					$exported_settings[ $setting->id ] = array(
-						'value' => $setting->js_value(),
-						'transport' => $setting->transport,
-						'dirty' => $setting->dirty,
-						'type' => $setting->type,
-					);
-				}
-				$exported_settings[ $setting->id ]['dirty'] = true;
+				$exported_settings[ $setting->id ] = array_merge(
+					$this->get_setting_params( $setting ),
+					array( 'dirty' => true )
+				);
 			}
 			$data = array(
 				'postId' => $post->ID,
@@ -939,5 +957,42 @@ final class WP_Customize_Posts {
 			);
 			wp_send_json_success( $data );
 		}
+	}
+
+	/**
+	 * Handle ajax request for lazy-loaded post/postmeta settings.
+	 *
+	 * @action wp_ajax_customize-posts-fetch-settings
+	 * @access public
+	 */
+	public function ajax_fetch_settings() {
+		if ( ! check_ajax_referer( 'customize-posts', 'customize-posts-nonce', false ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'bad_nonce' );
+		}
+		if ( ! current_user_can( 'customize' ) ) {
+			status_header( 403 );
+			wp_send_json_error( 'customize_not_allowed' );
+		}
+		if ( empty( $_POST['post_ids'] ) || ! is_array( $_POST['post_ids'] ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'missing_post_ids' );
+		}
+
+		$post_ids = array_map( 'intval', $_POST['post_ids'] );
+		if ( in_array( 0, $post_ids, true ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'bad_post_ids' );
+		}
+
+		$setting_params = array();
+		$settings = $this->get_settings( $post_ids );
+		foreach ( $settings as $setting ) {
+			if ( $setting->check_capabilities() ) {
+				$setting_params[ $setting->id ] = $this->get_setting_params( $setting );
+			}
+		}
+
+		wp_send_json_success( $setting_params );
 	}
 }

@@ -11,6 +11,38 @@
 	}
 
 	/**
+	 * A deferred partial for settings that created at runtime.
+	 *
+	 * @class
+	 * @augments wp.customize.selectiveRefresh.Partial
+	 * @augments wp.customize.Class
+	 */
+	api.previewPosts.DeferredPartial = api.selectiveRefresh.Partial.extend({
+
+		/**
+		 * Return whether the setting is related to the partial.
+		 *
+		 * This is needed because selective refresh has the behavior of calling
+		 * `handleSettingChange` when a setting is added, but since we are deferring
+		 * to create settings until they are needed, we need to prevent created
+		 * settings from triggering a partial refresh.
+		 *
+		 * @param {wp.customize.Value|string} setting  ID or object for setting.
+		 * @param {*}                         newValue New value.
+		 * @param {*}                         oldValue Old value.
+		 * @return {boolean} Whether the setting is related to the partial.
+		 */
+		isRelatedSetting: function( setting, newValue, oldValue ) {
+			var isSettingCreated = null === oldValue;
+			if ( isSettingCreated ) {
+				return false;
+			} else {
+				return api.selectiveRefresh.Partial.prototype.isRelatedSetting.call( this, setting, newValue, oldValue );
+			}
+		}
+	});
+
+	/**
 	 * Prevent shift-clicking from inadvertently causing text selection.
 	 */
 	$( document.body ).on( 'mousedown', function( e ) {
@@ -22,75 +54,76 @@
 	/**
 	 * Ensure that each post setting is added and has corresponding partials.
 	 *
-	 * @param {object} settings Settings.
-	 * @returns {void}
+	 * @param {wp.customize.Value|wp.customize.Setting} setting Setting.
+	 * @returns {api.selectiveRefresh.Partial[]} Added partials.
 	 */
-	api.previewPosts.addPartials = function( settings ) {
+	api.previewPosts.ensurePartialsForPostSetting = function ensurePartialForPostSetting( setting ) {
+		var addedPartials = [], idPattern = /^post\[(.+?)]\[(-?\d+)]\[(.+?)](?:\[(.+?)])?$/;
 
-		_.each( settings, function( setting, id ) {
+		// Short-circuit if not a post setting.
+		if ( ! /^post\[(.+?)]\[(\d+)]$/.test( setting.id ) ) {
+			return [];
+		}
 
-			if ( ! api.has( id ) ) {
-				api.create( id, setting.value, {
-					id: id
-				} );
+		// Add the partials.
+		_.each( api.previewPosts.partialSchema( setting.id ), function( schema ) {
+			var partial, addPartial, matches, baseSelector;
+
+			matches = schema.id.match( idPattern );
+			if ( ! matches ) {
+				throw new Error( 'Bad PostFieldPartial id. Expected post[:post_type][:post_id][:field_id]' );
 			}
 
-			if ( 'post' === setting.type ) {
+			if ( api.selectiveRefresh.partial.has( schema.id ) ) {
+				return;
+			}
 
-				// Add the partials.
-				_.each( api.previewPosts.partialSchema( id ), function( schema ) {
-					var partial, addPartial, matches, baseSelector, idPattern = /^post\[(.+?)]\[(-?\d+)]\[(.+?)](?:\[(.+?)])?$/;
+			if ( schema.params.selector ) {
+				if ( ! schema.params.bodySelector ) {
+					baseSelector = '.hentry.post-' + String( parseInt( matches[2], 10 ) ) + '.type-' + matches[1];
+				} else {
+					baseSelector = '.postid-' + String( parseInt( matches[2], 10 ) ) + '.single-' + matches[1];
+				}
+				schema.params.selector = baseSelector + ' ' + schema.params.selector;
 
-					matches = schema.id.match( idPattern );
-					if ( ! matches ) {
-						throw new Error( 'Bad PostFieldPartial id. Expected post[:post_type][:post_id][:field_id]' );
-					}
+				addPartial =
+					! schema.params.singularOnly && ! schema.params.archiveOnly ||
+					schema.params.singularOnly && api.previewPosts.data.isSingular ||
+					schema.params.archiveOnly && ! api.previewPosts.data.isSingular;
 
-					if ( schema.params.selector ) {
-						if ( ! schema.params.bodySelector ) {
-							baseSelector = '.hentry.post-' + String( parseInt( matches[2], 10 ) ) + '.type-' + matches[1];
-						} else {
-							baseSelector = '.postid-' + String( parseInt( matches[2], 10 ) ) + '.single-' + matches[1];
-						}
-						schema.params.selector = baseSelector + ' ' + schema.params.selector;
+				if ( addPartial ) {
+					partial = new api.previewPosts.PostFieldPartial( schema.id, { params: schema.params } );
+					api.selectiveRefresh.partial.add( partial.id, partial );
+					addedPartials.push( partial );
+				}
+			} else {
+				partial = new api.previewPosts.PostFieldPartial( schema.id, { params: schema.params } );
 
-						addPartial =
-							! schema.params.singularOnly && ! schema.params.archiveOnly ||
-							schema.params.singularOnly && api.previewPosts.data.isSingular ||
-							schema.params.archiveOnly && ! api.previewPosts.data.isSingular;
-
-						if ( addPartial ) {
-							partial = new api.previewPosts.PostFieldPartial( schema.id, { params: schema.params } );
-							api.selectiveRefresh.partial.add( partial.id, partial );
-						}
+				/**
+				 * Suppress wasted partial refreshes for partials that lack selectors.
+				 *
+				 * For example, since the post_name field is not normally
+				 * displayed, suppress refreshing changes.
+				 *
+				 * @returns {jQuery.promise} Promise.
+				 */
+				partial.refresh = function refreshWithoutSelector() {
+					var deferred = $.Deferred();
+					if ( this.params.fallbackRefresh ) {
+						api.selectiveRefresh.requestFullRefresh();
+						deferred.resolve();
 					} else {
-						partial = new api.previewPosts.PostFieldPartial( schema.id, { params: schema.params } );
-
-						/**
-						 * Suppress wasted partial refreshes for partials that lack selectors.
-						 *
-						 * For example, since the post_name field is not normally
-						 * displayed, suppress refreshing changes.
-						 *
-						 * @returns {jQuery.promise} Promise.
-						 */
-						partial.refresh = function refreshWithoutSelector() {
-							var deferred = $.Deferred();
-							if ( this.params.fallbackRefresh ) {
-								api.selectiveRefresh.requestFullRefresh();
-								deferred.resolve();
-							} else {
-								deferred.reject();
-							}
-							return deferred.promise();
-						};
-						api.selectiveRefresh.partial.add( partial.id, partial );
+						deferred.reject();
 					}
-				} );
+					return deferred.promise();
+				};
+				api.selectiveRefresh.partial.add( partial.id, partial );
+				addedPartials.push( partial );
 			}
-
-			// @todo Trigger event for plugins and postmeta controllers.
 		} );
+
+		// @todo Trigger event for plugins and postmeta controllers.
+		return addedPartials;
 	};
 
 	/**
@@ -137,47 +170,27 @@
 		return newParams;
 	};
 
-	/**
-	 * Add settings.
-	 *
-	 * Creates the settings, their associated partials, and sends them to the pane.
-	 *
-	 * @param {object} settings - Settings keyed by ID.
-	 */
-	api.previewPosts.addSettings = function addSettings( settings ) {
-		api.previewPosts.addPartials( settings );
+	api.bind( 'preview-ready', function onPreviewReady() {
+		_.extend( api.previewPosts.data, _wpCustomizePreviewPostsData );
 
-		api.preview.send( 'customized-posts', {
-			settings: settings
+		api.each( api.previewPosts.ensurePartialsForPostSetting );
+		api.bind( 'add', api.previewPosts.ensurePartialsForPostSetting );
+
+		api.preview.bind( 'customize-posts-setting', function( settingParams ) {
+			if ( ! api.has( settingParams.id ) ) {
+				api.create( settingParams.id, settingParams.value, {
+					id: settingParams.id
+				} );
+			}
 		} );
-	};
 
-	api.bind( 'preview-ready', function() {
 		api.preview.bind( 'active', function() {
-			var settings = {};
-
-			_.extend( api.previewPosts.data, _wpCustomizePreviewPostsData );
-
-			api.each( function( setting ) {
-				var settingProperties = api.previewPosts.data.settingProperties[ setting.id ];
-				if ( ! settingProperties ) {
-					return;
-				}
-				settings[ setting.id ] = {
-					value: setting.get(),
-					dirty: Boolean( api.settings._dirty[ setting.id ] ),
-					type: settingProperties.type,
-					transport: settingProperties.transport
-				};
-			} );
-
-			api.previewPosts.addPartials( settings );
 
 			api.preview.send( 'customized-posts', {
 				isPostPreview: api.previewPosts.data.isPostPreview,
 				isSingular: api.previewPosts.data.isSingular,
 				queriedPostId: api.previewPosts.data.queriedPostId,
-				settings: settings
+				postIds: api.previewPosts.data.postIds
 			} );
 
 			/**
@@ -194,8 +207,10 @@
 		} );
 
 		api.selectiveRefresh.bind( 'render-partials-response', function( data ) {
-			if ( data.customize_post_settings ) {
-				api.previewPosts.addSettings( data.customize_post_settings );
+			if ( data.queried_post_ids ) {
+				api.preview.send( 'customized-posts', {
+					postIds: data.queried_post_ids
+				} );
 			}
 		} );
 
@@ -210,8 +225,10 @@
 			} else {
 				data = responseData;
 			}
-			if ( data.customize_post_settings ) {
-				api.previewPosts.addSettings( data.customize_post_settings );
+			if ( data.queried_post_ids ) {
+				api.preview.send( 'customized-posts', {
+					postIds: data.queried_post_ids
+				} );
 			}
 		} );
 	} );

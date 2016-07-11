@@ -12,10 +12,11 @@
 	 * A partial representing a post field.
 	 *
 	 * @class
+	 * @augments wp.customize.previewPosts.DeferredPartial
 	 * @augments wp.customize.selectiveRefresh.Partial
 	 * @augments wp.customize.Class
 	 */
-	api.previewPosts.PostFieldPartial = api.selectiveRefresh.Partial.extend({
+	api.previewPosts.PostFieldPartial = api.previewPosts.DeferredPartial.extend({
 
 		/**
 		 * @inheritdoc
@@ -56,7 +57,7 @@
 			if ( _.isObject( newValue ) && _.isObject( oldValue ) && partial.params.field_id && newValue[ partial.params.field_id ] === oldValue[ partial.params.field_id ] ) {
 				return false;
 			}
-			return api.selectiveRefresh.Partial.prototype.isRelatedSetting.call( partial, setting );
+			return api.previewPosts.DeferredPartial.prototype.isRelatedSetting.call( partial, setting, newValue, oldValue );
 		}
 
 	});

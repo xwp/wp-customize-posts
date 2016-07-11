@@ -21,6 +21,9 @@
 		},
 		postIdInput: null
 	};
+
+	component.fetchedPosts = {};
+
 	if ( 'undefined' !== typeof _wpCustomizePostsExports ) {
 		_.extend( component.data, _wpCustomizePostsExports );
 	}
@@ -133,45 +136,109 @@
 	 * Handle receiving customized-posts messages from the preview.
 	 *
 	 * @param {object} data Data from preview.
-	 * @return {wp.customize.Section[]} Sections added.
+	 * @return {jQuery.promise} Promise for ensured posts data.
 	 */
 	component.receivePreviewData = function( data ) {
-		var sections = [], section, setting;
-
-		_.each( data.settings, function( settingArgs, id ) {
-
-			if ( ! api.has( id ) ) {
-				setting = api.create( id, id, settingArgs.value, {
-					transport: settingArgs.transport,
-					previewer: api.previewer,
-					dirty: settingArgs.dirty
-				} );
-				if ( settingArgs.dirty ) {
-					setting.callbacks.fireWith( setting, [ setting.get(), {} ] );
-				}
-			}
-
-			if ( 'post' === settingArgs.type ) {
-				section = component.addPostSection( id );
-				if ( section ) {
-					sections.push( section );
-				}
-			}
-		} );
-
-		return sections;
+		return component.ensurePosts( data.postIds );
 	};
 
 	/**
-	 * Handle adding post setting.
+	 * Gather posts data.
 	 *
-	 * @param {string} id - Section ID (same as post setting ID).
+	 * @param {int[]} postIds Post IDs.
+	 * @returns {{}} Mapping of post ID to relevant data about the post.
+	 */
+	component.gatherFetchedPostsData = function gatherFetchedPostsData( postIds ) {
+		var postsData = {};
+		_.each( postIds, function( postId ) {
+			var postType, postData, id;
+			postType = component.fetchedPosts[ postId ];
+			if ( postType ) {
+				id = 'post[' + postType + '][' + String( postId ) + ']';
+				postData = {
+					postType: postType,
+					customizeId: id,
+					section: api.section( id ),
+					setting: api( id )
+				};
+			} else {
+				postData = null;
+			}
+			postsData[ postId ] = postData;
+		} );
+		return postsData;
+	};
+
+	/**
+	 * Fetch settings for posts and ensure sections are added for the given post IDs.
+	 *
+	 * @param {int[]} postIds Post IDs.
+	 * @returns {jQuery.promise} Promise resolved with an object mapping ids to setting and section.
+	 */
+	component.ensurePosts = function ensurePosts( postIds ) {
+		var request, deferred = $.Deferred(), newPostIds;
+
+		newPostIds = _.filter( postIds, function( postId ) {
+			return ! component.fetchedPosts[ postId ];
+		} );
+		if ( 0 === newPostIds.length ) {
+			deferred.resolve( component.gatherFetchedPostsData( postIds ) );
+			return deferred;
+		}
+
+		request = wp.ajax.post( 'customize-posts-fetch-settings', {
+			'customize-posts-nonce': api.Posts.data.nonce,
+			'wp_customize': 'on',
+			'post_ids': newPostIds
+		} );
+
+		request.done( function( settings ) {
+			_.each( settings, function( settingArgs, id ) {
+				var setting, idParts, postId, postType;
+
+				idParts = id.replace( /]/g, '' ).split( '[' );
+				postType = idParts[1];
+				postId = parseInt( idParts[2], 10 );
+				component.fetchedPosts[ postId ] = postType;
+
+				setting = api( id );
+				if ( ! setting ) {
+					setting = api.create( id, id, settingArgs.value, {
+						transport: settingArgs.transport,
+						previewer: api.previewer
+					} );
+
+					/*
+					 * Ensure that the setting gets created in the preview as well. When the post/postmeta settings
+					 * are sent to the preview, this is the point at which the related selective refresh partials
+					 * will also be created.
+					 */
+					api.previewer.send( 'customize-posts-setting', _.extend( { id: id }, settingArgs ) );
+				}
+
+				if ( 'post' === settingArgs.type ) {
+					component.addPostSection( postType, postId );
+				}
+			} );
+
+			deferred.resolve( component.gatherFetchedPostsData( postIds ) );
+		} );
+		request.fail( function() {
+			deferred.reject();
+		} );
+
+		return deferred.promise();
+	};
+
+	/**
+	 * Add a section for a post.
+	 *
+	 * @param {string} postType - Post type.
+	 * @param {number} postId   - Post ID.
 	 * @return {wp.customize.Section|null} Added (or existing) section, or null if not able to be added.
 	 */
-	component.addPostSection = function( id ) {
-		var section, sectionId, panelId, sectionType, postId, postType, idParts, Constructor, htmlParser;
-		idParts = id.replace( /]/g, '' ).split( '[' );
-		postType = idParts[1];
+	component.addPostSection = function( postType, postId ) {
+		var section, sectionId, panelId, sectionType, Constructor, htmlParser;
 		if ( ! component.data.postTypes[ postType ] ) {
 			if ( 'undefined' !== typeof console && console.error ) {
 				console.error( 'Unrecognized post type: ' + postType );
@@ -181,17 +248,16 @@
 		if ( ! component.data.postTypes[ postType ].show_in_customizer ) {
 			return null;
 		}
-		postId = parseInt( idParts[2], 10 );
-		if ( ! postId ) {
+		if ( 'number' !== typeof postId ) {
 			if ( 'undefined' !== typeof console && console.error ) {
-				console.error( 'Bad post id: ' + idParts[2] );
+				console.error( 'Bad post id: ' + postId );
 			}
 			return null;
 		}
 
 		sectionType = 'post[' + postType + ']';
 		panelId = 'posts[' + postType + ']';
-		sectionId = id;
+		sectionId = 'post[' + postType + '][' + String( postId ) + ']';
 
 		if ( api.section.has( sectionId ) ) {
 			return api.section( sectionId );

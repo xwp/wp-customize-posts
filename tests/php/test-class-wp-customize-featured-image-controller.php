@@ -243,7 +243,7 @@ class Test_WP_Customize_Featured_Image_Controller extends WP_UnitTestCase {
 		$setting = new WP_Customize_Postmeta_Setting( $this->wp_customize, $setting_id );
 
 		$this->assertEquals( 1, $controller->js_value( '1', $setting ) );
-		$this->assertEquals( '', $controller->js_value( '0', $setting ) );
-		$this->assertEquals( '', $controller->js_value( -123, $setting ) );
+		$this->assertEquals( 0, $controller->js_value( '0', $setting ) );
+		$this->assertEquals( 0, $controller->js_value( -123, $setting ) );
 	}
 }
