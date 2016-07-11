@@ -3,7 +3,7 @@
 
 (function( api, $ ) {
 	'use strict';
-	var defaultSectionPriorities = {}, checkboxSynchronizerUpdate, checkboxSynchronizerRefresh;
+	var checkboxSynchronizerUpdate, checkboxSynchronizerRefresh;
 
 	if ( ! api.Posts ) {
 		api.Posts = {};
@@ -43,41 +43,61 @@
 	api.Posts.PostSection = api.Section.extend({
 
 		initialize: function( id, options ) {
-			var section = this, args;
+			var section = this, args, postTypeObj, setting, setPriority, isDefaultPriority;
 
 			args = options || {};
 			args.params = args.params || {};
-			if ( ! args.params.post_type || ! api.Posts.data.postTypes[ args.params.post_type ] ) {
+			postTypeObj = api.Posts.data.postTypes[ args.params.post_type ];
+			if ( ! postTypeObj ) {
 				throw new Error( 'Missing post_type' );
 			}
 			if ( _.isNaN( args.params.post_id ) ) {
 				throw new Error( 'Missing post_id' );
 			}
-			if ( ! api.has( id ) ) {
-				throw new Error( 'No setting id' );
+			setting = api( id );
+			if ( ! setting || ! setting() ) {
+				throw new Error( 'Setting must be created up front.' );
 			}
+			setting.findControls = section.findPostSettingControls;
 			if ( ! args.params.title ) {
 				args.params.title = api( id ).get().post_title;
 			}
 			if ( ! args.params.title ) {
 				args.params.title = api.Posts.data.l10n.noTitle;
 			}
-			api( id, function( setting ) {
-				setting.findControls = section.findPostSettingControls;
-			} );
 
 			section.postFieldControls = {};
 
-			if ( ! args.params.priority ) {
-				if ( ! defaultSectionPriorities[ args.params.post_type ] ) {
-					defaultSectionPriorities[ args.params.post_type ] = api.Section.prototype.defaults.priority;
-				}
-				defaultSectionPriorities[ args.params.post_type ] += 1;
-				args.params.priority = defaultSectionPriorities[ args.params.post_type ];
-			}
-
 			section.contentsEmbedded = $.Deferred();
+
+			isDefaultPriority = 'undefined' === typeof args.params.priority;
 			api.Section.prototype.initialize.call( section, id, args );
+
+			// Let priority (position) of section be determined by menu_order or post_date_gmt.
+			if ( isDefaultPriority ) {
+				setPriority = function( postData ) {
+					var priority;
+					if ( ! postData ) {
+						return;
+					}
+					if ( postTypeObj.hierarchical || postTypeObj.supports['page-attributes'] ) {
+						priority = postData.menu_order;
+					} else {
+						priority = Date.parse( postData.post_date_gmt.replace( ' ', 'T' ) );
+
+						// Handle case where post_date_gmt is "0000-00-00 00:00:00".
+						if ( isNaN( priority ) ) {
+							priority = 0;
+						} else {
+							priority = new Date().valueOf() - priority;
+						}
+					}
+
+					section.priority.set( priority );
+				};
+				setPriority( setting() );
+				setting.bind( setPriority );
+			}
 
 			/*
 			 * Prevent a section added from being hidden due dynamic section
