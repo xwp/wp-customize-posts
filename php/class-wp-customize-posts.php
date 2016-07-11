@@ -818,9 +818,9 @@ final class WP_Customize_Posts {
 		$args = array(
 			'post_status' => 'auto-draft',
 			'post_type' => $post_type,
-			'post_date' => $date_local,
+			'post_date' => $date_local, // @todo Eliminate in favor of just post_date_gmt?
 			'post_date_gmt' => $date_gmt,
-			'post_modified' => $date_local,
+			'post_modified' => $date_local, // @todo Eliminate in favor of just post_modified_gmt?
 			'post_modified_gmt' => $date_gmt,
 		);
 		$r = wp_insert_post( wp_slash( $args ), true );
