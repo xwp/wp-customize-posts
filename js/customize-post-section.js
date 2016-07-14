@@ -182,11 +182,11 @@
 		 */
 		setupPostNavigation: function() {
 			var section = this,
-			    sectionNavigationButton,
-			    sectionContainer = section.container.closest( '.accordion-section' ),
-			    sectionTitle = sectionContainer.find( '.customize-section-title:first' ),
-			    sectionNavigationButtonTemplate = wp.template( 'customize-posts-navigation' ),
-			    postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+				sectionNavigationButton,
+				sectionContainer = section.container.closest( '.accordion-section' ),
+				sectionTitle = sectionContainer.find( '.customize-section-title:first' ),
+				sectionNavigationButtonTemplate = wp.template( 'customize-posts-navigation' ),
+				postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 
 			// Short-circuit showing a link if the post type is not publicly queryable anyway.
 			if ( ! postTypeObj['public'] ) {
@@ -471,17 +471,17 @@
 		 */
 		addContentControl: function() {
 			var section = this,
-			    control,
-			    setting = api( section.id ),
-			    preview = $( '#customize-preview' ),
-			    editorPane = $( '#customize-posts-content-editor-pane' ),
-			    editorFrame = $( '#customize-posts-content_ifr' ),
-			    mceTools = $( '#wp-customize-posts-content-editor-tools' ),
-			    mceToolbar = $( '.mce-toolbar-grp' ),
-			    mceStatusbar = $( '.mce-statusbar' ),
-			    dragbar = $( '#customize-posts-content-editor-dragbar' ),
-			    collapse = $( '.collapse-sidebar' ),
-			    resizeHeight;
+				control,
+				setting = api( section.id ),
+				preview = $( '#customize-preview' ),
+				editorPane = $( '#customize-posts-content-editor-pane' ),
+				editorFrame = $( '#customize-posts-content_ifr' ),
+				mceTools = $( '#wp-customize-posts-content-editor-tools' ),
+				mceToolbar = $( '.mce-toolbar-grp' ),
+				mceStatusbar = $( '.mce-statusbar' ),
+				dragbar = $( '#customize-posts-content-editor-dragbar' ),
+				collapse = $( '.collapse-sidebar' ),
+				resizeHeight;
 
 			control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
 				params: {
@@ -619,15 +619,15 @@
 			 */
 			control.resizeEditor = function( position ) {
 				var windowHeight = window.innerHeight,
-				    windowWidth = window.innerWidth,
-				    sectionContent = $( '[id^=accordion-panel-posts] ul.accordion-section-content' ),
-				    minScroll = 40,
-				    maxScroll = 1,
-				    mobileWidth = 782,
-				    collapseMinSpacing = 56,
-				    collapseBottomOutsideEditor = 8,
-				    collapseBottomInsideEditor = 4,
-				    args = {};
+					windowWidth = window.innerWidth,
+					sectionContent = $( '[id^=accordion-panel-posts] ul.accordion-section-content' ),
+					minScroll = 40,
+					maxScroll = 1,
+					mobileWidth = 782,
+					collapseMinSpacing = 56,
+					collapseBottomOutsideEditor = 8,
+					collapseBottomInsideEditor = 4,
+					args = {};
 
 				if ( ! $( document.body ).hasClass( 'customize-posts-content-editor-pane-open' ) ) {
 					return;
@@ -968,13 +968,13 @@
 		 *
 		 * @param {number} pageId       Updated page ID.
 		 * @param {Object} newPostData  Updated page data.
-         * @returns {boolean}           Return true or false based.
+		 * @returns {boolean}           Return true or false based.
 		 */
 		syncPageToStaticPageControls: function( pageId, newPostData ) {
 			var section = this;
 			_.each( [ wp.customize.control( 'page_on_front' ), wp.customize.control( 'page_for_posts' ) ], function( controlObject ) {
-                var	pageOnFrontOptions = section.getSelectOptions( controlObject ),
-                    newPage = true;
+				var	pageOnFrontOptions = section.getSelectOptions( controlObject ),
+					newPage = true;
 
 				if ( 'undefined' === typeof controlObject ) {
 					return false;
@@ -993,7 +993,7 @@
 						}
 						return false;
 					}
-                    return true;
+					return true;
 				});
 
 				if ( newPage ) {
@@ -1007,18 +1007,18 @@
 						);
 				}
 
-                return true;
+				return true;
 			});
 
-            return true;
+			return true;
 		},
 
 		/**
 		 * Remove trashed pages from static page section dropdowns.
 		 *
 		 * @param {number} pageId - Page ID which was trashed.
-         * @returns {boolean}     - Return boolean to pass ESLint check.
-         */
+		 * @returns {boolean}     - Return boolean to pass ESLint check.
+		 */
 		purgeStaticPageDropDown: function( pageId ) {
 			var section = this;
 			_.each( [ wp.customize.control( 'page_on_front' ), wp.customize.control( 'page_for_posts' ) ], function( selector ) {
@@ -1029,12 +1029,12 @@
 						elObject.remove();
 						return false;
 					}
-                    return true;
+					return true;
 				});
-                return true;
+				return true;
 			});
 
-            return true;
+			return true;
 		},
 
 		/**
@@ -1042,7 +1042,7 @@
 		 *
 		 * @param {Object} selectObject - jQuery object of Static Page select boxes
 		 * @returns {boolean|object}    - Returns options of select box if `selectObject` is defined.
-         */
+		 */
 		getSelectOptions: function( selectObject ) {
 			if ( 'undefined' === typeof selectObject ) {
 				return false;

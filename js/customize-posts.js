@@ -66,7 +66,7 @@
 	 */
 	component.getPreviewUrl = function( params ) {
 		var url = api.settings.url.home,
-		    args = {};
+			args = {};
 
 		if ( ! params || ! params.post_id ) {
 			throw new Error( 'Missing params' );
