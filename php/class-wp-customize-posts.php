@@ -842,6 +842,10 @@ final class WP_Customize_Posts {
 			'post_date_gmt' => $date_gmt,
 			'post_modified' => $date_local,
 			'post_modified_gmt' => $date_gmt,
+			'meta_input' => array(
+				// Dummy postmeta so that snapshot meta queries won't fail in \WP_Customize_Posts_Preview::get_previewed_posts_for_query().
+				'_snapshot_auto_draft' => true,
+			),
 		);
 		$r = wp_insert_post( wp_slash( $args ), true );
 		remove_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
