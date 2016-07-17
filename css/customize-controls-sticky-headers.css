@@ -1,0 +1,28 @@
+
+/*.accordion-sub-container.control-panel-content,*/
+/*.accordion-section-content {*/
+	/*padding-top: 75px !important;*/
+/*}*/
+
+/*.accordion-sub-container.control-panel-content > .panel-meta.customize-info.accordion-section,*/
+/*.accordion-section-content > .customize-section-description-container {*/
+	/*position: fixed;*/
+	/*top: 58px;*/
+	/*z-index: 10000;*/
+	/*width: 228px;*/
+/*}*/
+
+.control-panel > .accordion-sub-container.control-panel-content {
+	padding-top: 
+}
+
+.accordion-section-content > .customize-section-description-container {
+	height: 58px;
+}
+
+.accordion-section-content > .customize-section-description-container > .customize-section-title {
+	position: fixed;
+	top: 58px;
+	z-index: 100000;
+	width: 300px;
+}

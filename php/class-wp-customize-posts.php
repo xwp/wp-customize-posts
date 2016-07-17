@@ -548,6 +548,7 @@ final class WP_Customize_Posts {
 	public function enqueue_scripts() {
 		wp_enqueue_script( 'customize-posts' );
 		wp_enqueue_style( 'customize-posts' );
+		wp_enqueue_style( 'customize-controls-sticky-headers' );
 
 		$post_types = array();
 		foreach ( $this->get_post_types() as $post_type => $post_type_obj ) {

@@ -295,6 +295,12 @@ class Customize_Posts_Plugin {
 		$version = $this->version;
 		$wp_styles->add( $handle, $src, $deps, $version );
 
+		$handle = 'customize-controls-sticky-headers';
+		$src = plugins_url( 'css/customize-controls-sticky-headers' . $suffix, dirname( __FILE__ ) );
+		$deps = array( 'customize-controls' );
+		$version = $this->version;
+		$wp_styles->add( $handle, $src, $deps, $version );
+
 		$handle = 'edit-post-preview-customize';
 		$src = plugins_url( 'css/edit-post-preview-customize' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'customize-controls' );
