@@ -845,7 +845,12 @@ final class WP_Customize_Posts {
 	 * @return WP_Customize_Post_Setting[]|WP_Customize_Postmeta_Setting[] Settings.
 	 */
 	public function get_settings( array $post_ids ) {
-		$query = new \WP_Query( array( 'post__in' => $post_ids ) );
+		$query = new \WP_Query( array(
+			'post__in' => $post_ids,
+			'ignore_sticky_posts' => true,
+			'post_type' => get_post_types( array(), 'names' ), // @todo Not ideal.
+			'post_status' => get_post_stati( array(), 'names' ), // @todo Not ideal.
+		) );
 		$post_setting_ids = array_map( array( 'WP_Customize_Post_Setting', 'get_post_setting_id' ), $query->posts );
 		if ( ! empty( $post_setting_ids ) ) {
 			$this->manager->add_dynamic_settings( $post_setting_ids );
@@ -923,44 +928,33 @@ final class WP_Customize_Posts {
 				'message' => sprintf( __( '%1$s could not be created: %2$s', 'customize-posts' ), $singular_name, $error->get_error_message() ),
 			);
 			wp_send_json_error( $data );
-		} else {
-			$post = $r;
-			$exported_settings = array();
+		}
 
-			$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
-			$setting_ids = array( $post_setting_id );
-			$this->manager->add_dynamic_settings( $setting_ids );
-			$post_setting = $this->manager->get_setting( $post_setting_id );
-			if ( ! $post_setting ) {
-				wp_send_json_error( array( 'message' => __( 'Failed to create setting', 'customize-posts' ) ) );
-			}
+		$post = $r;
 
-			$setting_ids = array_merge( $setting_ids, $this->register_post_type_meta_settings( $post ) );
-			foreach ( $setting_ids as $setting_id ) {
-				$setting = $this->manager->get_setting( $setting_id );
-				if ( ! $setting ) {
-					continue;
-				}
-				if ( preg_match( WP_Customize_Postmeta_Setting::SETTING_ID_PATTERN, $setting->id, $matches ) ) {
-					if ( isset( $matches['meta_key'] ) && isset( $params[ $matches['meta_key'] ] ) ) {
-						$this->manager->set_post_value( $setting_id, $params[ $matches['meta_key'] ] );
-						$setting->preview();
-					}
-				}
-				$exported_settings[ $setting->id ] = array_merge(
+		$setting_params = array();
+		$settings = $this->get_settings( array( $post->ID ) );
+		foreach ( $settings as $setting ) {
+			if ( $setting->check_capabilities() ) {
+				// @todo Handle case where there is post data and do $setting->preview()?
+				$setting_params[ $setting->id ] = array_merge(
 					$this->get_setting_params( $setting ),
 					array( 'dirty' => true )
 				);
 			}
-			$data = array(
-				'postId' => $post->ID,
-				'postSettingId' => $post_setting_id,
-				'settings' => $exported_settings,
-				'sectionId' => WP_Customize_Post_Setting::get_post_setting_id( $post ),
-				'url' => Edit_Post_Preview::get_preview_post_link( $post ),
-			);
-			wp_send_json_success( $data );
 		}
+
+		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+		if ( ! array_key_exists( $post_setting_id, $setting_params ) ) {
+			wp_send_json_error( array( 'message' => __( 'Failed to create setting', 'customize-posts' ) ) );
+		}
+
+		$data = array(
+			'postId' => $post->ID,
+			'postSettingId' => $post_setting_id,
+			'settings' => $setting_params,
+		);
+		wp_send_json_success( $data );
 	}
 
 	/**

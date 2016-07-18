@@ -60,6 +60,24 @@
 	} );
 
 	/**
+	 * Parse post/postmeta setting ID.
+	 *
+	 * @param {string} settingId Setting ID.
+	 * @returns {object|null} Parsed setting or null if error.
+	 */
+	component.parseSettingId = function parseSettingId( settingId ) {
+		var matches = settingId.match( /^(post(?:meta)?)\[(.+?)]\[(\d+)]$/ );
+		if ( ! matches ) {
+			return null;
+		}
+		return {
+			settingType: matches[1],
+			postType: matches[2],
+			postId: parseInt( matches[3], 10 )
+		};
+	};
+
+	/**
 	 * Get the post preview URL.
 	 *
 	 * @param {object} params - Parameters to configure the preview URL.
@@ -68,8 +86,7 @@
 	 * @return {string} Preview URL.
 	 */
 	component.getPreviewUrl = function( params ) {
-		var url = api.settings.url.home,
-		    args = {};
+		var url = api.settings.url.home, args = {};
 
 		if ( ! params || ! params.post_id ) {
 			throw new Error( 'Missing params' );
@@ -95,7 +112,7 @@
 	 * @return {jQuery.promise} Promise resolved with the added section.
 	 */
 	component.insertAutoDraftPost = function( postType ) {
-		var request, deferred = $.Deferred();
+		var request, deferred = $.Deferred(), done;
 
 		request = wp.ajax.post( 'customize-posts-insert-auto-draft', {
 			'customize-posts-nonce': api.Posts.data.nonce,
@@ -103,21 +120,38 @@
 			'post_type': postType
 		} );
 
-		request.done( function( response ) {
-			var sections = component.receivePreviewData( response );
-			if ( 0 === sections.length ) {
-				deferred.rejectWith( 'no_sections' );
-			} else {
-				deferred.resolve( _.extend(
-					{
-						section: sections[0],
-						setting: api( sections[0].id )
-					},
-					response
-				) );
-			}
-		} );
+		/**
+		 * Done inserting auto-draft post.
+		 *
+		 * @param {object} data Data.
+		 * @param {int}    data.postId Post ID.
+		 * @param {string} data.postSettingId Post setting ID.
+		 * @param {object} data.settings Setting, mapping setting IDs to setting params for posts/postmeta.
+		 * @returns {void}
+		 */
+		done = function doneInsertAutoDraftPost( data ) {
+			var section;
+			component.addPostSettings( data.settings );
 
+			if ( ! data.postSettingId || ! api.has( data.postSettingId ) ) {
+				deferred.reject( 'no_setting' );
+				return;
+			}
+
+			section = component.addPostSection( data.postSettingId );
+			if ( ! section ) {
+				deferred.reject( 'no_section' );
+				return;
+			}
+
+			deferred.resolve( {
+				postId: data.postId,
+				section: section,
+				setting: api( data.postSettingId )
+			} );
+		};
+
+		request.done( done );
 		request.fail( function( response ) {
 			var error = response || '';
 
@@ -126,7 +160,7 @@
 			}
 
 			console.error( error );
-			deferred.rejectWith( error );
+			deferred.reject( error );
 		} );
 
 		return deferred.promise();
@@ -136,10 +170,12 @@
 	 * Handle receiving customized-posts messages from the preview.
 	 *
 	 * @param {object} data Data from preview.
-	 * @return {jQuery.promise} Promise for ensured posts data.
+	 * @return {void}
 	 */
 	component.receivePreviewData = function( data ) {
-		return component.ensurePosts( data.postIds );
+		if ( data.postIds ) {
+			component.ensurePosts( data.postIds );
+		}
 	};
 
 	/**
@@ -193,31 +229,11 @@
 		} );
 
 		request.done( function( settings ) {
-			_.each( settings, function( settingArgs, id ) {
-				var setting, idParts, postId, postType;
+			component.addPostSettings( settings );
 
-				idParts = id.replace( /]/g, '' ).split( '[' );
-				postType = idParts[1];
-				postId = parseInt( idParts[2], 10 );
-				component.fetchedPosts[ postId ] = postType;
-
-				setting = api( id );
-				if ( ! setting ) {
-					setting = api.create( id, id, settingArgs.value, {
-						transport: settingArgs.transport,
-						previewer: api.previewer
-					} );
-
-					/*
-					 * Ensure that the setting gets created in the preview as well. When the post/postmeta settings
-					 * are sent to the preview, this is the point at which the related selective refresh partials
-					 * will also be created.
-					 */
-					api.previewer.send( 'customize-posts-setting', _.extend( { id: id }, settingArgs ) );
-				}
-
-				if ( 'post' === settingArgs.type ) {
-					component.addPostSection( postType, postId );
+			_.each( settings, function( settingParams, settingId ) {
+				if ( 'post' === settingParams.type ) {
+					component.addPostSection( settingId );
 				}
 			} );
 
@@ -231,33 +247,66 @@
 	};
 
 	/**
+	 * Add post settings.
+	 *
+	 * @param {object} settings Mapping of setting IDs to setting params for posts and postmeta.
+	 * @returns {int[]} Post IDs for added settings.
+	 */
+	component.addPostSettings = function addPostSettings( settings ) {
+		var postIds = [];
+		_.each( settings, function( settingArgs, id ) {
+			var setting, parsedSettingId = component.parseSettingId( id );
+			if ( ! parsedSettingId ) {
+				return;
+			}
+			postIds.push( parsedSettingId.postId );
+			component.fetchedPosts[ parsedSettingId.postId ] = parsedSettingId.postType;
+
+			setting = api( id );
+			if ( ! setting ) {
+				setting = api.create( id, id, settingArgs.value, {
+					transport: settingArgs.transport,
+					previewer: api.previewer
+				} );
+
+				/*
+				 * Ensure that the setting gets created in the preview as well. When the post/postmeta settings
+				 * are sent to the preview, this is the point at which the related selective refresh partials
+				 * will also be created.
+				 */
+				api.previewer.send( 'customize-posts-setting', _.extend( { id: id }, settingArgs ) );
+			}
+		} );
+		return _.unique( postIds );
+	};
+
+	/**
 	 * Add a section for a post.
 	 *
-	 * @param {string} postType - Post type.
-	 * @param {number} postId   - Post ID.
+	 * @param {string} settingId - Setting ID for post.
 	 * @return {wp.customize.Section|null} Added (or existing) section, or null if not able to be added.
 	 */
-	component.addPostSection = function( postType, postId ) {
-		var section, sectionId, panelId, sectionType, Constructor, htmlParser;
-		if ( ! component.data.postTypes[ postType ] ) {
+	component.addPostSection = function( settingId ) {
+		var section, parsedSettingId, sectionId, panelId, sectionType, Constructor, htmlParser, postTypeObj;
+		parsedSettingId = component.parseSettingId( settingId );
+		if ( ! parsedSettingId ) {
+			throw new Error( 'Bad setting ID' );
+		}
+		postTypeObj = component.data.postTypes[ parsedSettingId.postType ];
+
+		if ( ! postTypeObj ) {
 			if ( 'undefined' !== typeof console && console.error ) {
-				console.error( 'Unrecognized post type: ' + postType );
+				console.error( 'Unrecognized post type: ' + parsedSettingId.postType );
 			}
 			return null;
 		}
-		if ( ! component.data.postTypes[ postType ].show_in_customizer ) {
-			return null;
-		}
-		if ( 'number' !== typeof postId ) {
-			if ( 'undefined' !== typeof console && console.error ) {
-				console.error( 'Bad post id: ' + postId );
-			}
+		if ( ! postTypeObj.show_in_customizer ) {
 			return null;
 		}
 
-		sectionType = 'post[' + postType + ']';
-		panelId = 'posts[' + postType + ']';
-		sectionId = 'post[' + postType + '][' + String( postId ) + ']';
+		sectionType = 'post[' + parsedSettingId.postType + ']';
+		panelId = 'posts[' + parsedSettingId.postType + ']';
+		sectionId = 'post[' + parsedSettingId.postType + '][' + String( parsedSettingId.postId ) + ']';
 
 		if ( api.section.has( sectionId ) ) {
 			return api.section( sectionId );
@@ -270,8 +319,8 @@
 			params: {
 				id: sectionId,
 				panel: panelId,
-				post_type: postType,
-				post_id: postId,
+				post_type: parsedSettingId.postType,
+				post_id: parsedSettingId.postId,
 				active: true,
 				customizeAction: htmlParser.text()
 			}

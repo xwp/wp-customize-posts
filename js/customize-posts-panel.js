@@ -117,8 +117,11 @@
 				) );
 
 				// Navigate to the newly-created post if it is public; otherwise, refresh the preview.
-				if ( postObj['public'] && data.url ) {
-					api.previewer.previewUrl( data.url );
+				if ( postObj['public'] ) {
+					api.previewer.previewUrl( api.Posts.getPreviewUrl( {
+						post_type: panel.postType,
+						post_id: data.postId
+					} ) );
 				} else {
 					api.previewer.refresh();
 				}

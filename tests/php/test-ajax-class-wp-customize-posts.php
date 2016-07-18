@@ -95,10 +95,8 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 		$response = json_decode( $this->_last_response, true );
 
 		$this->assertTrue( $response['success'] );
-		$this->assertArrayHasKey( 'sectionId', $response['data'] );
 		$this->assertArrayHasKey( 'postId', $response['data'] );
 		$this->assertArrayHasKey( 'postSettingId', $response['data'] );
-		$this->assertArrayHasKey( 'url', $response['data'] );
 		$this->assertArrayHasKey( 'settings', $response['data'] );
 		$this->assertArrayHasKey( $response['data']['postSettingId'], $response['data']['settings'] );
 		$postmeta_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $response['data']['postId'] ), '_thumbnail_id' );
