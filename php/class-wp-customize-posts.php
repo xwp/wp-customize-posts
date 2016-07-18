@@ -604,7 +604,7 @@ final class WP_Customize_Posts {
 		?>
 		<div id="customize-posts-content-editor-pane">
 			<div id="customize-posts-content-editor-dragbar">
-				<span class="screen-reader-text"><?php _e( 'Resize Editor', 'customize-posts' ); ?></span>
+				<span class="screen-reader-text"><?php esc_html_e( 'Resize Editor', 'customize-posts' ); ?></span>
 			</div>
 
 			<?php
@@ -669,11 +669,15 @@ final class WP_Customize_Posts {
 	 */
 	public function render_templates() {
 		?>
-		<script type="text/html" id="tmpl-customize-posts-add-new">
-			<li class="customize-posts-add-new">
-				<button class="button-secondary add-new-post-stub">
-					<?php esc_html_e( 'Add New', 'customize-posts' ); ?> {{ data.label }}
-				</button>
+		<script type="text/html" id="tmpl-customize-posts-panel-actions">
+			<li class="customize-posts-panel-actions">
+				<# if ( data.can_create_posts ) { #>
+					<button class="button-secondary add-new-post-stub">
+						<span class="screen-reader-text">
+							{{ data.add_new_post_label }}
+						</span>
+					</button>
+				<# } #>
 			</li>
 		</script>
 
