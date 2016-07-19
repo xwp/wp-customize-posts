@@ -357,9 +357,9 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->posts->render_templates();
 		$markup = ob_get_contents();
 		ob_end_clean();
-		$this->assertContains( '<script type="text/html" id="tmpl-customize-posts-panel-actions">', $markup );
-		$this->assertContains( '<li class="customize-posts-panel-actions">', $markup );
-		$this->assertContains( '<button class="button-secondary add-new-post-stub">', $markup );
+		$this->assertContains( 'tmpl-customize-posts-navigation', $markup );
+		$this->assertContains( 'tmpl-customize-posts-trashed', $markup );
+		$this->assertContains( 'tmpl-customize-post-section-notifications', $markup );
 	}
 
 	/**

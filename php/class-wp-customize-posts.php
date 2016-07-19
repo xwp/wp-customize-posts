@@ -86,6 +86,7 @@ final class WP_Customize_Posts {
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'customize_controls_init', array( $this, 'enqueue_editor' ) );
 
+		add_filter( 'customize_refresh_nonces', array( $this, 'add_customize_nonce' ) );
 		add_action( 'customize_register', array( $this, 'register_constructs' ), 20 );
 		add_action( 'init', array( $this, 'register_meta' ), 100 );
 		add_filter( 'customize_dynamic_setting_args', array( $this, 'filter_customize_dynamic_setting_args' ), 10, 2 );
@@ -102,6 +103,7 @@ final class WP_Customize_Posts {
 
 		add_action( 'wp_ajax_customize-posts-insert-auto-draft', array( $this, 'ajax_insert_auto_draft_post' ) );
 		add_action( 'wp_ajax_customize-posts-fetch-settings', array( $this, 'ajax_fetch_settings' ) );
+		add_action( 'wp_ajax_customize-posts-select2-query', array( $this, 'handle_ajax_posts_select2_query' ) );
 
 		$this->preview = new WP_Customize_Posts_Preview( $this );
 	}
@@ -167,7 +169,7 @@ final class WP_Customize_Posts {
 			$wp_post_types['post']->description = __( 'Posts are entries listed in reverse chronological order, usually on the site homepage or on a dedicated posts page. Posts can be organized by tags or categories.', 'customize-posts' );
 		}
 		if ( post_type_exists( 'page' ) && empty( $wp_post_types['page']->description ) ) {
-			$wp_post_types['page']->description = __( 'Pages are ordered and organized hierarchcichally instead of being listed by date. The organization of pages generally corresponds to the primary nav menu.', 'customize-posts' );
+			$wp_post_types['page']->description = __( 'Pages are ordered and organized hierarchically instead of being listed by date. The organization of pages generally corresponds to the primary nav menu.', 'customize-posts' );
 		}
 	}
 
@@ -558,7 +560,6 @@ final class WP_Customize_Posts {
 		}
 
 		$exports = array(
-			'nonce' => wp_create_nonce( 'customize-posts' ),
 			'postTypes' => $post_types,
 			'postStatusChoices' => $this->get_post_status_choices(),
 			'authorChoices' => $this->get_author_choices(),
@@ -576,6 +577,7 @@ final class WP_Customize_Posts {
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
 				'openEditor' => __( 'Open Editor', 'customize-posts' ),
 				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
+				'jumpToPostPlaceholder' => __( 'Jump to %s', 'customize-posts' ),
 			),
 		);
 
@@ -669,18 +671,6 @@ final class WP_Customize_Posts {
 	 */
 	public function render_templates() {
 		?>
-		<script type="text/html" id="tmpl-customize-posts-panel-actions">
-			<li class="customize-posts-panel-actions">
-				<# if ( data.can_create_posts ) { #>
-					<button class="button-secondary add-new-post-stub">
-						<span class="screen-reader-text">
-							{{ data.add_new_post_label }}
-						</span>
-					</button>
-				<# } #>
-			</li>
-		</script>
-
 		<script id="tmpl-customize-posts-navigation" type="text/html">
 			<button class="customize-posts-navigation dashicons dashicons-visibility" tabindex="0">
 				<span class="screen-reader-text"><?php esc_html_e( 'Preview', 'customize-posts' ); ?> {{ data.label }}</span>
@@ -992,5 +982,119 @@ final class WP_Customize_Posts {
 		}
 
 		wp_send_json_success( $setting_params );
+	}
+
+	/**
+	 * Handle ajax request for posts.
+	 *
+	 * @global \WP_Customize_Manager $wp_customize
+	 */
+	public function handle_ajax_posts_select2_query() {
+		global $wp_customize;
+		if ( ! check_ajax_referer( 'customize-posts', 'customize-posts-nonce', false ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'bad_nonce' );
+		}
+		if ( ! current_user_can( 'customize' ) ) {
+			status_header( 403 );
+			wp_send_json_error( 'customize_not_allowed' );
+		}
+		if ( ! isset( $_POST['post_type'] ) ) {
+			wp_send_json_error( 'missing_post_type' );
+		}
+		$post_type = wp_unslash( $_POST['post_type'] );
+		$post_type_obj = get_post_type_object( $post_type );
+		if ( ! $post_type_obj ) {
+			wp_send_json_error( 'unknown_post_type' );
+		}
+		if ( ! current_user_can( $post_type_obj->cap->edit_posts ) ) {
+			wp_send_json_error( 'user_cannot_edit_post_type' );
+		}
+
+		$query_args = compact( 'post_type' );
+		if ( ! empty( $_POST['paged'] ) ) {
+			$query_args['paged'] = intval( $_POST['paged'] );
+		}
+		$query_args['paged'] = max( 1, $query_args['paged'] );
+
+		if ( ! empty( $_POST['s'] ) ) {
+			$query_args['s'] = wp_unslash( $_POST['s'] );
+		}
+
+		$query_args['post_status'] = get_post_stati( array( 'protected' => true ) );
+		if ( isset( $post_type_obj->cap->edit_private_posts ) && current_user_can( $post_type_obj->cap->edit_private_posts ) ) {
+			$query_args['post_status'] = array_merge(
+				$query_args['post_status'],
+				get_post_stati( array( 'private' => true ) )
+			);
+		}
+		if ( isset( $post_type_obj->cap->edit_published_posts ) && current_user_can( $post_type_obj->cap->edit_published_posts ) ) {
+			$query_args['post_status'] = array_merge(
+				$query_args['post_status'],
+				get_post_stati( array( 'public' => true ) )
+			);
+		}
+		if ( isset( $post_type_obj->cap->edit_others_posts ) || ! current_user_can( $post_type_obj->cap->edit_others_posts ) ) {
+			$query_args['post_author'] = get_current_user_id();
+		}
+
+		$include_featured_images = post_type_supports( $post_type, 'thumbnail' );
+		$query_args['update_post_term_cache'] = false;
+		$query_args['update_post_term_cache'] = $include_featured_images;
+
+		// Make sure that the Customizer state is applied in any query results.
+		if ( ! empty( $wp_customize ) ) {
+			foreach ( $wp_customize->settings() as $setting ) {
+				/**
+				 * Setting.
+				 *
+				 * @var \WP_Customize_Setting $setting
+				 */
+				$setting->preview();
+			}
+		}
+
+		$query = new \WP_Query( $query_args );
+
+		$results = array_map(
+			function( $post ) use ( $include_featured_images ) {
+				$result = array(
+					'id' => $post->ID,
+					'title' => htmlspecialchars_decode( html_entity_decode( get_the_title( $post ) ), ENT_QUOTES ),
+					'status' => get_post_status( $post ),
+					'date' => str_replace( ' ', 'T', $post->post_date_gmt ) . 'Z',
+					'author' => get_the_author_meta( 'display_name', $post->post_author ),
+				);
+				$result['text'] = $result['title'];
+				if ( $include_featured_images ) {
+					$attachment_id = get_post_thumbnail_id( $post->ID );
+					if ( $attachment_id ) {
+						$result['featured_image'] = wp_prepare_attachment_for_js( $attachment_id );
+					} else {
+						$result['featured_image'] = null;
+					}
+				}
+				return $result;
+			},
+			$query->posts
+		);
+
+		wp_send_json_success( array(
+			'results' => $results,
+			'pagination' => array(
+				'more' => $query_args['paged'] < $query->max_num_pages,
+			),
+		) );
+	}
+
+	/**
+	 * Add nonce for customize posts.
+	 *
+	 * @param array $nonces Nonces.
+	 * @return array Amended nonces.
+	 */
+	public function add_customize_nonce( $nonces ) {
+		$nonces['customize-posts'] = wp_create_nonce( 'customize-posts' );
+		return $nonces;
 	}
 }

@@ -115,7 +115,7 @@
 		var request, deferred = $.Deferred(), done;
 
 		request = wp.ajax.post( 'customize-posts-insert-auto-draft', {
-			'customize-posts-nonce': api.Posts.data.nonce,
+			'customize-posts-nonce': api.settings.nonce['customize-posts'],
 			'wp_customize': 'on',
 			'post_type': postType
 		} );
@@ -223,7 +223,7 @@
 		}
 
 		request = wp.ajax.post( 'customize-posts-fetch-settings', {
-			'customize-posts-nonce': api.Posts.data.nonce,
+			'customize-posts-nonce': api.settings.nonce['customize-posts'],
 			'wp_customize': 'on',
 			'post_ids': newPostIds
 		} );

@@ -8,8 +8,6 @@
 
 /**
  * Class WP_Customize_Posts_Panel
- *
- * @todo Add post selection as a UI element of the panel's template.
  */
 class WP_Customize_Posts_Panel extends WP_Customize_Panel {
 
@@ -65,6 +63,37 @@ class WP_Customize_Posts_Panel extends WP_Customize_Panel {
 	 */
 	public function print_template() {
 		?>
+		<script type="text/html" id="tmpl-customize-posts-<?php echo esc_attr( $this->post_type ) ?>-panel-actions">
+			<li class="customize-posts-panel-actions">
+				<select class="post-selection-lookup"></select>
+
+				<# if ( data.can_create_posts ) { #>
+					<button class="button-secondary add-new-post-stub">
+						<span class="screen-reader-text">
+							{{ data.add_new_post_label }}
+						</span>
+					</button>
+				<# } #>
+			</li>
+		</script>
+		<script type="text/html" id="tmpl-customize-posts-<?php echo esc_attr( $this->post_type ) ?>-panel-select2-selection-item">
+			<# if ( ! data.id ) { // placeholder #>
+				{{ data.text }}
+			<# } else { #>
+				<em><?php esc_html_e( 'Loading &ldquo;{{ data.text }}&rdquo;&hellip;', 'customize-posts' ) ?></em>
+			<# } #>
+		</script>
+		<script type="text/html" id="tmpl-customize-posts-<?php echo esc_attr( $this->post_type ) ?>-panel-select2-result-item">
+			<# if ( data.featured_image && data.featured_image.sizes && data.featured_image.sizes.thumbnail && data.featured_image.sizes.thumbnail.url ) { #>
+				<img class="customize-posts-select2-thumbnail" src="{{ data.featured_image.sizes.thumbnail.url }}">
+			<# } #>
+			<# if ( data.text ) { #>
+				{{ data.text }}
+			<# } else { #>
+				<em><?php esc_html_e( '(No title)', 'customize-posts' ); ?></em>
+			<# } #>
+		</script>
+
 		<script id="tmpl-customize-panel-posts-<?php echo esc_attr( $this->post_type ) ?>-notice" type="text/html">
 			<div class="customize-posts-panel-notice">
 				<em>{{ data.message }}</em>

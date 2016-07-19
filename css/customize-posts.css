@@ -211,3 +211,12 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 .customize-posts-content-editor-pane-open.mce-fullscreen .wp-full-overlay.collapsed .collapse-sidebar {
 	bottom: 8px !important;
 }
+
+.select2-container {
+	z-index: 1000000;
+}
+.customize-posts-select2-thumbnail {
+	height: 20px;
+	width: auto;
+	vertical-align: middle;
+}
