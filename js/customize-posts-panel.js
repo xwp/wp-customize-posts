@@ -84,6 +84,7 @@
 			panel.postSelectionLookupSelect2.on( 'select2:select', function() {
 				var postId = panel.postSelectionLookupSelect2.val(), ensuredPromise;
 				panel.postSelectionLookupSelect2.prop( 'disabled', true );
+				postId = parseInt( postId, 10 );
 				ensuredPromise = api.Posts.ensurePosts( [ postId ] );
 				ensuredPromise.done( function( postsData ) {
 					var postData = postsData[ postId ];

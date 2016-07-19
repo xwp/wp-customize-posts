@@ -88,8 +88,8 @@
 		}
 
 		if ( 'postmeta' === parsed.settingType ) {
-			parsed.postType = idParts[3];
-			if ( ! parsed.postType ) {
+			parsed.metaKey = idParts[3];
+			if ( ! parsed.metaKey ) {
 				return null;
 			}
 		}
