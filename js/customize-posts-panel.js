@@ -1,5 +1,5 @@
 /* global wp, jQuery */
-/* eslint consistent-this: [ "error", "panel" ], no-magic-numbers: [ "error", { "ignore": [0,1,500] } ] */
+/* eslint consistent-this: [ "error", "panel" ], no-magic-numbers: [ "error", { "ignore": [-1,0,1,500] } ] */
 
 (function( api, $ ) {
 	'use strict';
@@ -87,15 +87,17 @@
 				postId = parseInt( postId, 10 );
 				ensuredPromise = api.Posts.ensurePosts( [ postId ] );
 				ensuredPromise.done( function( postsData ) {
-					var postData = postsData[ postId ];
-					if ( postData ) {
-						postData.section.focus();
-						if ( postTypeObj['public'] ) {
-							api.previewer.previewUrl( api.Posts.getPreviewUrl( {
-								post_type: panel.postType,
-								post_id: postId
-							} ) );
-						}
+					var postData = postsData[ postId ], isPreviewVisible;
+					if ( ! postData ) {
+						return;
+					}
+					isPreviewVisible = -1 !== _.indexOf( postId, api.Posts.previewedQuery.get().postIds );
+					postData.section.focus();
+					if ( postTypeObj['public'] && ! isPreviewVisible ) {
+						api.previewer.previewUrl( api.Posts.getPreviewUrl( {
+							post_type: panel.postType,
+							post_id: postId
+						} ) );
 					}
 				} );
 				ensuredPromise.always( function() {

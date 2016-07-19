@@ -191,9 +191,12 @@
 	 * @param {object} data Data from preview.
 	 * @return {void}
 	 */
-	component.receivePreviewData = function( data ) {
-		if ( data.postIds ) {
-			component.ensurePosts( data.postIds );
+	component.receivePreviewData = function receivePreviewData( data ) {
+		var postIds;
+		component.previewedQuery.set( data );
+		postIds = component.previewedQuery.get().postIds;
+		if ( postIds.length > 0 ) {
+			component.ensurePosts( postIds );
 		}
 	};
 
@@ -377,7 +380,7 @@
 				section.active.set( false );
 				section.collapse();
 				section.container.remove();
-				if ( ! _.isUndefined( component.previewedQuery ) && true === component.previewedQuery.get().isSingular ) {
+				if ( true === component.previewedQuery.get().isSingular ) {
 					api.previewer.previewUrl( api.settings.url.home );
 				}
 			}
@@ -415,19 +418,22 @@
 		component.postIdInput = $( '<input type="hidden" id="post_ID" name="post_ID">' );
 		$( 'body' ).append( component.postIdInput );
 
-		api.previewer.bind( 'customized-posts', component.receivePreviewData );
+		component.previewedQuery = new api.Value();
+		component.previewedQuery.validate = function( query ) {
+			var mergedQuery = _.extend(
+				{
+					isSingular: false,
+					isPostPreview: false,
+					queriedPostId: 0,
+					postIds: []
+				},
+				query
+			);
+			return mergedQuery;
+		};
+		component.previewedQuery.set( {} );
 
-		// Track some of the recieved preview data from `customized-posts`.
-		component.previewedQuery = new api.Value( {} );
-		api.previewer.bind( 'customized-posts', function( data ) {
-			var query = {};
-			_.each( [ 'isSingular', 'isPostPreview', 'queriedPostId' ], function( key ) {
-				if ( ! _.isUndefined( data[ key ] ) ) {
-					query[ key ] = data[ key ];
-				}
-			} );
-			component.previewedQuery.set( query );
-		} );
+		api.previewer.bind( 'customized-posts', component.receivePreviewData );
 
 		// Purge trashed posts and update client settings with saved values from server.
 		api.bind( 'saved', function( data ) {
