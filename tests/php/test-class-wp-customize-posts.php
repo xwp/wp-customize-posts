@@ -120,6 +120,27 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test add_support.
+	 *
+	 * @covers WP_Customize_Posts::add_support()
+	 */
+	public function test_add_support() {
+		$posts = new WP_Customize_Posts( $this->wp_customize );
+		require_once __DIR__ . '/../../php/class-customize-posts-support.php';
+		require_once __DIR__ . '/../../php/class-customize-posts-theme-support.php';
+		require_once __DIR__ . '/../../php/class-customize-posts-plugin-support.php';
+		require_once __DIR__ . '/../../php/plugin-support/class-customize-posts-jetpack-support.php';
+
+		$this->assertEmpty( $posts->supports );
+		$posts->add_support( 'Customize_Posts_Jetpack_Support' );
+		$this->assertArrayHasKey( 'Customize_Posts_Jetpack_Support', $posts->supports );
+
+		$posts = new WP_Customize_Posts( $this->wp_customize );
+		$posts->add_support( new Customize_Posts_Jetpack_Support( $posts ) );
+		$this->assertArrayHasKey( 'Customize_Posts_Jetpack_Support', $posts->supports );
+	}
+
+	/**
 	 * Test that show_in_customizer being set includes the post type.
 	 *
 	 * @see WP_Customize_Posts::get_post_types()
