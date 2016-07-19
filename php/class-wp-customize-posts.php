@@ -1059,29 +1059,7 @@ final class WP_Customize_Posts {
 		}
 
 		$query = new WP_Query( $query_args );
-
-		$results = array_map(
-			function( $post ) use ( $include_featured_images ) {
-				$result = array(
-					'id' => $post->ID,
-					'title' => htmlspecialchars_decode( html_entity_decode( get_the_title( $post ) ), ENT_QUOTES ),
-					'status' => get_post_status( $post ),
-					'date' => str_replace( ' ', 'T', $post->post_date_gmt ) . 'Z',
-					'author' => get_the_author_meta( 'display_name', $post->post_author ),
-				);
-				$result['text'] = $result['title'];
-				if ( $include_featured_images ) {
-					$attachment_id = get_post_thumbnail_id( $post->ID );
-					if ( $attachment_id ) {
-						$result['featured_image'] = wp_prepare_attachment_for_js( $attachment_id );
-					} else {
-						$result['featured_image'] = null;
-					}
-				}
-				return $result;
-			},
-			$query->posts
-		);
+		$results = array_map( array( $this, 'get_select2_item_result' ), $query->posts );
 
 		wp_send_json_success( array(
 			'results' => $results,
@@ -1089,6 +1067,33 @@ final class WP_Customize_Posts {
 				'more' => $query_args['paged'] < $query->max_num_pages,
 			),
 		) );
+	}
+
+	/**
+	 * Get Select2 Item Result Data.
+	 *
+	 * @param WP_Post $post Post.
+	 * @return array Item results.
+	 */
+	public function get_select2_item_result( $post ) {
+		$include_featured_images = post_type_supports( $post->post_type, 'thumbnail' );
+		$result = array(
+			'id' => $post->ID,
+			'title' => htmlspecialchars_decode( html_entity_decode( get_the_title( $post ) ), ENT_QUOTES ),
+			'status' => get_post_status( $post ),
+			'date' => str_replace( ' ', 'T', $post->post_date_gmt ) . 'Z',
+			'author' => get_the_author_meta( 'display_name', $post->post_author ),
+		);
+		$result['text'] = $result['title'];
+		if ( $include_featured_images ) {
+			$attachment_id = get_post_thumbnail_id( $post->ID );
+			if ( $attachment_id ) {
+				$result['featured_image'] = wp_prepare_attachment_for_js( $attachment_id );
+			} else {
+				$result['featured_image'] = null;
+			}
+		}
+		return $result;
 	}
 
 	/**
