@@ -1,4 +1,5 @@
 /* global jQuery, wp, _, _wpCustomizePostsExports, console */
+/* eslint no-magic-numbers: [ "error", { "ignore": [0,1,2,3,4] } ] */
 
 (function( api, $ ) {
 	'use strict';
@@ -66,15 +67,33 @@
 	 * @returns {object|null} Parsed setting or null if error.
 	 */
 	component.parseSettingId = function parseSettingId( settingId ) {
-		var matches = settingId.match( /^(post(?:meta)?)\[(.+?)]\[(\d+)]$/ );
-		if ( ! matches ) {
+		var parsed = {}, idParts;
+		idParts = settingId.replace( /]/g, '' ).split( '[' );
+		if ( 'post' !== idParts[0] && 'postmeta' !== idParts[0] ) {
 			return null;
 		}
-		return {
-			settingType: matches[1],
-			postType: matches[2],
-			postId: parseInt( matches[3], 10 )
-		};
+		parsed.settingType = idParts[0];
+		if ( 'post' === parsed.settingType && idParts.length !== 3 || 'postmeta' === parsed.settingType && idParts.length !== 4 ) {
+			return null;
+		}
+
+		parsed.postType = idParts[1];
+		if ( ! parsed.postType ) {
+			return null;
+		}
+
+		parsed.postId = parseInt( idParts[2], 10 );
+		if ( isNaN( parsed.postId ) || parsed.postId <= 0 ) {
+			return null;
+		}
+
+		if ( 'postmeta' === parsed.settingType ) {
+			parsed.postType = idParts[3];
+			if ( ! parsed.postType ) {
+				return null;
+			}
+		}
+		return parsed;
 	};
 
 	/**
