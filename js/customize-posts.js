@@ -73,7 +73,7 @@
 			return null;
 		}
 		parsed.settingType = idParts[0];
-		if ( 'post' === parsed.settingType && idParts.length !== 3 || 'postmeta' === parsed.settingType && idParts.length !== 4 ) {
+		if ( 'post' === parsed.settingType && 3 !== idParts.length || 'postmeta' === parsed.settingType && 4 !== idParts.length ) {
 			return null;
 		}
 
