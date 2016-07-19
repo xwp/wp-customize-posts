@@ -40,18 +40,18 @@
 		 * @return {void}
 		 */
 		setupPanelActions: function() {
-			var panel = this, descriptionContainer, panelActionsTemplate, postObj, actionsContainer;
+			var panel = this, descriptionContainer, panelActionsTemplate, postTypeObj, actionsContainer;
 
 			descriptionContainer = panel.container.find( '.panel-meta:first' );
 			panelActionsTemplate = wp.template( 'customize-posts-' + panel.postType + '-panel-actions' );
-			postObj = api.Posts.data.postTypes[ panel.postType ];
+			postTypeObj = api.Posts.data.postTypes[ panel.postType ];
 
 			panel.queriedPostSelect2ItemSelectionTemplate = wp.template( 'customize-posts-' + panel.postType + '-panel-select2-selection-item' );
 			panel.queriedPostSelect2ItemResultTemplate = wp.template( 'customize-posts-' + panel.postType + '-panel-select2-result-item' );
 
 			actionsContainer = $( panelActionsTemplate( {
-				can_create_posts: postObj.current_user_can.create_posts,
-				add_new_post_label: postObj.labels.add_new_item
+				can_create_posts: postTypeObj.current_user_can.create_posts,
+				add_new_post_label: postTypeObj.labels.add_new_item
 			} ) );
 
 			panel.postSelectionLookupSelect2 = actionsContainer.find( '.post-selection-lookup' ).select2({
@@ -77,7 +77,7 @@
 					return m;
 				},
 				multiple: false,
-				placeholder: api.Posts.data.l10n.jumpToPostPlaceholder.replace( '%s', postObj.labels.singular_name ),
+				placeholder: api.Posts.data.l10n.jumpToPostPlaceholder.replace( '%s', postTypeObj.labels.singular_name ),
 				width: '80%' // @todo Flex box?
 			});
 
@@ -89,6 +89,12 @@
 					var postData = postsData[ postId ];
 					if ( postData ) {
 						postData.section.focus();
+						if ( postTypeObj['public'] ) {
+							api.previewer.previewUrl( api.Posts.getPreviewUrl( {
+								post_type: panel.postType,
+								post_id: postId
+							} ) );
+						}
 					}
 				} );
 				ensuredPromise.always( function() {
@@ -97,7 +103,7 @@
 				} );
 			} );
 
-			if ( postObj.current_user_can.create_posts ) {
+			if ( postTypeObj.current_user_can.create_posts ) {
 				actionsContainer.find( '.add-new-post-stub' ).on( 'click', function( event ) {
 					panel.onClickAddPostButton( event );
 				} );
