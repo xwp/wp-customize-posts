@@ -12,7 +12,7 @@
 class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Controller {
 
 	/**
-	 * Post var for the post thumnail nonce.
+	 * Post var for the post thumbnail nonce.
 	 *
 	 * @var string
 	 */
