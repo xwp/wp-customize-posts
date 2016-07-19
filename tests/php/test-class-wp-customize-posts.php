@@ -532,4 +532,43 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$wp_customize->start_previewing_theme();
 		$this->assertContains( 'preview=true', get_permalink( $this->post_id ) );
 	}
+
+	/**
+	 * Test get_select2_item_result.
+	 *
+	 * @covers WP_Customize_Posts::get_select2_item_result()
+	 */
+	public function test_get_select2_item_result() {
+		$page_id = $this->factory()->post->create( array(
+			'post_title' => 'Foo',
+			'post_type' => 'page',
+			'post_status' => 'draft',
+		) );
+		$page = get_post( $page_id );
+		$result = $this->posts->get_select2_item_result( $page );
+		$this->assertInternalType( 'array', $result );
+		$this->assertArrayHasKey( 'id', $result );
+		$this->assertArrayHasKey( 'title', $result );
+		$this->assertEquals( 'Foo', $result['title'] );
+		$this->assertArrayHasKey( 'status', $result );
+		$this->assertEquals( 'draft', $result['status'] );
+		$this->assertArrayHasKey( 'date', $result );
+		$this->assertArrayHasKey( 'author', $result );
+		$this->assertArrayHasKey( 'text', $result );
+		$this->assertEquals( $result['text'], $result['title'] );
+		$this->assertArrayHasKey( 'featured_image', $result );
+		$this->assertNull( $result['featured_image'] );
+
+		$attachment_id = $this->factory()->attachment->create_object( 'foo.jpg', 0, array(
+			'post_mime_type' => 'image/jpeg'
+		) );
+		set_post_thumbnail( $page_id, $attachment_id );
+		$result = $this->posts->get_select2_item_result( $page );
+		$this->assertInternalType( 'array', $result['featured_image'] );
+		$this->assertArrayHasKey( 'filename', $result['featured_image'] );
+
+		remove_post_type_support( 'page', 'thumbnail' );
+		$result = $this->posts->get_select2_item_result( $page );
+		$this->assertArrayNotHasKey( 'featured_image', $result );
+	}
 }
