@@ -274,7 +274,7 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 	 *
 	 * @covers WP_Customize_Posts::handle_ajax_posts_select2_query()
 	 */
-	public function handle_ajax_posts_select2_query() {
+	public function test_handle_ajax_posts_select2_query() {
 		$this->markTestIncomplete();
 	}
 
