@@ -196,13 +196,12 @@
 		 *
 		 * @returns {void}
 		 */
-		setupPostNavigation: function() {
-			var section = this,
-			    sectionNavigationButton,
-			    sectionContainer = section.container.closest( '.accordion-section' ),
-			    sectionTitle = sectionContainer.find( '.customize-section-title:first' ),
-			    sectionNavigationButtonTemplate = wp.template( 'customize-posts-navigation' ),
-			    postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+		setupPostNavigation: function setupPostNavigation() {
+			var section = this, sectionNavigationButton, sectionContainer, sectionTitle, sectionNavigationButtonTemplate, postTypeObj;
+			sectionContainer = section.container.closest( '.accordion-section' );
+			sectionTitle = sectionContainer.find( '.customize-section-title:first' );
+			sectionNavigationButtonTemplate = wp.template( 'customize-posts-navigation' );
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 
 			// Short-circuit showing a link if the post type is not publicly queryable anyway.
 			if ( ! postTypeObj['public'] ) {
@@ -215,10 +214,9 @@
 			sectionTitle.append( sectionNavigationButton );
 
 			// Hide the link when the post is currently in the preview.
-			api.previewer.bind( 'customized-posts', function( data ) {
-				if ( ! _.isUndefined( data.queriedPostId ) ) {
-					sectionNavigationButton.toggle( section.params.post_id !== data.queriedPostId );
-				}
+			sectionNavigationButton.toggle( section.params.post_id !== api.Posts.previewedQuery.get().queriedPostId );
+			api.Posts.previewedQuery.bind( function( query ) {
+				sectionNavigationButton.toggle( section.params.post_id !== query.queriedPostId );
 			} );
 
 			sectionNavigationButton.on( 'click', function( event ) {
