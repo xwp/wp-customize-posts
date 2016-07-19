@@ -87,13 +87,13 @@
 				postId = parseInt( postId, 10 );
 				ensuredPromise = api.Posts.ensurePosts( [ postId ] );
 				ensuredPromise.done( function( postsData ) {
-					var postData = postsData[ postId ], isPreviewVisible;
+					var postData = postsData[ postId ], isPostVisibleInPreview;
 					if ( ! postData ) {
 						return;
 					}
-					isPreviewVisible = -1 !== _.indexOf( postId, api.Posts.previewedQuery.get().postIds );
+					isPostVisibleInPreview = -1 !== _.indexOf( api.Posts.previewedQuery.get().postIds, postId );
 					postData.section.focus();
-					if ( postTypeObj['public'] && ! isPreviewVisible ) {
+					if ( postTypeObj['public'] && ! isPostVisibleInPreview ) {
 						api.previewer.previewUrl( api.Posts.getPreviewUrl( {
 							post_type: panel.postType,
 							post_id: postId
