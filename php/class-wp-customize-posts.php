@@ -109,6 +109,17 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Add nonce for customize posts.
+	 *
+	 * @param array $nonces Nonces.
+	 * @return array Amended nonces.
+	 */
+	public function add_customize_nonce( $nonces ) {
+		$nonces['customize-posts'] = wp_create_nonce( 'customize-posts' );
+		return $nonces;
+	}
+
+	/**
 	 * Instantiate a Customize Posts support class.
 	 *
 	 * The support class must extend `Customize_Posts_Support` or one of it's subclasses.
@@ -873,12 +884,14 @@ final class WP_Customize_Posts {
 		if ( method_exists( $setting, 'json' ) ) { // New in 4.6-alpha.
 			return $setting->json();
 		} else {
+			// @codeCoverageIgnoreStart
 			return array(
 				'value' => $setting->js_value(),
 				'transport' => $setting->transport,
 				'dirty' => $setting->dirty,
 				'type' => $setting->type,
 			);
+			// @codeCoverageIgnoreEnd
 		}
 	}
 
@@ -1094,16 +1107,5 @@ final class WP_Customize_Posts {
 			}
 		}
 		return $result;
-	}
-
-	/**
-	 * Add nonce for customize posts.
-	 *
-	 * @param array $nonces Nonces.
-	 * @return array Amended nonces.
-	 */
-	public function add_customize_nonce( $nonces ) {
-		$nonces['customize-posts'] = wp_create_nonce( 'customize-posts' );
-		return $nonces;
 	}
 }

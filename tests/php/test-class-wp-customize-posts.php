@@ -120,6 +120,19 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test add_customize_nonce.
+	 *
+	 * @covers WP_Customize_Posts::add_customize_nonce()
+	 */
+	public function test_add_customize_nonce() {
+		$posts = new WP_Customize_Posts( $this->wp_customize );
+		$nonces = array( 'foo' => wp_create_nonce( 'foo' ) );
+		$amended_nonces = $posts->add_customize_nonce( $nonces );
+		$this->assertArrayHasKey( 'foo', $amended_nonces );
+		$this->assertArrayHasKey( 'customize-posts', $amended_nonces );
+	}
+
+	/**
 	 * Test add_support.
 	 *
 	 * @covers WP_Customize_Posts::add_support()
