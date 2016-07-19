@@ -376,7 +376,7 @@ final class WP_Customize_Posts {
 	/**
 	 * Add all postmeta settings for all registered postmeta for a given post type instance.
 	 *
-	 * @param \WP_Post $post Post ID.
+	 * @param WP_Post $post Post ID.
 	 * @return array
 	 */
 	public function register_post_type_meta_settings( $post ) {
@@ -593,7 +593,7 @@ final class WP_Customize_Posts {
 		// Note that WP_Customize_Widgets::print_footer_scripts() happens at priority 10.
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'maybe_do_admin_print_footer_scripts' ), 20 );
 
-		// @todo These should be included in \_WP_Editors::editor_settings()
+		// @todo These should be included in _WP_Editors::editor_settings()
 		if ( false === has_action( 'customize_controls_print_footer_scripts', array( '_WP_Editors', 'enqueue_scripts' ) ) ) {
 			add_action( 'customize_controls_print_footer_scripts', array( '_WP_Editors', 'enqueue_scripts' ) );
 		}
@@ -817,7 +817,7 @@ final class WP_Customize_Posts {
 			'post_modified' => $date_local, // @todo Eliminate in favor of just post_modified_gmt?
 			'post_modified_gmt' => $date_gmt,
 			'meta_input' => array(
-				// Dummy postmeta so that snapshot meta queries won't fail in \WP_Customize_Posts_Preview::get_previewed_posts_for_query().
+				// Dummy postmeta so that snapshot meta queries won't fail in WP_Customize_Posts_Preview::get_previewed_posts_for_query().
 				'_snapshot_auto_draft' => true,
 			),
 		);
@@ -839,7 +839,7 @@ final class WP_Customize_Posts {
 	 * @return WP_Customize_Post_Setting[]|WP_Customize_Postmeta_Setting[] Settings.
 	 */
 	public function get_settings( array $post_ids ) {
-		$query = new \WP_Query( array(
+		$query = new WP_Query( array(
 			'post__in' => $post_ids,
 			'ignore_sticky_posts' => true,
 			'post_type' => get_post_types( array(), 'names' ), // @todo Not ideal.
@@ -991,7 +991,7 @@ final class WP_Customize_Posts {
 	/**
 	 * Handle ajax request for posts.
 	 *
-	 * @global \WP_Customize_Manager $wp_customize
+	 * @global WP_Customize_Manager $wp_customize
 	 */
 	public function handle_ajax_posts_select2_query() {
 		global $wp_customize;
@@ -1052,13 +1052,13 @@ final class WP_Customize_Posts {
 				/**
 				 * Setting.
 				 *
-				 * @var \WP_Customize_Setting $setting
+				 * @var WP_Customize_Setting $setting
 				 */
 				$setting->preview();
 			}
 		}
 
-		$query = new \WP_Query( $query_args );
+		$query = new WP_Query( $query_args );
 
 		$results = array_map(
 			function( $post ) use ( $include_featured_images ) {
