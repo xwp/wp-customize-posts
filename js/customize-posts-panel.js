@@ -30,38 +30,7 @@
 			}
 
 			panel.deferred.embedded.done(function() {
-				var descriptionContainer, noPreviewedPostsNotice, shouldShowNotice;
-				descriptionContainer = panel.container.find( '.panel-meta:first' );
-
-				noPreviewedPostsNotice = $( $.trim( wp.template( 'customize-panel-posts-' + panel.postType + '-notice' )({
-					message: panel.params.noPostsLoadedMessage
-				}) ) );
-				descriptionContainer.append( noPreviewedPostsNotice );
-
-				shouldShowNotice = function() {
-					return 0 === _.filter( panel.sections(), function( section ) {
-						return section.active();
-					} ).length;
-				};
-
 				panel.setupPanelActions();
-
-				/*
-				 * Set the initial visibility state for rendered notice.
-				 * Update the visibility of the notice whenever a reflow happens.
-				 */
-				noPreviewedPostsNotice.toggle( shouldShowNotice() );
-				api.previewer.deferred.active.done( function() {
-					noPreviewedPostsNotice.toggle( shouldShowNotice() );
-				});
-				api.bind( 'pane-contents-reflowed', function() {
-					var duration = 'resolved' === api.previewer.deferred.active.state() ? 'fast' : 0;
-					if ( shouldShowNotice() ) {
-						noPreviewedPostsNotice.slideDown( duration );
-					} else {
-						noPreviewedPostsNotice.slideUp( duration );
-					}
-				});
 			});
 		},
 

@@ -124,8 +124,6 @@ class Test_WP_Customize_Posts_Panel extends WP_UnitTestCase {
 		$panel->print_template();
 		$markup = ob_get_contents();
 		ob_end_clean();
-		$this->assertContains( 'tmpl-customize-panel-posts-post-notice', $markup );
-		$this->assertContains( '<div class="customize-posts-panel-notice">', $markup );
 		$this->assertContains( 'tmpl-customize-posts-' . $panel->post_type . '-panel-actions', $markup );
 		$this->assertContains( '<li class="customize-posts-panel-actions">', $markup );
 		$this->assertContains( '<button class="button-secondary add-new-post-stub">', $markup );
@@ -139,7 +137,6 @@ class Test_WP_Customize_Posts_Panel extends WP_UnitTestCase {
 	public function test_json() {
 		$panel = $this->panel();
 		$json = $panel->json();
-		$this->assertArrayHasKey( 'noPostsLoadedMessage', $json );
 		$this->assertArrayHasKey( 'post_type', $json );
 		$this->assertEquals( 'post', $json['post_type'] );
 	}
