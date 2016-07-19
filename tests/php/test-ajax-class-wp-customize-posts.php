@@ -260,6 +260,24 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 		$this->die_args = array();
 	}
 
+	/**
+	 * Test ajax_fetch_settings.
+	 *
+	 * @covers WP_Customize_Posts::ajax_fetch_settings()
+	 */
+	public function test_ajax_fetch_settings() {
+		$this->markTestIncomplete();
+	}
+
+	/**
+	 * Test handle_ajax_posts_select2_query.
+	 *
+	 * @covers WP_Customize_Posts::handle_ajax_posts_select2_query()
+	 */
+	public function handle_ajax_posts_select2_query() {
+		$this->markTestIncomplete();
+	}
+
 	protected $die_args = array();
 
 	/**
