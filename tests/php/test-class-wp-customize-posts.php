@@ -139,10 +139,10 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 */
 	public function test_add_support() {
 		$posts = new WP_Customize_Posts( $this->wp_customize );
-		require_once __DIR__ . '/../../php/class-customize-posts-support.php';
-		require_once __DIR__ . '/../../php/class-customize-posts-theme-support.php';
-		require_once __DIR__ . '/../../php/class-customize-posts-plugin-support.php';
-		require_once __DIR__ . '/../../php/plugin-support/class-customize-posts-jetpack-support.php';
+		require_once dirname( __FILE__ ) . '/../../php/class-customize-posts-support.php';
+		require_once dirname( __FILE__ ) . '/../../php/class-customize-posts-theme-support.php';
+		require_once dirname( __FILE__ ) . '/../../php/class-customize-posts-plugin-support.php';
+		require_once dirname( __FILE__ ) . '/../../php/plugin-support/class-customize-posts-jetpack-support.php';
 
 		$this->assertEmpty( $posts->supports );
 		$posts->add_support( 'Customize_Posts_Jetpack_Support' );
