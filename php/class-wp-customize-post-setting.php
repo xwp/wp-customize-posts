@@ -54,10 +54,10 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	public $default = array(
 		'post_author' => 0,
 		'post_name' => '',
-		'post_date' => '',
+		'post_date' => '', // @todo Eliminate post_date from setting and only pass around post_date?
 		'post_date_gmt' => '',
 		'post_mime_type' => '',
-		'post_modified' => '',
+		'post_modified' => '', // @todo Eliminate post_modified from setting and only pass around post_modified_gmt?
 		'post_modified_gmt' => '',
 		'post_content' => '',
 		'post_content_filtered' => '',
@@ -356,6 +356,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		/*
 		 * If the post date is empty (due to having been new or a draft) and status
 		 * is not 'draft' or 'pending', set date to now.
+		 * @todo Eliminate post_date from even being included in the setting data and only use post_date_gmt?
 		 */
 		if ( empty( $post_data['post_date'] ) || '0000-00-00 00:00:00' === $post_data['post_date'] ) {
 			if ( empty( $post_data['post_date_gmt'] ) || '0000-00-00 00:00:00' === $post_data['post_date_gmt'] ) {
@@ -366,6 +367,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		}
 
 		// Validate the date.
+		// @todo Change this to post_date_gmt?
 		$mm = substr( $post_data['post_date'], 5, 2 );
 		$jj = substr( $post_data['post_date'], 8, 2 );
 		$aa = substr( $post_data['post_date'], 0, 4 );
@@ -382,6 +384,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			}
 		}
 
+		// @todo Eliminate post_modified from setting and only use post_modified_gmt?
 		if ( $update || '0000-00-00 00:00:00' === $post_data['post_date'] ) {
 			$post_data['post_modified']     = current_time( 'mysql' );
 			$post_data['post_modified_gmt'] = current_time( 'mysql', 1 );
