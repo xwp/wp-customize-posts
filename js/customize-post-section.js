@@ -539,14 +539,14 @@
 			 * Update the editor when the setting changes its state.
 			 */
 			setting.bind( function( newPostData, oldPostData ) {
-				var editor;
+				var editor, textarea = $( '#customize-posts-content' );
 				if ( control.editorExpanded.get() && ! control.editorSyncSuspended && newPostData.post_content !== oldPostData.post_content ) {
 					control.editorSyncSuspended = true;
 					editor = tinyMCE.get( 'customize-posts-content' );
 					if ( editor && ! editor.isHidden() ) {
 						editor.setContent( wp.editor.autop( newPostData.post_content ) );
 					} else {
-						$( '#customize-posts-content' ).val( newPostData.post_content );
+						textarea.val( newPostData.post_content );
 					}
 					control.editorSyncSuspended = false;
 				}
@@ -564,7 +564,11 @@
 				$( document.body ).toggleClass( 'customize-posts-content-editor-pane-open', expanded );
 
 				if ( expanded ) {
-					editor.setContent( wp.editor.autop( setting().post_content ) );
+					if ( editor && ! editor.isHidden() ) {
+						editor.setContent( wp.editor.autop( setting().post_content ) );
+					} else {
+						textarea.val( setting().post_content );
+					}
 					editor.on( 'input change keyup', control.onVisualEditorChange );
 					textarea.on( 'input', control.onTextEditorChange );
 					control.resizeEditor( window.innerHeight - editorPane.height() );
