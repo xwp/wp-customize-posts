@@ -3,7 +3,7 @@
 
 (function( api, $ ) {
 	'use strict';
-	var defaultSectionPriorities = {}, checkboxSynchronizerUpdate, checkboxSynchronizerRefresh;
+	var checkboxSynchronizerUpdate, checkboxSynchronizerRefresh;
 
 	if ( ! api.Posts ) {
 		api.Posts = {};
@@ -43,49 +43,70 @@
 	api.Posts.PostSection = api.Section.extend({
 
 		initialize: function( id, options ) {
-			var section = this, args;
+			var section = this, args, postTypeObj, setting, setPriority, isDefaultPriority;
 
 			args = options || {};
 			args.params = args.params || {};
-			if ( ! args.params.post_type || ! api.Posts.data.postTypes[ args.params.post_type ] ) {
+			postTypeObj = api.Posts.data.postTypes[ args.params.post_type ];
+			if ( ! postTypeObj ) {
 				throw new Error( 'Missing post_type' );
 			}
 			if ( _.isNaN( args.params.post_id ) ) {
 				throw new Error( 'Missing post_id' );
 			}
-			if ( ! api.has( id ) ) {
-				throw new Error( 'No setting id' );
+			setting = api( id );
+			if ( ! setting || ! setting() ) {
+				throw new Error( 'Setting must be created up front.' );
 			}
+			setting.findControls = section.findPostSettingControls;
 			if ( ! args.params.title ) {
 				args.params.title = api( id ).get().post_title;
 			}
 			if ( ! args.params.title ) {
 				args.params.title = api.Posts.data.l10n.noTitle;
 			}
-			api( id, function( setting ) {
-				setting.findControls = section.findPostSettingControls;
-			} );
 
 			section.postFieldControls = {};
 
-			if ( ! args.params.priority ) {
-				if ( ! defaultSectionPriorities[ args.params.post_type ] ) {
-					defaultSectionPriorities[ args.params.post_type ] = api.Section.prototype.defaults.priority;
-				}
-				defaultSectionPriorities[ args.params.post_type ] += 1;
-				args.params.priority = defaultSectionPriorities[ args.params.post_type ];
-			}
-
 			section.contentsEmbedded = $.Deferred();
+
+			isDefaultPriority = 'undefined' === typeof args.params.priority;
 			api.Section.prototype.initialize.call( section, id, args );
 
-			section.active.validate = function( active ) {
-				var setting = api( section.id );
-				if ( setting ) {
-					return setting._dirty || active;
-				} else {
-					return true;
-				}
+			// Let priority (position) of section be determined by menu_order or post_date_gmt.
+			if ( isDefaultPriority ) {
+				setPriority = function( postData ) {
+					var priority;
+					if ( ! postData ) {
+						return;
+					}
+					if ( postTypeObj.hierarchical || postTypeObj.supports['page-attributes'] ) {
+						priority = postData.menu_order;
+					} else {
+						priority = Date.parse( postData.post_date_gmt.replace( ' ', 'T' ) );
+
+						// Handle case where post_date_gmt is "0000-00-00 00:00:00".
+						if ( isNaN( priority ) ) {
+							priority = 0;
+						} else {
+							priority = new Date().valueOf() - priority;
+						}
+					}
+
+					section.priority.set( priority );
+				};
+				setPriority( setting() );
+				setting.bind( setPriority );
+			}
+
+			/*
+			 * Prevent a section added from being hidden due dynamic section
+			 * not being present in the preview, as PHP does not generate the
+			 * sections. This can be eliminated once this core defect is resolved:
+			 * https://core.trac.wordpress.org/ticket/37270
+			 */
+			section.active.validate = function() {
+				return true;
 			};
 		},
 
@@ -175,13 +196,12 @@
 		 *
 		 * @returns {void}
 		 */
-		setupPostNavigation: function() {
-			var section = this,
-			    sectionNavigationButton,
-			    sectionContainer = section.container.closest( '.accordion-section' ),
-			    sectionTitle = sectionContainer.find( '.customize-section-title:first' ),
-			    sectionNavigationButtonTemplate = wp.template( 'customize-posts-navigation' ),
-			    postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+		setupPostNavigation: function setupPostNavigation() {
+			var section = this, sectionNavigationButton, sectionContainer, sectionTitle, sectionNavigationButtonTemplate, postTypeObj;
+			sectionContainer = section.container.closest( '.accordion-section' );
+			sectionTitle = sectionContainer.find( '.customize-section-title:first' );
+			sectionNavigationButtonTemplate = wp.template( 'customize-posts-navigation' );
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 
 			// Short-circuit showing a link if the post type is not publicly queryable anyway.
 			if ( ! postTypeObj['public'] ) {
@@ -194,10 +214,9 @@
 			sectionTitle.append( sectionNavigationButton );
 
 			// Hide the link when the post is currently in the preview.
-			api.previewer.bind( 'customized-posts', function( data ) {
-				if ( ! _.isUndefined( data.queriedPostId ) ) {
-					sectionNavigationButton.toggle( section.params.post_id !== data.queriedPostId );
-				}
+			sectionNavigationButton.toggle( section.params.post_id !== api.Posts.previewedQuery.get().queriedPostId );
+			api.Posts.previewedQuery.bind( function( query ) {
+				sectionNavigationButton.toggle( section.params.post_id !== query.queriedPostId );
 			} );
 
 			sectionNavigationButton.on( 'click', function( event ) {
@@ -313,7 +332,7 @@
 				}
 			} );
 
-			// Override preview trying to de-activate control not present in preview context.
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
 			control.active.validate = function() {
 				return true;
 			};
@@ -362,7 +381,7 @@
 				setting.bind( setPlaceholder );
 			} );
 
-			// Override preview trying to de-activate control not present in preview context.
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
 			control.active.validate = function() {
 				return true;
 			};
@@ -431,7 +450,7 @@
 				}
 			} );
 
-			// Override preview trying to de-activate control not present in preview context.
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
 			control.active.validate = function() {
 				return true;
 			};
@@ -711,7 +730,7 @@
 				}, resizeDelay );
 			} );
 
-			// Override preview trying to de-activate control not present in preview context.
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
 			control.active.validate = function() {
 				return true;
 			};
@@ -758,7 +777,7 @@
 				}
 			} );
 
-			// Override preview trying to de-activate control not present in preview context.
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
 			control.active.validate = function() {
 				return true;
 			};
@@ -795,7 +814,7 @@
 				}
 			} );
 
-			// Override preview trying to de-activate control not present in preview context.
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
 			control.active.validate = function() {
 				return true;
 			};
@@ -834,7 +853,7 @@
 				}
 			} );
 
-			// Override preview trying to de-activate control not present in preview context.
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
 			control.active.validate = function() {
 				return true;
 			};

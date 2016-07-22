@@ -120,6 +120,40 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test add_customize_nonce.
+	 *
+	 * @covers WP_Customize_Posts::add_customize_nonce()
+	 */
+	public function test_add_customize_nonce() {
+		$posts = new WP_Customize_Posts( $this->wp_customize );
+		$nonces = array( 'foo' => wp_create_nonce( 'foo' ) );
+		$amended_nonces = $posts->add_customize_nonce( $nonces );
+		$this->assertArrayHasKey( 'foo', $amended_nonces );
+		$this->assertArrayHasKey( 'customize-posts', $amended_nonces );
+	}
+
+	/**
+	 * Test add_support.
+	 *
+	 * @covers WP_Customize_Posts::add_support()
+	 */
+	public function test_add_support() {
+		$posts = new WP_Customize_Posts( $this->wp_customize );
+		require_once dirname( __FILE__ ) . '/../../php/class-customize-posts-support.php';
+		require_once dirname( __FILE__ ) . '/../../php/class-customize-posts-theme-support.php';
+		require_once dirname( __FILE__ ) . '/../../php/class-customize-posts-plugin-support.php';
+		require_once dirname( __FILE__ ) . '/../../php/plugin-support/class-customize-posts-jetpack-support.php';
+
+		$this->assertEmpty( $posts->supports );
+		$posts->add_support( 'Customize_Posts_Jetpack_Support' );
+		$this->assertArrayHasKey( 'Customize_Posts_Jetpack_Support', $posts->supports );
+
+		$posts = new WP_Customize_Posts( $this->wp_customize );
+		$posts->add_support( new Customize_Posts_Jetpack_Support( $posts ) );
+		$this->assertArrayHasKey( 'Customize_Posts_Jetpack_Support', $posts->supports );
+	}
+
+	/**
 	 * Test that show_in_customizer being set includes the post type.
 	 *
 	 * @see WP_Customize_Posts::get_post_types()
@@ -230,7 +264,6 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 */
 	public function test_register_constructs() {
 		add_action( 'customize_register', array( $this, 'customize_register' ), 15 );
-		add_action( 'customize_register', array( $this, 'customize_register_after' ), 25 );
 
 		$this->wp_customize->set_preview_url( get_permalink( $this->post_id ) );
 		$posts = new WP_Customize_Posts( $this->wp_customize );
@@ -255,19 +288,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Filter to test after registration.
-	 */
-	public function customize_register_after() {
-		$posts = new WP_Customize_Posts( $this->wp_customize );
-		foreach ( $posts->manager->settings() as $setting ) {
-			if ( $setting instanceof WP_Customize_Post_Setting ) {
-				$this->assertInstanceOf( 'WP_Customize_Post_Section', $posts->manager->get_section( $setting->id ) );
-			}
-		}
-	}
-
-	/**
-	 * Test that the previed post is retuned.
+	 * Test that the previewed post is returned.
 	 *
 	 * @see WP_Customize_Posts::get_previewed_post()
 	 */
@@ -370,9 +391,9 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->posts->render_templates();
 		$markup = ob_get_contents();
 		ob_end_clean();
-		$this->assertContains( '<script type="text/html" id="tmpl-customize-posts-add-new">', $markup );
-		$this->assertContains( '<li class="customize-posts-add-new">', $markup );
-		$this->assertContains( '<button class="button-secondary add-new-post-stub">', $markup );
+		$this->assertContains( 'tmpl-customize-posts-navigation', $markup );
+		$this->assertContains( 'tmpl-customize-posts-trashed', $markup );
+		$this->assertContains( 'tmpl-customize-post-section-notifications', $markup );
 	}
 
 	/**
@@ -510,5 +531,44 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertNotContains( 'preview=true', get_permalink( $this->post_id ) );
 		$wp_customize->start_previewing_theme();
 		$this->assertContains( 'preview=true', get_permalink( $this->post_id ) );
+	}
+
+	/**
+	 * Test get_select2_item_result.
+	 *
+	 * @covers WP_Customize_Posts::get_select2_item_result()
+	 */
+	public function test_get_select2_item_result() {
+		$page_id = $this->factory()->post->create( array(
+			'post_title' => 'Foo',
+			'post_type' => 'page',
+			'post_status' => 'draft',
+		) );
+		$page = get_post( $page_id );
+		$result = $this->posts->get_select2_item_result( $page );
+		$this->assertInternalType( 'array', $result );
+		$this->assertArrayHasKey( 'id', $result );
+		$this->assertArrayHasKey( 'title', $result );
+		$this->assertEquals( 'Foo', $result['title'] );
+		$this->assertArrayHasKey( 'status', $result );
+		$this->assertEquals( 'draft', $result['status'] );
+		$this->assertArrayHasKey( 'date', $result );
+		$this->assertArrayHasKey( 'author', $result );
+		$this->assertArrayHasKey( 'text', $result );
+		$this->assertEquals( $result['text'], $result['title'] );
+		$this->assertArrayHasKey( 'featured_image', $result );
+		$this->assertNull( $result['featured_image'] );
+
+		$attachment_id = $this->factory()->attachment->create_object( 'foo.jpg', 0, array(
+			'post_mime_type' => 'image/jpeg'
+		) );
+		set_post_thumbnail( $page_id, $attachment_id );
+		$result = $this->posts->get_select2_item_result( $page );
+		$this->assertInternalType( 'array', $result['featured_image'] );
+		$this->assertArrayHasKey( 'filename', $result['featured_image'] );
+
+		remove_post_type_support( 'page', 'thumbnail' );
+		$result = $this->posts->get_select2_item_result( $page );
+		$this->assertArrayNotHasKey( 'featured_image', $result );
 	}
 }

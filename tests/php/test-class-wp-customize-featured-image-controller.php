@@ -162,65 +162,7 @@ class Test_WP_Customize_Featured_Image_Controller extends WP_UnitTestCase {
 		$controller = new WP_Customize_Featured_Image_Controller();
 		$controller->setup_selective_refresh();
 		$this->assertEquals( 10, has_filter( 'post_thumbnail_html', array( $controller, 'filter_post_thumbnail_html' ) ) );
-		$this->assertEquals( 10, has_action( 'wp_footer', array( $controller, 'add_partials' ) ) );
 		$this->assertEquals( 10, has_filter( 'customize_dynamic_partial_args', array( $controller, 'filter_customize_dynamic_partial_args' ) ) );
-	}
-
-	/**
-	 * Test add_partials().
-	 *
-	 * @see WP_Customize_Featured_Image_Controller::add_partials()
-	 * @see WP_Customize_Featured_Image_Controller::filter_customize_dynamic_partial_args()
-	 * @see WP_Customize_Featured_Image_Controller::filter_post_thumbnail_html()
-	 */
-	public function test_add_partials() {
-		$controller = new WP_Customize_Featured_Image_Controller();
-		$controller->setup_selective_refresh();
-		$this->assertInternalType( 'array', $controller->add_partials() );
-		$this->assertEmpty( $controller->add_partials() );
-
-		$post = get_post( $this->factory()->post->create() );
-		$attachment_id = $this->factory()->attachment->create_object( 'foo.jpg', 0, array(
-			'post_mime_type' => 'image/jpeg'
-		) );
-
-		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $controller->meta_key );
-		$setting = new WP_Customize_Postmeta_Setting( $this->wp_customize, $setting_id );
-		$this->wp_customize->add_setting( $setting );
-		$partials = $controller->add_partials();
-		$this->assertCount( 1, $partials );
-
-		$partial = array_shift( $partials );
-		$this->assertInstanceOf( 'WP_Customize_Partial', $partial );
-		$this->assertEquals( $setting_id, $partial->id );
-		$this->assertEquals( array( $setting_id ), $partial->settings );
-		$this->assertEquals( array( $controller, 'render_post_thumbnail_partial' ), $partial->render_callback );
-		$this->assertTrue( $partial->container_inclusive );
-		$this->assertEquals( '[data-customize-partial-id="' . $partial->id . '"]', $partial->selector );
-
-		$html = get_the_post_thumbnail( $post->ID );
-		$this->assertEquals( '', $html );
-
-		set_post_thumbnail( $post->ID, $attachment_id );
-		$html = get_the_post_thumbnail( $post->ID );
-		$this->assertContains( sprintf( 'data-customize-partial-id="%s"', $partial->id ), $html );
-		$this->assertContains( 'data-customize-partial-placement-context', $html );
-
-		$partial_html = $controller->render_post_thumbnail_partial( $partial, array() );
-		$this->assertEquals( $partial_html, $html );
-	}
-
-	/**
-	 * Test add_partials() without Customizer.
-	 *
-	 * @see WP_Customize_Featured_Image_Controller::add_partials()
-	 */
-	public function test_add_partials_without_customize() {
-		$controller = new WP_Customize_Featured_Image_Controller();
-		$GLOBALS['wp_customize'] = null;
-		$partials = $controller->add_partials();
-		$this->assertInternalType( 'array', $partials );
-		$this->assertCount( 0, $partials );
 	}
 
 	/**
@@ -236,6 +178,73 @@ class Test_WP_Customize_Featured_Image_Controller extends WP_UnitTestCase {
 		$this->assertInternalType( 'array', $args );
 
 		$this->assertFalse( $controller->filter_customize_dynamic_partial_args( false, 'unknown' ) );
+	}
+
+	/**
+	 * Test filter_post_thumbnail_html method.
+	 *
+	 * @covers WP_Customize_Featured_Image_Controller::filter_post_thumbnail_html()
+	 */
+	public function test_filter_post_thumbnail_html() {
+		$post_id = $this->factory()->post->create();
+		$attachment_id = $this->factory()->attachment->create_object( 'foo.jpg', 0, array(
+			'post_mime_type' => 'image/jpeg'
+		) );
+		set_post_thumbnail( $post_id, $attachment_id );
+
+		$controller = new WP_Customize_Featured_Image_Controller();
+
+		$html = get_the_post_thumbnail( $post_id );
+		$this->assertNotContains( 'data-customize-featured-image-partial="1"', $html );
+		$this->assertNotContains( 'data-customize-partial-placement-context', $html );
+
+		$controller->setup_selective_refresh();
+		$html = get_the_post_thumbnail( $post_id );
+		$this->assertContains( 'data-customize-featured-image-partial="1"', $html );
+		$this->assertContains( 'data-customize-partial-placement-context', $html );
+
+		$html = get_the_post_thumbnail( $post_id, 'large', array( 'data-foo' => 'bar' ) );
+		$this->assertTrue( (bool) preg_match( '/data-customize-partial-placement-context="(.+?)"/', $html, $matches ) );
+		$context = json_decode( html_entity_decode( $matches[1] ), true );
+
+		$this->assertEquals( 'large', $context['size'] );
+		$this->assertEquals( $post_id, $context['post_id'] );
+		$this->assertInternalType( 'array', $context['attr'] );
+		$this->assertEquals( 'bar', $context['attr']['data-foo'] );
+	}
+
+	/**
+	 * Test render_post_thumbnail_partial method.
+	 *
+	 * @covers WP_Customize_Featured_Image_Controller::render_post_thumbnail_partial()
+	 */
+	public function test_render_post_thumbnail_partial() {
+		$post_id = $this->factory()->post->create();
+		$attachment_id = $this->factory()->attachment->create_object( 'foo.jpg', 0, array(
+			'post_mime_type' => 'image/jpeg'
+		) );
+
+		$controller = new WP_Customize_Featured_Image_Controller();
+		$controller->register_meta( $this->wp_customize->posts );
+		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $post_id ), '_thumbnail_id' );
+
+		$this->wp_customize->set_post_value( $setting_id, $attachment_id );
+
+		$this->wp_customize->register_dynamic_settings();
+		foreach ( $this->wp_customize->settings() as $setting ) {
+			$setting->preview();
+		}
+
+		$partial = new WP_Customize_Partial( $this->wp_customize->selective_refresh, $setting_id, $controller->filter_customize_dynamic_partial_args( false, $setting_id ) );
+		$context = array(
+			'size' => 'large',
+			'attr' => array( 'data-foo' => 'bar' ),
+		);
+
+		$html = $partial->render( $context );
+		$this->assertContains( 'size-large', $html );
+		$this->assertContains( 'data-foo="bar"', $html );
+		$this->assertContains( 'foo.jpg', $html );
 	}
 
 	/**
@@ -279,6 +288,9 @@ class Test_WP_Customize_Featured_Image_Controller extends WP_UnitTestCase {
 		$post = get_post( $this->factory()->post->create() );
 		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $controller->meta_key );
 		$setting = new WP_Customize_Postmeta_Setting( $this->wp_customize, $setting_id );
+		$attachment_id = $this->factory()->attachment->create_object( 'foo.jpg', 0, array(
+			'post_mime_type' => 'image/jpeg'
+		) );
 
 		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 		if ( $has_setting_validation ) {
@@ -287,6 +299,8 @@ class Test_WP_Customize_Featured_Image_Controller extends WP_UnitTestCase {
 		} else {
 			$this->assertEquals( '', $controller->sanitize_setting( 'bad', $setting ) );
 		}
+
+		$this->assertEquals( $attachment_id, $controller->sanitize_setting( $attachment_id, $setting ) );
 	}
 
 	/**
@@ -301,7 +315,7 @@ class Test_WP_Customize_Featured_Image_Controller extends WP_UnitTestCase {
 		$setting = new WP_Customize_Postmeta_Setting( $this->wp_customize, $setting_id );
 
 		$this->assertEquals( 1, $controller->js_value( '1', $setting ) );
-		$this->assertEquals( '', $controller->js_value( '0', $setting ) );
-		$this->assertEquals( '', $controller->js_value( -123, $setting ) );
+		$this->assertEquals( 0, $controller->js_value( '0', $setting ) );
+		$this->assertEquals( 0, $controller->js_value( -123, $setting ) );
 	}
 }

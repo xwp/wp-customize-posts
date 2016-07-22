@@ -95,10 +95,8 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 		$response = json_decode( $this->_last_response, true );
 
 		$this->assertTrue( $response['success'] );
-		$this->assertArrayHasKey( 'sectionId', $response['data'] );
 		$this->assertArrayHasKey( 'postId', $response['data'] );
 		$this->assertArrayHasKey( 'postSettingId', $response['data'] );
-		$this->assertArrayHasKey( 'url', $response['data'] );
 		$this->assertArrayHasKey( 'settings', $response['data'] );
 		$this->assertArrayHasKey( $response['data']['postSettingId'], $response['data']['settings'] );
 		$postmeta_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $response['data']['postId'] ), '_thumbnail_id' );
@@ -260,6 +258,24 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 		$this->assertContains( 'Set featured image', $json );
 		$this->assertContains( 'set_post_thumbnail_nonce', $json );
 		$this->die_args = array();
+	}
+
+	/**
+	 * Test ajax_fetch_settings.
+	 *
+	 * @covers WP_Customize_Posts::ajax_fetch_settings()
+	 */
+	public function test_ajax_fetch_settings() {
+		$this->markTestIncomplete();
+	}
+
+	/**
+	 * Test handle_ajax_posts_select2_query.
+	 *
+	 * @covers WP_Customize_Posts::handle_ajax_posts_select2_query()
+	 */
+	public function test_handle_ajax_posts_select2_query() {
+		$this->markTestIncomplete();
 	}
 
 	protected $die_args = array();

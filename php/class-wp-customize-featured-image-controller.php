@@ -11,7 +11,26 @@
  */
 class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Controller {
 
+	/**
+	 * Post var for the post thumbnail nonce.
+	 *
+	 * @var string
+	 */
 	const EDIT_POST_SCREEN_UPDATE_NONCE_ARG_NAME = 'set_post_thumbnail_nonce';
+
+	/**
+	 * Attribute that is used to select featured images.
+	 *
+	 * @var string
+	 */
+	const SELECTED_ATTRIBUTE = 'data-customize-featured-image-partial';
+
+	/**
+	 * The container_inclusive param for the partials.
+	 *
+	 * @var string
+	 */
+	const PARTIAL_CONTAINER_INCLUSIVE = true;
 
 	/**
 	 * Meta key.
@@ -44,6 +63,13 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	public $setting_transport = 'postMessage';
 
 	/**
+	 * Selector for featured image partials.
+	 *
+	 * @var string
+	 */
+	public $partial_selector;
+
+	/**
 	 * Default value.
 	 *
 	 * Note that this needs to be '' instead of -1 due to has_post_thumbnail()
@@ -67,6 +93,8 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	 * @param array $args Args.
 	 */
 	public function __construct( array $args = array() ) {
+		$this->partial_selector = '[' . self::SELECTED_ATTRIBUTE . ']';
+
 		parent::__construct( $args );
 		$this->override_default_edit_post_screen_functionality();
 		add_action( 'customize_register', array( $this, 'setup_selective_refresh' ) );
@@ -98,7 +126,11 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	public function enqueue_customize_preview_scripts() {
 		$handle = 'customize-preview-featured-image';
 		wp_enqueue_script( $handle );
-		wp_add_inline_script( $handle, 'CustomizePreviewFeaturedImage.init()' );
+		$exports = array(
+			'partialSelector' => $this->partial_selector,
+			'partialContainerInclusive' => self::PARTIAL_CONTAINER_INCLUSIVE,
+		);
+		wp_add_inline_script( $handle, sprintf( 'CustomizePreviewFeaturedImage.init( %s )', wp_json_encode( $exports ) ) );
 	}
 
 	/**
@@ -234,33 +266,7 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	 */
 	public function setup_selective_refresh() {
 		add_filter( 'post_thumbnail_html', array( $this, 'filter_post_thumbnail_html' ), 10, 5 );
-		add_action( 'wp_footer', array( $this, 'add_partials' ) );
 		add_filter( 'customize_dynamic_partial_args', array( $this, 'filter_customize_dynamic_partial_args' ), 10, 2 );
-	}
-
-	/**
-	 * Add partials for the featured image.
-	 *
-	 * @global WP_Customize_Manager $wp_customize
-	 *
-	 * @return array List of WP_Customize_Partial instances added.
-	 */
-	public function add_partials() {
-		global $wp_customize;
-		if ( empty( $wp_customize ) || empty( $wp_customize->selective_refresh ) ) {
-			return array();
-		}
-		$partials = array();
-
-		foreach ( $wp_customize->settings() as $setting ) {
-			if ( $setting instanceof WP_Customize_Postmeta_Setting && $this->meta_key === $setting->meta_key ) {
-				$partial_id = $setting->id;
-				$partial_args = array(); // Note this is populated via WP_Customize_Featured_Image_Controller::filter_customize_dynamic_partial_args().
-				$partials[] = $wp_customize->selective_refresh->add_partial( $partial_id, $partial_args );
-			}
-		}
-
-		return $partials;
 	}
 
 	/**
@@ -283,9 +289,9 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 			$partial_args['render_callback'] = array( $this, 'render_post_thumbnail_partial' );
 			$partial_args['settings'] = array( $setting_id );
 			$partial_args['primary_setting'] = $setting_id;
-			$partial_args['container_inclusive'] = true;
-			$partial_args['selector'] = '[data-customize-partial-id="' . $partial_id . '"]';
 			$partial_args['type'] = 'featured_image';
+			$partial_args['selector'] = $this->partial_selector;
+			$partial_args['container_inclusive'] = self::PARTIAL_CONTAINER_INCLUSIVE;
 		}
 		return $partial_args;
 	}
@@ -313,9 +319,7 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 			'attr' => $attr,
 		);
 		$replacement = '$1';
-		$post = get_post( $post_id );
-		$partial_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $this->meta_key );
-		$replacement .= sprintf( ' data-customize-partial-id="%s" ', esc_attr( $partial_id ) );
+		$replacement .= sprintf( ' %s="1" ', self::SELECTED_ATTRIBUTE );
 		$replacement .= sprintf( ' data-customize-partial-placement-context="%s" ', esc_attr( wp_json_encode( $context ) ) );
 		$html = preg_replace( '#(<\w+)#', $replacement, $html, 1 );
 		return $html;
@@ -418,7 +422,7 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 		unset( $setting );
 		$meta_value = intval( $meta_value );
 		if ( $meta_value <= 0 ) {
-			$meta_value = '';
+			$meta_value = 0;
 		}
 		return $meta_value;
 	}

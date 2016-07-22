@@ -22,6 +22,13 @@ final class WP_Customize_Posts_Preview {
 	public $component;
 
 	/**
+	 * Post IDs for all posts that were seen by the_posts filters.
+	 *
+	 * @var int[]
+	 */
+	public $queried_post_ids = array();
+
+	/**
 	 * Previewed post settings by post ID.
 	 *
 	 * @var WP_Customize_Post_Setting[]
@@ -63,14 +70,13 @@ final class WP_Customize_Posts_Preview {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_filter( 'customize_dynamic_partial_args', array( $this, 'filter_customize_dynamic_partial_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_partial_class', array( $this, 'filter_customize_dynamic_partial_class' ), 10, 3 );
-		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_add_dynamic_post_settings_and_sections' ), 1000 );
-		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_add_dynamic_postmeta_settings' ), 1000, 2 );
+		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_tally_previewed_posts' ), 1000 );
 		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
 		add_filter( 'edit_post_link', array( $this, 'filter_edit_post_link' ), 10, 2 );
 		add_filter( 'get_edit_post_link', array( $this, 'filter_get_edit_post_link' ), 10, 2 );
 		add_filter( 'get_avatar', array( $this, 'filter_get_avatar' ), 10, 6 );
-		add_filter( 'infinite_scroll_results', array( $this, 'export_registered_settings' ), 10 );
-		add_filter( 'customize_render_partials_response', array( $this, 'export_registered_settings' ), 10 );
+		add_filter( 'infinite_scroll_results', array( $this, 'amend_with_queried_post_ids' ) );
+		add_filter( 'customize_render_partials_response', array( $this, 'amend_with_queried_post_ids' ) );
 	}
 
 	/**
@@ -192,24 +198,14 @@ final class WP_Customize_Posts_Preview {
 	}
 
 	/**
-	 * Create dynamic post/postmeta settings and sections for posts queried in the page.
+	 * Tally the posts that are previewed in the page.
 	 *
 	 * @param array $posts Posts.
 	 * @return array
 	 */
-	public function filter_the_posts_to_add_dynamic_post_settings_and_sections( array $posts ) {
-		foreach ( $posts as &$post ) {
-			$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
-			$this->component->manager->add_dynamic_settings( array( $post_setting_id ) );
-			$setting = $this->component->manager->get_setting( $post_setting_id );
-			if ( $setting instanceof WP_Customize_Post_Setting && ! $this->component->manager->get_section( $setting->id ) ) {
-				$section = new WP_Customize_Post_Section( $this->component->manager, $setting->id, array(
-					'panel' => sprintf( 'posts[%s]', $setting->post_type ),
-					'post_setting' => $setting,
-				) );
-				$this->component->manager->add_section( $section );
-			}
-			$this->component->register_post_type_meta_settings( $post->ID );
+	public function filter_the_posts_to_tally_previewed_posts( array $posts ) {
+		foreach ( $posts as $post ) {
+			$this->queried_post_ids[] = $post->ID;
 		}
 		return $posts;
 	}
@@ -491,18 +487,6 @@ final class WP_Customize_Posts_Preview {
 	}
 
 	/**
-	 * Filter postmeta to dynamically add postmeta settings.
-	 *
-	 * @param null|array|string $value     The value get_metadata() should return - a single metadata value, or an array of values.
-	 * @param int               $object_id Object ID.
-	 * @return mixed Value.
-	 */
-	public function filter_get_post_meta_to_add_dynamic_postmeta_settings( $value, $object_id ) {
-		$this->component->register_post_type_meta_settings( $object_id );
-		return $value;
-	}
-
-	/**
 	 * Filter postmeta to inject customized post meta values.
 	 *
 	 * @param null|array|string $value     The value get_metadata() should return - a single metadata value, or an array of values.
@@ -774,21 +758,6 @@ final class WP_Customize_Posts_Preview {
 			$queried_post_id = get_queried_object_id();
 		}
 
-		$setting_properties = array();
-		foreach ( $this->component->manager->settings() as $setting ) {
-			if ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting ) {
-				if ( ! $setting->check_capabilities() ) {
-					continue;
-				}
-
-				// Note that the value and dirty properties are already exported in wp.customize.settings.
-				$setting_properties[ $setting->id ] = array(
-					'transport' => $setting->transport,
-					'type' => $setting->type,
-				);
-			}
-		}
-
 		$exported_partial_schema = array();
 		foreach ( $this->get_post_field_partial_schema() as $key => $schema ) {
 			unset( $schema['render_callback'] ); // PHP callbacks are generally not JSON-serializable.
@@ -799,7 +768,7 @@ final class WP_Customize_Posts_Preview {
 			'isPostPreview' => is_preview(),
 			'isSingular' => is_singular(),
 			'queriedPostId' => $queried_post_id,
-			'settingProperties' => $setting_properties,
+			'postIds' => array_values( array_unique( $this->queried_post_ids ) ),
 			'partialSchema' => $exported_partial_schema,
 		);
 
@@ -815,32 +784,8 @@ final class WP_Customize_Posts_Preview {
 	 * @param array $results Array of Infinite Scroll results.
 	 * @return array $results Results.
 	 */
-	public function export_registered_settings( $results ) {
-
-		$results['customize_post_settings'] = array();
-		foreach ( $this->component->manager->settings() as $setting ) {
-			/**
-			 * Setting.
-			 *
-			 * @var WP_Customize_Setting $setting
-			 */
-			if ( ! $setting->check_capabilities() ) {
-				continue;
-			}
-			if ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting ) {
-				if ( method_exists( $setting, 'json' ) ) { // New in 4.6-alpha.
-					$results['customize_post_settings'][ $setting->id ] = $setting->json();
-				} else {
-					$results['customize_post_settings'][ $setting->id ] = array(
-						'value' => $setting->js_value(),
-						'transport' => $setting->transport,
-						'dirty' => $setting->dirty,
-						'type' => $setting->type,
-					);
-				}
-			}
-		}
-
+	public function amend_with_queried_post_ids( $results ) {
+		$results['queried_post_ids'] = array_unique( $this->queried_post_ids );
 		return $results;
 	}
 

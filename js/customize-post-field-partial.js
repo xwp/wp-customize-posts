@@ -1,5 +1,6 @@
 /* global wp */
 /* eslint consistent-this: [ "error", "partial" ] */
+/* eslint-disable no-magic-numbers */
 
 (function( api ) {
 	'use strict';
@@ -12,10 +13,11 @@
 	 * A partial representing a post field.
 	 *
 	 * @class
+	 * @augments wp.customize.previewPosts.DeferredPartial
 	 * @augments wp.customize.selectiveRefresh.Partial
 	 * @augments wp.customize.Class
 	 */
-	api.previewPosts.PostFieldPartial = api.selectiveRefresh.Partial.extend({
+	api.previewPosts.PostFieldPartial = api.previewPosts.DeferredPartial.extend({
 
 		/**
 		 * @inheritdoc
@@ -34,7 +36,46 @@
 			args.params.field_id = matches[3];
 			args.params.placement = matches[4] || '';
 
-			api.selectiveRefresh.Partial.prototype.initialize.call( partial, id, args );
+			api.previewPosts.DeferredPartial.prototype.initialize.call( partial, id, args );
+
+			partial.addInstantPreviews();
+		},
+
+		/**
+		 * Use JavaScript to apply approximate instant previews while waiting for selective refresh to respond.
+		 *
+		 * This implements for post settings what was implemented for site title and tagline in #33738,
+		 * where JS-based instant previews allow for immediate feedback with a low-fidelity while waiting
+		 * for a high-fidelity PHP-rendered preview.
+		 *
+		 * @link https://github.com/xwp/wp-customize-posts/issues/43
+		 * @link https://core.trac.wordpress.org/ticket/33738
+		 * @returns {void}
+		 */
+		addInstantPreviews: function() {
+			var partial = this, settingId;
+			if ( 1 !== partial.settings().length ) {
+				throw new Error( 'Expected one single setting.' );
+			}
+			settingId = partial.settings()[0];
+
+			// Post title.
+			if ( 'post_title' === partial.params.field_id ) {
+				api( settingId, function( setting ) {
+					setting.bind( function( postData ) {
+						if ( ! postData || ! _.isString( postData.post_title ) ) {
+							return;
+						}
+						_.each( partial.placements(), function( placement ) {
+							var target = placement.container.find( '> a' );
+							if ( ! target.length ) {
+								target = placement.container;
+							}
+							target.text( postData.post_title );
+						} );
+					} );
+				} );
+			}
 		},
 
 		/**
@@ -56,7 +97,7 @@
 			if ( _.isObject( newValue ) && _.isObject( oldValue ) && partial.params.field_id && newValue[ partial.params.field_id ] === oldValue[ partial.params.field_id ] ) {
 				return false;
 			}
-			return api.selectiveRefresh.Partial.prototype.isRelatedSetting.call( partial, setting );
+			return api.previewPosts.DeferredPartial.prototype.isRelatedSetting.call( partial, setting, newValue, oldValue );
 		}
 
 	});
