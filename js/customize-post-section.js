@@ -554,12 +554,7 @@
 			 * to the post setting.
 			 */
 			control.editorExpanded.bind( function( expanded ) {
-				var editor, textarea = $( '#customize-posts-content' ),
-					tinymceContentWrap = $( '#wp-customize-posts-content-wrap' ),
-					tmceTab = $( '#customize-posts-content-tmce' ),
-					htmlTab = $( '#customize-posts-content-html' ),
-					htmlSelectedClass = 'customize-posts-content-html-selected';
-
+				var editor, textarea = $( '#customize-posts-content' );
 				editor = tinyMCE.get( 'customize-posts-content' );
 				control.updateEditorToggleExpandButtonLabel( expanded );
 				$( document.body ).toggleClass( 'customize-posts-content-editor-pane-open', expanded );
@@ -569,9 +564,6 @@
 					editor.on( 'input change keyup', control.onVisualEditorChange );
 					textarea.on( 'input', control.onTextEditorChange );
 					control.resizeEditor( window.innerHeight - editorPane.height() );
-					if ( editorPane.hasClass( htmlSelectedClass ) ) {
-						htmlTab.click();
-					}
 				} else {
 					editor.off( 'input change keyup', control.onVisualEditorChange );
 					textarea.off( 'input', control.onTextEditorChange );
@@ -581,13 +573,6 @@
 					$( '.mce-active' ).click();
 					preview.css( 'bottom', '' );
 					collapse.css( 'bottom', '' );
-
-					if ( tinymceContentWrap.hasClass( 'html-active' ) ) {
-						tmceTab.click();
-						editorPane.addClass( htmlSelectedClass );
-					} else{
-						editorPane.removeClass( htmlSelectedClass );
-					}
 				}
 			} );
 
