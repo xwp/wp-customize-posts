@@ -543,7 +543,11 @@
 				if ( control.editorExpanded.get() && ! control.editorSyncSuspended && newPostData.post_content !== oldPostData.post_content ) {
 					control.editorSyncSuspended = true;
 					editor = tinyMCE.get( 'customize-posts-content' );
-					editor.setContent( wp.editor.autop( newPostData.post_content ) );
+					if ( editor && ! editor.isHidden() ) {
+						editor.setContent( wp.editor.autop( newPostData.post_content ) );
+					} else {
+						$( '#customize-posts-content' ).val( newPostData.post_content );
+					}
 					control.editorSyncSuspended = false;
 				}
 			} );
