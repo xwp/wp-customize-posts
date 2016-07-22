@@ -585,7 +585,7 @@
 					if ( tinymceContentWrap.hasClass( 'html-active' ) ) {
 						tmceTab.click();
 						editorPane.addClass( htmlSelectedClass );
-					} else {
+					} else{
 						editorPane.removeClass( htmlSelectedClass );
 					}
 				}
