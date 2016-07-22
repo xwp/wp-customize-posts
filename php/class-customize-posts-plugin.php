@@ -199,7 +199,7 @@ class Customize_Posts_Plugin {
 
 		$handle = 'customize-posts-panel';
 		$src = plugins_url( 'js/customize-posts-panel' . $suffix, dirname( __FILE__ ) );
-		$deps = array( 'customize-controls' );
+		$deps = array( 'select2', 'customize-controls' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
