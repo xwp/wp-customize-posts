@@ -1008,13 +1008,13 @@ final class WP_Customize_Posts {
 	 */
 	public function ajax_posts_select2_query() {
 		global $wp_customize;
-		if ( ! check_ajax_referer( 'customize-posts', 'customize-posts-nonce', false ) ) {
-			status_header( 400 );
-			wp_send_json_error( 'bad_nonce' );
-		}
 		if ( ! current_user_can( 'customize' ) ) {
 			status_header( 403 );
 			wp_send_json_error( 'customize_not_allowed' );
+		}
+		if ( ! check_ajax_referer( 'customize-posts', 'customize-posts-nonce', false ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'bad_nonce' );
 		}
 		if ( ! isset( $_POST['post_type'] ) ) {
 			wp_send_json_error( 'missing_post_type' );
