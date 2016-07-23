@@ -151,7 +151,7 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 	 * @see WP_Customize_Posts::ajax_insert_auto_draft_post()
 	 */
 	function test_ajax_insert_auto_draft_post_customize_not_allowed() {
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'subscriber' ) ) );
 		$_POST = array(
 			'action' => 'customize-posts',
 			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
@@ -200,7 +200,7 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 		$role = get_role( 'administrator' );
 		$role->add_cap( 'customize' );
 		$role->remove_cap( 'edit_posts' );
-		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
 
 		$_POST = array(
 			'action' => 'customize-posts',
@@ -266,16 +266,170 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 	 * @covers WP_Customize_Posts::ajax_fetch_settings()
 	 */
 	public function test_ajax_fetch_settings() {
-		$this->markTestIncomplete();
+		$post_id = $this->factory()->post->create();
+
+		// Fail: customize_not_allowed.
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$_POST = wp_slash( array(
+			'post_ids' => array( $post_id ),
+		) );
+		$this->make_ajax_call( 'customize-posts-fetch-settings' );
+		$response = json_decode( $this->_last_response, true );
+		$this->assertFalse( $response['success'] );
+		$this->assertEquals( 'customize_not_allowed', $response['data'] );
+		$this->_last_response = '';
+
+		// Fail: bad_nonce.
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$_POST = wp_slash( array(
+			'customize-posts-nonce' => 'bad',
+			'post_ids' => array( $post_id ),
+		) );
+		$this->make_ajax_call( 'customize-posts-fetch-settings' );
+		$response = json_decode( $this->_last_response, true );
+		$this->assertFalse( $response['success'] );
+		$this->assertEquals( 'bad_nonce', $response['data'] );
+		$this->_last_response = '';
+
+		// Fail: missing_post_ids.
+		$_POST = wp_slash( array(
+			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
+		) );
+		$this->make_ajax_call( 'customize-posts-fetch-settings' );
+		$response = json_decode( $this->_last_response, true );
+		$this->assertFalse( $response['success'] );
+		$this->assertEquals( 'missing_post_ids', $response['data'] );
+		$this->_last_response = '';
+
+		// Fail: missing_post_ids.
+		$_POST = wp_slash( array(
+			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
+			'post_ids' => array( 'bad' ),
+		) );
+		$this->make_ajax_call( 'customize-posts-fetch-settings' );
+		$response = json_decode( $this->_last_response, true );
+		$this->assertFalse( $response['success'] );
+		$this->assertEquals( 'bad_post_ids', $response['data'] );
+		$this->_last_response = '';
+
+		// Success.
+		$_POST = wp_slash( array(
+			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
+			'post_ids' => array( $post_id ),
+		) );
+		$this->make_ajax_call( 'customize-posts-fetch-settings' );
+		$response = json_decode( $this->_last_response, true );
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $post_id ) );
+		$this->assertTrue( $response['success'] );
+		$this->assertArrayHasKey( $setting_id, $response['data'] );
+		$this->_last_response = '';
 	}
 
 	/**
-	 * Test handle_ajax_posts_select2_query.
+	 * Test ajax_posts_select2_query failures.
 	 *
-	 * @covers WP_Customize_Posts::handle_ajax_posts_select2_query()
+	 * @covers WP_Customize_Posts::ajax_posts_select2_query()
 	 */
-	public function test_handle_ajax_posts_select2_query() {
-		$this->markTestIncomplete();
+	public function test_ajax_posts_select2_query_failures() {
+
+		// Fail: customize_not_allowed.
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$_POST = wp_slash( array(
+			'post_type' => 'post',
+		) );
+		$this->make_ajax_call( 'customize-posts-select2-query' );
+		$response = json_decode( $this->_last_response, true );
+		$this->assertFalse( $response['success'] );
+		$this->assertEquals( 'customize_not_allowed', $response['data'] );
+		$this->_last_response = '';
+
+		// Fail: bad_nonce.
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$_POST = wp_slash( array(
+			'customize-posts-nonce' => 'bad',
+			'post_type' => 'post',
+		) );
+		$this->make_ajax_call( 'customize-posts-select2-query' );
+		$response = json_decode( $this->_last_response, true );
+		$this->assertFalse( $response['success'] );
+		$this->assertEquals( 'bad_nonce', $response['data'] );
+		$this->_last_response = '';
+
+		// Fail: missing_post_type.
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$_POST = wp_slash( array(
+			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
+		) );
+		$this->make_ajax_call( 'customize-posts-select2-query' );
+		$response = json_decode( $this->_last_response, true );
+		$this->assertFalse( $response['success'] );
+		$this->assertEquals( 'missing_post_type', $response['data'] );
+		$this->_last_response = '';
+
+		// Fail: missing_post_type.
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$_POST = wp_slash( array(
+			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
+			'post_type' => 'not_existing',
+		) );
+		$this->make_ajax_call( 'customize-posts-select2-query' );
+		$response = json_decode( $this->_last_response, true );
+		$this->assertFalse( $response['success'] );
+		$this->assertEquals( 'unknown_post_type', $response['data'] );
+		$this->_last_response = '';
+
+		// Fail: user_cannot_edit_post_type.
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$_POST = wp_slash( array(
+			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
+			'post_type' => 'post',
+		) );
+		$post_type_obj = get_post_type_object( 'post' );
+		$post_type_obj->cap->edit_posts = 'do_not_allow';
+		$this->make_ajax_call( 'customize-posts-select2-query' );
+		$response = json_decode( $this->_last_response, true );
+		$this->assertFalse( $response['success'] );
+		$this->assertEquals( 'user_cannot_edit_post_type', $response['data'] );
+		$this->_last_response = '';
+		$post_type_obj->cap->edit_posts = 'edit_posts';
+	}
+
+	/**
+	 * Test ajax_posts_select2_query successes.
+	 *
+	 * @covers WP_Customize_Posts::ajax_posts_select2_query()
+	 */
+	public function test_ajax_posts_select2_query_successes() {
+		$this->factory()->post->create_many( 30 );
+
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$_POST = wp_slash( array(
+			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
+			'post_type' => 'post',
+			'paged' => '1',
+		) );
+		$this->make_ajax_call( 'customize-posts-select2-query' );
+		$response = json_decode( $this->_last_response, true );
+		$this->assertTrue( $response['success'] );
+		$this->assertArrayHasKey( 'results', $response['data'] );
+		$first_item = $response['data']['results'][0];
+		$this->assertInternalType( 'array', $first_item );
+		$this->assertArrayHasKey( 'id', $first_item );
+		$this->assertArrayHasKey( 'title', $first_item );
+		$this->assertArrayHasKey( 'featured_image', $first_item );
+		$this->assertTrue( $response['data']['pagination']['more'] );
+		$this->_last_response = '';
+
+		$_POST = wp_slash( array(
+			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),
+			'post_type' => 'post',
+			'paged' => '2',
+		) );
+		$this->make_ajax_call( 'customize-posts-select2-query' );
+		$response = json_decode( $this->_last_response, true );
+		$this->assertTrue( $response['success'] );
+		$this->assertNotContains( $first_item, $response['data']['results'] );
+		$this->_last_response = '';
 	}
 
 	protected $die_args = array();
