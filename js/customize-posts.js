@@ -445,13 +445,16 @@
 		} );
 
 		/**
-		 * Focus on the section requested from the preview.
+		 * Ensure a post is added to the Customizer and focus on its section when an edit post link is clicked in preview.
 		 */
-		api.previewer.bind( 'focus-section', function( sectionId ) {
-			var section = api.section( sectionId );
-			if ( section ) {
-				section.focus();
-			}
+		api.previewer.bind( 'edit-post', function( postId ) {
+			var ensuredPromise = api.Posts.ensurePosts( [ postId ] );
+			ensuredPromise.done( function( postsData ) {
+				var postData = postsData[ postId ];
+				if ( postData ) {
+					postData.section.focus();
+				}
+			} );
 		} );
 
 		/**

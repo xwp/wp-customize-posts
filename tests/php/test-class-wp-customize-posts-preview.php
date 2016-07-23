@@ -693,7 +693,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	public function test_filter_edit_post_link() {
 		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
 		$link = '<a class="edit-me" href="' . esc_url( home_url( '?edit-me' ) ) . '">Edit</a>';
-		$contained = sprintf( ' data-customize-post-setting-id="%s"', WP_Customize_Post_Setting::get_post_setting_id( get_post( $this->post_id ) ) );
+		$contained = sprintf( ' data-customize-post-id="%d"', $this->post_id );
 		$this->assertContains( $contained, $preview->filter_edit_post_link( $link, $this->post_id ) );
 	}
 
