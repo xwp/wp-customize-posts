@@ -620,10 +620,6 @@ final class WP_Customize_Posts_Preview {
 		if ( ! $this->component->current_user_can_edit_post( $edit_post ) ) {
 			return null;
 		}
-		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $edit_post );
-		if ( ! $this->component->manager->get_setting( $setting_id ) ) {
-			return null;
-		}
 		return $url;
 	}
 

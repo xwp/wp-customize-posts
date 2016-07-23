@@ -682,10 +682,6 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertNull( $preview->filter_get_edit_post_link( $edit_post_link, $this->post_id ) );
 
 		wp_set_current_user( $this->user_id );
-		$this->assertNull( $preview->filter_get_edit_post_link( $edit_post_link, $this->post_id ) );
-
-		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $this->post_id ) );
-		$preview->component->manager->add_setting( new WP_Customize_Post_Setting( $preview->component->manager, $setting_id ) );
 		$this->assertEquals( $edit_post_link, $preview->filter_get_edit_post_link( $edit_post_link, $this->post_id ) );
 	}
 
