@@ -694,6 +694,9 @@ final class WP_Customize_Posts_Preview {
 			'post_status' => array(
 				'fallback_refresh' => true,
 			),
+			'post_date' => array(
+				'fallback_refresh' => true,
+			),
 			'post_content' => array(
 				'selector' => '.entry-content',
 			),

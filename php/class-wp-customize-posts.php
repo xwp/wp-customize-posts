@@ -580,6 +580,7 @@ final class WP_Customize_Posts {
 				'fieldTitleLabel' => __( 'Title', 'customize-posts' ),
 				'fieldSlugLabel' => __( 'Slug', 'customize-posts' ),
 				'fieldPostStatusLabel' => __( 'Post Status', 'customize-posts' ),
+				'fieldPostDateLabel' => __( 'Post Date', 'customize-posts' ),
 				'fieldContentLabel' => __( 'Content', 'customize-posts' ),
 				'fieldExcerptLabel' => __( 'Excerpt', 'customize-posts' ),
 				'fieldDiscussionLabel' => __( 'Discussion', 'customize-posts' ),
