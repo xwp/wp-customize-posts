@@ -40,6 +40,14 @@
 		}
 	});
 
+	api.controlConstructor.post_date = api.controlConstructor.dynamic.extend({
+		initialize: function( id, args ) {
+			args.params.type = 'post_date';
+			args.params.field_type = 'post_date';
+			api.controlConstructor.dynamic.prototype.initialize.call( this, id, args );
+		}
+	});
+
 	/*
 	 * Create initial post type-specific constructors for panel and sections.
 	 * Note plugins can override the panel and section constructors by making customize-posts a script dependency.
