@@ -494,7 +494,7 @@
 		 */
 		addPostDateControl: function() {
 			var section = this, control, setting = api( section.id );
-			control = new api.controlConstructor.post_date( section.id + '[post_date]', {
+			control = new api.controlConstructor.dynamic( section.id + '[post_date]', {
 				params: {
 					section: section.id,
 					priority: 21,
@@ -503,6 +503,8 @@
 					settings: {
 						'default': setting.id
 					},
+					type: 'post_date',
+					field_type: 'post_date',
 					setting_property: 'post_date'
 				}
 			} );
