@@ -111,12 +111,12 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 	public function get_month_choices() {
 		global $wp_locale;
 		$months = array();
-		for ( $i = 1; $i < 13; $i = $i +1 ) {
+		for ( $i = 1; $i < 13; $i = $i + 1 ) {
 			$month_number = zeroise( $i, 2 );
 			$month_text = $wp_locale->get_month_abbrev( $wp_locale->get_month( $i ) );
 
 			/* translators: 1: month number (01, 02, etc.), 2: month abbreviation */
-			$months[ $i ]['text'] = sprintf( __( '%1$s-%2$s' ), $month_number, $month_text );
+			$months[ $i ]['text'] = sprintf( __( '%1$s-%2$s', 'customize-posts' ), $month_number, $month_text );
 			$months[ $i ]['value'] = $month_number;
 		}
 		return $months;
