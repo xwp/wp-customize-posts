@@ -286,7 +286,6 @@ final class WP_Customize_Posts {
 		$this->manager->register_section_type( 'WP_Customize_Post_Section' );
 		$this->manager->register_control_type( 'WP_Customize_Dynamic_Control' );
 		$this->manager->register_control_type( 'WP_Customize_Post_Discussion_Fields_Control' );
-		$this->manager->register_control_type( 'WP_Customize_Post_Date_Control' );
 
 		$panel_priority = 900; // Before widgets.
 

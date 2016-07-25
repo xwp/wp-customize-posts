@@ -1,6 +1,6 @@
 <?php
 /**
- * Customize Post Date Dynamic Control Class
+ * Customize Post Date Control Class
  *
  * @package WordPress
  * @subpackage Customize
@@ -9,7 +9,7 @@
 /**
  * Class WP_Customize_Post_Date_Control
  */
-class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
+class WP_Customize_Post_Date_Control extends WP_Customize_Control {
 
 	/**
 	 * Type of control, used by JS.
@@ -18,13 +18,6 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 	 * @var string
 	 */
 	public $type = 'post_date';
-
-	/**
-	 * Kind of field type used in control.
-	 *
-	 * @var string
-	 */
-	public $field_type = 'post_date';
 
 	/**
 	 * Get the data to export to the client via JSON.
@@ -62,42 +55,40 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 			<span class="description customize-control-description">{{ data.description }}</span>
 		<# } #>
 
-		<# if ( 'post_date' === data.field_type  ) { #>
-			<# _.each( data.date_inputs, function( attr, type ) { #>
-				<# if ( 'month' === type  ) { #>
-					<select>
-						<# _.each( data.month_choices, function( choice ) { #>
-							<#
-								if ( _.isObject( choice ) && ! _.isUndefined( choice.text ) && ! _.isUndefined( choice.value ) ) {
-									text = choice.text;
-									value = choice.value;
-								}
-							#>
-							<option value="{{ value }}">{{ text }}</option>
-						<# } ); #>
-					</select>
-				<# } else { #>
-					<input
-						id="{{ data.input_id }}"
-						type="text"
-						class="{{ type }}"
-						value="{{ data.date_inputs[ type ] }}"
-						/>
-				<# } #>
-			<# }); #>
+		<# _.each( data.date_inputs, function( attr, type ) { #>
+			<# if ( 'month' === type  ) { #>
+				<select>
+					<# _.each( data.month_choices, function( choice ) { #>
+						<#
+							if ( _.isObject( choice ) && ! _.isUndefined( choice.text ) && ! _.isUndefined( choice.value ) ) {
+								text = choice.text;
+								value = choice.value;
+							}
+						#>
+						<option value="{{ value }}">{{ text }}</option>
+					<# } ); #>
+				</select>
+			<# } else { #>
 				<input
-					id="{{ data.input_id }}"
-					type="hidden"
-					<# _.each( data.input_attrs, function( value, key ) { #>
-						{{{ key }}}="{{ value }}"
-					<# } ) #>
-					<# if ( data.setting_property ) { #>
-						data-customize-setting-property-link="{{ data.setting_property }}"
-					<# } #>
+					type="text"
+					class="{{ type }}"
+					value="{{ data.date_inputs[ type ] }}"
 					/>
-		<# } #>
+			<# } #>
+		<# }); #>
+		<input
+			id="{{ data.input_id }}"
+			type="hidden"
+			<# _.each( data.input_attrs, function( value, key ) { #>
+				{{{ key }}}="{{ value }}"
+			<# } ) #>
+			<# if ( data.setting_property ) { #>
+				data-customize-setting-property-link="{{ data.setting_property }}"
+			<# } #>
+			/>
 		<?php
 	}
+
 
 	/**
 	 * Generate options for the month Select.

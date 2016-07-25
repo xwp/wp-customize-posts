@@ -255,8 +255,6 @@
 			if ( postTypeObj.supports.author ) {
 				section.addAuthorControl();
 			}
-
-			section.addPostDateControl();
 		},
 
 		/**
@@ -473,49 +471,6 @@
 					control.toggleTrash( 'trash' === setting.get().post_status );
 				}, embeddedDelay );
 			} );
-
-			if ( control.notifications ) {
-				control.notifications.add = section.addPostFieldControlNotification;
-				control.notifications.setting_property = control.params.setting_property;
-			}
-			return control;
-		},
-
-		/**
-		 * Add post date control.
-		 *
-		 * @returns {wp.customize.Control} Added control.
-		 */
-		/**
-		 * Add post title control.
-		 *
-		 * @returns {wp.customize.Control} Added control.
-		 */
-		addPostDateControl: function() {
-			var section = this, control, setting = api( section.id );
-			control = new api.controlConstructor.dynamic( section.id + '[post_date]', {
-				params: {
-					section: section.id,
-					priority: 21,
-					label: api.Posts.data.l10n.fieldPostDateLabel,
-					active: true,
-					settings: {
-						'default': setting.id
-					},
-					type: 'post_date',
-					field_type: 'post_date',
-					setting_property: 'post_date'
-				}
-			} );
-
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
-
-			// Register.
-			section.postFieldControls.post_date = control;
-			api.control.add( control.id, control );
 
 			if ( control.notifications ) {
 				control.notifications.add = section.addPostFieldControlNotification;
