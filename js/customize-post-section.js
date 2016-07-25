@@ -243,6 +243,9 @@
 			if ( 'undefined' === typeof EditPostPreviewCustomize ) {
 				section.addPostStatusControl();
 			}
+			if ( postTypeObj.supports['page-attributes'] ) {
+				section.addPostParentControl();
+			}
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
 			}
@@ -471,6 +474,45 @@
 					control.toggleTrash( 'trash' === setting.get().post_status );
 				}, embeddedDelay );
 			} );
+
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
+				control.notifications.setting_property = control.params.setting_property;
+			}
+			return control;
+		},
+
+		/**
+		 * Add post parent control.
+		 *
+		 * @returns {wp.customize.Control} Added control.
+		 */
+		addPostParentControl: function() {
+			var section = this, control, setting = api( section.id );
+
+			control = new api.controlConstructor.dynamic( section.id + '[post_parent]', {
+				params: {
+					section: section.id,
+					priority: 20,
+					label: api.Posts.data.l10n.postParentLabel,
+					active: true,
+					settings: {
+						'default': setting.id
+					},
+					field_type: 'select',
+					setting_property: 'post_parent',
+					choices: api.Posts.data.postParentChoices
+				}
+			} );
+
+			// Override preview trying to de-activate control not present in preview context.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.page_parent = control;
+			api.control.add( control.id, control );
 
 			if ( control.notifications ) {
 				control.notifications.add = section.addPostFieldControlNotification;
