@@ -99,6 +99,15 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 		<?php
 	}
 
+	/**
+	 * Generate options for the month Select.
+	 *
+	 * Based on touch_time().
+	 *
+	 * @see touch_time()
+	 *
+	 * @return array
+	 */
 	public function get_month_choices() {
 		global $wp_locale;
 		$months = array();

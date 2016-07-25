@@ -243,9 +243,6 @@
 			if ( 'undefined' === typeof EditPostPreviewCustomize ) {
 				section.addPostStatusControl();
 			}
-
-			section.addPostDateControl();
-
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
 			}
@@ -258,6 +255,8 @@
 			if ( postTypeObj.supports.author ) {
 				section.addAuthorControl();
 			}
+
+			section.addPostDateControl();
 		},
 
 		/**
