@@ -96,6 +96,7 @@
 			/*
 			 * Accurately replace any PHP date format string in JS.
 			 *
+			 * Modified from:
 			 * https://github.com/jacwright/date.format
 			 *
 			 * MIT license.
@@ -121,6 +122,7 @@
 			 *
 			 * Example: this will accurately validate 61 seconds as 1 minute and 1 second.
 			 *
+			 * Modified from:
 			 * https://github.com/jacwright/date.format
 			 *
 			 * @todo l10n months/days.
