@@ -6,10 +6,11 @@
  * @subpackage Customize
  */
 
+
 /**
  * Class WP_Customize_Post_Date_Control
  */
-class WP_Customize_Post_Date_Control extends WP_Customize_Control {
+class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 
 	/**
 	 * Type of control, used by JS.
@@ -28,11 +29,11 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Control {
 		$exported = parent::json();
 		$exported['month_choices'] = $this->get_month_choices();
 		$exported['date_inputs'] = array(
-			'month' => 03,
-			'day'   => 04,
-			'year'  => 1922,
-			'hour'  => 22,
-			'min'   => 23,
+			'month',
+			'date',
+			'year',
+			'hour',
+			'min',
 		);
 		return $exported;
 	}
@@ -55,9 +56,9 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Control {
 			<span class="description customize-control-description">{{ data.description }}</span>
 		<# } #>
 
-		<# _.each( data.date_inputs, function( attr, type ) { #>
+		<# _.each( data.date_inputs, function( type ) { #>
 			<# if ( 'month' === type  ) { #>
-				<select>
+				<select class="date-input {{ type }}">
 					<# _.each( data.month_choices, function( choice ) { #>
 						<#
 							if ( _.isObject( choice ) && ! _.isUndefined( choice.text ) && ! _.isUndefined( choice.value ) ) {
@@ -71,14 +72,14 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Control {
 			<# } else { #>
 				<input
 					type="text"
-					class="{{ type }}"
-					value="{{ data.date_inputs[ type ] }}"
+					class="date-input {{ type }}"
+					value=""
 					/>
 			<# } #>
 		<# }); #>
 		<input
 			id="{{ data.input_id }}"
-			type="hidden"
+			type="text"
 			<# _.each( data.input_attrs, function( value, key ) { #>
 				{{{ key }}}="{{ value }}"
 			<# } ) #>
@@ -88,7 +89,6 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Control {
 			/>
 		<?php
 	}
-
 
 	/**
 	 * Generate options for the month Select.

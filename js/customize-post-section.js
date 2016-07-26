@@ -255,6 +255,7 @@
 			if ( postTypeObj.supports.author ) {
 				section.addAuthorControl();
 			}
+			section.addPostDateControl();
 		},
 
 		/**
@@ -471,6 +472,63 @@
 					control.toggleTrash( 'trash' === setting.get().post_status );
 				}, embeddedDelay );
 			} );
+
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
+				control.notifications.setting_property = control.params.setting_property;
+			}
+			return control;
+		},
+
+		/**
+		 * Add post date control.
+		 *
+		 * @returns {wp.customize.Control} Added control.
+		 */
+		addPostDateControl: function() {
+			var section = this, control, setting = api( section.id ), postData, date, dateArray = {};
+
+			control = new api.controlConstructor.dynamic( section.id + '[post_date]', {
+				params: {
+					section: section.id,
+					priority: 21,
+					label: api.Posts.data.l10n.fieldPostDateLabel,
+					active: true,
+					settings: {
+						'default': setting.id
+					},
+					type: 'post_date',
+					setting_property: 'post_date_gmt'
+				}
+			} );
+
+			postData = _.clone( control.setting.get() );
+			date = new Date( postData.post_date_gmt );
+			dateArray.date = date.getDate().toString();
+			dateArray.month = ( date.getMonth() + 1 );
+			if ( dateArray.month <= 9 ) {
+				dateArray.month = '0' + dateArray.month;
+			}
+			dateArray.year = date.getFullYear().toString();
+			dateArray.hour = date.getHours().toString();
+			dateArray.min = date.getMinutes().toString();
+			control.params.date_data = dateArray;
+
+			control.deferred.embedded.done( function() {
+				_.each( control.params.date_data, function( val, type ) {
+					var input = control.container.find( '.date-input.' + type );
+					input.val( val );
+				} );
+			} );
+
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.post_date_gmt = control;
+			api.control.add( control.id, control );
 
 			if ( control.notifications ) {
 				control.notifications.add = section.addPostFieldControlNotification;
