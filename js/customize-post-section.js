@@ -486,9 +486,15 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addPostDateControl: function() {
-			var section = this, control, setting = api( section.id ), postData, date, dateArray = {}, singleCharLimit = 9;
+			var section = this,
+				control,
+				setting = api( section.id ),
+				postData,
+				date,
+				dateArray = {},
+				singleCharLimit = 9;
 
-			control = new api.controlConstructor.dynamic( section.id + '[post_date]', {
+			control = new api.controlConstructor.post_date( section.id + '[post_date]', {
 				params: {
 					section: section.id,
 					priority: 21,
@@ -498,21 +504,24 @@
 						'default': setting.id
 					},
 					type: 'post_date',
-					setting_property: 'post_date_gmt'
+					setting_property: 'post_date'
 				}
 			} );
 
-			postData = _.clone( control.setting.get() );
-			date = new Date( postData.post_date_gmt );
-			dateArray.date = date.getDate().toString();
-			dateArray.month = date.getMonth() + 1;
-			if ( singleCharLimit >= dateArray.month ) {
-				dateArray.month = '0' + dateArray.month;
+			function getDateInputData( control ) {
+				postData = _.clone( control.setting.get() );
+				date = new Date( postData.post_date );
+				dateArray.date = date.getDate().toString();
+				dateArray.month = date.getMonth() + 1;
+				if ( singleCharLimit >= dateArray.month ) {
+					dateArray.month = '0' + dateArray.month;
+				}
+				dateArray.year = date.getFullYear().toString();
+				dateArray.hour = date.getHours().toString();
+				dateArray.min = date.getMinutes().toString();
+				return dateArray;
 			}
-			dateArray.year = date.getFullYear().toString();
-			dateArray.hour = date.getHours().toString();
-			dateArray.min = date.getMinutes().toString();
-			control.params.date_data = dateArray;
+			control.params.date_data = getDateInputData( control );
 
 			control.deferred.embedded.done( function() {
 				_.each( control.params.date_data, function( val, type ) {
@@ -527,7 +536,7 @@
 			};
 
 			// Register.
-			section.postFieldControls.post_date_gmt = control;
+			section.postFieldControls.post_date = control;
 			api.control.add( control.id, control );
 
 			if ( control.notifications ) {

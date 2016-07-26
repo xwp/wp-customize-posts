@@ -593,6 +593,8 @@ final class WP_Customize_Posts {
 				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
 				'jumpToPostPlaceholder' => __( 'Jump to %s', 'customize-posts' ),
 			),
+			'dateFormat' => get_option( 'date_format' ),
+			'tzOffset' => $this->get_tz_offset(),
 		);
 
 		wp_scripts()->add_data( 'customize-posts', 'data', sprintf( 'var _wpCustomizePostsExports = %s;', wp_json_encode( $exports ) ) );
@@ -1110,5 +1112,29 @@ final class WP_Customize_Posts {
 			}
 		}
 		return $result;
+	}
+
+	/**
+	 * Convert the GMT Offset into something JS can use.
+	 *
+	 * The 'gmt_offset' must be zeroised to be used by
+	 * JS Date.
+	 *
+	 * Pulls out the +/-, then zeroises the rest, then reassembles the string.
+	 * Finally, it converts it to a float so the leading zero gets passed.
+	 *
+	 * @return float
+	 */
+	public function get_tz_offset() {
+		$offset = get_option( 'gmt_offset' );
+		$prefix = '';
+		$first_char = substr( (string) $offset, 0, 1 );
+		if ( '+' === $first_char || '-' === $first_char ) {
+			$prefix = $first_char;
+			$offset = substr( $offset, 1 );
+		}
+		$offset = zeroise( $offset, 2 );
+
+		return ( (float) ( $prefix . $offset ) );
 	}
 }

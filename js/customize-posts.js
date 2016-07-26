@@ -20,6 +20,8 @@
 			fieldContentLabel: '',
 			fieldExcerptLabel: ''
 		},
+		dateFormat: 'F j, Y',
+		tzOffset: 0,
 		postIdInput: null
 	};
 
@@ -37,6 +39,284 @@
 			args.params.type = 'post_discussion_fields';
 			args.params.field_type = 'checkbox';
 			api.controlConstructor.dynamic.prototype.initialize.call( this, id, args );
+		}
+	});
+
+	api.controlConstructor.post_date = api.controlConstructor.dynamic.extend({
+		/**
+		 * Add bidirectional data binding links between inputs and the setting properties.
+		 *
+		 * @private
+		 */
+		_setUpSettingPropertyLinks: function() {
+			var control = this, nodes, inputs, nowBrowser, nowGmt, newDate, friendlyDate, attemptedDate, dateTimeDate;
+			if ( ! control.setting ) {
+				return;
+			}
+
+			nodes = control.container.find( '[data-customize-setting-property-link]' );
+			inputs = control.container.find( '.date-input' );
+			friendlyDate = control.container.find( '.friendly-date' );
+			attemptedDate = control.container.find( '.attempted-date' );
+			dateTimeDate = control.container.find( '.date-time-date' );
+
+			// Browser Local time "Now"
+			nowBrowser = new Date();
+
+			// Browser "Now" time, converted to GMT for validation comparison.
+			nowGmt = new Date( nowBrowser.getUTCFullYear(), nowBrowser.getUTCMonth(), nowBrowser.getUTCDate(),  nowBrowser.getUTCHours(), nowBrowser.getUTCMinutes(), nowBrowser.getUTCSeconds() );
+
+			inputs.change( function() {
+				var data = [];
+				data.month = $( '.date-input.month' ).val();
+				data.monthIndex = parseInt( data.month, 10 ) - 1;
+				data.date = $( '.date-input.date' ).val();
+				data.year = $( '.date-input.year' ).val();
+				data.hour = $( '.date-input.hour' ).val();
+				data.min = $( '.date-input.min' ).val();
+
+				// New WP Post Date time, on change.
+				newDate = new Date( data.year, data.monthIndex, data.date, data.hour, data.min );
+
+				// This statement needs to be here, before the newDate is converted to GMT.
+				friendlyDate.val( newDate.format( api.Posts.data.dateFormat ) );
+
+				/*
+				 * Convert the newDate to GMT using WP's GMT offset.
+				 *
+				 * The placement of this expression after updating the friendlyDate is important.
+				 */
+				newDate.setUTCHours( newDate.getUTCHours() - parseFloat( api.Posts.data.tzOffset ) ) / 1000;
+
+				attemptedDate.val( newDate.format( 'Y-m-d H:i:00' ) );
+
+				dateTimeDate.val( newDate.format( 'Y-m-d' ) + 'T' + newDate.format( 'H:i:s' ) + '+00:00' );
+			});
+
+			/*
+			 * Accurately replace PHP date format strings in JS.
+			 *
+			 * https://github.com/jacwright/date.format
+			 *
+			 * MIT license.
+			 */
+			Date.prototype.format = function( format ) {
+				var returnStr = '', replace, i = 0, currentCharacter;
+				replace = Date.replaceChars;
+				for ( i; i < format.length; i++ ) {
+					currentCharacter = format.charAt( i );
+					if ( replace[ currentCharacter ] ) {
+						returnStr += replace[ currentCharacter ].call( this );
+					} else if ( currentCharacter ) {
+						returnStr += currentCharacter;
+					}
+				}
+				return returnStr;
+			};
+
+			/*
+			 * Accurately replace PHP date format strings in JS.
+			 *
+			 * This will accurately validate 61 seconds as 1 minute and 1 second.
+			 *
+			 * https://github.com/jacwright/date.format
+			 *
+			 * @todo l10n months/days.
+			 *
+			 * MIT license.
+			 */
+			Date.replaceChars = {
+				shortMonths: [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+				longMonths: [ 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ],
+				shortDays: [ 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat' ],
+				longDays: [ 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday' ],
+
+				// Day
+				d: function() {
+					return ( this.getDate() < 10 ? '0' : '' ) + this.getDate();
+				},
+				D: function() {
+					return Date.replaceChars.shortDays[ this.getDay() ];
+				},
+				j: function() {
+					return this.getDate();
+				},
+				l: function() {
+					return Date.replaceChars.longDays[ this.getDay() ];
+				},
+				N: function() {
+					return this.getDay() + 1;
+				},
+				S: function() {
+					var result = 'th';
+					if ( 1 === this.getDate() % 10 && 11 !== this.getDate() ) {
+						result = 'st';
+					} else if ( 2 === this.getDate() % 10 && 12 !== this.getDate() ) {
+						result = 'nd';
+					} else if ( 3 === this.getDate() % 10 && 13 !== this.getDate() ) {
+						result = 'rd';
+					}
+					return result;
+				},
+				w: function() {
+					return this.getDay();
+				},
+				z: function() {
+					var d = new Date( this.getFullYear(), 0, 1 );
+					return Math.ceil( ( this - d ) / 86400000 );
+				},
+
+				// Week
+				W: function() {
+					var d = new Date( this.getFullYear(), 0, 1 );
+					return Math.ceil( ( ( ( this - d ) / 86400000 ) + d.getDay() + 1 ) / 7 );
+				},
+
+				// Month
+				F: function() {
+					return Date.replaceChars.longMonths[ this.getMonth() ];
+				},
+				m: function() {
+					return ( this.getMonth() < 9 ? '0' : '' ) + ( this.getMonth() + 1 );
+				},
+				M: function() {
+					return Date.replaceChars.shortMonths[ this.getMonth() ];
+				},
+				n: function() {
+					return this.getMonth() + 1;
+				},
+				t: function() {
+					var d = new Date();
+					return new Date( d.getFullYear(), d.getMonth(), 0 ).getDate();
+				},
+
+				// Year
+				L: function() {
+					var year = this.getFullYear();
+					return ( 0 === year % 400  || ( 0 !== year % 100 && 0 === year % 4 ) );
+				},
+				o: function() {
+					var d  = new Date( this.valueOf( ) );
+					d.setDate( d.getDate() - ( ( this.getDay() + 6 ) % 7 ) + 3 );
+					return d.getFullYear();
+				},
+				Y: function() {
+					return this.getFullYear();
+				},
+				y: function() {
+					return ( '' + this.getFullYear() ).substr( 2 );
+				},
+
+				// Time
+				a: function() {
+					return this.getHours() < 12 ? 'am' : 'pm';
+				},
+				A: function() {
+					return this.getHours() < 12 ? 'AM' : 'PM';
+				},
+				B: function() {
+					return Math.floor( ( ( ( this.getUTCHours() + 1 ) % 24 ) + this.getUTCMinutes() / 60 + this.getUTCSeconds() / 3600 ) * 1000 / 24 );
+				}, // Fixed now
+				g: function() {
+					return this.getHours() % 12 || 12;
+				},
+				G: function() {
+					return this.getHours();
+				},
+				h: function() {
+					return ( ( this.getHours() % 12 || 12 ) < 10 ? '0' : '' ) + ( this.getHours() % 12 || 12 );
+				},
+				H: function() {
+					return ( this.getHours() < 10 ? '0' : '' ) + this.getHours();
+				},
+				i: function() {
+					return ( this.getMinutes() < 10 ? '0' : '' ) + this.getMinutes();
+				},
+				s: function() {
+					return ( this.getSeconds() < 10 ? '0' : '' ) + this.getSeconds();
+				},
+				u: function() {
+					var m = this.getMilliseconds();
+					return ( m < 10 ? '00' : ( m < 100 ? '0' : '' ) ) + m;
+				},
+
+				// Timezone
+				e: function() {
+					return 'Not Yet Supported';
+				},
+				I: function() {
+					var DST = null, i = 0, d, offset;
+					for ( i; i < 12; ++i ) {
+						d = new Date( this.getFullYear(), i, 1 );
+						offset = d.getTimezoneOffset();
+
+						if ( null === DST ) {
+							DST = offset;
+						} else if ( offset < DST ) {
+							DST = offset;
+							break;
+						} else if ( offset > DST ) {
+							break;
+						}
+					}
+					return ( DST === this.getTimezoneOffset() ) | 0;
+				},
+				O: function() {
+					return ( -this.getTimezoneOffset() < 0 ? '-' : '+' ) + ( Math.abs( this.getTimezoneOffset() / 60 ) < 10 ? '0' : '' ) + ( Math.abs( this.getTimezoneOffset() / 60 ) ) + '00';
+				},
+				P: function() {
+					return ( -this.getTimezoneOffset() < 0 ? '-' : '+' ) + ( Math.abs( this.getTimezoneOffset() / 60 ) < 10 ? '0' : '' ) + ( Math.abs( this.getTimezoneOffset() / 60 ) ) + ':00';
+				},
+				T: function() {
+					var result, m = this.getMonth();
+					this.setMonth( 0 );
+					result = this.toTimeString().replace( /^.+ \(?([^\)]+)\)?$/, '$1' );
+					this.setMonth( m );
+					return result;
+				},
+				Z: function() {
+					return -this.getTimezoneOffset() * 60;
+				},
+
+				// Full Date/Time
+				c: function() {
+					return this.format( 'Y-m-d TH:i:sP' );
+				},
+				r: function() {
+					return this.toString();
+				},
+				U: function() {
+					return this.getTime() / 1000;
+				}
+			};
+
+			/*
+			 * This sets the actual value.
+			 */
+			nodes.each( function() {
+				var node = $( this ),
+					element,
+					propertyName = node.data( 'customizeSettingPropertyLink' );
+
+				element = new api.Element( node );
+				control.propertyElements.push( element );
+				element.set( control.setting()[ propertyName ] );
+
+				element.bind( function( newPropertyValue ) {
+					var newSetting = control.setting();
+					if ( newPropertyValue === newSetting[ propertyName ] ) {
+						return;
+					}
+					newSetting = _.clone( newSetting );
+					newSetting[ propertyName ] = newPropertyValue;
+					control.setting.set( newSetting );
+				} );
+				control.setting.bind( function( newValue ) {
+					if ( newValue[ propertyName ] !== element.get() ) {
+						element.set( newValue[ propertyName ] );
+					}
+				} );
+			});
 		}
 	});
 

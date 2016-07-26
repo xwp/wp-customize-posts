@@ -27,6 +27,7 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 	public function json() {
 		$exported = parent::json();
 		$exported['month_choices'] = $this->get_month_choices();
+		// Type / width pairs.
 		$exported['date_inputs'] = array(
 			'month' => null,
 			'date' => 2,
@@ -39,6 +40,8 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 
 	/**
 	 * Render the Underscore template for this control.
+	 *
+	 * @todo change classes to IDs where appropriate.
 	 *
 	 * @access protected
 	 * @codeCoverageIgnore
@@ -72,25 +75,43 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 				<input
 					type="text"
 					size="{{ width }}"
-					maxlength="{{width}}""
+					maxlength="{{width}}"
 					autocomplete="off"
 					class="date-input {{ type }}"
 					value=""
 					/>
 					<# if ( 'year' === type ) { #>
 						&nbsp;@&nbsp;
-						<# } #>
+					<# } #>
 			<# } #>
 		<# }); #>
 		<input
 			id="{{ data.input_id }}"
-			type="text" // This will become type=hidden
+			type="text"
+		    class="friendly-date"
+		    value=""
+			/>
+		<input
+			id="{{ data.input_id }}"
+			type="text"
+		    class="original-date"
 			<# _.each( data.input_attrs, function( value, key ) { #>
 				{{{ key }}}="{{ value }}"
 			<# } ) #>
 			<# if ( data.setting_property ) { #>
 				data-customize-setting-property-link="{{ data.setting_property }}"
 			<# } #>
+			/>
+		<input
+			id="{{ data.input_id }}"
+			type="text"
+		    class="attempted-date"
+			value=""
+			/>
+		<input
+			type="text"
+			class="date-time-date"
+			value=""
 			/>
 		<?php
 	}
