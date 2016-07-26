@@ -197,11 +197,11 @@
 			 * Focus on the post section in the Customizer pane when clicking an edit-post-link.
 			 */
 			$( document.body ).on( 'click', '.post-edit-link', function( e ) {
-				var link = $( this ), settingId;
-				settingId = link.data( 'customize-post-setting-id' );
+				var link = $( this ), postId;
+				postId = link.data( 'customize-post-id' );
 				e.preventDefault();
-				if ( settingId ) {
-					api.preview.send( 'focus-section', settingId );
+				if ( postId ) {
+					api.preview.send( 'edit-post', postId );
 				}
 			} );
 		} );

@@ -620,10 +620,6 @@ final class WP_Customize_Posts_Preview {
 		if ( ! $this->component->current_user_can_edit_post( $edit_post ) ) {
 			return null;
 		}
-		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $edit_post );
-		if ( ! $this->component->manager->get_setting( $setting_id ) ) {
-			return null;
-		}
 		return $url;
 	}
 
@@ -635,9 +631,7 @@ final class WP_Customize_Posts_Preview {
 	 * @return string Edit link.
 	 */
 	function filter_edit_post_link( $link, $post_id ) {
-		$edit_post = get_post( $post_id );
-		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $edit_post );
-		$data_attributes = sprintf( ' data-customize-post-setting-id="%s"', $setting_id );
+		$data_attributes = sprintf( ' data-customize-post-id="%d"', $post_id );
 		$link = preg_replace( '/(?<=<a\s)/', $data_attributes, $link );
 		return $link;
 	}
