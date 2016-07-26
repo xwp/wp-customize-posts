@@ -314,10 +314,5 @@ class Customize_Posts_Plugin {
 		$src = plugins_url( 'css/edit-post-preview-customize' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'customize-controls' );
 		$wp_styles->add( $handle, $src, $deps, $this->version );
-
-		$handle = 'wp-customize-post-date-control';
-		$src = plugins_url( 'css/wp-customize-post-date-control' . $suffix, dirname( __FILE__ ) );
-		$deps = array();
-		$wp_styles->add( $handle, $src, $deps, $this->version );
 	}
 }

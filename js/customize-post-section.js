@@ -486,7 +486,7 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addPostDateControl: function() {
-			var section = this, control, setting = api( section.id ), postData, date, dateArray = {};
+			var section = this, control, setting = api( section.id ), postData, date, dateArray = {}, singleCharLimit = 9;
 
 			control = new api.controlConstructor.dynamic( section.id + '[post_date]', {
 				params: {
@@ -505,8 +505,8 @@
 			postData = _.clone( control.setting.get() );
 			date = new Date( postData.post_date_gmt );
 			dateArray.date = date.getDate().toString();
-			dateArray.month = ( date.getMonth() + 1 );
-			if ( dateArray.month <= 9 ) {
+			dateArray.month = date.getMonth() + 1;
+			if ( singleCharLimit >= dateArray.month ) {
 				dateArray.month = '0' + dateArray.month;
 			}
 			dateArray.year = date.getFullYear().toString();

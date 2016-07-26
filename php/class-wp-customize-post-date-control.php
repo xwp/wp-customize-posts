@@ -6,7 +6,6 @@
  * @subpackage Customize
  */
 
-
 /**
  * Class WP_Customize_Post_Date_Control
  */
@@ -29,11 +28,11 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 		$exported = parent::json();
 		$exported['month_choices'] = $this->get_month_choices();
 		$exported['date_inputs'] = array(
-			'month',
-			'date',
-			'year',
-			'hour',
-			'min',
+			'month' => null,
+			'date' => 2,
+			'year' => 4,
+			'hour' => 2,
+			'min' => 2,
 		);
 		return $exported;
 	}
@@ -56,7 +55,7 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 			<span class="description customize-control-description">{{ data.description }}</span>
 		<# } #>
 
-		<# _.each( data.date_inputs, function( type ) { #>
+		<# _.each( data.date_inputs, function( width, type ) { #>
 			<# if ( 'month' === type  ) { #>
 				<select class="date-input {{ type }}">
 					<# _.each( data.month_choices, function( choice ) { #>
@@ -72,14 +71,20 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 			<# } else { #>
 				<input
 					type="text"
+					size="{{ width }}"
+					maxlength="{{width}}""
+					autocomplete="off"
 					class="date-input {{ type }}"
 					value=""
 					/>
+					<# if ( 'year' === type ) { #>
+						&nbsp;@&nbsp;
+						<# } #>
 			<# } #>
 		<# }); #>
 		<input
 			id="{{ data.input_id }}"
-			type="text"
+			type="text" <!-- This will become type="hidden" -->
 			<# _.each( data.input_attrs, function( value, key ) { #>
 				{{{ key }}}="{{ value }}"
 			<# } ) #>
