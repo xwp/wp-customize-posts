@@ -49,7 +49,7 @@
 		 * @private
 		 */
 		_setUpSettingPropertyLinks: function() {
-			var control = this, nodes, inputs, nowBrowser, nowGmt, newDate, friendlyDate, attemptedDate, dateTimeDate;
+			var control = this, nodes, inputs, nowBrowser, nowGmt, newDate, newGmtDate, friendlyDate, attemptedDate, dateTimeDate;
 			if ( ! control.setting ) {
 				return;
 			}
@@ -86,7 +86,7 @@
 				 *
 				 * The placement of this expression after updating the friendlyDate is important.
 				 */
-				newDate.setUTCHours( newDate.getUTCHours() - parseFloat( api.Posts.data.tzOffset ) ) / 1000;
+				newDate.setUTCHours( newDate.getUTCHours() - parseFloat( api.Posts.data.tzOffset ) );
 
 				attemptedDate.val( newDate.format( 'Y-m-d H:i:00' ) );
 
@@ -94,7 +94,7 @@
 			});
 
 			/*
-			 * Accurately replace PHP date format strings in JS.
+			 * Accurately replace any PHP date format string in JS.
 			 *
 			 * https://github.com/jacwright/date.format
 			 *
@@ -115,9 +115,11 @@
 			};
 
 			/*
-			 * Accurately replace PHP date format strings in JS.
+			 * Accurately replace any PHP date format string in JS.
 			 *
-			 * This will accurately validate 61 seconds as 1 minute and 1 second.
+			 * Assists with validation as well.
+			 *
+			 * Example: this will accurately validate 61 seconds as 1 minute and 1 second.
 			 *
 			 * https://github.com/jacwright/date.format
 			 *
