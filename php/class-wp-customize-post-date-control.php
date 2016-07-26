@@ -84,7 +84,7 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 		<# }); #>
 		<input
 			id="{{ data.input_id }}"
-			type="text" <!-- This will become type="hidden" -->
+			type="text" // This will become type=hidden
 			<# _.each( data.input_attrs, function( value, key ) { #>
 				{{{ key }}}="{{ value }}"
 			<# } ) #>
