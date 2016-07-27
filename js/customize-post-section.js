@@ -529,6 +529,13 @@
 			/**
 			 * Create the "Published on" string.
 			 *
+			 * @todo "Schedule for"
+			 * (Only temporarily: if post_status is draft and
+			 * post_date is in the future).
+			 *
+			 * @todo "Scheduled for"
+			 * (if post_status is future).
+			 *
 			 * @returns {string} The Published on string.
 			 */
 			function getPublishedDateString() {

@@ -56,18 +56,35 @@
 		 */
 		_setUpSettingPropertyLinks: function() {
 
-			var control = this, nodes, inputs, newDate, newPostDate, newPostDateGmt;
+			var control = this,
+				nodes,
+				inputs,
+				newPostDate,
+				newPostDateGmt,
+				newPostStatus,
+				postData,
+				originalPostStatus,
+				currentPostStatus,
+				newDate;
+
 			if ( ! control.setting ) {
 				return;
 			}
 
-			nodes = {
-				post_date: control.container.find( '.post-date' ),
-				post_date_gmt: control.container.find( '.post-date-gmt' )
-			};
 			inputs = control.container.find( '.date-input' );
 			newPostDate = control.container.find( '.post-date' );
 			newPostDateGmt = control.container.find( '.post-date-gmt' );
+			newPostStatus = control.container.find( '.post-status' );
+
+			nodes = {
+				post_date: newPostDate,
+				post_date_gmt: newPostDateGmt,
+				post_status: newPostStatus
+			};
+
+			postData = _.clone( control.setting.get() );
+			currentPostStatus = originalPostStatus = postData.post_status;
+
 			watchInputs();
 
 			/**
@@ -76,7 +93,7 @@
 			 * "Pieces" here refers to each part of the date,
 			 * (e.g., "month," "day," "year," etc.).
 			 *
-			 * @returns {array} Array of date pieces.
+			 * @returns {object} Object of date pieces.
 			 */
 			function getValidDateInputs() {
 				var result = {}, month, monthInt, day, year, hour, min, monthMax, febMax;
@@ -150,7 +167,7 @@
 			 *
 			 * @returns {string} A formatted date String.
 			 */
-			function getDateFormatString( dateObj ) {
+			function getFormattedDate( dateObj ) {
 				var year, month, day, hour, min;
 				year = dateObj.getFullYear();
 				month = ( dateObj.getMonth() < 9 ? '0' : '' ) + ( dateObj.getMonth() + 1 );
@@ -183,20 +200,30 @@
 			 *
 			 * Wrapping this in a function
 			 * to prevent _setUpSettingPropertyLinks()
-			 * from returning false.
+			 * from possibly returning false.
 			 */
 			function watchInputs() {
 				inputs.change( function() {
 					var dateInputs = getValidDateInputs();
+
 					if ( false === dateInputs ) {
 						return false;
 					}
-					newDate = new Date( dateInputs.year, dateInputs.monthIndex, dateInputs.day, dateInputs.hour, dateInputs.min );
-					newPostDate.val( getDateFormatString( newDate ) ).trigger( 'change' );
+
+					newDate = new Date(
+						dateInputs.year,
+						dateInputs.monthIndex,
+						dateInputs.day,
+						dateInputs.hour,
+						dateInputs.min
+					);
+					newPostDate.val( getFormattedDate( newDate ) ).trigger( 'change' );
 
 					// Convert the newDate to GMT using WP's gmt_offset option.
 					newDate.setUTCHours( newDate.getUTCHours() - parseFloat( api.Posts.data.gmtOffset ) );
-					newPostDateGmt.val( getDateFormatString( newDate )  ).trigger( 'change' );
+					newPostDateGmt.val( getFormattedDate( newDate )  ).trigger( 'change' );
+
+					updatePostStatus();
 				});
 			}
 
@@ -210,13 +237,43 @@
 			 *
 			 * Used for adjusting Post Status, if necessary.
 			 *
-			 * @todo implement this.
-			 *
-			 * function getGmtNow() {
-			 * 	var browserNow = new Date();
-			 * 	return new Date( browserNow.getUTCFullYear(), browserNow.getUTCMonth(), browserNow.getUTCDate(),  browserNow.getUTCHours(), browserNow.getUTCMinutes(), browserNow.getUTCSeconds() );
-			 * }
+			 * @return {object} Date object.
 			 */
+			function getGmtNow() {
+				var browserNow = new Date();
+				return new Date( browserNow.getUTCFullYear(), browserNow.getUTCMonth(), browserNow.getUTCDate(),  browserNow.getUTCHours(), browserNow.getUTCMinutes(), browserNow.getUTCSeconds() );
+			}
+
+			/**
+			 * Update the post status.
+			 *
+			 * @todo update the visible Post Status control.
+			 * ...It does update when the preview is Saved.
+			 *
+			 * Updating the Post Status control automatically
+			 * updates this control.
+			 *
+			 * @todo if orgPS is future, and date is past, update it to publish
+			 */
+			function updatePostStatus() {
+				var gmtNow = getGmtNow();
+
+				// If the date is in the future, and it is currently published, schedule it.
+				if ( newDate > gmtNow && 'publish' === currentPostStatus ) {
+					newPostStatus.val( 'future' );
+					currentPostStatus = 'future';
+
+					// If we originally had 'future', and now the date is in the past, set it to publish.
+				} else if ( newDate <= gmtNow && 'future' === originalPostStatus ) {
+					newPostStatus.val( 'publish' );
+					currentPostStatus = 'publish';
+
+					// If we start out with a draft, for instance, then go back to draft status.
+				} else if ( newDate <= gmtNow && currentPostStatus !== originalPostStatus ) {
+					newPostStatus.val( originalPostStatus );
+					currentPostStatus = originalPostStatus;
+				}
+			}
 
 			// Set the values.
 			_.each( nodes, function( el ) {
