@@ -1,5 +1,5 @@
 /* global jQuery, wp, _, _wpCustomizePostsExports, console */
-/* eslint no-magic-numbers: [ "error", { "ignore": [0,1,2,3,4,9,10,11,12,23,28,29,30,31,59,9999] } ], consistent-this: ["error", "control" } ]*/
+/* eslint no-magic-numbers: [ "error", { "ignore": [0,1,2,3,4,5,7,89,10,11,12,23,28,29,30,31,59,9999] } ], consistent-this: [ "error", "control" ] */
 
 (function( api, $ ) {
 	'use strict';
@@ -68,6 +68,7 @@
 			inputs = control.container.find( '.date-input' );
 			newPostDate = control.container.find( '.post-date' );
 			newPostDateGmt = control.container.find( '.post-date-gmt' );
+			watchInputs();
 
 			/**
 			 * Return an array of Date pieces.
@@ -115,7 +116,7 @@
 					return false;
 				}
 
-				febMax = ( 0 === result.year % 4 ) ? 29 : 28;
+				febMax = 0 === result.year % 4 ? 29 : 28;
 				monthMax = 30;
 				if ( 1 === monthInt ||
 					3 === monthInt ||
@@ -131,7 +132,6 @@
 					day.addClass( 'error' );
 					return false;
 				} else if ( 2 === monthInt ) {
-					febMax = ( 0 === result.year % 4 ) ? 29 : 28;
 					if ( ! validateRange( result.day, 1, febMax ) ) {
 						day.addClass( 'error' );
 						return false;
@@ -172,25 +172,33 @@
 				if ( isNaN( value ) ) {
 					return false;
 				}
-				return ( min <= value && max >= value );
+				return min <= value && max >= value;
 			}
 
-			/*
+			/**
+			 * Watch our inputs.
+			 *
 			 * When a date input is updated, update the
 			 * hidden input values, then trigger change.
+			 *
+			 * Wrapping this in a function
+			 * to prevent _setUpSettingPropertyLinks()
+			 * from returning false.
 			 */
-			inputs.change( function() {
-				var dateInputs = getValidDateInputs();
-				if ( false === dateInputs ) {
-					return;
-				}
-				newDate = new Date( dateInputs.year, dateInputs.monthIndex, dateInputs.day, dateInputs.hour, dateInputs.min );
-				newPostDate.val( getDateFormatString( newDate ) ).trigger( 'change' );
+			function watchInputs() {
+				inputs.change( function() {
+					var dateInputs = getValidDateInputs();
+					if ( false === dateInputs ) {
+						return false;
+					}
+					newDate = new Date( dateInputs.year, dateInputs.monthIndex, dateInputs.day, dateInputs.hour, dateInputs.min );
+					newPostDate.val( getDateFormatString( newDate ) ).trigger( 'change' );
 
-				// Convert the newDate to GMT using WP's gmt_offset option.
-				newDate.setUTCHours( newDate.getUTCHours() - parseFloat( api.Posts.data.gmtOffset ) );
-				newPostDateGmt.val( getDateFormatString( newDate )  ).trigger( 'change' );
-			});
+					// Convert the newDate to GMT using WP's gmt_offset option.
+					newDate.setUTCHours( newDate.getUTCHours() - parseFloat( api.Posts.data.gmtOffset ) );
+					newPostDateGmt.val( getDateFormatString( newDate )  ).trigger( 'change' );
+				});
+			};
 
 			/**
 			 * Get the current GMT time.

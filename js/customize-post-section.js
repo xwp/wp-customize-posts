@@ -503,6 +503,11 @@
 			} );
 			postData = _.clone( control.setting.get() );
 
+			/**
+			 * Split the post_date into usable parts.
+			 *
+			 * @returns {object} Object of results.
+			 */
 			function getDateInputData() {
 				var date, result = {}, singleCharLimit = 9;
 
@@ -524,7 +529,7 @@
 			/**
 			 * Create the "Published on" string.
 			 *
-			 * @returns {string}
+			 * @returns {string} The Published on string.
 			 */
 			function getPublishedDateString() {
 				var postStatus, date, monthAbbrv;
