@@ -198,7 +198,7 @@
 					newDate.setUTCHours( newDate.getUTCHours() - parseFloat( api.Posts.data.gmtOffset ) );
 					newPostDateGmt.val( getDateFormatString( newDate )  ).trigger( 'change' );
 				});
-			};
+			}
 
 			/**
 			 * Get the current GMT time.
