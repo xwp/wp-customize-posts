@@ -1,5 +1,5 @@
 /* global jQuery, wp, _, _wpCustomizePostsExports, console */
-/* eslint no-magic-numbers: [ "error", { "ignore": [0,1,2,3,4,9,10] } ], consistent-this: ["error", "control" } ]*/
+/* eslint no-magic-numbers: [ "error", { "ignore": [0,1,2,3,4,9,10,11,12,23,28,29,30,31,59,9999] } ], consistent-this: ["error", "control" } ]*/
 
 (function( api, $ ) {
 	'use strict';
@@ -76,16 +76,68 @@
 			 *
 			 * @returns {object} Date object.
 			 */
-			function getNewDate() {
-				var month = $( '.date-input.month' ).val(),
-				monthIndex = parseInt( month, 10 ) - 1,
-				day = $( '.date-input.day' ).val(),
-				year = $( '.date-input.year' ).val(),
-				hour = $( '.date-input.hour' ).val(),
-				min = $( '.date-input.min' ).val();
+			function getValidDateInputs() {
+				var result = {}, month, monthInt, day, year, hour, min, monthMax, febMax;
+				month = control.container.find( '.date-input.month' );
+				day = control.container.find( '.date-input.day' );
+				year = control.container.find( '.date-input.year' );
+				hour = control.container.find( '.date-input.hour' );
+				min = control.container.find( '.date-input.min' );
 
-				// New WP Post Date time.
-				return new Date( year, monthIndex, day, hour, min );
+				month.removeClass( 'error' );
+				day.removeClass( 'error' );
+				year.removeClass( 'error' );
+				hour.removeClass( 'error' );
+				min.removeClass( 'error' );
+
+				result.month = month.val();
+				monthInt = parseInt( result.month, 10 );
+				result.monthIndex = monthInt - 1;
+				result.day = day.val();
+				result.year = year.val();
+				result.hour = hour.val();
+				result.min = min.val();
+
+				// Using validateRange to check if result.year is a number.
+				if ( 4 !== result.year.length || ! validateRange( result.year, 0, 9999 ) ) {
+					year.addClass( 'error' );
+					return false;
+				}
+
+				if ( ! validateRange( result.hour, 0, 23 ) ) {
+					hour.addClass( 'error' );
+					return false;
+				}
+
+				if ( ! validateRange( result.min, 0, 59 ) ) {
+					min.addClass( 'error' );
+					return false;
+				}
+
+				febMax = ( 0 === result.year % 4 ) ? 29 : 28;
+				monthMax = 30;
+				if ( 1 === monthInt ||
+					3 === monthInt ||
+					5 === monthInt ||
+					7 === monthInt ||
+					8 === monthInt ||
+					10 === monthInt ||
+					12 === monthInt ) {
+					monthMax = 31;
+				}
+
+				if ( ! validateRange( result.day, 1, monthMax ) ) {
+					day.addClass( 'error' );
+					return false;
+				} else if ( 2 === monthInt ) {
+					febMax = ( 0 === result.year % 4 ) ? 29 : 28;
+					if ( ! validateRange( result.day, 1, febMax ) ) {
+						day.addClass( 'error' );
+						return false;
+					}
+				}
+
+				return result;
 			}
 
 			/**
@@ -107,12 +159,23 @@
 				return year + '-' + month + '-' + day + ' ' + hour + ':' + min + ':00';
 			}
 
+			function validateRange( value, min, max ) {
+				if ( isNaN( value ) ) {
+					return false;
+				}
+				return ( min <= value && max >= value );
+			}
+
 			/*
 			 * When a date input is updated, update the
 			 * hidden input values, then trigger change.
 			 */
 			inputs.change( function() {
-				newDate = getNewDate();
+				var dateInputs = getValidDateInputs();
+				if ( false === dateInputs ) {
+					return;
+				}
+				newDate = new Date( dateInputs.year, dateInputs.monthIndex, dateInputs.day, dateInputs.hour, dateInputs.min );
 				newPostDate.val( getDateFormatString( newDate ) ).trigger( 'change' );
 
 				// Convert the newDate to GMT using WP's gmt_offset option.
