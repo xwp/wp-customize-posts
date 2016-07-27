@@ -592,6 +592,7 @@ final class WP_Customize_Posts {
 				'openEditor' => __( 'Open Editor', 'customize-posts' ),
 				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
 				'jumpToPostPlaceholder' => __( 'Jump to %s', 'customize-posts' ),
+				'monthAbbrvs' => $this->get_month_abbreviations(),
 			),
 			'gmtOffset' => $this->get_gmt_offset(),
 		);
@@ -1135,5 +1136,20 @@ final class WP_Customize_Posts {
 		$offset = zeroise( $offset, 2 );
 
 		return ( (float) ( $prefix . $offset ) );
+	}
+
+	/**
+	 * Translated Month Abbreviations.
+	 *
+	 * @return array
+	 */
+	public function get_month_abbreviations() {
+		global $wp_locale;
+		$result = array();
+		for ( $i = 1; $i < 13; $i++ ) {
+			$month_number = zeroise( $i, 2 );
+			$result[ $month_number ] = $wp_locale->get_month_abbrev( $wp_locale->get_month( $month_number ) );
+		}
+		return $result;
 	}
 }

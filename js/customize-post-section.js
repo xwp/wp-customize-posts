@@ -486,7 +486,7 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addPostDateControl: function() {
-			var section = this, control, setting = api( section.id );
+			var section = this, control, setting = api( section.id ), postData;
 
 			control = new api.controlConstructor.post_date( section.id + '[post_date]', {
 				params: {
@@ -501,11 +501,11 @@
 					setting_property: 'post_date'
 				}
 			} );
+			postData = _.clone( control.setting.get() );
 
 			function getDateInputData() {
-				var postData, date, result = {}, singleCharLimit = 9;
+				var date, result = {}, singleCharLimit = 9;
 
-				postData = _.clone( control.setting.get() );
 				date = new Date( postData.post_date );
 
 				result.month = date.getMonth() + 1;
@@ -521,8 +521,32 @@
 			}
 			control.params.date_data = getDateInputData();
 
+			/**
+			 * Create the "Published on" string.
+			 *
+			 * @returns {string}
+			 */
+			function getPublishedDateString() {
+				var postStatus, date, monthAbbrv;
+				date = control.params.date_data;
+				postStatus = _.clone( postData.post_status );
+
+				_.each( api.Posts.data.postStatusChoices, function( item ) {
+					if ( postStatus === item.value ) {
+						postStatus = item.text;
+					}
+				});
+				monthAbbrv = api.Posts.data.l10n.monthAbbrvs[ date.month ];
+
+				return postStatus + ' on: <strong>' + monthAbbrv + ' ' + date.day + ', ' + date.year + ' @ ' + date.hour + ':' + date.min + '</strong>';
+			}
+			control.params.published_text = getPublishedDateString();
+
 			// Set each visible date input with the proper value.
 			control.deferred.embedded.done( function() {
+				var dateText;
+				dateText = control.container.find( '.published-date' );
+				dateText.html( control.params.published_text );
 				_.each( control.params.date_data, function( val, type ) {
 					var input = control.container.find( '.date-input.' + type );
 					input.val( val );

@@ -114,7 +114,7 @@
 				newPostDate.val( getDateFormatString( newDate ) ).trigger( 'change' );
 
 				// Convert the newDate to GMT using WP's gmt_offset option.
-				newDate.setUTCHours( newDate.getUTCHours() - parseFloat( api.Posts.data.date.gmtOffset ) );
+				newDate.setUTCHours( newDate.getUTCHours() - parseFloat( api.Posts.data.gmtOffset ) );
 				newPostDateGmt.val( getDateFormatString( newDate )  ).trigger( 'change' );
 			});
 

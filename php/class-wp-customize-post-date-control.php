@@ -62,6 +62,7 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 		<# if ( data.description ) { #>
 			<span class="description customize-control-description">{{ data.description }}</span>
 		<# } #>
+		<p class="published-date"></p>
 
 		<# _.each( data.date_inputs, function( width, type ) { #>
 			<# if ( 'month' === type  ) { #>
