@@ -55,18 +55,18 @@
 		 * @private
 		 */
 		_setUpSettingPropertyLinks: function() {
-			var control = this, nodes, inputs, newDate, newPostDate, newPostDateGmt;
-			if ( ! control.setting ) {
+			var nodes, inputs, newDate, newPostDate, newPostDateGmt;
+			if ( ! this.setting ) {
 				return;
 			}
 
 			nodes = {
-				post_date: control.container.find( '.post-date' ),
-				post_date_gmt: control.container.find( '.post-date-gmt' )
+				post_date: this.container.find( '.post-date' ),
+				post_date_gmt: this.container.find( '.post-date-gmt' )
 			};
-			inputs = control.container.find( '.date-input' );
-			newPostDate = control.container.find( '.post-date' );
-			newPostDateGmt = control.container.find( '.post-date-gmt' );
+			inputs = this.container.find( '.date-input' );
+			newPostDate = this.container.find( '.post-date' );
+			newPostDateGmt = this.container.find( '.post-date-gmt' );
 
 			/**
 			 * Return a Date Object.
@@ -92,8 +92,9 @@
 			 *
 			 * Returns 'Y-m-d H:i:00' format.
 			 *
-			 * @param dateObj A Date object.
-			 * @returns {string}
+			 * @param {object} dateObj A Date object.
+			 *
+			 * @returns {string} A formatted date String.
 			 */
 			function getDateFormatString( dateObj ) {
 				var year, month, day, hour, min;
@@ -143,20 +144,20 @@
 					propertyName = node.data( 'customizeSettingPropertyLink' );
 
 				element = new api.Element( node );
-				control.propertyElements.push( element );
-				element.set( control.setting()[ propertyName ] );
+				this.propertyElements.push( element );
+				element.set( this.setting()[ propertyName ] );
 
 				// Saves the setting
 				element.bind( function( newPropertyValue ) {
-					var newSetting = control.setting();
+					var newSetting = this.setting();
 					if ( newPropertyValue === newSetting[ propertyName ] ) {
 						return;
 					}
 					newSetting = _.clone( newSetting );
 					newSetting[ propertyName ] = newPropertyValue;
-					control.setting.set( newSetting );
+					this.setting.set( newSetting );
 				} );
-				control.setting.bind( function( newValue ) {
+				this.setting.bind( function( newValue ) {
 					if ( newValue[ propertyName ] !== element.get() ) {
 						element.set( newValue[ propertyName ] );
 					}
