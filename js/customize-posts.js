@@ -1,5 +1,5 @@
 /* global jQuery, wp, _, _wpCustomizePostsExports, console */
-/* eslint no-magic-numbers: [ "error", { "ignore": [0,1,2,3,4] } ] */
+/* eslint no-magic-numbers: [ "error", { "ignore": [0,1,2,3,4,9,10] } ] */
 
 (function( api, $ ) {
 	'use strict';
@@ -20,17 +20,7 @@
 			fieldContentLabel: '',
 			fieldExcerptLabel: ''
 		},
-		date: {
-			gmtOffset: 0,
-			months: {
-				names: [],
-				abbrvs: []
-			},
-			days: {
-				names: [],
-				abbrvs: []
-			}
-		},
+		gmtOffset: 0,
 		postIdInput: null
 	};
 
@@ -65,7 +55,7 @@
 		 * @private
 		 */
 		_setUpSettingPropertyLinks: function() {
-			var control = this, nodes, inputs, newDate, newPostDate, newPostDateGmt, dateFormat;
+			var control = this, nodes, inputs, newDate, newPostDate, newPostDateGmt;
 			if ( ! control.setting ) {
 				return;
 			}
@@ -77,12 +67,13 @@
 			inputs = control.container.find( '.date-input' );
 			newPostDate = control.container.find( '.post-date' );
 			newPostDateGmt = control.container.find( '.post-date-gmt' );
-			dateFormat = 'Y-m-d H:i:00';
 
 			/**
 			 * Return a Date Object.
 			 *
 			 * Uses inputs to create a new Date.
+			 *
+			 * @returns {object} Date object.
 			 */
 			function getNewDate() {
 				var month = $( '.date-input.month' ).val(),
@@ -96,17 +87,35 @@
 				return new Date( year, monthIndex, day, hour, min );
 			}
 
+			/**
+			 * Format a Date Object.
+			 *
+			 * Returns 'Y-m-d H:i:00' format.
+			 *
+			 * @param dateObj A Date object.
+			 * @returns {string}
+			 */
+			function getDateFormatString( dateObj ) {
+				var year, month, day, hour, min;
+				year = dateObj.getFullYear();
+				month = ( dateObj.getMonth() < 9 ? '0' : '' ) + ( dateObj.getMonth() + 1 );
+				day = ( dateObj.getDate() < 10 ? '0' : '' ) + dateObj.getDate();
+				hour = ( dateObj.getHours() < 10 ? '0' : '' ) + dateObj.getHours();
+				min = ( dateObj.getMinutes() < 10 ? '0' : '' ) + dateObj.getMinutes();
+				return year + '-' + month + '-' + day + ' ' + hour + ':' + min + ':00';
+			}
+
 			/*
 			 * When a date input is updated, update the
 			 * hidden input values, then trigger change.
 			 */
 			inputs.change( function() {
 				newDate = getNewDate();
-				newPostDate.val( newDate.format( dateFormat ) ).trigger( 'change' );
+				newPostDate.val( getDateFormatString( newDate ) ).trigger( 'change' );
 
-				// Convert the newDate to GMT using WP's GMT offset option.
+				// Convert the newDate to GMT using WP's gmt_offset option.
 				newDate.setUTCHours( newDate.getUTCHours() - parseFloat( api.Posts.data.date.gmtOffset ) );
-				newPostDateGmt.val( newDate.format( dateFormat ) ).trigger( 'change' );
+				newPostDateGmt.val( getDateFormatString( newDate )  ).trigger( 'change' );
 			});
 
 			/**
@@ -153,209 +162,6 @@
 					}
 				} );
 			});
-
-			/*
-			 * Accurately replace any PHP date format string in JS.
-			 *
-			 * Modified from:
-			 * https://github.com/jacwright/date.format
-			 *
-			 * @todo maybe move this.
-			 *
-			 * MIT license.
-			 */
-			Date.prototype.format = function( format ) {
-				var returnStr = '', replace, i = 0, currentCharacter;
-				replace = Date.replaceChars;
-				for ( i; i < format.length; i++ ) {
-					currentCharacter = format.charAt( i );
-					if ( replace[ currentCharacter ] ) {
-						returnStr += replace[ currentCharacter ].call( this );
-					} else if ( currentCharacter ) {
-						returnStr += currentCharacter;
-					}
-				}
-				return returnStr;
-			};
-
-			/*
-			 * Accurately replace any PHP date format string in JS.
-			 *
-			 * Assists with validation as well.
-			 *
-			 * Example: this will accurately validate 61 seconds as 1 minute and 1 second.
-			 *
-			 * Modified from:
-			 * https://github.com/jacwright/date.format
-			 *
-			 * @todo maybe move this.
-			 *
-			 * MIT license.
-			 */
-			Date.replaceChars = {
-				shortMonths: api.Posts.data.date.months.abbrvs,
-				longMonths: api.Posts.data.date.months.names,
-				shortDays: api.Posts.data.date.days.abbrvs,
-				longDays: api.Posts.data.date.days.names,
-
-				// Day
-				d: function() {
-					return ( this.getDate() < 10 ? '0' : '' ) + this.getDate();
-				},
-				D: function() {
-					return Date.replaceChars.shortDays[ this.getDay() ];
-				},
-				j: function() {
-					return this.getDate();
-				},
-				l: function() {
-					return Date.replaceChars.longDays[ this.getDay() ];
-				},
-				N: function() {
-					return this.getDay() + 1;
-				},
-				S: function() {
-					var result = 'th';
-					if ( 1 === this.getDate() % 10 && 11 !== this.getDate() ) {
-						result = 'st';
-					} else if ( 2 === this.getDate() % 10 && 12 !== this.getDate() ) {
-						result = 'nd';
-					} else if ( 3 === this.getDate() % 10 && 13 !== this.getDate() ) {
-						result = 'rd';
-					}
-					return result;
-				},
-				w: function() {
-					return this.getDay();
-				},
-				z: function() {
-					var d = new Date( this.getFullYear(), 0, 1 );
-					return Math.ceil( ( this - d ) / 86400000 );
-				},
-
-				// Week
-				W: function() {
-					var d = new Date( this.getFullYear(), 0, 1 );
-					return Math.ceil( ( ( ( this - d ) / 86400000 ) + d.getDay() + 1 ) / 7 );
-				},
-
-				// Month
-				F: function() {
-					return Date.replaceChars.longMonths[ this.getMonth() ];
-				},
-				m: function() {
-					return ( this.getMonth() < 9 ? '0' : '' ) + ( this.getMonth() + 1 );
-				},
-				M: function() {
-					return Date.replaceChars.shortMonths[ this.getMonth() ];
-				},
-				n: function() {
-					return this.getMonth() + 1;
-				},
-				t: function() {
-					var d = new Date();
-					return new Date( d.getFullYear(), d.getMonth(), 0 ).getDate();
-				},
-
-				// Year
-				L: function() {
-					var year = this.getFullYear();
-					return ( 0 === year % 400  || ( 0 !== year % 100 && 0 === year % 4 ) );
-				},
-				o: function() {
-					var d  = new Date( this.valueOf( ) );
-					d.setDate( d.getDate() - ( ( this.getDay() + 6 ) % 7 ) + 3 );
-					return d.getFullYear();
-				},
-				Y: function() {
-					return this.getFullYear();
-				},
-				y: function() {
-					return ( '' + this.getFullYear() ).substr( 2 );
-				},
-
-				// Time
-				a: function() {
-					return this.getHours() < 12 ? 'am' : 'pm';
-				},
-				A: function() {
-					return this.getHours() < 12 ? 'AM' : 'PM';
-				},
-				B: function() {
-					return Math.floor( ( ( ( this.getUTCHours() + 1 ) % 24 ) + this.getUTCMinutes() / 60 + this.getUTCSeconds() / 3600 ) * 1000 / 24 );
-				},
-				g: function() {
-					return this.getHours() % 12 || 12;
-				},
-				G: function() {
-					return this.getHours();
-				},
-				h: function() {
-					return ( ( this.getHours() % 12 || 12 ) < 10 ? '0' : '' ) + ( this.getHours() % 12 || 12 );
-				},
-				H: function() {
-					return ( this.getHours() < 10 ? '0' : '' ) + this.getHours();
-				},
-				i: function() {
-					return ( this.getMinutes() < 10 ? '0' : '' ) + this.getMinutes();
-				},
-				s: function() {
-					return ( this.getSeconds() < 10 ? '0' : '' ) + this.getSeconds();
-				},
-				u: function() {
-					var m = this.getMilliseconds();
-					return ( m < 10 ? '00' : ( m < 100 ? '0' : '' ) ) + m;
-				},
-
-				// Timezone
-				e: function() {
-					return 'Not Yet Supported';
-				},
-				I: function() {
-					var DST = null, i = 0, d, offset;
-					for ( i; i < 12; ++i ) {
-						d = new Date( this.getFullYear(), i, 1 );
-						offset = d.getTimezoneOffset();
-
-						if ( null === DST ) {
-							DST = offset;
-						} else if ( offset < DST ) {
-							DST = offset;
-							break;
-						} else if ( offset > DST ) {
-							break;
-						}
-					}
-					return ( DST === this.getTimezoneOffset() ) | 0;
-				},
-				O: function() {
-					return ( -this.getTimezoneOffset() < 0 ? '-' : '+' ) + ( Math.abs( this.getTimezoneOffset() / 60 ) < 10 ? '0' : '' ) + ( Math.abs( this.getTimezoneOffset() / 60 ) ) + '00';
-				},
-				P: function() {
-					return ( -this.getTimezoneOffset() < 0 ? '-' : '+' ) + ( Math.abs( this.getTimezoneOffset() / 60 ) < 10 ? '0' : '' ) + ( Math.abs( this.getTimezoneOffset() / 60 ) ) + ':00';
-				},
-				T: function() {
-					var result, m = this.getMonth();
-					this.setMonth( 0 );
-					result = this.toTimeString().replace( /^.+ \(?([^\)]+)\)?$/, '$1' );
-					this.setMonth( m );
-					return result;
-				},
-				Z: function() {
-					return -this.getTimezoneOffset() * 60;
-				},
-
-				// Full Date/Time
-				c: function() {
-					return this.format( 'Y-m-d TH:i:sP' );
-				},
-				r: function() {
-					return this.toString();
-				},
-				U: function() {
-					return this.getTime() / 1000;
-				}
-			};
 		}
 	});
 
