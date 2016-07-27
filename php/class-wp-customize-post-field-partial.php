@@ -234,6 +234,21 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 	}
 
 	/**
+	 * Render the post excerpt.
+	 *
+	 * @param WP_Customize_Partial $partial Partial.
+	 * @param array                $context Context.
+	 * @param WP_Post              $post    Post object.
+	 * @return string
+	 */
+	public function render_post_date( $partial, $context, $post ) {
+		unset( $partial, $context, $post );
+		$rendered = get_the_date();
+
+		return $rendered;
+	}
+
+	/**
 	 * Render pings.
 	 *
 	 * @param WP_Customize_Partial $partial Partial.

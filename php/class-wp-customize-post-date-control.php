@@ -2,6 +2,8 @@
 /**
  * Customize Post Date Control Class
  *
+ * @todo Update Post Status when appropriate.
+ *
  * @package WordPress
  * @subpackage Customize
  */
@@ -30,7 +32,7 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 		// Type / width pairs.
 		$exported['date_inputs'] = array(
 			'month' => null,
-			'date' => 2,
+			'day' => 2,
 			'year' => 4,
 			'hour' => 2,
 			'min' => 2,
@@ -41,7 +43,9 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 	/**
 	 * Render the Underscore template for this control.
 	 *
-	 * @todo change classes to IDs where appropriate.
+	 * @todo remove this comment:
+	 * Note: To view the output during development,
+	 * convert the hidden inputs below to text inputs.
 	 *
 	 * @access protected
 	 * @codeCoverageIgnore
@@ -51,7 +55,8 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 		?>
 		<#
 			_.defaults( data, <?php echo wp_json_encode( $data ) ?> );
-			data.input_id = 'input-' + String( Math.random() );
+			data.input_id_post_date = 'input-' + String( Math.random() );
+			data.input_id_post_date_gmt = 'input-' + String( Math.random() );
 		#>
 		<span class="customize-control-title"><label for="{{ data.input_id }}">{{ data.label }}</label></span>
 		<# if ( data.description ) { #>
@@ -75,10 +80,9 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 				<input
 					type="text"
 					size="{{ width }}"
-					maxlength="{{width}}"
+					maxlength="{{ width }}"
 					autocomplete="off"
 					class="date-input {{ type }}"
-					value=""
 					/>
 					<# if ( 'year' === type ) { #>
 						&nbsp;@&nbsp;
@@ -86,32 +90,21 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 			<# } #>
 		<# }); #>
 		<input
-			id="{{ data.input_id }}"
-			type="text"
-		    class="friendly-date"
-		    value=""
-			/>
-		<input
-			id="{{ data.input_id }}"
-			type="text"
-		    class="original-date"
-			<# _.each( data.input_attrs, function( value, key ) { #>
-				{{{ key }}}="{{ value }}"
-			<# } ) #>
+			id="{{ data.input_id_post_date }}"
+			type="hidden"
+		    class="post-date"
 			<# if ( data.setting_property ) { #>
-				data-customize-setting-property-link="{{ data.setting_property }}"
+				data-customize-setting-property-link="post_date"
 			<# } #>
 			/>
 		<input
-			id="{{ data.input_id }}"
-			type="text"
-		    class="attempted-date"
+			id="{{ data.input_id_post_date_gmt }}"
+			type="hidden"
+		    class="post-date-gmt"
 			value=""
-			/>
-		<input
-			type="text"
-			class="date-time-date"
-			value=""
+			<# if ( data.setting_property ) { #>
+				data-customize-setting-property-link="post_date_gmt"
+			<# } #>
 			/>
 		<?php
 	}

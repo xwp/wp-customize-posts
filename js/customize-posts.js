@@ -20,8 +20,17 @@
 			fieldContentLabel: '',
 			fieldExcerptLabel: ''
 		},
-		dateFormat: 'F j, Y',
-		tzOffset: 0,
+		date: {
+			gmtOffset: 0,
+			months: {
+				names: [],
+				abbrvs: []
+			},
+			days: {
+				names: [],
+				abbrvs: []
+			}
+		},
 		postIdInput: null
 	};
 
@@ -42,6 +51,13 @@
 		}
 	});
 
+	/**
+	 * Post Date control extension of Dynamic Control.
+	 *
+	 * This updates both the post_date and post_date_gmt.
+	 *
+	 * @todo update Post Status as appropriate.
+	 */
 	api.controlConstructor.post_date = api.controlConstructor.dynamic.extend({
 		/**
 		 * Add bidirectional data binding links between inputs and the setting properties.
@@ -49,48 +65,93 @@
 		 * @private
 		 */
 		_setUpSettingPropertyLinks: function() {
-			var control = this, nodes, inputs, nowBrowser, nowGmt, newDate, newGmtDate, friendlyDate, attemptedDate, dateTimeDate;
+			var control = this, nodes, inputs, newDate, newPostDate, newPostDateGmt, dateFormat;
 			if ( ! control.setting ) {
 				return;
 			}
 
-			nodes = control.container.find( '[data-customize-setting-property-link]' );
+			nodes = {
+				post_date: control.container.find( '.post-date' ),
+				post_date_gmt: control.container.find( '.post-date-gmt' )
+			};
 			inputs = control.container.find( '.date-input' );
-			friendlyDate = control.container.find( '.friendly-date' );
-			attemptedDate = control.container.find( '.attempted-date' );
-			dateTimeDate = control.container.find( '.date-time-date' );
+			newPostDate = control.container.find( '.post-date' );
+			newPostDateGmt = control.container.find( '.post-date-gmt' );
+			dateFormat = 'Y-m-d H:i:00';
 
-			// Browser Local time "Now"
-			nowBrowser = new Date();
+			/**
+			 * Return a Date Object.
+			 *
+			 * Uses inputs to create a new Date.
+			 */
+			function getNewDate() {
+				var month = $( '.date-input.month' ).val(),
+				monthIndex = parseInt( month, 10 ) - 1,
+				day = $( '.date-input.day' ).val(),
+				year = $( '.date-input.year' ).val(),
+				hour = $( '.date-input.hour' ).val(),
+				min = $( '.date-input.min' ).val();
 
-			// Browser "Now" time, converted to GMT for validation comparison.
-			nowGmt = new Date( nowBrowser.getUTCFullYear(), nowBrowser.getUTCMonth(), nowBrowser.getUTCDate(),  nowBrowser.getUTCHours(), nowBrowser.getUTCMinutes(), nowBrowser.getUTCSeconds() );
+				// New WP Post Date time.
+				return new Date( year, monthIndex, day, hour, min );
+			}
 
+			/*
+			 * When a date input is updated, update the
+			 * hidden input values, then trigger change.
+			 */
 			inputs.change( function() {
-				var data = [];
-				data.month = $( '.date-input.month' ).val();
-				data.monthIndex = parseInt( data.month, 10 ) - 1;
-				data.date = $( '.date-input.date' ).val();
-				data.year = $( '.date-input.year' ).val();
-				data.hour = $( '.date-input.hour' ).val();
-				data.min = $( '.date-input.min' ).val();
+				newDate = getNewDate();
+				newPostDate.val( newDate.format( dateFormat ) ).trigger( 'change' );
 
-				// New WP Post Date time, on change.
-				newDate = new Date( data.year, data.monthIndex, data.date, data.hour, data.min );
+				// Convert the newDate to GMT using WP's GMT offset option.
+				newDate.setUTCHours( newDate.getUTCHours() - parseFloat( api.Posts.data.date.gmtOffset ) );
+				newPostDateGmt.val( newDate.format( dateFormat ) ).trigger( 'change' );
+			});
 
-				// This statement needs to be here, before the newDate is converted to GMT.
-				friendlyDate.val( newDate.format( api.Posts.data.dateFormat ) );
+			/**
+			 * Get the current GMT time.
+			 *
+			 * Fetches browser local "now" time, then
+			 * converts it to a Date object, offset to GMT.
+			 * This can then be compared to newDate using simple
+			 * arithmetic operators.
+			 *
+			 * Used for adjusting Post Status, if necessary.
+			 *
+			 * @todo implement this.
+			 *
+			 * function getGmtNow() {
+			 * 	var browserNow = new Date();
+			 * 	return new Date( browserNow.getUTCFullYear(), browserNow.getUTCMonth(), browserNow.getUTCDate(),  browserNow.getUTCHours(), browserNow.getUTCMinutes(), browserNow.getUTCSeconds() );
+			 * }
+			 */
 
-				/*
-				 * Convert the newDate to GMT using WP's GMT offset.
-				 *
-				 * The placement of this expression after updating the friendlyDate is important.
-				 */
-				newDate.setUTCHours( newDate.getUTCHours() - parseFloat( api.Posts.data.tzOffset ) );
+			// Set the values.
+			_.each( nodes, function( el ) {
+				var node = $( el ),
+					element,
+					propertyName = node.data( 'customizeSettingPropertyLink' );
 
-				attemptedDate.val( newDate.format( 'Y-m-d H:i:00' ) );
+				element = new api.Element( node );
+				control.propertyElements.push( element );
+				element.set( control.setting()[ propertyName ] );
 
-				dateTimeDate.val( newDate.format( 'Y-m-d' ) + 'T' + newDate.format( 'H:i:s' ) + '+00:00' );
+				// Saves the setting
+				element.bind( function( newPropertyValue ) {
+					var newSetting = control.setting();
+					if ( newPropertyValue === newSetting[ propertyName ] ) {
+						return;
+					}
+					newSetting = _.clone( newSetting );
+					newSetting[ propertyName ] = newPropertyValue;
+					control.setting.set( newSetting );
+				} );
+				control.setting.bind( function( newValue ) {
+					if ( newValue[ propertyName ] !== element.get() ) {
+						element.set( newValue[ propertyName ] );
+					}
+				} );
 			});
 
 			/*
@@ -98,6 +159,8 @@
 			 *
 			 * Modified from:
 			 * https://github.com/jacwright/date.format
+			 *
+			 * @todo maybe move this.
 			 *
 			 * MIT license.
 			 */
@@ -125,15 +188,15 @@
 			 * Modified from:
 			 * https://github.com/jacwright/date.format
 			 *
-			 * @todo l10n months/days.
+			 * @todo maybe move this.
 			 *
 			 * MIT license.
 			 */
 			Date.replaceChars = {
-				shortMonths: [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-				longMonths: [ 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ],
-				shortDays: [ 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat' ],
-				longDays: [ 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday' ],
+				shortMonths: api.Posts.data.date.months.abbrvs,
+				longMonths: api.Posts.data.date.months.names,
+				shortDays: api.Posts.data.date.days.abbrvs,
+				longDays: api.Posts.data.date.days.names,
 
 				// Day
 				d: function() {
@@ -220,7 +283,7 @@
 				},
 				B: function() {
 					return Math.floor( ( ( ( this.getUTCHours() + 1 ) % 24 ) + this.getUTCMinutes() / 60 + this.getUTCSeconds() / 3600 ) * 1000 / 24 );
-				}, // Fixed now
+				},
 				g: function() {
 					return this.getHours() % 12 || 12;
 				},
@@ -293,34 +356,6 @@
 					return this.getTime() / 1000;
 				}
 			};
-
-			/*
-			 * This sets the actual value.
-			 */
-			nodes.each( function() {
-				var node = $( this ),
-					element,
-					propertyName = node.data( 'customizeSettingPropertyLink' );
-
-				element = new api.Element( node );
-				control.propertyElements.push( element );
-				element.set( control.setting()[ propertyName ] );
-
-				element.bind( function( newPropertyValue ) {
-					var newSetting = control.setting();
-					if ( newPropertyValue === newSetting[ propertyName ] ) {
-						return;
-					}
-					newSetting = _.clone( newSetting );
-					newSetting[ propertyName ] = newPropertyValue;
-					control.setting.set( newSetting );
-				} );
-				control.setting.bind( function( newValue ) {
-					if ( newValue[ propertyName ] !== element.get() ) {
-						element.set( newValue[ propertyName ] );
-					}
-				} );
-			});
 		}
 	});
 

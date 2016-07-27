@@ -486,13 +486,7 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addPostDateControl: function() {
-			var section = this,
-				control,
-				setting = api( section.id ),
-				postData,
-				date,
-				dateArray = {},
-				singleCharLimit = 9;
+			var section = this, control, setting = api( section.id );
 
 			control = new api.controlConstructor.post_date( section.id + '[post_date]', {
 				params: {
@@ -508,21 +502,26 @@
 				}
 			} );
 
-			function getDateInputData( control ) {
+			function getDateInputData() {
+				var postData, date, result = {}, singleCharLimit = 9;
+
 				postData = _.clone( control.setting.get() );
 				date = new Date( postData.post_date );
-				dateArray.date = date.getDate().toString();
-				dateArray.month = date.getMonth() + 1;
-				if ( singleCharLimit >= dateArray.month ) {
-					dateArray.month = '0' + dateArray.month;
-				}
-				dateArray.year = date.getFullYear().toString();
-				dateArray.hour = date.getHours().toString();
-				dateArray.min = date.getMinutes().toString();
-				return dateArray;
-			}
-			control.params.date_data = getDateInputData( control );
 
+				result.month = date.getMonth() + 1;
+				if ( singleCharLimit >= result.month ) {
+					result.month = '0' + result.month;
+				}
+
+				result.day = date.getDate().toString();
+				result.year = date.getFullYear().toString();
+				result.hour = date.getHours().toString();
+				result.min = date.getMinutes().toString();
+				return result;
+			}
+			control.params.date_data = getDateInputData();
+
+			// Set each visible date input with the proper value.
 			control.deferred.embedded.done( function() {
 				_.each( control.params.date_data, function( val, type ) {
 					var input = control.container.find( '.date-input.' + type );

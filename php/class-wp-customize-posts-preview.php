@@ -689,7 +689,7 @@ final class WP_Customize_Posts_Preview {
 				'fallback_refresh' => true,
 			),
 			'post_date' => array(
-				'selector' => '.entry-date',
+				'selector' => 'time.entry-date',
 				'fallback_refresh' => true,
 			),
 			'post_content' => array(
