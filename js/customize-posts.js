@@ -70,11 +70,12 @@
 			newPostDateGmt = control.container.find( '.post-date-gmt' );
 
 			/**
-			 * Return a Date Object.
+			 * Return an array of Date pieces.
 			 *
-			 * Uses inputs to create a new Date.
+			 * "Pieces" here refers to each part of the date,
+			 * (e.g., "month," "day," "year," etc.).
 			 *
-			 * @returns {object} Date object.
+			 * @returns {array} Array of date pieces.
 			 */
 			function getValidDateInputs() {
 				var result = {}, month, monthInt, day, year, hour, min, monthMax, febMax;
@@ -159,6 +160,14 @@
 				return year + '-' + month + '-' + day + ' ' + hour + ':' + min + ':00';
 			}
 
+			/**
+			 * Check if a number is between two others.
+			 *
+			 * @param {number} value Input value.
+			 * @param {number} min Minimum value.
+			 * @param {number} max Maximum value.
+			 * @returns {boolean} If in range.
+			 */
 			function validateRange( value, min, max ) {
 				if ( isNaN( value ) ) {
 					return false;
