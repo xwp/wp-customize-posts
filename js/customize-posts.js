@@ -1,5 +1,5 @@
 /* global jQuery, wp, _, _wpCustomizePostsExports, console */
-/* eslint no-magic-numbers: [ "error", { "ignore": [0,1,2,3,4,9,10] } ] */
+/* eslint no-magic-numbers: [ "error", { "ignore": [0,1,2,3,4,9,10] } ] consistent-this: ["error", { "ignore": [ "control"]  } ]*/
 
 (function( api, $ ) {
 	'use strict';
@@ -55,18 +55,19 @@
 		 * @private
 		 */
 		_setUpSettingPropertyLinks: function() {
-			var nodes, inputs, newDate, newPostDate, newPostDateGmt;
-			if ( ! this.setting ) {
+
+			var control = this, nodes, inputs, newDate, newPostDate, newPostDateGmt;
+			if ( ! control.setting ) {
 				return;
 			}
 
 			nodes = {
-				post_date: this.container.find( '.post-date' ),
-				post_date_gmt: this.container.find( '.post-date-gmt' )
+				post_date: control.container.find( '.post-date' ),
+				post_date_gmt: control.container.find( '.post-date-gmt' )
 			};
-			inputs = this.container.find( '.date-input' );
-			newPostDate = this.container.find( '.post-date' );
-			newPostDateGmt = this.container.find( '.post-date-gmt' );
+			inputs = control.container.find( '.date-input' );
+			newPostDate = control.container.find( '.post-date' );
+			newPostDateGmt = control.container.find( '.post-date-gmt' );
 
 			/**
 			 * Return a Date Object.
@@ -144,20 +145,20 @@
 					propertyName = node.data( 'customizeSettingPropertyLink' );
 
 				element = new api.Element( node );
-				this.propertyElements.push( element );
-				element.set( this.setting()[ propertyName ] );
+				control.propertyElements.push( element );
+				element.set( control.setting()[ propertyName ] );
 
 				// Saves the setting
 				element.bind( function( newPropertyValue ) {
-					var newSetting = this.setting();
+					var newSetting = control.setting();
 					if ( newPropertyValue === newSetting[ propertyName ] ) {
 						return;
 					}
 					newSetting = _.clone( newSetting );
 					newSetting[ propertyName ] = newPropertyValue;
-					this.setting.set( newSetting );
+					control.setting.set( newSetting );
 				} );
-				this.setting.bind( function( newValue ) {
+				control.setting.bind( function( newValue ) {
 					if ( newValue[ propertyName ] !== element.get() ) {
 						element.set( newValue[ propertyName ] );
 					}
