@@ -203,9 +203,15 @@ class Customize_Posts_Plugin {
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
+		$handle = 'customize-post-date-control';
+		$src = plugins_url( 'js/customize-post-date-control' . $suffix, dirname( __FILE__ ) );
+		$deps = array( 'customize-dynamic-control', 'jquery' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
 		$handle = 'customize-post-section';
 		$src = plugins_url( 'js/customize-post-section' . $suffix, dirname( __FILE__ ) );
-		$deps = array( 'customize-controls' );
+		$deps = array( 'customize-controls', 'customize-post-date-control' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
@@ -224,7 +230,6 @@ class Customize_Posts_Plugin {
 			'customize-posts-panel',
 			'customize-post-section',
 			'customize-dynamic-control',
-			'customize-post-date',
 			'underscore',
 		);
 		if ( ! $is_gte_wp46_beta ) {
@@ -286,12 +291,6 @@ class Customize_Posts_Plugin {
 		$handle = 'customize-preview-featured-image';
 		$src = plugins_url( 'js/customize-preview-featured-image' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'customize-preview', 'customize-selective-refresh', 'customize-preview-posts' );
-		$in_footer = 1;
-		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
-
-		$handle = 'customize-post-date';
-		$src = plugins_url( 'js/customize-post-date' . $suffix, dirname( __FILE__ ) );
-		$deps = array( 'jquery' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 	}
