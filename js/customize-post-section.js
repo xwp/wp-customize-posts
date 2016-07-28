@@ -414,7 +414,7 @@
 				params: {
 					section: section.id,
 					priority: 20,
-					label: postTypeObj.labels.status_field ? postTypeObj.labels.status_field : api.Posts.data.l10n.fieldPostStatusLabel,
+					label: postTypeObj.labels.status_field ? postTypeObj.labels.status_field : api.Posts.data.l10n.fieldStatusLabel,
 					active: true,
 					settings: {
 						'default': setting.id
@@ -492,7 +492,7 @@
 				params: {
 					section: section.id,
 					priority: 21,
-					label: api.Posts.data.l10n.fieldPostDateLabel,
+					label: api.Posts.data.l10n.fieldDateLabel,
 					active: true,
 					settings: {
 						'default': setting.id
