@@ -238,6 +238,9 @@
 			 *
 			 * Otherwise, we can end up with a Scheduled post status and a
 			 * published date in the past.
+			 *
+			 *
+			 * @returns {boolean}
 			 */
 			function updatePostStatus() {
 				var gmtNow = getGmtNow();
@@ -263,6 +266,7 @@
 					newPostStatus.val( originalPostStatus );
 					currentPostStatus = originalPostStatus;
 				}
+				return true;
 			}
 
 			inputs.change( function() {
