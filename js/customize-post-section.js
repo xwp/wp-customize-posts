@@ -486,7 +486,7 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addPostDateControl: function() {
-			var section = this, control, setting = api( section.id ), postData;
+			var section = this, control, setting = api( section.id );
 
 			control = new api.controlConstructor.post_date( section.id + '[post_date]', {
 				params: {
@@ -500,38 +500,6 @@
 					type: 'post_date',
 					setting_property: 'post_date'
 				}
-			} );
-			postData = _.clone( control.setting.get() );
-
-			/**
-			 * Split the post_date into usable parts.
-			 *
-			 * @returns {object} Object of results.
-			 */
-			function getDateInputData() {
-				var date, result = {}, singleCharLimit = 9;
-
-				date = new Date( postData.post_date );
-
-				result.month = date.getMonth() + 1;
-				if ( singleCharLimit >= result.month ) {
-					result.month = '0' + result.month;
-				}
-
-				result.day = date.getDate().toString();
-				result.year = date.getFullYear().toString();
-				result.hour = date.getHours().toString();
-				result.min = date.getMinutes().toString();
-				return result;
-			}
-			control.params.date_data = getDateInputData();
-
-			// Set each visible date input with the proper value.
-			control.deferred.embedded.done( function() {
-				_.each( control.params.date_data, function( val, type ) {
-					var input = control.container.find( '.date-input.' + type );
-					input.val( val );
-				} );
 			} );
 
 			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.

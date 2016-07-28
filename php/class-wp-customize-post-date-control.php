@@ -43,10 +43,6 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 	/**
 	 * Render the Underscore template for this control.
 	 *
-	 * @todo remove this comment:
-	 * Note: To view the output during development,
-	 * convert the hidden inputs below to text inputs.
-	 *
 	 * @access protected
 	 * @codeCoverageIgnore
 	 */
@@ -94,25 +90,7 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 			type="hidden"
 		    class="post-date"
 			<# if ( data.setting_property ) { #>
-				data-customize-setting-property-link="post_date"
-			<# } #>
-			/>
-		<input
-			id="{{ data.input_id_post_date_gmt }}"
-			type="hidden"
-		    class="post-date-gmt"
-			value=""
-			<# if ( data.setting_property ) { #>
-				data-customize-setting-property-link="post_date_gmt"
-			<# } #>
-			/>
-		<input
-			id="{{ data.input_id_post_date_gmt }}"
-			type="hidden"
-			class="post-status"
-			value=""
-			<# if ( data.setting_property ) { #>
-				data-customize-setting-property-link="post_status"
+				data-customize-post-date-link="post_date"
 			<# } #>
 			/>
 		<?php
