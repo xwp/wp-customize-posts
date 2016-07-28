@@ -429,6 +429,10 @@ final class WP_Customize_Posts {
 				'text'  => __( 'Draft', 'customize-posts' ),
 			),
 			array(
+				'value' => 'future',
+				'text'  => __( 'Scheduled', 'customize-posts' ),
+			),
+			array(
 				'value' => 'pending',
 				'text'  => __( 'Pending Review', 'customize-posts' ),
 			),

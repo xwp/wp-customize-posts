@@ -62,7 +62,6 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 		<# if ( data.description ) { #>
 			<span class="description customize-control-description">{{ data.description }}</span>
 		<# } #>
-		<p class="published-date"></p>
 
 		<# _.each( data.date_inputs, function( width, type ) { #>
 			<# if ( 'month' === type  ) { #>
@@ -105,6 +104,15 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 			value=""
 			<# if ( data.setting_property ) { #>
 				data-customize-setting-property-link="post_date_gmt"
+			<# } #>
+			/>
+		<input
+			id="{{ data.input_id_post_date_gmt }}"
+			type="hidden"
+			class="post-status"
+			value=""
+			<# if ( data.setting_property ) { #>
+				data-customize-setting-property-link="post_status"
 			<# } #>
 			/>
 		<?php

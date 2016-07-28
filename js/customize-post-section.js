@@ -526,39 +526,8 @@
 			}
 			control.params.date_data = getDateInputData();
 
-			/**
-			 * Create the "Published on" string.
-			 *
-			 * @todo "Schedule for"
-			 * (Only temporarily: if post_status is draft and
-			 * post_date is in the future).
-			 *
-			 * @todo "Scheduled for"
-			 * (if post_status is future).
-			 *
-			 * @returns {string} The Published on string.
-			 */
-			function getPublishedDateString() {
-				var postStatus, date, monthAbbrv;
-				date = control.params.date_data;
-				postStatus = _.clone( postData.post_status );
-
-				_.each( api.Posts.data.postStatusChoices, function( item ) {
-					if ( postStatus === item.value ) {
-						postStatus = item.text;
-					}
-				});
-				monthAbbrv = api.Posts.data.l10n.monthAbbrvs[ date.month ];
-
-				return postStatus + ' on: <strong>' + monthAbbrv + ' ' + date.day + ', ' + date.year + ' @ ' + date.hour + ':' + date.min + '</strong>';
-			}
-			control.params.published_text = getPublishedDateString();
-
 			// Set each visible date input with the proper value.
 			control.deferred.embedded.done( function() {
-				var dateText;
-				dateText = control.container.find( '.published-date' );
-				dateText.html( control.params.published_text );
 				_.each( control.params.date_data, function( val, type ) {
 					var input = control.container.find( '.date-input.' + type );
 					input.val( val );

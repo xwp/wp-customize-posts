@@ -76,6 +76,7 @@
 			newPostDateGmt = control.container.find( '.post-date-gmt' );
 			newPostStatus = control.container.find( '.post-status' );
 
+			// This will update post_date, post_date_gmt, and post_status.
 			nodes = {
 				post_date: newPostDate,
 				post_date_gmt: newPostDateGmt,
@@ -201,6 +202,8 @@
 			 * Wrapping this in a function
 			 * to prevent _setUpSettingPropertyLinks()
 			 * from possibly returning false.
+			 *
+			 * @returns {bool} If the date inputs are invalid.
 			 */
 			function watchInputs() {
 				inputs.change( function() {
@@ -235,9 +238,9 @@
 			 * This can then be compared to newDate using simple
 			 * arithmetic operators.
 			 *
-			 * Used for adjusting Post Status, if necessary.
+			 * Used when updating the Post Status.
 			 *
-			 * @return {object} Date object.
+			 * @returns {object} Date object.
 			 */
 			function getGmtNow() {
 				var browserNow = new Date();
@@ -247,19 +250,37 @@
 			/**
 			 * Update the post status.
 			 *
-			 * @todo update the visible Post Status control.
-			 * ...It does update when the preview is Saved.
+			 * Updating the Post Status control dropdown automatically
+			 * updates this Post Date control in the background. So
+			 * that input can override all the below if it is
+			 * updated after the date is changed.
 			 *
-			 * Updating the Post Status control automatically
-			 * updates this control.
+			 * Logic:
+			 *  - If we start with 'draft,' do nothing.
+			 *  - If we start with 'pending,' do nothing.
+			 *  - If we start with 'future' (Scheduled)...
+			 *     - If new date is in the past, set to 'publish'.
+			 *  - If we start with 'publish'...
+			 *     - If new date is in the future, set to 'future'.
 			 *
-			 * @todo if orgPS is future, and date is past, update it to publish
+			 * @todo handle 'private.'
+			 *
+			 * @todo update the visible Post Status control when Post Date is changed.
+			 * (It does update once the preview is Saved.)
+			 *
+			 * @todo
+			 * Dynamically remove "Scheduled" and "Published" options from Post Status
+			 * dropdown if they are not logically allowed by the new date,
+			 * just like the post edit screen UI.
+			 *
+			 * Otherwise, we can end up with a Scheduled post status and a
+			 * published date in the past.
 			 */
 			function updatePostStatus() {
 				var gmtNow = getGmtNow();
 
 				// If the date is in the future, and it is currently published, schedule it.
-				if ( newDate > gmtNow && 'publish' === currentPostStatus ) {
+				if ( newDate > gmtNow && 'publish' === originalPostStatus ) {
 					newPostStatus.val( 'future' );
 					currentPostStatus = 'future';
 
@@ -268,7 +289,13 @@
 					newPostStatus.val( 'publish' );
 					currentPostStatus = 'publish';
 
-					// If we start out with a draft, for instance, then go back to draft status.
+					/*
+					 * If we start out with a draft or pending (for instance), ensure
+					 * we stay on that status.
+					 *
+					 * This also covers when we start with publish, then move the date to future,
+					 * then move the back to the past.
+					 */
 				} else if ( newDate <= gmtNow && currentPostStatus !== originalPostStatus ) {
 					newPostStatus.val( originalPostStatus );
 					currentPostStatus = originalPostStatus;
