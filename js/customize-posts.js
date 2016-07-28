@@ -1,5 +1,5 @@
 /* global jQuery, wp, _, _wpCustomizePostsExports, console */
-/* eslint no-magic-numbers: [ "error", { "ignore": [0,1,2,3,4,5,7,89,10,11,12,23,28,29,30,31,59,9999] } ], consistent-this: [ "error", "control" ] */
+/* eslint no-magic-numbers: [ "error", { "ignore": [0,1,2,3,4,5,7,8,9,10,11,12,23,28,29,30,31,59,9999] } ], consistent-this: [ "error", "control" ] */
 
 (function( api, $ ) {
 	'use strict';
@@ -53,6 +53,8 @@
 		 * Add bidirectional data binding links between inputs and the setting properties.
 		 *
 		 * @private
+		 *
+		 * @returns {undefined}
 		 */
 		_setUpSettingPropertyLinks: function() {
 
@@ -85,8 +87,6 @@
 
 			postData = _.clone( control.setting.get() );
 			currentPostStatus = originalPostStatus = postData.post_status;
-
-			watchInputs();
 
 			/**
 			 * Return an array of Date pieces.
@@ -194,43 +194,6 @@
 			}
 
 			/**
-			 * Watch our inputs.
-			 *
-			 * When a date input is updated, update the
-			 * hidden input values, then trigger change.
-			 *
-			 * Wrapping this in a function
-			 * to prevent _setUpSettingPropertyLinks()
-			 * from possibly returning false.
-			 *
-			 * @returns {bool} If the date inputs are invalid.
-			 */
-			function watchInputs() {
-				inputs.change( function() {
-					var dateInputs = getValidDateInputs();
-
-					if ( false === dateInputs ) {
-						return false;
-					}
-
-					newDate = new Date(
-						dateInputs.year,
-						dateInputs.monthIndex,
-						dateInputs.day,
-						dateInputs.hour,
-						dateInputs.min
-					);
-					newPostDate.val( getFormattedDate( newDate ) ).trigger( 'change' );
-
-					// Convert the newDate to GMT using WP's gmt_offset option.
-					newDate.setUTCHours( newDate.getUTCHours() - parseFloat( api.Posts.data.gmtOffset ) );
-					newPostDateGmt.val( getFormattedDate( newDate )  ).trigger( 'change' );
-
-					updatePostStatus();
-				});
-			}
-
-			/**
 			 * Get the current GMT time.
 			 *
 			 * Fetches browser local "now" time, then
@@ -301,6 +264,29 @@
 					currentPostStatus = originalPostStatus;
 				}
 			}
+
+			inputs.change( function() {
+				var dateInputs = getValidDateInputs();
+
+				if ( false === dateInputs ) {
+					return false;
+				}
+
+				newDate = new Date(
+					dateInputs.year,
+					dateInputs.monthIndex,
+					dateInputs.day,
+					dateInputs.hour,
+					dateInputs.min
+				);
+				newPostDate.val( getFormattedDate( newDate ) ).trigger( 'change' );
+
+				// Convert the newDate to GMT using WP's gmt_offset option.
+				newDate.setUTCHours( newDate.getUTCHours() - parseFloat( api.Posts.data.gmtOffset ) );
+				newPostDateGmt.val( getFormattedDate( newDate )  ).trigger( 'change' );
+
+				updatePostStatus();
+			});
 
 			// Set the values.
 			_.each( nodes, function( el ) {
