@@ -375,6 +375,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		if ( ! $valid_date ) {
 			return $has_setting_validation ? new WP_Error( 'invalid_date', __( 'Whoops, the provided date is invalid.', 'customize-posts' ), array( 'setting_property' => 'post_date' ) ) : null;
 		}
+		$post_data['post_date_gmt'] = get_gmt_from_date( $post_data['post_date'] );
 
 		if ( empty( $post_data['post_date_gmt'] ) || '0000-00-00 00:00:00' === $post_data['post_date_gmt'] ) {
 			if ( ! in_array( $post_data['post_status'], array( 'draft', 'pending', 'auto-draft' ), true ) ) {

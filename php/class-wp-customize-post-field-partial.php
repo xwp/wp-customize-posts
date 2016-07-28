@@ -234,7 +234,7 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 	}
 
 	/**
-	 * Render the post excerpt.
+	 * Render the post date.
 	 *
 	 * @param WP_Customize_Partial $partial Partial.
 	 * @param array                $context Context.

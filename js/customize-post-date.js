@@ -1,7 +1,7 @@
 /* global jQuery, wp, _ */
 /* eslint no-magic-numbers: [ "error", { "ignore": [0,1,2,3,4,5,7,8,9,10,11,12,23,28,29,30,31,59,9999] } ], consistent-this: [ "error", "control" ] */
 
-(function( api, $ ) {
+(function( api ) {
 	'use strict';
 
 	/**
@@ -17,23 +17,57 @@
 		 */
 		_setUpSettingPropertyLinks: function() {
 			var control = this,
-				nodes,
+				postDateNode,
 				inputs,
-				newPostDate,
 				inputData,
-				newDate;
+				newDate,
+				element;
 
 			if ( ! control.setting ) {
 				return;
 			}
 
 			inputs = control.container.find( '.date-input' );
-			newPostDate = control.container.find( '.post-date' );
+			postDateNode = control.container.find( '.post-date' );
+			element = new api.Element( postDateNode );
+			control.propertyElements.push( element );
+			element.set( control.setting().post_date );
 
-			// This will update post_date, post_date_gmt, and post_status.
-			nodes = {
-				post_date: newPostDate
-			};
+			// Saves the setting.
+			element.bind( function( newPropertyValue ) {
+				var newSetting = control.setting();
+				if ( newPropertyValue === newSetting.post_date ) {
+					return;
+				}
+				newSetting = _.clone( newSetting );
+				newSetting.post_date = newPropertyValue;
+				control.setting.set( newSetting );
+			} );
+
+			control.setting.bind( function( newValue ) {
+				if ( newValue.post_date !== element.get() ) {
+					element.set( newValue.post_date );
+				}
+			} );
+
+			inputs.change( function() {
+				var dateInputs = getValidDateInputs();
+
+				if ( false === dateInputs ) {
+					return false;
+				}
+
+				newDate = new Date(
+					dateInputs.year,
+					dateInputs.monthIndex,
+					dateInputs.day,
+					dateInputs.hour,
+					dateInputs.min
+				);
+				postDateNode.val( getFormattedDate( newDate ) ).trigger( 'change' );
+
+				return true;
+			});
 
 			/**
 			 * Split the post_date into usable parts.
@@ -171,51 +205,6 @@
 				}
 				return min <= value && max >= value;
 			}
-
-			inputs.change( function() {
-				var dateInputs = getValidDateInputs();
-
-				if ( false === dateInputs ) {
-					return false;
-				}
-
-				newDate = new Date(
-					dateInputs.year,
-					dateInputs.monthIndex,
-					dateInputs.day,
-					dateInputs.hour,
-					dateInputs.min
-				);
-				newPostDate.val( getFormattedDate( newDate ) ).trigger( 'change' );
-
-				return true;
-			});
-
-			// Set the values.
-			_.each( nodes, function( el ) {
-				var node = $( el ),
-					element,
-					propertyName = node.data( 'customizePostDateLink' );
-				element = new api.Element( node );
-				control.propertyElements.push( element );
-				element.set( control.setting()[ propertyName ] );
-
-				// Saves the setting
-				element.bind( function( newPropertyValue ) {
-					var newSetting = control.setting();
-					if ( newPropertyValue === newSetting[ propertyName ] ) {
-						return;
-					}
-					newSetting = _.clone( newSetting );
-					newSetting[ propertyName ] = newPropertyValue;
-					control.setting.set( newSetting );
-				} );
-				control.setting.bind( function( newValue ) {
-					if ( newValue[ propertyName ] !== element.get() ) {
-						element.set( newValue[ propertyName ] );
-					}
-				} );
-			});
 		}
 	});
 

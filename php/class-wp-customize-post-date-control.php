@@ -2,8 +2,6 @@
 /**
  * Customize Post Date Control Class
  *
- * @todo Update Post Status when appropriate.
- *
  * @package WordPress
  * @subpackage Customize
  */
@@ -52,7 +50,6 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 		<#
 			_.defaults( data, <?php echo wp_json_encode( $data ) ?> );
 			data.input_id_post_date = 'input-' + String( Math.random() );
-			data.input_id_post_date_gmt = 'input-' + String( Math.random() );
 		#>
 		<span class="customize-control-title"><label for="{{ data.input_id }}">{{ data.label }}</label></span>
 		<# if ( data.description ) { #>
