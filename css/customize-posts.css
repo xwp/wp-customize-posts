@@ -235,8 +235,3 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	margin: 0;
 }
 
-.customize-control-post_date input.date-input.error {
-	border-color: #dc3232 !important;
-	-webkit-box-shadow: 0 0 2px rgba( 204, 0, 0, 0.8 );
-	box-shadow: 0 0 2px rgba( 204, 0, 0, 0.8 );
-}
