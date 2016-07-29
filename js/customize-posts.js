@@ -1,5 +1,6 @@
 /* global jQuery, wp, _, _wpCustomizePostsExports, console */
-/* eslint no-magic-numbers: [ "error", { "ignore": [0,1,2,3] } ], consistent-this: [ "error", "control" ] */
+/* eslint no-magic-numbers: [ "error", { "ignore": [0,1,2,3,4] } ] */
+/* eslint-disable consistent-this */
 
 (function( api, $ ) {
 	'use strict';

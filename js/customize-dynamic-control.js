@@ -38,6 +38,7 @@
 		 * should be changed in Core to be applied once the control is embedded.
 		 *
 		 * @private
+		 * @returns {void}
 		 */
 		_setUpSettingRootLinks: function() {
 			var control, nodes, radios;
@@ -73,6 +74,7 @@
 		 * Add bidirectional data binding links between inputs and the setting properties.
 		 *
 		 * @private
+		 * @returns {void}
 		 */
 		_setUpSettingPropertyLinks: function() {
 			var control = this, nodes, radios;
@@ -141,6 +143,8 @@
 		 * Override the embed() method to do nothing,
 		 * so that the control isn't embedded on load,
 		 * unless the containing section is already expanded.
+		 *
+		 * @returns {void}
 		 */
 		embed: function() {
 			var control = this,
@@ -166,6 +170,8 @@
 		 *
 		 * This function is called in Section.onChangeExpanded() so the control
 		 * will only get embedded when the Section is first expanded.
+		 *
+		 * @returns {void}
 		 */
 		actuallyEmbed: function() {
 			var control = this;
@@ -179,7 +185,8 @@
 		/**
 		 * This is not working with autofocus.
 		 *
-		 * @param args
+		 * @param {object} [args] Args.
+		 * @returns {void}
 		 */
 		focus: function( args ) {
 			var control = this;
