@@ -432,50 +432,17 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addStatusControl: function() {
-			var section = this, control, setting = api( section.id ), sectionContainer, sectionTitle, postTypeObj;
+			var section = this, control, setting = api( section.id ), postTypeObj;
 			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 
-			sectionContainer = section.container.closest( '.accordion-section' );
-			sectionTitle = sectionContainer.find( '.accordion-section-title:first' );
-
-			control = new api.controlConstructor.dynamic( section.id + '[post_status]', {
+			control = new api.controlConstructor.post_status( section.id + '[post_status]', {
 				params: {
 					section: section.id,
 					priority: 20,
 					label: postTypeObj.labels.status_field ? postTypeObj.labels.status_field : api.Posts.data.l10n.fieldStatusLabel,
-					active: true,
 					settings: {
 						'default': setting.id
-					},
-					field_type: 'select',
-					setting_property: 'post_status',
-					choices: api.Posts.data.postStatusChoices
-				}
-			} );
-
-			/**
-			 * Update the UI when a post is transitioned from/to trash.
-			 *
-			 * @param {boolean} trashed - Whether or not the post_status is 'trash'.
-			 * @returns {void}
-			 */
-			control.toggleTrash = function( trashed ) {
-				sectionContainer.toggleClass( 'is-trashed', trashed );
-				if ( true === trashed ) {
-					if ( 0 === sectionTitle.find( '.customize-posts-trashed' ).length ) {
-						sectionTitle.append( wp.template( 'customize-posts-trashed' )() );
 					}
-				} else {
-					sectionContainer.find( '.customize-posts-trashed' ).remove();
-				}
-			};
-
-			/**
-			 * Update the status UI when the setting changes its state.
-			 */
-			setting.bind( function( newPostData, oldPostData ) {
-				if ( newPostData.post_status !== oldPostData.post_status ) {
-					control.toggleTrash( 'trash' === newPostData.post_status );
 				}
 			} );
 
@@ -489,16 +456,9 @@
 			api.control.add( control.id, control );
 
 			// Initialize the trashed UI.
-			api.panel( 'posts[' + section.params.post_type + ']' ).expanded.bind( function() {
-				control.toggleTrash( 'trash' === setting.get().post_status );
-			} );
-
-			control.deferred.embedded.done( function() {
-				var embeddedDelay = 50;
-
-				_.delay( function() {
-					control.toggleTrash( 'trash' === setting.get().post_status );
-				}, embeddedDelay );
+			// @todo Is this redundant with logic in post_status control's constructor?
+			api.panel( section.panel.get() ).expanded.bind( function() {
+				control.toggleTrash();
 			} );
 
 			if ( control.notifications ) {
@@ -523,12 +483,9 @@
 					priority: 21,
 					label: postTypeObj.labels.date_field ? postTypeObj.labels.date_field : api.Posts.data.l10n.fieldDateLabel,
 					description: api.Posts.data.l10n.fieldDateDescription,
-					active: true,
 					settings: {
 						'default': setting.id
-					},
-					type: 'post_date',
-					setting_property: 'post_date'
+					}
 				}
 			} );
 

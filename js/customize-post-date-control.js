@@ -10,16 +10,24 @@
 	api.controlConstructor.post_date = api.controlConstructor.dynamic.extend({
 
 		initialize: function( id, options ) {
-			var control = this;
-			api.controlConstructor.dynamic.prototype.initialize.call( control, id, options );
+			var control = this, opt;
+
+			opt = {};
+			opt.params = _.extend(
+				{
+					type: 'post_date', // Used for template.
+					label: api.Posts.data.l10n.fieldDateLabel,
+					active: true,
+					setting_property: 'post_date'
+				},
+				options.params || {}
+			);
+
+			api.controlConstructor.dynamic.prototype.initialize.call( control, id, opt );
 
 			control.dateComponentInputs = {};
 
 			control.deferred.embedded.done( function() {
-
-				// @todo Move status management to post_status control setup.
-				// @todo add a 10 second interval to make sure that publish status is
-
 				control.dateInputs = control.container.find( '.date-input' );
 				control.dateInputs.each( function() {
 					var input = $( this ), component;

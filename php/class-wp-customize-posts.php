@@ -429,10 +429,6 @@ final class WP_Customize_Posts {
 				'text'  => __( 'Draft', 'customize-posts' ),
 			),
 			array(
-				'value' => 'future',
-				'text'  => __( 'Scheduled', 'customize-posts' ),
-			),
-			array(
 				'value' => 'pending',
 				'text'  => __( 'Pending Review', 'customize-posts' ),
 			),
@@ -443,6 +439,10 @@ final class WP_Customize_Posts {
 			array(
 				'value' => 'publish',
 				'text'  => __( 'Published', 'customize-posts' ),
+			),
+			array(
+				'value' => 'future',
+				'text'  => __( 'Scheduled', 'customize-posts' ),
 			),
 			array(
 				'value' => 'trash',
