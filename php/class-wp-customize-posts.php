@@ -576,6 +576,21 @@ final class WP_Customize_Posts {
 			);
 		}
 
+		$tz_string = get_option( 'timezone_string' );
+		if ( $tz_string ) {
+			$tz = new DateTimezone( get_option( 'timezone_string' ) );
+			$formatted_gmt_offset = $this->format_gmt_offset( $tz->getOffset( new DateTime() ) / 3600 );
+			$tz_name = str_replace( '_', ' ', $tz->getName() );
+
+			/* translators: 1: timezone name, 2: gmt offset  */
+			$date_control_description = sprintf( __( 'This site\'s dates are in %1$s timezone (currently UTC%2$s).', 'customize-posts' ), $tz_name, $formatted_gmt_offset );
+		} else {
+			$formatted_gmt_offset = $this->format_gmt_offset( get_option( 'gmt_offset' ) );
+
+			/* translators: %s: gmt offset  */
+			$date_control_description = sprintf( __( 'Dates are in UTC%s.', 'customize-posts' ), $formatted_gmt_offset );
+		}
+
 		$exports = array(
 			'postTypes' => $post_types,
 			'postStatusChoices' => $this->get_post_status_choices(),
@@ -587,6 +602,7 @@ final class WP_Customize_Posts {
 				'fieldSlugLabel' => __( 'Slug', 'customize-posts' ),
 				'fieldStatusLabel' => __( 'Status', 'customize-posts' ),
 				'fieldDateLabel' => __( 'Date', 'customize-posts' ),
+				'fieldDateDescription' => $date_control_description,
 				'fieldContentLabel' => __( 'Content', 'customize-posts' ),
 				'fieldExcerptLabel' => __( 'Excerpt', 'customize-posts' ),
 				'fieldDiscussionLabel' => __( 'Discussion', 'customize-posts' ),
@@ -600,6 +616,26 @@ final class WP_Customize_Posts {
 		);
 
 		wp_scripts()->add_data( 'customize-posts', 'data', sprintf( 'var _wpCustomizePostsExports = %s;', wp_json_encode( $exports ) ) );
+	}
+
+	/**
+	 *
+	 *
+	 * @see wp_timezone_choice()
+	 * @param $offset
+	 */
+	public function format_gmt_offset( $offset ) {
+		if ( 0 <= $offset ) {
+			$formatted_offset = '+' . (string) $offset;
+		} else {
+			$formatted_offset = (string) $offset;
+		}
+		$formatted_offset = str_replace(
+			array( '.25', '.5', '.75' ),
+			array( ':15', ':30', ':45' ),
+			$formatted_offset
+		);
+		return $formatted_offset;
 	}
 
 	/**

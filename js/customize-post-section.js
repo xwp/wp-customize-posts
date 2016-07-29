@@ -493,6 +493,7 @@
 					section: section.id,
 					priority: 21,
 					label: api.Posts.data.l10n.fieldDateLabel,
+					description: api.Posts.data.l10n.fieldDateDescription,
 					active: true,
 					settings: {
 						'default': setting.id
