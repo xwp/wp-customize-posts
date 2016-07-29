@@ -27,19 +27,13 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 	public function json() {
 		$exported = parent::json();
 		$exported['month_choices'] = $this->get_month_choices();
-		// Type / width pairs.
-		$exported['date_inputs'] = array(
-			'month' => null,
-			'day' => 2,
-			'year' => 4,
-			'hour' => 2,
-			'min' => 2,
-		);
 		return $exported;
 	}
 
 	/**
 	 * Render the Underscore template for this control.
+	 *
+	 * @todo Include a countdown that appears when a future date is selected.
 	 *
 	 * @access protected
 	 * @codeCoverageIgnore
@@ -48,48 +42,32 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 		$data = $this->json();
 		?>
 		<#
-			_.defaults( data, <?php echo wp_json_encode( $data ) ?> );
-			data.input_id_post_date = 'input-' + String( Math.random() );
+		_.defaults( data, <?php echo wp_json_encode( $data ) ?> );
+		data.input_id = 'input-' + String( Math.random() );
 		#>
 		<span class="customize-control-title"><label for="{{ data.input_id }}">{{ data.label }}</label></span>
 		<# if ( data.description ) { #>
-			<span class="description customize-control-description">{{ data.description }}</span>
+			<span class="description customize-control-description">
+				{{ data.description }}
+			</span>
 		<# } #>
 
-		<# _.each( data.date_inputs, function( width, type ) { #>
-			<# if ( 'month' === type  ) { #>
-				<select class="date-input {{ type }}">
-					<# _.each( data.month_choices, function( choice ) { #>
-						<#
-							if ( _.isObject( choice ) && ! _.isUndefined( choice.text ) && ! _.isUndefined( choice.value ) ) {
-								text = choice.text;
-								value = choice.value;
-							}
-						#>
-						<option value="{{ value }}">{{ text }}</option>
-					<# } ); #>
-				</select>
-			<# } else { #>
-				<input
-					type="text"
-					size="{{ width }}"
-					maxlength="{{ width }}"
-					autocomplete="off"
-					class="date-input {{ type }}"
-					/>
-					<# if ( 'year' === type ) { #>
-						&nbsp;@&nbsp;
-					<# } #>
-			<# } #>
-		<# }); #>
-		<input
-			id="{{ data.input_id_post_date }}"
-			type="hidden"
-		    class="post-date"
-			<# if ( data.setting_property ) { #>
-				data-customize-post-date-link="post_date"
-			<# } #>
-			/>
+		<select id="{{ data.input_id }}" class="date-input month" data-component="month">
+			<# _.each( data.month_choices, function( choice ) { #>
+				<#
+				if ( _.isObject( choice ) && ! _.isUndefined( choice.text ) && ! _.isUndefined( choice.value ) ) {
+					text = choice.text;
+					value = choice.value;
+				}
+				#>
+				<option value="{{ value }}">{{ text }}</option>
+			<# } ); #>
+		</select>
+
+		<input type="number" size="2" maxlength="2" autocomplete="off" class="date-input day" data-component="day" min="1" max="31" />,
+		<input type="number" size="4" maxlength="4" autocomplete="off" class="date-input year" data-component="year" min="1000" max="9999" />
+		@ <input type="number" size="2" maxlength="2" autocomplete="off" class="date-input hour" data-component="hour" min="0" max="23" />:<?php
+		?><input type="number" size="2" maxlength="2" autocomplete="off" class="date-input minute" data-component="minute" min="0" max="59" />
 		<?php
 	}
 
@@ -109,7 +87,7 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 			$month_number = zeroise( $i, 2 );
 			$month_text = $wp_locale->get_month_abbrev( $wp_locale->get_month( $i ) );
 
-			/* translators: 1: month number (01, 02, etc.), 2: month abbreviation */
+			/* translators: 1: month number, 2: month abbreviation */
 			$months[ $i ]['text'] = sprintf( __( '%1$s-%2$s', 'customize-posts' ), $month_number, $month_text );
 			$months[ $i ]['value'] = $month_number;
 		}

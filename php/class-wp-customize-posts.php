@@ -583,7 +583,7 @@ final class WP_Customize_Posts {
 			$tz_name = str_replace( '_', ' ', $tz->getName() );
 
 			/* translators: 1: timezone name, 2: gmt offset  */
-			$date_control_description = sprintf( __( 'This site\'s dates are in %1$s timezone (currently UTC%2$s).', 'customize-posts' ), $tz_name, $formatted_gmt_offset );
+			$date_control_description = sprintf( __( 'This site\'s dates are in the %1$s timezone (currently UTC%2$s).', 'customize-posts' ), $tz_name, $formatted_gmt_offset );
 		} else {
 			$formatted_gmt_offset = $this->format_gmt_offset( get_option( 'gmt_offset' ) );
 
@@ -611,6 +611,7 @@ final class WP_Customize_Posts {
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
 				'openEditor' => __( 'Open Editor', 'customize-posts' ),
 				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
+				'invalidDateError' => __( 'Whoops, the provided date is invalid.', 'customize-posts' ),
 
 				/* translators: %s post type */
 				'jumpToPostPlaceholder' => __( 'Jump to %s', 'customize-posts' ),

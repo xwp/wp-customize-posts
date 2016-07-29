@@ -43,12 +43,11 @@
 	api.Posts.PostSection = api.Section.extend({
 
 		initialize: function( id, options ) {
-			var section = this, args, postTypeObj, setting, setPriority, isDefaultPriority;
+			var section = this, args, setting, isDefaultPriority;
 
 			args = options || {};
 			args.params = args.params || {};
-			postTypeObj = api.Posts.data.postTypes[ args.params.post_type ];
-			if ( ! postTypeObj ) {
+			if ( ! api.Posts.data.postTypes[ args.params.post_type ] ) {
 				throw new Error( 'Missing post_type' );
 			}
 			if ( _.isNaN( args.params.post_id ) ) {
@@ -73,30 +72,8 @@
 			isDefaultPriority = 'undefined' === typeof args.params.priority;
 			api.Section.prototype.initialize.call( section, id, args );
 
-			// Let priority (position) of section be determined by menu_order or post_date_gmt.
 			if ( isDefaultPriority ) {
-				setPriority = function( postData ) {
-					var priority;
-					if ( ! postData ) {
-						return;
-					}
-					if ( postTypeObj.hierarchical || postTypeObj.supports['page-attributes'] ) {
-						priority = postData.menu_order;
-					} else {
-						priority = Date.parse( postData.post_date_gmt.replace( ' ', 'T' ) );
-
-						// Handle case where post_date_gmt is "0000-00-00 00:00:00".
-						if ( isNaN( priority ) ) {
-							priority = 0;
-						} else {
-							priority = new Date().valueOf() - priority;
-						}
-					}
-
-					section.priority.set( priority );
-				};
-				setPriority( setting() );
-				setting.bind( setPriority );
+				section.derivePriority();
 			}
 
 			/*
@@ -108,6 +85,55 @@
 			section.active.validate = function() {
 				return true;
 			};
+		},
+
+		/**
+		 * Let priority (position) of section be determined by menu_order or post_date.
+		 *
+		 * @returns {void}
+		 */
+		derivePriority: function() {
+			var section = this, setting, setPriority, postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+			setting = api( section.id );
+			setPriority = function( postData ) {
+				var priority;
+
+				/*
+				 * Abort if there is no postData (which there should always be)
+				 * but more importantly abort if the section is expanded. This
+				 * is important because if the priority changes while the section
+				 * is expanded, it can cause unintended blur events when entering
+				 * data into date inputs. Since the priority only makes sense
+				 * when the section is collapsed anyway (as that is when it is seen)
+				 * we can skip setting priority if the section is expanded,
+				 * and instead re-set the priority whenever the section is collapsed.
+				 */
+				if ( ! postData || section.expanded.get() ) {
+					return;
+				}
+				if ( postTypeObj.hierarchical || postTypeObj.supports['page-attributes'] ) {
+					priority = postData.menu_order;
+				} else {
+					priority = Date.parse( postData.post_date.replace( ' ', 'T' ) );
+
+					// Handle case where post_date is "0000-00-00 00:00:00".
+					if ( isNaN( priority ) ) {
+						priority = 0;
+					} else {
+						priority = new Date().valueOf() - priority;
+					}
+				}
+
+				section.priority.set( priority );
+			};
+			setPriority( setting() );
+			setting.bind( setPriority );
+			section.expanded.bind( function( isExpanded ) {
+				if ( ! isExpanded ) {
+					setPriority( setting() );
+				}
+			} );
 		},
 
 		/**

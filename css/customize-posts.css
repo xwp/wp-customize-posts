@@ -222,12 +222,20 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 }
 
 .customize-control-post_date select,
-.customize-control-post_date input[type="text"] {
+.customize-control-post_date input.date-input {
 	min-width: 10%;
 	width: auto;
 }
+.customize-control-post_date input.date-input {
+	-moz-appearance: textfield;
+}
+.customize-control-post_date input.date-input::-webkit-outer-spin-button,
+.customize-control-post_date input.date-input::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
 
-.customize-control-post_date input[type="text"].error {
+.customize-control-post_date input.date-input.error {
 	border-color: #dc3232 !important;
 	-webkit-box-shadow: 0 0 2px rgba( 204, 0, 0, 0.8 );
 	box-shadow: 0 0 2px rgba( 204, 0, 0, 0.8 );
