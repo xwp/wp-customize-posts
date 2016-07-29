@@ -62,8 +62,8 @@
 			// Post title.
 			if ( 'post_title' === partial.params.field_id ) {
 				api( settingId, function( setting ) {
-					setting.bind( function( postData ) {
-						if ( ! postData || ! _.isString( postData.post_title ) ) {
+					setting.bind( function( newPostData, oldPostData ) {
+						if ( ! newPostData || oldPostData && newPostData.post_title === oldPostData.post_title ) {
 							return;
 						}
 						_.each( partial.placements(), function( placement ) {
@@ -71,7 +71,7 @@
 							if ( ! target.length ) {
 								target = placement.container;
 							}
-							target.text( postData.post_title );
+							target.text( newPostData.post_title );
 						} );
 					} );
 				} );
