@@ -433,7 +433,7 @@
 		// Props: http://stackoverflow.com/questions/10073699/pad-a-number-with-leading-zeros-in-javascript#comment33639551_10073699
 		formattedDate = ( '0000' + date.getFullYear() ).substr( -yearLength, yearLength );
 		formattedDate += '-' + ( '00' + ( date.getMonth() + 1 ) ).substr( -nonYearLength, nonYearLength );
-		formattedDate += '-' + ( '00' + date.getDay() ).substr( -nonYearLength, nonYearLength );
+		formattedDate += '-' + ( '00' + date.getDate() ).substr( -nonYearLength, nonYearLength );
 		formattedDate += ' ' + ( '00' + date.getHours() ).substr( -nonYearLength, nonYearLength );
 		formattedDate += ':' + ( '00' + date.getMinutes() ).substr( -nonYearLength, nonYearLength );
 		formattedDate += ':' + ( '00' + date.getSeconds() ).substr( -nonYearLength, nonYearLength );
