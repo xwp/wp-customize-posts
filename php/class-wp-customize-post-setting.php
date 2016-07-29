@@ -54,11 +54,9 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	public $default = array(
 		'post_author' => 0,
 		'post_name' => '',
-		'post_date' => '', // @todo Eliminate post_date from setting and only pass around post_date?
-		'post_date_gmt' => '',
+		'post_date' => '',
 		'post_mime_type' => '',
-		'post_modified' => '', // @todo Eliminate post_modified from setting and only pass around post_modified_gmt?
-		'post_modified_gmt' => '',
+		'post_modified' => '',
 		'post_content' => '',
 		'post_content_filtered' => '',
 		'post_title' => '',
@@ -145,7 +143,10 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			return false;
 		}
 
+		$post_value = $this->augment_gmt_dates( $post_value );
 		$post_data_keys = array_keys( $this->default );
+		$post_data_keys[] = 'post_modified_gmt';
+		$post_data_keys[] = 'post_date_gmt';
 		foreach ( $post_value as $key => $value ) {
 			if ( in_array( $key, $post_data_keys, true ) ) {
 				$post->$key = $value;
@@ -238,7 +239,6 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	 * @return bool
 	 */
 	protected function is_post_data_conflicted( WP_Post $existing_post, array $incoming_post_data ) {
-		unset( $incoming_post_data['post_modified_gmt'] );
 		unset( $incoming_post_data['post_modified'] );
 		$existing_post_data = $this->get_post_data( $existing_post );
 		foreach ( $incoming_post_data as $field_id => $field_value ) {
@@ -289,9 +289,9 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			$is_update_conflict = (
 				! empty( $post )
 				&&
-				! empty( $post_data['post_modified_gmt'] )
+				! empty( $post_data['post_modified'] )
 				&&
-				$post_data['post_modified_gmt'] < $post->post_modified_gmt
+				$post_data['post_modified'] < $post->post_modified
 				&&
 				$this->is_post_data_conflicted( $post, $post_data )
 			);
@@ -356,18 +356,12 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		/*
 		 * If the post date is empty (due to having been new or a draft) and status
 		 * is not 'draft' or 'pending', set date to now.
-		 * @todo Eliminate post_date from even being included in the setting data and only use post_date_gmt?
 		 */
 		if ( empty( $post_data['post_date'] ) || '0000-00-00 00:00:00' === $post_data['post_date'] ) {
-			if ( empty( $post_data['post_date_gmt'] ) || '0000-00-00 00:00:00' === $post_data['post_date_gmt'] ) {
-				$post_data['post_date'] = current_time( 'mysql' );
-			} else {
-				$post_data['post_date'] = get_date_from_gmt( $post_data['post_date_gmt'] );
-			}
+			$post_data['post_date'] = current_time( 'mysql' );
 		}
 
 		// Validate the date.
-		// @todo Change this to post_date_gmt?
 		$mm = substr( $post_data['post_date'], 5, 2 );
 		$jj = substr( $post_data['post_date'], 8, 2 );
 		$aa = substr( $post_data['post_date'], 0, 4 );
@@ -375,34 +369,23 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		if ( ! $valid_date ) {
 			return $has_setting_validation ? new WP_Error( 'invalid_date', __( 'Whoops, the provided date is invalid.', 'customize-posts' ), array( 'setting_property' => 'post_date' ) ) : null;
 		}
-		$post_data['post_date_gmt'] = get_gmt_from_date( $post_data['post_date'] );
+		$post_date_gmt = get_gmt_from_date( $post_data['post_date'] );
 
-		if ( empty( $post_data['post_date_gmt'] ) || '0000-00-00 00:00:00' === $post_data['post_date_gmt'] ) {
-			if ( ! in_array( $post_data['post_status'], array( 'draft', 'pending', 'auto-draft' ), true ) ) {
-				$post_data['post_date_gmt'] = get_gmt_from_date( $post_data['post_date'] );
-			} else {
-				$post_data['post_date_gmt'] = '0000-00-00 00:00:00';
-			}
-		}
-
-		// @todo Eliminate post_modified from setting and only use post_modified_gmt?
 		if ( $update || '0000-00-00 00:00:00' === $post_data['post_date'] ) {
-			$post_data['post_modified']     = current_time( 'mysql' );
-			$post_data['post_modified_gmt'] = current_time( 'mysql', 1 );
+			$post_data['post_modified'] = current_time( 'mysql' );
 		} else {
-			$post_data['post_modified']     = $post_data['post_date'];
-			$post_data['post_modified_gmt'] = $post_data['post_date_gmt'];
+			$post_data['post_modified'] = $post_data['post_date'];
 		}
 
 		if ( 'attachment' !== $this->post_type ) {
 			if ( 'publish' === $post_data['post_status'] ) {
 				$now = gmdate( 'Y-m-d H:i:59' );
-				if ( mysql2date( 'U', $post_data['post_date_gmt'], false ) > mysql2date( 'U', $now, false ) ) {
+				if ( mysql2date( 'U', $post_date_gmt, false ) > mysql2date( 'U', $now, false ) ) {
 					$post_data['post_status'] = 'future';
 				}
 			} elseif ( 'future' === $post_data['post_status'] ) {
 				$now = gmdate( 'Y-m-d H:i:59' );
-				if ( mysql2date( 'U', $post_data['post_date_gmt'], false ) <= mysql2date( 'U', $now, false ) ) {
+				if ( mysql2date( 'U', $post_date_gmt, false ) <= mysql2date( 'U', $now, false ) ) {
 					$post_data['post_status'] = 'publish';
 				}
 			}
@@ -489,6 +472,22 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	}
 
 	/**
+	 * Augment post data with GMT post_date and post_modified.
+	 *
+	 * @param array $data Post data.
+	 * @return array Post data augmented with GMT dates.
+	 */
+	public function augment_gmt_dates( $data ) {
+		if ( ! empty( $data['post_date'] ) && '0000-00-00 00:00:00' !== $data['post_date'] ) {
+			$data['post_date_gmt'] = get_gmt_from_date( $data['post_date'] );
+		}
+		if ( ! empty( $data['post_modified'] ) && '0000-00-00 00:00:00' !== $data['post_modified'] ) {
+			$data['post_modified_gmt'] = get_gmt_from_date( $data['post_modified'] );
+		}
+		return $data;
+	}
+
+	/**
 	 * Update the post.
 	 *
 	 * Please note that the capability check will have already been done.
@@ -507,6 +506,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 
 		$data['ID'] = $this->post_id;
 		$data['post_type'] = $this->post_type;
+		$data = $this->augment_gmt_dates( $data );
 
 		$is_trashed = 'trash' === $data['post_status'];
 		$is_auto_draft = in_array( get_post_status( $this->post_id ), array( 'auto-draft', 'customize-draft' ), true );

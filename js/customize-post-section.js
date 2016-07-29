@@ -989,7 +989,7 @@
 				var ourValue;
 				e.preventDefault();
 				ourValue = _.clone( setting.get() );
-				ourValue.post_modified_gmt = '';
+				ourValue.post_modified = '';
 				setting.set( ourValue );
 
 				_.each( section.postFieldControls, function( control ) {
@@ -1013,7 +1013,7 @@
 				ourValue = setting.get();
 				_.each( theirValue, function( theirFieldValue, fieldId ) {
 					var control, notification;
-					if ( 'post_modified' === fieldId || 'post_modified_gmt' === fieldId || theirFieldValue === ourValue[ fieldId ] ) {
+					if ( 'post_modified' === fieldId || theirFieldValue === ourValue[ fieldId ] ) {
 						return;
 					}
 					control = api.control( setting.id + '[' + fieldId + ']' );

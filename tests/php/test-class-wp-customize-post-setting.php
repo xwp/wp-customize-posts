@@ -235,10 +235,8 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'post_author', $value );
 		$this->assertArrayHasKey( 'post_name', $value );
 		$this->assertArrayHasKey( 'post_date', $value );
-		$this->assertArrayHasKey( 'post_date_gmt', $value );
 		$this->assertArrayHasKey( 'post_mime_type', $value );
 		$this->assertArrayHasKey( 'post_modified', $value );
-		$this->assertArrayHasKey( 'post_modified_gmt', $value );
 		$this->assertArrayHasKey( 'post_content', $value );
 		$this->assertArrayHasKey( 'post_content_filtered', $value );
 		$this->assertArrayHasKey( 'post_title', $value );
@@ -390,19 +388,18 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$setting = $this->create_post_setting();
 
 		$diff = -60;
-		$post_modified_gmt = gmdate( 'Y-m-d H:i:s', time() + $diff );
 		$post_modified = gmdate( 'Y-m-d H:i:s' , ( time() + $diff + ( get_option( 'gmt_offset' ) * HOUR_IN_SECONDS ) ) );
 
 		$dirty_value = array_merge(
 			$setting->value(),
-			compact( 'post_modified_gmt', 'post_modified' )
+			compact( 'post_modified' )
 		);
 		$this->assertInternalType( 'array', $setting->sanitize( $dirty_value ) );
 
 		$post_title = 'Override post title';
 		$dirty_value = array_merge(
 			$setting->value(),
-			compact( 'post_modified_gmt', 'post_modified', 'post_title' )
+			compact( 'post_modified', 'post_title' )
 		);
 
 		$this->assertInternalType( 'array', $setting->sanitize( $dirty_value ) );
@@ -490,11 +487,9 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$sanitized = $setting->sanitize( array_merge(
 			$setting->value(),
 			array(
-				'post_date_gmt' => '',
 				'post_date' => '',
 			)
 		) );
-		$this->assertNotEmpty( $sanitized['post_date_gmt'] );
 		$this->assertNotEmpty( $sanitized['post_date'] );
 
 		$sanitized = $setting->sanitize( array_merge(
@@ -523,8 +518,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$sanitized = $setting->sanitize( array_merge(
 			$setting->value(),
 			array(
-				'post_date_gmt' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 month' ) ),
-				'post_date' => '',
+				'post_date' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 month' ) ),
 				'post_status' => 'publish',
 			)
 		) );
@@ -533,8 +527,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$sanitized = $setting->sanitize( array_merge(
 			$setting->value(),
 			array(
-				'post_date_gmt' => gmdate( 'Y-m-d H:i:s', strtotime( '-1 month' ) ),
-				'post_date' => '',
+				'post_date' => gmdate( 'Y-m-d H:i:s', strtotime( '-1 month' ) ),
 				'post_status' => 'future',
 			)
 		) );
