@@ -223,7 +223,7 @@
 		 * @returns {void}
 		 */
 		setupPostNavigation: function setupPostNavigation() {
-			var section = this, sectionNavigationButton, sectionContainer, sectionTitle, sectionNavigationButtonTemplate, postTypeObj;
+			var section = this, setting = api( section.id ), sectionNavigationButton, sectionContainer, sectionTitle, sectionNavigationButtonTemplate, postTypeObj;
 			sectionContainer = section.container.closest( '.accordion-section' );
 			sectionTitle = sectionContainer.find( '.customize-section-title:first' );
 			sectionNavigationButtonTemplate = wp.template( 'customize-posts-navigation' );
@@ -242,7 +242,7 @@
 			// Hide the link when the post is currently in the preview.
 			sectionNavigationButton.toggle( section.params.post_id !== api.Posts.previewedQuery.get().queriedPostId );
 			api.Posts.previewedQuery.bind( function( query ) {
-				sectionNavigationButton.toggle( section.params.post_id !== query.queriedPostId );
+				sectionNavigationButton.toggle( section.params.post_id !== query.queriedPostId && 'trash' !== setting.get().post_status );
 			} );
 
 			sectionNavigationButton.on( 'click', function( event ) {
