@@ -611,6 +611,8 @@ final class WP_Customize_Posts {
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
 				'openEditor' => __( 'Open Editor', 'customize-posts' ),
 				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
+
+				/* translators: %s post type */
 				'jumpToPostPlaceholder' => __( 'Jump to %s', 'customize-posts' ),
 			),
 		);
@@ -619,10 +621,11 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 *
+	 * Format GMT Offset.
 	 *
 	 * @see wp_timezone_choice()
-	 * @param $offset
+	 * @param float $offset Offset in hours.
+	 * @return string Formatted offset.
 	 */
 	public function format_gmt_offset( $offset ) {
 		if ( 0 <= $offset ) {
