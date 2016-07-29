@@ -266,10 +266,12 @@
 			if ( postTypeObj.supports.title || postTypeObj.supports.slug ) {
 				section.addSlugControl();
 			}
+
+			// @todo Add support for syncing status and date from Customizer to post edit screen.
 			if ( 'undefined' === typeof EditPostPreviewCustomize ) {
 				section.addStatusControl();
+				section.addDateControl();
 			}
-			section.addDateControl();
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
 			}
