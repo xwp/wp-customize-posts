@@ -85,9 +85,10 @@
 				}
 				return false;
 			} else {
+				date.setSeconds( 0 );
 				value = _.clone( control.setting.get() );
 				control.notifications.remove( invalidDateCode );
-				value.post_date = control.formatDate( date );
+				value.post_date = api.Posts.formatDate( date );
 				control.setting.set( value );
 				return true;
 			}
@@ -111,42 +112,6 @@
 				return null;
 			}
 			return date;
-		},
-
-		/**
-		 * Zero pad.
-		 *
-		 * @param {int} value Unsigned integer.
-		 * @returns {string} Zero-padded number.
-		 */
-		zeroPad: function zeroPad( value ) {
-			if ( isNaN( value ) ) {
-				throw new Error( 'Not a number' );
-			}
-			if ( value < 0 ) {
-				throw new Error( 'Out of bounds' );
-			}
-			if ( value < 10 ) {
-				return '0' + value.toString();
-			}
-			return value.toString();
-		},
-
-		/**
-		 * Format a Date Object. Returns 'Y-m-d H:i:00' format.
-		 *
-		 * @param {Date} date A Date object.
-		 * @returns {string} A formatted date String.
-		 */
-		formatDate: function formatDate( date ) {
-			var control = this, formattedDate = '';
-			formattedDate += control.zeroPad( date.getFullYear() ) + '-';
-			formattedDate += control.zeroPad( date.getMonth() + 1 ) + '-';
-			formattedDate += control.zeroPad( date.getDate() ) + ' ';
-			formattedDate += control.zeroPad( date.getHours() ) + ':';
-			formattedDate += control.zeroPad( date.getMinutes() );
-			formattedDate += ':00';
-			return formattedDate;
 		}
 	});
 

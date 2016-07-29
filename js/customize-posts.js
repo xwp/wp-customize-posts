@@ -15,6 +15,9 @@
 
 	component.data = {
 		postTypes: {},
+		initialServerDate: '',
+		initialServerTimestamp: 0,
+		initialClientTimestamp: ( new Date() ).valueOf(),
 		l10n: {
 			sectionCustomizeActionTpl: '',
 			fieldTitleLabel: '',
@@ -416,6 +419,41 @@
 			}
 		} );
 		api.state( 'saved' ).set( wasSaved );
+	};
+
+	/**
+	 * Format a Date Object. Returns 'Y-m-d H:i:s' format.
+	 *
+	 * @param {Date} date A Date object.
+	 * @returns {string} A formatted date String.
+	 */
+	component.formatDate = function formatDate( date ) {
+		var formattedDate, yearLength = 4, nonYearLength = 2;
+
+		// Props: http://stackoverflow.com/questions/10073699/pad-a-number-with-leading-zeros-in-javascript#comment33639551_10073699
+		formattedDate = ( '0000' + date.getFullYear() ).substr( -yearLength, yearLength );
+		formattedDate += '-' + ( '00' + ( date.getMonth() + 1 ) ).substr( -nonYearLength, nonYearLength );
+		formattedDate += '-' + ( '00' + date.getDay() ).substr( -nonYearLength, nonYearLength );
+		formattedDate += ' ' + ( '00' + date.getHours() ).substr( -nonYearLength, nonYearLength );
+		formattedDate += ':' + ( '00' + date.getMinutes() ).substr( -nonYearLength, nonYearLength );
+		formattedDate += ':' + ( '00' + date.getSeconds() ).substr( -nonYearLength, nonYearLength );
+
+		return formattedDate;
+	};
+
+	/**
+	 * Get current date/time in the site's timezone, as does the current_time( 'mysql', false ) function in PHP.
+	 *
+	 * @returns {string} Current datetime string.
+	 */
+	component.getCurrentTime = function getCurrentTime() {
+		var currentDate, currentTimestamp, timestampDifferential;
+		currentTimestamp = ( new Date() ).valueOf();
+		currentDate = new Date( component.data.initialServerDate );
+		timestampDifferential = currentTimestamp - component.data.initialClientTimestamp;
+		timestampDifferential += component.data.initialClientTimestamp - component.data.initialServerTimestamp;
+		currentDate.setTime( currentDate.getTime() + timestampDifferential );
+		return component.formatDate( currentDate );
 	};
 
 	api.bind( 'ready', function() {
