@@ -189,15 +189,20 @@
 	 * Handle receiving customized-posts messages from the preview.
 	 *
 	 * @param {object} data Data from preview.
+	 * @param {boolean} data.isPartial Whether it is a full refresh or partial refresh.
+	 * @param {Array} data.postIds Post IDs previewed.
 	 * @return {void}
 	 */
 	component.receivePreviewData = function receivePreviewData( data ) {
-		var postIds;
-		component.previewedQuery.set( data );
-		postIds = component.previewedQuery.get().postIds;
-		if ( postIds.length > 0 ) {
-			component.ensurePosts( postIds );
+		var previewerQuery = component.previewedQuery.get();
+		if ( data.isPartial ) {
+			previewerQuery = _.clone( previewerQuery );
+			previewerQuery.postIds = previewerQuery.postIds.concat( data.postIds );
+			component.previewedQuery.set( previewerQuery );
+		} else {
+			component.previewedQuery.set( data );
 		}
+		component.ensurePosts( component.previewedQuery.get().postIds );
 	};
 
 	/**

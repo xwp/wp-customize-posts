@@ -765,6 +765,7 @@ final class WP_Customize_Posts_Preview {
 		$exported = array(
 			'isPostPreview' => is_preview(),
 			'isSingular' => is_singular(),
+			'isPartial' => false,
 			'queriedPostId' => $queried_post_id,
 			'postIds' => array_values( array_unique( $this->queried_post_ids ) ),
 			'partialSchema' => $exported_partial_schema,

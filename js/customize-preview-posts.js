@@ -209,7 +209,8 @@
 		api.selectiveRefresh.bind( 'render-partials-response', function( data ) {
 			if ( data.queried_post_ids ) {
 				api.preview.send( 'customized-posts', {
-					postIds: data.queried_post_ids
+					postIds: data.queried_post_ids,
+					isPartial: true
 				} );
 			}
 		} );
@@ -227,7 +228,8 @@
 			}
 			if ( data.queried_post_ids ) {
 				api.preview.send( 'customized-posts', {
-					postIds: data.queried_post_ids
+					postIds: data.queried_post_ids,
+					isPartial: true
 				} );
 			}
 		} );
