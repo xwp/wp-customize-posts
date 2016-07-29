@@ -267,8 +267,9 @@
 				section.addSlugControl();
 			}
 			if ( 'undefined' === typeof EditPostPreviewCustomize ) {
-				section.addPostStatusControl();
+				section.addStatusControl();
 			}
+			section.addDateControl();
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
 			}
@@ -281,7 +282,6 @@
 			if ( postTypeObj.supports.author ) {
 				section.addAuthorControl();
 			}
-			section.addPostDateControl();
 		},
 
 		/**
@@ -429,7 +429,7 @@
 		 *
 		 * @returns {wp.customize.Control} Added control.
 		 */
-		addPostStatusControl: function() {
+		addStatusControl: function() {
 			var section = this, control, setting = api( section.id ), sectionContainer, sectionTitle, postTypeObj;
 			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 
@@ -511,14 +511,15 @@
 		 *
 		 * @returns {wp.customize.Control} Added control.
 		 */
-		addPostDateControl: function() {
-			var section = this, control, setting = api( section.id );
+		addDateControl: function() {
+			var section = this, control, setting = api( section.id ), postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 
 			control = new api.controlConstructor.post_date( section.id + '[post_date]', {
 				params: {
 					section: section.id,
 					priority: 21,
-					label: api.Posts.data.l10n.fieldDateLabel,
+					label: postTypeObj.labels.date_field ? postTypeObj.labels.date_field : api.Posts.data.l10n.fieldDateLabel,
 					description: api.Posts.data.l10n.fieldDateDescription,
 					active: true,
 					settings: {
@@ -554,17 +555,17 @@
 		 */
 		addContentControl: function() {
 			var section = this,
-			    control,
-			    setting = api( section.id ),
-			    preview = $( '#customize-preview' ),
-			    editorPane = $( '#customize-posts-content-editor-pane' ),
-			    editorFrame = $( '#customize-posts-content_ifr' ),
-			    mceTools = $( '#wp-customize-posts-content-editor-tools' ),
-			    mceToolbar = $( '.mce-toolbar-grp' ),
-			    mceStatusbar = $( '.mce-statusbar' ),
-			    dragbar = $( '#customize-posts-content-editor-dragbar' ),
-			    collapse = $( '.collapse-sidebar' ),
-			    resizeHeight,
+				control,
+				setting = api( section.id ),
+				preview = $( '#customize-preview' ),
+				editorPane = $( '#customize-posts-content-editor-pane' ),
+				editorFrame = $( '#customize-posts-content_ifr' ),
+				mceTools = $( '#wp-customize-posts-content-editor-tools' ),
+				mceToolbar = $( '.mce-toolbar-grp' ),
+				mceStatusbar = $( '.mce-statusbar' ),
+				dragbar = $( '#customize-posts-content-editor-dragbar' ),
+				collapse = $( '.collapse-sidebar' ),
+				resizeHeight,
 				postTypeObj;
 
 			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
@@ -713,15 +714,15 @@
 			 */
 			control.resizeEditor = function( position ) {
 				var windowHeight = window.innerHeight,
-				    windowWidth = window.innerWidth,
-				    sectionContent = $( '[id^=accordion-panel-posts] ul.accordion-section-content' ),
-				    minScroll = 40,
-				    maxScroll = 1,
-				    mobileWidth = 782,
-				    collapseMinSpacing = 56,
-				    collapseBottomOutsideEditor = 8,
-				    collapseBottomInsideEditor = 4,
-				    args = {};
+					windowWidth = window.innerWidth,
+					sectionContent = $( '[id^=accordion-panel-posts] ul.accordion-section-content' ),
+					minScroll = 40,
+					maxScroll = 1,
+					mobileWidth = 782,
+					collapseMinSpacing = 56,
+					collapseBottomOutsideEditor = 8,
+					collapseBottomInsideEditor = 4,
+					args = {};
 
 				if ( ! $( document.body ).hasClass( 'customize-posts-content-editor-pane-open' ) ) {
 					return;
