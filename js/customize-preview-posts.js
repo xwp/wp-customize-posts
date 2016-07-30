@@ -3,12 +3,57 @@
 ( function( api, $ ) {
 	'use strict';
 
+	var previousFallback = api.selectiveRefresh.Partial.prototype.fallback;
+
 	if ( ! api.previewPosts ) {
 		api.previewPosts = {};
 	}
 	if ( ! api.previewPosts.data ) {
 		api.previewPosts.data = {};
 	}
+
+	/**
+	 * Scrub setting validities when a setting is changed.
+	 *
+	 * @todo This needs to be part of Core.
+	 *
+	 * @returns {void}
+	 */
+	api.previewPosts.deleteSettingValidityOnChange = function deleteSettingValidityOnChange() {
+		api.bind( 'change', function onChangeForDeleteSettingValidity( setting ) {
+			delete api.settings.settingValidities[ setting.id ];
+		} );
+	};
+
+	// Start deleting setting validities after the settings have been synced from the pane.
+	api.bind( 'preview-ready', function onPreviewReadyForDeleteSettingValidity() {
+		api.preview.bind( 'active', api.previewPosts.deleteSettingValidityOnChange );
+	} );
+
+	/**
+	 * Handle fail to render partial.
+	 *
+	 * {@inheritdoc}
+	 *
+	 * @this {wp.customize.selectiveRefresh.Partial}
+	 * @returns {void}
+	 */
+	api.selectiveRefresh.Partial.prototype.fallback = function fallback() {
+		var hasInvalidSettings = false;
+
+		_.each( this.settings(), function( settingId ) {
+			var validity = api.settings.settingValidities[ settingId ];
+			if ( ! _.isUndefined( validity ) && true !== validity ) {
+				hasInvalidSettings = true;
+			}
+		} );
+
+		// Prevent infinite selective refresh reloading for partials that have fallbackRefresh.
+		if ( hasInvalidSettings ) {
+			return;
+		}
+		previousFallback.call( this );
+	};
 
 	/**
 	 * A deferred partial for settings that created at runtime.
