@@ -461,6 +461,31 @@
 		} );
 	};
 
+	/**
+	 * Ensure that the post associated with an autofocused section or control is loaded.
+	 *
+	 * @returns {int[]} Post IDs autofocused.
+	 */
+	component.ensureAutofocusConstructPosts = function ensureAutofocusConstructPosts() {
+		var parsedAutofocusConstruct, autofocusPostIds = [];
+		if ( api.settings.autofocus.section ) {
+			parsedAutofocusConstruct = component.parseSettingId( api.settings.autofocus.section );
+			if ( parsedAutofocusConstruct ) {
+				autofocusPostIds.push( parsedAutofocusConstruct.postId );
+			}
+		}
+		if ( api.settings.autofocus.control ) {
+			parsedAutofocusConstruct = component.parseSettingId( api.settings.autofocus.control );
+			if ( parsedAutofocusConstruct ) {
+				autofocusPostIds.push( parsedAutofocusConstruct.postId );
+			}
+		}
+		if ( autofocusPostIds.length > 0 ) {
+			component.ensurePosts( autofocusPostIds );
+		}
+		return autofocusPostIds;
+	};
+
 	api.bind( 'ready', function() {
 
 		// Add a post_ID input for editor integrations (like Shortcake) to be able to know the post being edited.
@@ -507,6 +532,8 @@
 		} );
 
 		api.previewer.bind( 'focus-control', component.focusControl );
+
+		component.ensureAutofocusConstructPosts();
 	} );
 
 })( wp.customize, jQuery );
