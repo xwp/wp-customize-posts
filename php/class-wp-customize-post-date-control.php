@@ -72,8 +72,6 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 			?><input type="number" size="2" maxlength="2" autocomplete="off" class="date-input minute" data-component="minute" min="0" max="59" />
 		</div>
 		<?php
-
-		// @todo Clear date button?
 	}
 
 	/**
