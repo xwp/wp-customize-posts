@@ -865,23 +865,21 @@ final class WP_Customize_Posts {
 			return new WP_Error( 'unknown_post_type', __( 'Unknown post type', 'customize-posts' ) );
 		}
 
-		add_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
 		$this->suppress_post_link_filters = true;
-		$date_local = current_time( 'mysql', 0 );
-		$date_gmt = current_time( 'mysql', 1 );
 		$args = array(
 			'post_status' => 'auto-draft',
 			'post_type' => $post_type,
-			'post_date' => $date_local, // @todo Eliminate in favor of just post_date_gmt?
-			'post_date_gmt' => $date_gmt,
-			'post_modified' => $date_local, // @todo Eliminate in favor of just post_modified_gmt?
-			'post_modified_gmt' => $date_gmt,
 			'meta_input' => array(
 				// Dummy postmeta so that snapshot meta queries won't fail in WP_Customize_Posts_Preview::get_previewed_posts_for_query().
 				'_snapshot_auto_draft' => true,
 			),
 		);
+		add_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
+		add_filter( 'wp_insert_post_data', array( $this, 'force_empty_post_dates' ) );
+		add_filter( 'wp_insert_attachment_data', array( $this, 'force_empty_post_dates' ) );
 		$r = wp_insert_post( wp_slash( $args ), true );
+		remove_filter( 'wp_insert_post_data', array( $this, 'force_empty_post_dates' ) );
+		remove_filter( 'wp_insert_attachment_data', array( $this, 'force_empty_post_dates' ) );
 		remove_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
 		$this->suppress_post_link_filters = false;
 
@@ -890,6 +888,27 @@ final class WP_Customize_Posts {
 		} else {
 			return get_post( $r );
 		}
+	}
+
+	/**
+	 * Ensure that a post array has empty dates supplied.
+	 *
+	 * @param array $data Slashed post data.
+	 * @return array Post data.
+	 */
+	public function force_empty_post_dates( $data ) {
+		$empty_date = '0000-00-00 00:00:00';
+		$date_fields = array(
+			'post_date',
+			'post_date_gmt',
+			'post_modified',
+			'post_modified_gmt',
+		);
+		$data = array_merge(
+			$data,
+			wp_slash( array_fill_keys( $date_fields, $empty_date ) )
+		);
+		return $data;
 	}
 
 	/**
