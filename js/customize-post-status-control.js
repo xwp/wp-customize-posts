@@ -32,9 +32,16 @@
 			control.deferred.embedded.done( function() {
 				var embeddedDelay = 50;
 
-				control.keepUpdatingChoices();
-				control.setting.bind( function() {
-					control.updateChoices();
+				// Defer updating until control explicitly added, because it will short-circuit if not registered yet.
+				api.control( control.id, function() {
+					control.keepUpdatingChoices();
+				} );
+
+				// Update choices whenever the setting changes.
+				control.setting.bind( function( newData, oldData ) {
+					if ( newData.post_status !== oldData.post_status || newData.post_date !== oldData.post_date ) {
+						control.updateChoices();
+					}
 				} );
 
 				// Set the initial trashed UI.

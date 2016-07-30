@@ -39,6 +39,8 @@
 			api.previewPosts.DeferredPartial.prototype.initialize.call( partial, id, args );
 
 			partial.addInstantPreviews();
+
+			// @todo If singular_only, and this is not the post singular post for this partial, then no refresh!
 		},
 
 		/**

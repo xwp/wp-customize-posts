@@ -514,10 +514,10 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertTrue( is_customize_preview() );
 		$post = $this->posts->insert_auto_draft_post( 'post' );
 		$this->assertEquals( 'auto-draft', $post->post_status );
-		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_date );
-		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_date_gmt );
-		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_modified );
-		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_modified_gmt );
+		$this->assertEquals( '0000-00-00 00:00:00', $post->post_date );
+		$this->assertEquals( '0000-00-00 00:00:00', $post->post_date_gmt );
+		$this->assertEquals( '0000-00-00 00:00:00', $post->post_modified );
+		$this->assertEquals( '0000-00-00 00:00:00', $post->post_modified_gmt );
 		$this->assertEquals( sprintf( '%s?p=%d', home_url( '/' ), $post->ID ), $post->guid );
 	}
 

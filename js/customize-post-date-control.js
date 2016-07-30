@@ -1,5 +1,5 @@
 /* global jQuery, wp, _ */
-/* eslint no-magic-numbers: [ "error", { "ignore": [0,1,10] } ], consistent-this: [ "error", "control" ] */
+/* eslint no-magic-numbers: [ "error", { "ignore": [0,1,10,60,1000] } ], consistent-this: [ "error", "control" ] */
 
 (function( api, $ ) {
 	'use strict';
@@ -18,7 +18,8 @@
 					type: 'post_date', // Used for template.
 					label: api.Posts.data.l10n.fieldDateLabel,
 					active: true,
-					setting_property: 'post_date'
+					setting_property: 'post_date',
+					updatePlaceholdersInterval: 60 * 1000
 				},
 				options.params || {}
 			);
@@ -36,7 +37,19 @@
 				} );
 				control.populateInputs();
 
-				control.dateInputs.on( 'input', function() {
+				// Hydrate post inputs from current time as soon as the user starts entering a time.
+				control.dateInputs.on( 'input', function hydrateInputValues() {
+					var parsed, setComponentInputValue;
+					if ( '0000-00-00 00:00:00' === control.setting.get().post_date ) {
+						parsed = control.parseDateTime( api.Posts.getCurrentTime() );
+						setComponentInputValue = function( value, component ) {
+							var input = control.dateComponentInputs[ component ];
+							if ( input && ! input.is( 'select' ) && ! input.val() ) {
+								input.val( value );
+							}
+						};
+						_.each( parsed, setComponentInputValue );
+					}
 					control.populateSetting();
 				} );
 
@@ -45,35 +58,86 @@
 					control.populateInputs();
 				} );
 
+				// Populate the inputs when the setting changes.
 				control.setting.bind( function() {
 					control.populateInputs();
+				} );
+
+				// Start updating the placeholders once the control is registered.
+				api.control( control.id, function() {
+					control.keepUpdatingPlaceholders();
+				} );
+
+				// Update choices whenever the setting changes.
+				control.setting.bind( function( newData, oldData ) {
+					if ( newData.post_date !== oldData.post_date && '0000-00-00 00:00:00' === oldData.post_date || '0000-00-00 00:00:00' === newData.post_date ) {
+						control.updatePlaceholders();
+					}
 				} );
 			} );
 		},
 
 		/**
+		 * Update placeholders to show current time if post_date is empty, otherwise empty out the placeholders.
+		 *
+		 * Also toggle between future and publish based on the current time.
+		 *
+		 * @returns {void}
+		 */
+		updatePlaceholders: function updateChoices() {
+			var control = this, data = control.setting.get(), isEmpty, parsed;
+			isEmpty = '0000-00-00 00:00:00' === data.post_date;
+			if ( isEmpty ) {
+				parsed = control.parseDateTime( api.Posts.getCurrentTime() );
+				_.each( control.dateComponentInputs, function populateInput( input, component ) {
+					if ( input.is( 'select' ) ) {
+						input.val( parsed[ component ] );
+					} else {
+						input.prop( 'placeholder', parsed[ component ] );
+					}
+				} );
+			} else {
+				control.dateInputs.prop( 'placeholder', '' );
+			}
+		},
+
+		/**
+		 * Keep the availability of the publish and future statuses synced with post date and current time.
+		 *
+		 * @return {void}
+		 */
+		keepUpdatingPlaceholders: function keepUpdatingPlaceholders() {
+			var control = this;
+
+			// Stop updating once the control has been removed.
+			if ( ! api.control.has( control.id ) ) {
+				control.updatePlaceholdersIntervalId = null;
+				return;
+			}
+
+			control.updatePlaceholders();
+			control.updatePlaceholdersIntervalId = setTimeout( function() {
+				control.keepUpdatingPlaceholders();
+			}, control.params.updatePlaceholdersInterval );
+		},
+
+		/**
 		 * Populate inputs from the setting value, if none of them are currently focused.
 		 *
-		 * @returns {boolean} Whether
+		 * @returns {boolean} Whether the inputs were populated.
 		 */
 		populateInputs: function populateInputs() {
-			var control = this, dateComponents, dateComponentInputs, i;
-
-			if ( control.dateInputs.is( ':focus' ) ) {
+			var control = this, parsed;
+			if ( control.dateInputs.is( ':focus' ) || '0000-00-00 00:00:00' === control.setting.get().post_date ) {
 				return false;
 			}
-
-			dateComponents = control.setting.get().post_date.split( /-| |:/ );
-			dateComponentInputs = [
-				control.dateComponentInputs.year,
-				control.dateComponentInputs.month,
-				control.dateComponentInputs.day,
-				control.dateComponentInputs.hour,
-				control.dateComponentInputs.minute
-			];
-			for ( i = 0; i < dateComponentInputs.length; i += 1 ) {
-				dateComponentInputs[ i ].val( dateComponents[ i ] );
+			parsed = control.parseDateTime( control.setting.get().post_date );
+			if ( ! parsed ) {
+				return false;
 			}
+			_.each( control.dateComponentInputs, function populateInput( node, component ) {
+				$( node ).val( parsed[ component ] );
+			} );
 			return true;
 		},
 
@@ -120,6 +184,28 @@
 				return null;
 			}
 			return date;
+		},
+
+		/**
+		 * Parse datetime string.
+		 *
+		 * @param {string} datetime Date/Time string.
+		 * @returns {object|null} Returns object containing date components or null if parse error.
+		 */
+		parseDateTime: function parseDateTime( datetime ) {
+			var matches = datetime.match( /^(\d\d\d\d)-(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d)$/ );
+			if ( ! matches ) {
+				return null;
+			}
+			matches.shift();
+			return {
+				year: matches.shift(),
+				month: matches.shift(),
+				day: matches.shift(),
+				hour: matches.shift(),
+				minute: matches.shift(),
+				second: matches.shift()
+			};
 		}
 	});
 

@@ -54,9 +54,9 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	public $default = array(
 		'post_author' => 0,
 		'post_name' => '',
-		'post_date' => '',
+		'post_date' => '0000-00-00 00:00:00',
 		'post_mime_type' => '',
-		'post_modified' => '',
+		'post_modified' => '0000-00-00 00:00:00',
 		'post_content' => '',
 		'post_content_filtered' => '',
 		'post_title' => '',
@@ -141,6 +141,13 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		$post_value = $this->post_value( null );
 		if ( ! is_array( $post_value ) ) {
 			return false;
+		}
+
+		if ( empty( $post_value['post_date'] ) || '0000-00-00 00:00:00' === $post_value['post_date'] ) {
+			$post_value['post_date'] = current_time( 'mysql' );
+		}
+		if ( '0000-00-00 00:00:00' === $post_value['post_modified'] ) {
+			$post_value['post_modified'] = $post_value['post_date'];
 		}
 
 		$post_value = $this->augment_gmt_dates( $post_value );
@@ -357,19 +364,17 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		 * If the post date is empty (due to having been new or a draft) and status
 		 * is not 'draft' or 'pending', set date to now.
 		 */
-		if ( empty( $post_data['post_date'] ) || '0000-00-00 00:00:00' === $post_data['post_date'] ) {
-			$post_data['post_date'] = current_time( 'mysql' );
+		$post_date_gmt = null;
+		if ( '0000-00-00 00:00:00' !== $post_data['post_date'] ) {
+			$mm = substr( $post_data['post_date'], 5, 2 );
+			$jj = substr( $post_data['post_date'], 8, 2 );
+			$aa = substr( $post_data['post_date'], 0, 4 );
+			$valid_date = wp_checkdate( $mm, $jj, $aa, $post_data['post_date'] );
+			if ( ! $valid_date ) {
+				return $has_setting_validation ? new WP_Error( 'invalid_date', __( 'Whoops, the provided date is invalid.', 'customize-posts' ), array( 'setting_property' => 'post_date' ) ) : null;
+			}
+			$post_date_gmt = get_gmt_from_date( $post_data['post_date'] );
 		}
-
-		// Validate the date.
-		$mm = substr( $post_data['post_date'], 5, 2 );
-		$jj = substr( $post_data['post_date'], 8, 2 );
-		$aa = substr( $post_data['post_date'], 0, 4 );
-		$valid_date = wp_checkdate( $mm, $jj, $aa, $post_data['post_date'] );
-		if ( ! $valid_date ) {
-			return $has_setting_validation ? new WP_Error( 'invalid_date', __( 'Whoops, the provided date is invalid.', 'customize-posts' ), array( 'setting_property' => 'post_date' ) ) : null;
-		}
-		$post_date_gmt = get_gmt_from_date( $post_data['post_date'] );
 
 		if ( $update || '0000-00-00 00:00:00' === $post_data['post_date'] ) {
 			$post_data['post_modified'] = current_time( 'mysql' );
@@ -378,13 +383,16 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		}
 
 		if ( 'attachment' !== $this->post_type ) {
-			if ( 'publish' === $post_data['post_status'] ) {
-				$now = gmdate( 'Y-m-d H:i:59' );
+			$now = gmdate( 'Y-m-d H:i:59' );
+			if ( ! $post_date_gmt ) {
+				if ( 'future' === $post_data['post_status'] ) {
+					$post_data['post_status'] = 'publish';
+				}
+			} elseif ( 'publish' === $post_data['post_status'] ) {
 				if ( mysql2date( 'U', $post_date_gmt, false ) > mysql2date( 'U', $now, false ) ) {
 					$post_data['post_status'] = 'future';
 				}
 			} elseif ( 'future' === $post_data['post_status'] ) {
-				$now = gmdate( 'Y-m-d H:i:59' );
 				if ( mysql2date( 'U', $post_date_gmt, false ) <= mysql2date( 'U', $now, false ) ) {
 					$post_data['post_status'] = 'publish';
 				}
@@ -529,7 +537,23 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			$data['post_status'] = get_post_status( $this->post_id );
 		}
 
+		// Ensure that we can set an empty date if draft.
+		$data['edit_date'] = true;
+
+		$should_store_empty_date = (
+			'0000-00-00 00:00:00' === $data['post_date']
+			&&
+			in_array( $data['post_status'], array( 'draft', 'pending', 'auto-draft', 'customize-draft' ), true )
+		);
+		if ( $should_store_empty_date ) {
+			add_filter( 'wp_insert_post_data', array( $this->posts_component, 'force_empty_post_dates' ) );
+			add_filter( 'wp_insert_attachment_data', array( $this->posts_component, 'force_empty_post_dates' ) );
+		}
 		$r = wp_update_post( wp_slash( $data ), true );
+		if ( $should_store_empty_date ) {
+			remove_filter( 'wp_insert_post_data', array( $this->posts_component, 'force_empty_post_dates' ) );
+			remove_filter( 'wp_insert_attachment_data', array( $this->posts_component, 'force_empty_post_dates' ) );
+		}
 		$result = ! is_wp_error( $r );
 
 		if ( $is_trashed ) {

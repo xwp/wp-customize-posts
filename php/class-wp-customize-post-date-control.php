@@ -52,23 +52,27 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 			</span>
 		<# } #>
 
-		<select id="{{ data.input_id }}" class="date-input month" data-component="month">
-			<# _.each( data.month_choices, function( choice ) { #>
-				<#
-				if ( _.isObject( choice ) && ! _.isUndefined( choice.text ) && ! _.isUndefined( choice.value ) ) {
-					text = choice.text;
-					value = choice.value;
-				}
-				#>
-				<option value="{{ value }}">{{ text }}</option>
-			<# } ); #>
-		</select>
+		<div class="date-inputs">
+			<select id="{{ data.input_id }}" class="date-input month" data-component="month">
+				<# _.each( data.month_choices, function( choice ) { #>
+					<#
+					if ( _.isObject( choice ) && ! _.isUndefined( choice.text ) && ! _.isUndefined( choice.value ) ) {
+						text = choice.text;
+						value = choice.value;
+					}
+					#>
+					<option value="{{ value }}">{{ text }}</option>
+				<# } ); #>
+			</select>
 
-		<input type="number" size="2" maxlength="2" autocomplete="off" class="date-input day" data-component="day" min="1" max="31" />,
-		<input type="number" size="4" maxlength="4" autocomplete="off" class="date-input year" data-component="year" min="1000" max="9999" />
-		@ <input type="number" size="2" maxlength="2" autocomplete="off" class="date-input hour" data-component="hour" min="0" max="23" />:<?php
-		?><input type="number" size="2" maxlength="2" autocomplete="off" class="date-input minute" data-component="minute" min="0" max="59" />
+			<input type="number" size="2" maxlength="2" autocomplete="off" class="date-input day" data-component="day" min="1" max="31" />,
+			<input type="number" size="4" maxlength="4" autocomplete="off" class="date-input year" data-component="year" min="1000" max="9999" />
+			@ <input type="number" size="2" maxlength="2" autocomplete="off" class="date-input hour" data-component="hour" min="0" max="23" />:<?php
+			?><input type="number" size="2" maxlength="2" autocomplete="off" class="date-input minute" data-component="minute" min="0" max="59" />
+		</div>
 		<?php
+
+		// @todo Clear date button?
 	}
 
 	/**

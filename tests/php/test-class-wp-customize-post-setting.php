@@ -487,7 +487,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$sanitized = $setting->sanitize( array_merge(
 			$setting->value(),
 			array(
-				'post_date' => '',
+				'post_date' => '0000-00-00 00:00:00',
 			)
 		) );
 		$this->assertNotEmpty( $sanitized['post_date'] );
