@@ -535,7 +535,7 @@
 
 		component.previewedQuery = new api.Value();
 		component.previewedQuery.validate = function( query ) {
-			var mergedQuery = _.extend(
+			return _.extend(
 				{
 					isSingular: false,
 					isPostPreview: false,
@@ -544,7 +544,6 @@
 				},
 				query
 			);
-			return mergedQuery;
 		};
 		component.previewedQuery.set( {} );
 

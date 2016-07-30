@@ -2,7 +2,7 @@
 /* eslint consistent-this: [ "error", "partial" ] */
 /* eslint-disable no-magic-numbers */
 
-(function( api ) {
+(function( api, $ ) {
 	'use strict';
 
 	if ( ! api.previewPosts ) {
@@ -81,6 +81,31 @@
 		},
 
 		/**
+		 * Request the new post field partial and render it into the placements.
+		 *
+		 * @this {wp.customize.selectiveRefresh.Partial}
+		 * @return {jQuery.Promise} Promise.
+		 */
+		refresh: function() {
+			var partial = this, refreshPromise;
+
+			/*
+			 * Force a full refresh for post_date changes which aren't on a
+			 * singular query, since this will most likely mean a change to
+			 * the ordering of the posts on the page.
+			 * @todo In reality, we'd need to do this refresh if any of the queries on the page order by a given field_id. We can gather those up.
+			 */
+			if ( 'post_date' === partial.params.field_id && ! api.previewPosts.data.isSingular ) {
+				api.selectiveRefresh.requestFullRefresh();
+				refreshPromise = $.Deferred();
+				refreshPromise.reject();
+				return refreshPromise;
+			}
+
+			return api.previewPosts.DeferredPartial.prototype.refresh.call( partial );
+		},
+
+		/**
 		 * @inheritdoc
 		 */
 		showControl: function() {
@@ -106,4 +131,4 @@
 
 	api.selectiveRefresh.partialConstructor.post_field = api.previewPosts.PostFieldPartial;
 
-})( wp.customize );
+})( wp.customize, jQuery );
