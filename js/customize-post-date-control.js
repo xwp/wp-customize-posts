@@ -19,7 +19,7 @@
 					label: api.Posts.data.l10n.fieldDateLabel,
 					active: true,
 					setting_property: 'post_date',
-					updatePlaceholdersInterval: 60 * 1000
+					updatePlaceholdersInterval: 1000
 				},
 				options.params || {}
 			);
@@ -30,6 +30,8 @@
 
 			control.deferred.embedded.done( function() {
 				control.dateInputs = control.container.find( '.date-input' );
+				control.resetTimeButton = control.container.find( '.reset-time' );
+
 				control.dateInputs.each( function() {
 					var input = $( this ), component;
 					component = input.data( 'component' );
@@ -37,19 +39,22 @@
 				} );
 				control.populateInputs();
 
-				// Hydrate post inputs from current time as soon as the user starts entering a time.
 				control.dateInputs.on( 'input', function hydrateInputValues() {
 					var parsed, setComponentInputValue;
+
+					// Hydrate post inputs from current time as soon as the user starts entering a time.
 					if ( '0000-00-00 00:00:00' === control.setting.get().post_date ) {
 						parsed = control.parseDateTime( api.Posts.getCurrentTime() );
 						setComponentInputValue = function( value, component ) {
 							var input = control.dateComponentInputs[ component ];
-							if ( input && ! input.is( 'select' ) && ! input.val() ) {
+							if ( input && ! input.is( 'select' ) && '' === input.val() ) {
 								input.val( value );
 							}
 						};
 						_.each( parsed, setComponentInputValue );
 					}
+
+					// Populate the post_date with the date entered.
 					control.populateSetting();
 				} );
 
@@ -74,6 +79,13 @@
 						control.updatePlaceholders();
 					}
 				} );
+
+				control.resetTimeButton.on( 'click', function() {
+					var value;
+					value = _.clone( control.setting.get() );
+					value.post_date = '0000-00-00 00:00:00';
+					control.setting.set( value );
+				} );
 			} );
 		},
 
@@ -85,19 +97,21 @@
 		 * @returns {void}
 		 */
 		updatePlaceholders: function updateChoices() {
-			var control = this, data = control.setting.get(), isEmpty, parsed;
-			isEmpty = '0000-00-00 00:00:00' === data.post_date;
-			if ( isEmpty ) {
+			var control = this, data = control.setting.get(), parsed;
+			if ( '0000-00-00 00:00:00' === data.post_date ) {
 				parsed = control.parseDateTime( api.Posts.getCurrentTime() );
 				_.each( control.dateComponentInputs, function populateInput( input, component ) {
 					if ( input.is( 'select' ) ) {
 						input.val( parsed[ component ] );
 					} else {
 						input.prop( 'placeholder', parsed[ component ] );
+						input.val( '' );
 					}
 				} );
+				control.resetTimeButton.hide();
 			} else {
 				control.dateInputs.prop( 'placeholder', '' );
+				control.resetTimeButton.show();
 			}
 		},
 

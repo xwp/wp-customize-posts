@@ -49,6 +49,7 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 		<# if ( data.description ) { #>
 			<span class="description customize-control-description">
 				{{ data.description }}
+				<button type="button" class="button button-secondary reset-time"><?php esc_html_e( 'Reset to current time', 'customize-posts' ) ?></button>
 			</span>
 		<# } #>
 
