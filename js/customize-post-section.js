@@ -862,7 +862,7 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addAuthorControl: function() {
-			var section = this, control, setting = api( section.id ), postTypeObj;
+			var section = this, control, setting = api( section.id ), postTypeObj, previousValidate;
 			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 			control = new api.controlConstructor.dynamic( section.id + '[post_author]', {
 				params: {
@@ -878,6 +878,15 @@
 					choices: api.Posts.data.authorChoices
 				}
 			} );
+
+			// Ensure selected author is integer, and not a string of digits.
+			previousValidate = setting.validate;
+			setting.validate = function ensurePostAuthorInteger( inputData ) {
+				var data = _.clone( inputData );
+				data = previousValidate.call( this, data );
+				data.post_author = parseInt( data.post_author, 10 );
+				return data;
+			};
 
 			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
 			control.active.validate = function() {
