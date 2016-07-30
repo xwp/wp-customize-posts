@@ -93,9 +93,8 @@
 			 * Force a full refresh for post_date changes which aren't on a
 			 * singular query, since this will most likely mean a change to
 			 * the ordering of the posts on the page.
-			 * @todo In reality, we'd need to do this refresh if any of the queries on the page order by a given field_id. We can gather those up.
 			 */
-			if ( 'post_date' === partial.params.field_id && ! api.previewPosts.data.isSingular ) {
+			if ( ! api.previewPosts.data.isSingular && -1 !== _.indexOf( api.previewPosts.data.queriedOrderbyFields, partial.params.field_id ) ) {
 				api.selectiveRefresh.requestFullRefresh();
 				refreshPromise = $.Deferred();
 				refreshPromise.reject();

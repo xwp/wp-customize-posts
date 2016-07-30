@@ -43,6 +43,13 @@ final class WP_Customize_Posts_Preview {
 	public $previewed_postmeta_settings = array();
 
 	/**
+	 * List of the orderby keys used in queries in the response.
+	 *
+	 * @var array
+	 */
+	public $queried_orderby_keys = array();
+
+	/**
 	 * Whether the preview filters have been added.
 	 *
 	 * @see WP_Customize_Posts_Preview::add_preview_filters()
@@ -71,6 +78,7 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'customize_dynamic_partial_args', array( $this, 'filter_customize_dynamic_partial_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_partial_class', array( $this, 'filter_customize_dynamic_partial_class' ), 10, 3 );
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_tally_previewed_posts' ), 1000 );
+		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_tally_orderby_keys' ), 10, 2 );
 		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
 		add_filter( 'edit_post_link', array( $this, 'filter_edit_post_link' ), 10, 2 );
 		add_filter( 'get_edit_post_link', array( $this, 'filter_get_edit_post_link' ), 10, 2 );
@@ -215,7 +223,7 @@ final class WP_Customize_Posts_Preview {
 	 *
 	 * @param array    $posts Posts.
 	 * @param WP_Query $query Query.
-	 * @return array
+	 * @return array Previewed posts.
 	 */
 	public function filter_the_posts_to_preview_settings( array $posts, WP_Query $query ) {
 		foreach ( $posts as &$post ) {
@@ -227,13 +235,33 @@ final class WP_Customize_Posts_Preview {
 		}
 
 		// Re-sort the posts in the query.
+		$orderby = $query->get( 'orderby' );
+		if ( empty( $orderby ) ) {
+			$orderby = 'date';
+		}
 		// @todo This is short-sighted because the LIMIT clause can cause the expected post to not be in the result set. This can only be solved in get_previewed_posts_for_query by re-implementing WP_Query.
-		if ( ! $query->get( 'orderby' ) || in_array( $query->get( 'orderby' ), $this->supported_orderby_keys, true ) ) {
+		if ( in_array( $orderby, $this->supported_orderby_keys, true ) ) {
 			$this->current_query = $query;
 			usort( $posts, array( $this, 'compare_posts_to_resort_posts_for_query' ) );
 			$this->current_query = null;
 		}
 
+		return $posts;
+	}
+
+	/**
+	 * Keep track of the orderby keys used in queries on the page.
+	 *
+	 * @param array    $posts Posts.
+	 * @param WP_Query $query Query.
+	 * @return array Previewed posts.
+	 */
+	public function filter_the_posts_to_tally_orderby_keys( array $posts, WP_Query $query ) {
+		$orderby = $query->get( 'orderby' );
+		if ( empty( $orderby ) ) {
+			$orderby = 'date';
+		}
+		$this->queried_orderby_keys[] = $orderby;
 		return $posts;
 	}
 
@@ -829,6 +857,22 @@ final class WP_Customize_Posts_Preview {
 			$exported_partial_schema[ $key ] = $schema;
 		}
 
+		// Build up list of fields that are used for ordering posts on the page.
+		$orderby_key_field_mapping = array(
+			'date' => 'post_date',
+			'title' => 'post_title',
+			'modified' => 'post_modified',
+			'parent' => 'post_parent',
+		);
+		$queried_orderby_fields = array();
+		foreach ( array_unique( $this->queried_orderby_keys ) as $key ) {
+			if ( isset( $orderby_key_field_mapping[ $key ] ) ) {
+				$queried_orderby_fields[] = $orderby_key_field_mapping[ $key ];
+			} else {
+				$queried_orderby_fields[] = $key;
+			}
+		}
+
 		$exported = array(
 			'isPostPreview' => is_preview(),
 			'isSingular' => is_singular(),
@@ -836,6 +880,7 @@ final class WP_Customize_Posts_Preview {
 			'queriedPostId' => $queried_post_id,
 			'postIds' => array_values( array_unique( $this->queried_post_ids ) ),
 			'partialSchema' => $exported_partial_schema,
+			'queriedOrderbyFields' => $queried_orderby_fields,
 		);
 
 		$data = sprintf( 'var _wpCustomizePreviewPostsData = %s;', wp_json_encode( $exported ) );
