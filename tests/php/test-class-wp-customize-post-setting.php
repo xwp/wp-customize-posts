@@ -175,6 +175,8 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$this->assertEquals( $post->post_type, $setting->post_type );
 		$this->assertEquals( $this->wp_customize->posts, $setting->posts_component );
 		$this->assertEquals( get_current_user_id(), $setting->default['post_author'] );
+		$this->assertEquals( '0000-00-00 00:00:00', $setting->default['post_date'] );
+		$this->assertEquals( '0000-00-00 00:00:00', $setting->default['post_modified'] );
 	}
 
 	/**
@@ -215,6 +217,32 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 
 		$other_post = get_post( $this->factory()->post->create() );
 		$this->assertFalse( $setting->override_post_data( $other_post ) );
+	}
+
+	/**
+	 * Test override_post_data() supplying dates for empty dates.
+	 *
+	 * @see WP_Customize_Post_Setting::override_post_data()
+	 */
+	public function test_override_post_data_for_empty_dates() {
+		$empty_date = '0000-00-00 00:00:00';
+
+		$setting = $this->create_post_setting();
+		$this->wp_customize->add_setting( $setting );
+		$this->wp_customize->set_post_value( $setting->id, array_merge(
+			$setting->value(),
+			array(
+				'post_date' => $empty_date,
+				'post_modified' => $empty_date,
+			)
+		) );
+		$post = get_post( $setting->post_id );
+		$setting->preview();
+		$setting->override_post_data( $post );
+
+		$this->assertNotEquals( $empty_date, $post->post_date );
+		$this->assertNotEquals( $empty_date, $post->post_modified );
+		$this->assertEquals( $post->post_modified, $post->post_date );
 	}
 
 	/**
@@ -404,7 +432,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 
 		$this->assertInternalType( 'array', $setting->sanitize( $dirty_value ) );
 		do_action( 'customize_save_validation_before', $this->wp_customize );
-		$error = $setting->sanitize( $dirty_value, true );
+		$error = $setting->sanitize( $dirty_value );
 		if ( $has_setting_validation ) {
 			$this->assertInstanceOf( 'WP_Error', $error );
 			$this->assertEquals( 'post_update_conflict', $error->get_error_code() );
@@ -490,14 +518,14 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 				'post_date' => '0000-00-00 00:00:00',
 			)
 		) );
-		$this->assertNotEmpty( $sanitized['post_date'] );
+		$this->assertEquals( '0000-00-00 00:00:00', $sanitized['post_date'] );
 
 		$sanitized = $setting->sanitize( array_merge(
 			$setting->value(),
 			array(
 				'post_date' => '9999-99-99',
 			)
-		), true );
+		) );
 		if ( $has_setting_validation ) {
 			$this->assertInstanceOf( 'WP_Error', $sanitized );
 		} else {
@@ -548,6 +576,33 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test augment_gmt_dates().
+	 *
+	 * @covers WP_Customize_Post_Setting::augment_gmt_dates()
+	 */
+	public function test_augment_gmt_dates() {
+		$setting = $this->create_post_setting();
+		$data = array();
+		$this->assertEmpty( $setting->augment_gmt_dates( $data ) );
+
+		$data = $setting->augment_gmt_dates( array( 'post_date' => '0000-00-00 00:00:00' ) );
+		$this->assertArrayHasKey( 'post_date', $data );
+		$this->assertArrayNotHasKey( 'post_date_gmt', $data );
+
+		$data = $setting->augment_gmt_dates( array( 'post_modified' => '0000-00-00 00:00:00' ) );
+		$this->assertArrayHasKey( 'post_modified', $data );
+		$this->assertArrayNotHasKey( 'post_modified_gmt', $data );
+
+		$data = $setting->augment_gmt_dates( array( 'post_date' => current_time( 'mysql',  false ) ) );
+		$this->assertArrayHasKey( 'post_date', $data );
+		$this->assertArrayHasKey( 'post_date_gmt', $data );
+
+		$data = $setting->augment_gmt_dates( array( 'post_modified' => current_time( 'mysql',  false ) ) );
+		$this->assertArrayHasKey( 'post_modified', $data );
+		$this->assertArrayHasKey( 'post_modified_gmt', $data );
+	}
+
+	/**
 	 * Test update().
 	 *
 	 * @see WP_Customize_Post_Setting::update()
@@ -566,6 +621,37 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$setting->save();
 		$post = get_post( $setting->post_id );
 		$this->assertEquals( $override_data['post_title'], $post->post_title );
+	}
+
+	/**
+	 * Test update() so that draft post can be saved with empty date.
+	 *
+	 * @see WP_Customize_Post_Setting::update()
+	 */
+	function test_save_with_empty_date() {
+		$empty_date = '0000-00-00 00:00:00';
+		$setting = $this->create_post_setting();
+		$setting->manager->set_post_value( $setting->id, array_merge(
+			$setting->value(),
+			array(
+				'post_status' => 'draft',
+				'post_date' => $empty_date
+			)
+		) );
+		$setting->save();
+		$post = get_post( $setting->post_id );
+		$this->assertEquals( $empty_date, $post->post_date );
+
+		$setting->manager->set_post_value( $setting->id, array_merge(
+			$setting->value(),
+			array(
+				'post_status' => 'publish',
+				'post_date' => $empty_date
+			)
+		) );
+		$setting->save();
+		$post = get_post( $setting->post_id );
+		$this->assertNotEquals( $empty_date, $post->post_date );
 	}
 
 	/**
@@ -607,7 +693,6 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$this->assertEquals( $setting->post_id, $this->trashed_post_id );
 		$this->assertEquals( $trash_post_count + 1, did_action( 'trashed_post' ) );
 	}
-
 
 	/**
 	 * Test update() for trashing auto-draft posts (which means delete).
