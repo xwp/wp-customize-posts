@@ -467,19 +467,16 @@
 	 * @returns {int[]} Post IDs autofocused.
 	 */
 	component.ensureAutofocusConstructPosts = function ensureAutofocusConstructPosts() {
-		var parsedAutofocusConstruct, autofocusPostIds = [];
-		if ( api.settings.autofocus.section ) {
-			parsedAutofocusConstruct = component.parseSettingId( api.settings.autofocus.section );
-			if ( parsedAutofocusConstruct ) {
-				autofocusPostIds.push( parsedAutofocusConstruct.postId );
+		var autofocusPostIds = [];
+		_.each( [ 'section', 'control' ], function( construct ) {
+			var parsedAutofocusConstruct;
+			if ( api.settings.autofocus[ construct ] ) {
+				parsedAutofocusConstruct = component.parseSettingId( api.settings.autofocus[ construct ] );
+				if ( parsedAutofocusConstruct ) {
+					autofocusPostIds.push( parsedAutofocusConstruct.postId );
+				}
 			}
-		}
-		if ( api.settings.autofocus.control ) {
-			parsedAutofocusConstruct = component.parseSettingId( api.settings.autofocus.control );
-			if ( parsedAutofocusConstruct ) {
-				autofocusPostIds.push( parsedAutofocusConstruct.postId );
-			}
-		}
+		} );
 		if ( autofocusPostIds.length > 0 ) {
 			component.ensurePosts( autofocusPostIds );
 		}
