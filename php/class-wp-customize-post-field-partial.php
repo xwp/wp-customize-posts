@@ -236,6 +236,9 @@ class WP_Customize_Post_Field_Partial extends WP_Customize_Partial {
 	/**
 	 * Render the post date.
 	 *
+	 * @todo Use the_date() instead?
+	 * @todo What if a different date format was supplied? Can this be added as context? Only if there is before/after elements for the_date().
+	 *
 	 * @param WP_Customize_Partial $partial Partial.
 	 * @param array                $context Context.
 	 * @param WP_Post              $post    Post object.

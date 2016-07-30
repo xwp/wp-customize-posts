@@ -281,6 +281,21 @@ class Test_WP_Customize_Post_Field_Partial extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test render_callback() for post_date.
+	 *
+	 * @see WP_Customize_Post_Field_Partial::render_callback()
+	 * @covers WP_Customize_Post_Field_Partial::render_post_date()
+	 */
+	public function test_render_callback_post_date() {
+		$post = get_post( $this->factory()->post->create() );
+		$id = sprintf( 'post[%s][%d][%s]', $post->post_type, $post->ID, 'post_date' );
+		$partial = new WP_Customize_Post_Field_Partial( $this->wp_customize->selective_refresh, $id );
+
+		$rendered = $partial->render();
+		$this->assertEquals( get_the_date(), $rendered );
+	}
+
+	/**
 	 * Test render_callback().
 	 *
 	 * @see WP_Customize_Post_Field_Partial::render_callback()
