@@ -404,7 +404,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'initialServerDate', $exports );
 		$this->assertInternalType( 'int', strtotime( $exports['initialServerDate'] ) );
 		$this->assertArrayHasKey( 'initialServerTimestamp', $exports );
-		$this->assertInternalType( 'int', $exports['initialServerTimestamp'] );
+		$this->assertTrue( is_numeric( $exports['initialServerTimestamp'] ) ); // Can be too big for int.
 		$this->assertArrayHasKey( 'l10n', $exports );
 	}
 
