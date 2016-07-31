@@ -19,7 +19,8 @@
 					label: api.Posts.data.l10n.fieldDateLabel,
 					active: true,
 					setting_property: 'post_date',
-					updatePlaceholdersInterval: 1000
+					updatePlaceholdersInterval: 1000,
+					choices: api.Posts.data.dateMonthChoices
 				},
 				options.params || {}
 			);

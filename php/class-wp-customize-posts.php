@@ -480,6 +480,29 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Generate options for the month Select.
+	 *
+	 * Based on touch_time().
+	 *
+	 * @see touch_time()
+	 *
+	 * @return array
+	 */
+	public function get_date_month_choices() {
+		global $wp_locale;
+		$months = array();
+		for ( $i = 1; $i < 13; $i = $i + 1 ) {
+			$month_number = zeroise( $i, 2 );
+			$month_text = $wp_locale->get_month_abbrev( $wp_locale->get_month( $i ) );
+
+			/* translators: 1: month number, 2: month abbreviation */
+			$months[ $i ]['text'] = sprintf( __( '%1$s-%2$s', 'customize-posts' ), $month_number, $month_text );
+			$months[ $i ]['value'] = $month_number;
+		}
+		return $months;
+	}
+
+	/**
 	 * Return whether current user can edit supplied post.
 	 *
 	 * @param WP_Post|int $post Post.
@@ -595,6 +618,7 @@ final class WP_Customize_Posts {
 			'postTypes' => $post_types,
 			'postStatusChoices' => $this->get_post_status_choices(),
 			'authorChoices' => $this->get_author_choices(),
+			'dateMonthChoices' => $this->get_date_month_choices(),
 			'initialServerDate' => current_time( 'mysql', false ),
 			'initialServerTimestamp' => floor( microtime( true ) * 1000 ),
 			'l10n' => array(

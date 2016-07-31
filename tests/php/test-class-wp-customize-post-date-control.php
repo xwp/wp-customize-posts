@@ -69,23 +69,9 @@ class Test_WP_Customize_Post_Date_Control extends WP_UnitTestCase {
 
 		$this->assertArrayHasKey( 'input_attrs', $json );
 		$this->assertArrayHasKey( 'field_type', $json );
-		$this->assertArrayHasKey( 'month_choices', $json );
 		$this->assertArrayHasKey( 'setting_property', $json );
 		$this->assertEquals( array( 'data-test' => 'value-test' ), $json['input_attrs'] );
 		$this->assertEquals( 'post_date', $json['field_type'] );
 		$this->assertEquals( 'post_date', $json['setting_property'] );
-	}
-
-	/**
-	 * Get month choices.
-	 *
-	 * @covers WP_Customize_Dynamic_Control::get_month_choices()
-	 */
-	public function test_get_month_choices() {
-		$control = new WP_Customize_Post_Date_Control( $this->wp_customize, 'post[post][123][post_date]', array(
-			'settings' => $this->setting_id,
-		) );
-		$choices = $control->get_month_choices();
-		$this->assertCount( 12, $choices );
 	}
 }

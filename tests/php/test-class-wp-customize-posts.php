@@ -347,6 +347,22 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Get month choices.
+	 *
+	 * @covers WP_Customize_Dynamic_Control::get_date_month_choices()
+	 */
+	public function test_get_date_month_choices() {
+		$posts = new WP_Customize_Posts( $this->wp_customize );
+		$choices = $posts->get_date_month_choices();
+		$this->assertCount( 12, $choices );
+		foreach ( $choices as $choice ) {
+			$this->assertInternalType( 'array', $choice );
+			$this->assertArrayHasKey( 'text', $choice );
+			$this->assertArrayHasKey( 'value', $choice );
+		}
+	}
+
+	/**
 	 * Test whether current user can edit supplied post.
 	 *
 	 * @see WP_Customize_Posts::current_user_can_edit_post()
@@ -383,6 +399,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'postTypes', $exports );
 		$this->assertArrayHasKey( 'post', $exports['postTypes'] );
 		$this->assertArrayHasKey( 'postStatusChoices', $exports );
+		$this->assertArrayHasKey( 'dateMonthChoices', $exports );
 		$this->assertArrayHasKey( 'authorChoices', $exports );
 		$this->assertArrayHasKey( 'initialServerDate', $exports );
 		$this->assertInternalType( 'int', strtotime( $exports['initialServerDate'] ) );
