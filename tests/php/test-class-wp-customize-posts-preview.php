@@ -240,16 +240,92 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	 * @covers WP_Customize_Posts_Preview::filter_the_posts_to_tally_previewed_posts()
 	 */
 	public function test_filter_the_posts_to_tally_previewed_posts() {
-		$this->markTestIncomplete();
+		$post_ids = $this->factory()->post->create_many( 3 );
+		$this->assertEmpty( $this->posts_component->preview->queried_post_ids );
+		$this->posts_component->preview->customize_preview_init();
+		$query = new WP_Query( array( 'post__in' => $post_ids ) );
+		$this->assertCount( 3, $query->posts );
+		$this->assertNotEmpty( $this->posts_component->preview->queried_post_ids );
+		$this->assertEqualSets( $post_ids, $this->posts_component->preview->queried_post_ids );
 	}
 
 	/**
 	 * Test filter_the_posts_to_preview_settings().
 	 *
 	 * @covers WP_Customize_Posts_Preview::filter_the_posts_to_preview_settings()
+	 * @covers WP_Customize_Posts_Preview::compare_posts_to_resort_posts_for_query()
 	 */
 	public function test_filter_the_posts_to_preview_settings() {
-		$this->markTestIncomplete();
+		$data = array(
+			'foo' => array(
+				'initial' => array( 'post_title' => 'Foo', 'post_date' => '2010-01-02 03:04:05' ),
+				'preview' => array( 'post_title' => 'Bad', 'post_date' => '2013-01-02 03:04:05' ),
+			),
+			'bar' => array(
+				'initial' => array( 'post_title' => 'Bar', 'post_date' => '2011-01-02 03:04:05' ),
+				'preview' => array( 'post_title' => 'Bar', 'post_date' => '2012-01-02 03:04:05' ),
+			),
+			'baz' => array(
+				'initial' => array( 'post_title' => 'Baz', 'post_date' => '2012-01-02 03:04:05' ),
+				'preview' => array( 'post_title' => 'Baz', 'post_date' => '2011-01-02 03:04:05' ),
+			),
+		);
+
+		foreach ( $data as $key => &$post_data ) {
+			$post_data['post_id'] = $this->factory()->post->create( $post_data['initial'] );
+			$post_data['setting_id'] = WP_Customize_Post_Setting::get_post_setting_id( get_post( $post_data['post_id'] ) );
+			$this->wp_customize->add_dynamic_settings( array( $post_data['setting_id'] ) );
+			$post_data['setting'] = $this->wp_customize->get_setting( $post_data['setting_id'] );
+			$this->wp_customize->set_post_value( $post_data['setting_id'], array_merge(
+				$post_data['setting']->value(),
+				$post_data['preview']
+			) );
+			unset( $post_data );
+		}
+
+		// Non-preview sort by date asc.
+		$query = new WP_Query( array(
+			'post__in' => wp_list_pluck( $data, 'post_id' ),
+			'orderby' => 'date',
+			'order' => 'DESC',
+		) );
+		$this->assertCount( 3, $query->posts );
+		$this->assertEquals( $data['baz']['post_id'], $query->posts[0]->ID );
+		$this->assertEquals( $data['foo']['post_id'], $query->posts[2]->ID );
+
+		// Non-preview sort by title desc.
+		$query = new WP_Query( array(
+			'post__in' => wp_list_pluck( $data, 'post_id' ),
+			'orderby' => 'title',
+			'order' => 'ASC',
+		) );
+		$this->assertCount( 3, $query->posts );
+		$this->assertEquals( $data['foo']['post_id'], $query->posts[2]->ID );
+		$this->assertEquals( $data['baz']['post_id'], $query->posts[1]->ID );
+
+		// Preview the settings.
+		foreach ( wp_list_pluck( $data, 'setting' ) as $setting ) {
+			$setting->preview();
+		}
+
+		// Previewed sort by date asc
+		$query = new WP_Query( array(
+			'post__in' => wp_list_pluck( $data, 'post_id' ),
+			'orderby' => 'date',
+			'order' => 'DESC',
+		) );
+		$this->assertEquals( $data['foo']['post_id'], $query->posts[0]->ID );
+		$this->assertEquals( $data['baz']['post_id'], $query->posts[2]->ID );
+
+		// Preview sort by title desc.
+		$query = new WP_Query( array(
+			'post__in' => wp_list_pluck( $data, 'post_id' ),
+			'orderby' => 'title',
+			'order' => 'ASC',
+		) );
+		$this->assertCount( 3, $query->posts );
+		$this->assertEquals( $data['foo']['post_id'], $query->posts[0]->ID ); // Now it is "Bad".
+		$this->assertEquals( $data['baz']['post_id'], $query->posts[2]->ID );
 	}
 
 	/**
@@ -258,17 +334,19 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	 * @covers WP_Customize_Posts_Preview::filter_the_posts_to_tally_orderby_keys()
 	 */
 	public function test_filter_the_posts_to_tally_orderby_keys() {
-		$this->markTestIncomplete();
+		$post_ids = $this->factory()->post->create_many( 3 );
+		$this->assertEmpty( $this->posts_component->preview->queried_orderby_keys );
+		$this->posts_component->preview->customize_preview_init();
+		$query = new WP_Query( array( 'post__in' => $post_ids ) );
+		$this->assertCount( 3, $query->posts );
+		$this->assertEquals( array( 'date' ), $this->posts_component->preview->queried_orderby_keys );
+
+		$query = new WP_Query( array( 'post__in' => $post_ids, 'orderby' => 'title' ) );
+		$this->assertCount( 3, $query->posts );
+		$this->assertEqualSets( array( 'date', 'title' ), $this->posts_component->preview->queried_orderby_keys );
 	}
 
-	/**
-	 * Test compare_posts_to_resort_posts_for_query().
-	 *
-	 * @covers WP_Customize_Posts_Preview::compare_posts_to_resort_posts_for_query()
-	 */
-	public function test_compare_posts_to_resort_posts_for_query() {
-		$this->markTestIncomplete();
-	}
+	// See test_filter_the_posts_to_preview_settings for WP_Customize_Posts_Preview::compare_posts_to_resort_posts_for_query()
 
 	/**
 	 * Test get_previewed_posts_for_query method.
@@ -721,7 +799,27 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	 * @covers WP_Customize_Posts_Preview::get_post_field_partial_schema()
 	 */
 	public function test_get_post_field_partial_schema() {
-		$this->markTestIncomplete();
+		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
+		add_filter( 'customize_posts_partial_schema', array( $this, 'filter_customize_posts_partial_schema' ) );
+		$schema = $preview->get_post_field_partial_schema();
+		$this->assertInternalType( 'array', $schema );
+		$this->assertArrayHasKey( 'post_title', $schema );
+		$this->assertEquals( $schema['post_title'], $preview->get_post_field_partial_schema( 'post_title' ) );
+		$this->assertArrayHasKey( 'post_title[footer]', $schema );
+	}
+
+	/**
+	 * Filter partial schema.
+	 *
+	 * @param array $schema Schema.
+	 * @returns array Schema.
+	 */
+	public function filter_customize_posts_partial_schema( $schema ) {
+		$this->assertInternalType( 'array', $schema );
+		$schema['post_title[footer]'] = array(
+			'selector' => '.footer .entry-title',
+		);
+		return $schema;
 	}
 
 	/**
