@@ -140,11 +140,27 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		}
 		$post_value = $this->post_value( null );
 		if ( ! is_array( $post_value ) ) {
+
+			// Make sure that empty dates are not used in case of setting invalidity.
+			$empty_date = '0000-00-00 00:00:00';
+			if ( $empty_date === $post->post_date ) {
+				$post->post_date = current_time( 'mysql', false );
+			}
+			if ( $empty_date === $post->post_date_gmt ) {
+				$post->post_date_gmt = current_time( 'mysql', true );
+			}
+			if ( $empty_date === $post->post_modified ) {
+				$post->post_modified = current_time( 'mysql', false );
+			}
+			if ( $empty_date === $post->post_modified_gmt ) {
+				$post->post_modified_gmt = current_time( 'mysql', true );
+			}
+
 			return false;
 		}
 
 		if ( empty( $post_value['post_date'] ) || '0000-00-00 00:00:00' === $post_value['post_date'] ) {
-			$post_value['post_date'] = current_time( 'mysql' );
+			$post_value['post_date'] = current_time( 'mysql', false );
 		}
 		if ( '0000-00-00 00:00:00' === $post_value['post_modified'] ) {
 			$post_value['post_modified'] = $post_value['post_date'];
