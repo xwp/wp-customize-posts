@@ -318,7 +318,15 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 * @covers WP_Customize_Posts::get_post_status_choices().
 	 */
 	public function test_get_post_status_choices() {
-		$this->markTestIncomplete();
+		$posts = new WP_Customize_Posts( $this->wp_customize );
+		$choices = $posts->get_post_status_choices();
+		$this->assertTrue( count( $choices ) > 0 );
+		foreach ( $choices as $choice ) {
+			$this->assertInternalType( 'array', $choice );
+			$this->assertArrayHasKey( 'text', $choice );
+			$this->assertArrayHasKey( 'value', $choice );
+			$this->assertTrue( (bool) get_post_status_object( $choice['value'] ) );
+		}
 	}
 
 	/**
@@ -327,7 +335,15 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 * @covers WP_Customize_Posts::get_author_choices().
 	 */
 	public function test_get_author_choices() {
-		$this->markTestIncomplete();
+		$posts = new WP_Customize_Posts( $this->wp_customize );
+		$choices = $posts->get_author_choices();
+		$this->assertTrue( count( $choices ) > 0 );
+		foreach ( $choices as $choice ) {
+			$this->assertInternalType( 'array', $choice );
+			$this->assertArrayHasKey( 'text', $choice );
+			$this->assertArrayHasKey( 'value', $choice );
+			$this->assertTrue( (bool) get_user_by( 'ID', $choice['value'] ) );
+		}
 	}
 
 	/**
@@ -360,7 +376,19 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertTrue( wp_script_is( 'customize-dynamic-control', 'enqueued' ) );
 		$this->assertTrue( wp_style_is( 'customize-posts', 'enqueued' ) );
 
-		$this->markTestIncomplete( 'Need to look at the data associated with customize-posts.' );
+		$data = wp_scripts()->get_data( 'customize-posts', 'data' );
+		$this->assertTrue( (bool) preg_match( '#_wpCustomizePostsExports\s*=\s*({.+});#', $data, $matches ) );
+		$exports = json_decode( $matches[1], true );
+
+		$this->assertArrayHasKey( 'postTypes', $exports );
+		$this->assertArrayHasKey( 'post', $exports['postTypes'] );
+		$this->assertArrayHasKey( 'postStatusChoices', $exports );
+		$this->assertArrayHasKey( 'authorChoices', $exports );
+		$this->assertArrayHasKey( 'initialServerDate', $exports );
+		$this->assertInternalType( 'int', strtotime( $exports['initialServerDate'] ) );
+		$this->assertArrayHasKey( 'initialServerTimestamp', $exports );
+		$this->assertInternalType( 'int', $exports['initialServerTimestamp'] );
+		$this->assertArrayHasKey( 'l10n', $exports );
 	}
 
 	/**
@@ -369,7 +397,11 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 * @covers WP_Customize_Posts::format_gmt_offset()
 	 */
 	public function test_format_gmt_offset() {
-		$this->markTestIncomplete();
+		$this->assertSame( '-1', $this->posts->format_gmt_offset( -1 ) );
+		$this->assertSame( '+2', $this->posts->format_gmt_offset( 2 ) );
+		$this->assertSame( '+3:15', $this->posts->format_gmt_offset( 3.25 ) );
+		$this->assertSame( '+3:30', $this->posts->format_gmt_offset( 3.5 ) );
+		$this->assertSame( '-3:45', $this->posts->format_gmt_offset( -3.75 ) );
 	}
 
 	/**
