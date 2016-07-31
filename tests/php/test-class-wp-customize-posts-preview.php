@@ -123,7 +123,8 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertEquals( 10, has_action( 'wp_enqueue_scripts', array( $preview, 'enqueue_scripts' ) ) );
 		$this->assertEquals( 10, has_filter( 'customize_dynamic_partial_args', array( $preview, 'filter_customize_dynamic_partial_args' ) ) );
 		$this->assertEquals( 10, has_filter( 'customize_dynamic_partial_class', array( $preview, 'filter_customize_dynamic_partial_class' ) ) );
-
+		$this->assertEquals( 1000, has_filter( 'the_posts', array( $preview, 'filter_the_posts_to_tally_previewed_posts' ) ) );
+		$this->assertEquals( 10, has_filter( 'the_posts', array( $preview, 'filter_the_posts_to_tally_orderby_keys' ) ) );
 		$this->assertEquals( 10, has_action( 'wp_footer', array( $preview, 'export_preview_data' ) ) );
 		$this->assertEquals( 10, has_filter( 'edit_post_link', array( $preview, 'filter_edit_post_link' ) ) );
 		$this->assertEquals( 10, has_filter( 'get_edit_post_link', array( $preview, 'filter_get_edit_post_link' ) ) );
@@ -234,48 +235,39 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test filter_the_posts_to_add_dynamic_post_settings_and_sections().
+	 * Test filter_the_posts_to_tally_previewed_posts().
 	 *
-	 * @see WP_Customize_Posts_Preview::filter_the_posts_to_add_dynamic_post_settings_and_sections()
+	 * @covers WP_Customize_Posts_Preview::filter_the_posts_to_tally_previewed_posts()
 	 */
-	public function filter_the_posts_to_add_dynamic_post_settings_and_sections() {
-		$post = get_post( $this->post_id );
-		$original_post_content = $post->post_content;
-		$input_posts = array( $post );
-		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
+	public function test_filter_the_posts_to_tally_previewed_posts() {
+		$this->markTestIncomplete();
+	}
 
-		$this->posts_component->register_post_type_meta( 'post', 'foo' );
-		$foo_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, 'foo' );
-		$this->posts_component->register_post_type_meta( 'post', 'bar' );
-		$bar_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, 'bar' );
+	/**
+	 * Test filter_the_posts_to_preview_settings().
+	 *
+	 * @covers WP_Customize_Posts_Preview::filter_the_posts_to_preview_settings()
+	 */
+	public function test_filter_the_posts_to_preview_settings() {
+		$this->markTestIncomplete();
+	}
 
-		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
-		$this->do_customize_boot_actions( array(
-			$setting_id => array_merge(
-				$post->to_array(),
-				array(
-					'post_content' => 'test_preview_setup_postdata',
-				)
-			),
-		) );
-		$section_id = sprintf( 'post[%s][%d]', $post->post_type, $post->ID );
+	/**
+	 * Test filter_the_posts_to_tally_orderby_keys().
+	 *
+	 * @covers WP_Customize_Posts_Preview::filter_the_posts_to_tally_orderby_keys()
+	 */
+	public function test_filter_the_posts_to_tally_orderby_keys() {
+		$this->markTestIncomplete();
+	}
 
-		wp_set_current_user( 0 );
-		$filtered_posts = $preview->filter_the_posts_to_add_dynamic_post_settings_and_sections( $input_posts );
-		$section = $this->posts_component->manager->get_section( $section_id );
-		$this->assertEmpty( $section );
-		$this->assertEquals( $original_post_content, $filtered_posts[0]->post_content );
-
-		wp_set_current_user( $this->user_id );
-		$filtered_posts = $preview->filter_the_posts_to_add_dynamic_post_settings_and_sections( $input_posts );
-		$section = $this->posts_component->manager->get_section( $section_id );
-		$this->assertNotEmpty( $section );
-		$this->assertNotEquals( $original_post_content, $filtered_posts[0]->post_content );
-
-		$foo_setting = $this->posts_component->manager->get_setting( $foo_setting_id );
-		$bar_setting = $this->posts_component->manager->get_setting( $bar_setting_id );
-		$this->assertInstanceOf( 'WP_Customize_Postmeta_Setting', $foo_setting );
-		$this->assertInstanceOf( 'WP_Customize_Postmeta_Setting', $bar_setting );
+	/**
+	 * Test compare_posts_to_resort_posts_for_query().
+	 *
+	 * @covers WP_Customize_Posts_Preview::compare_posts_to_resort_posts_for_query()
+	 */
+	public function test_compare_posts_to_resort_posts_for_query() {
+		$this->markTestIncomplete();
 	}
 
 	/**
@@ -724,6 +716,15 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Tests get_post_field_partial_schema().
+	 *
+	 * @covers WP_Customize_Posts_Preview::get_post_field_partial_schema()
+	 */
+	public function test_get_post_field_partial_schema() {
+		$this->markTestIncomplete();
+	}
+
+	/**
 	 * Test export_preview_data().
 	 *
 	 * @see WP_Customize_Posts_Preview::export_preview_data()
@@ -740,6 +741,8 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'isSingular', $data );
 		$this->assertArrayHasKey( 'queriedPostId', $data );
 		$this->assertArrayHasKey( 'postIds', $data );
+		$this->assertArrayHasKey( 'partialSchema', $data );
+		$this->assertArrayHasKey( 'queriedOrderbyFields', $data );
 
 		$this->assertFalse( $data['isPostPreview'] );
 		$this->assertFalse( $data['isSingular'] );
