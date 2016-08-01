@@ -107,7 +107,7 @@
 			refreshPromise.done( function() {
 				partial.hadInvalidSettings = false;
 				_.each( partial.settings(), function( settingId ) {
-					var validityState = api.previewPosts.settingValidities( settingId );
+					var validityState = api.settingValidities( settingId );
 					if ( validityState && true !== validityState.get() ) {
 						partial.hadInvalidSettings = true;
 					}

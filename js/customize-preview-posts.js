@@ -10,35 +10,6 @@
 		api.previewPosts.data = {};
 	}
 
-	api.previewPosts.settingValidities = new api.Values();
-	api.bind( 'preview-ready', function() {
-		_.each( api.settings.settingValidities, function( validity, settingId ) {
-			var validityValue = new api.Value( validity );
-			api.previewPosts.settingValidities.add( settingId, validityValue );
-		} );
-	} );
-
-	// Replenish the settingValidities when selective refresh returns.
-	api.selectiveRefresh.bind( 'render-partials-response', function augmentSettingValidities( data ) {
-		if ( ! data.setting_validities ) {
-			return;
-		}
-
-		// Update the setting validities collection.
-		_.each( data.setting_validities, function( validity, settingId ) {
-			var validityValue = api.previewPosts.settingValidities( settingId );
-			if ( validityValue ) {
-				validityValue.set( validity );
-			} else {
-				validityValue = new api.Value( validity );
-				api.previewPosts.settingValidities.add( settingId, validityValue );
-			}
-		} );
-
-		// Also update the exported object for good measure.
-		_.extend( api.settings.settingValidities, data.setting_validities );
-	} );
-
 	/**
 	 * Prevent shift-clicking from inadvertently causing text selection.
 	 */

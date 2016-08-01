@@ -23,11 +23,11 @@
 		 * @returns {void}
 		 */
 		fallback: function deferredPartialFallback() {
-			var hasInvalidSettings = false;
+			var partial = this, hasInvalidSettings = false;
 
 			// Prevent infinite selective refresh reloading for partials that have fallbackRefresh.
-			_.each( this.settings(), function( settingId ) {
-				var validityState = api.previewPosts.settingValidities( settingId );
+			_.each( partial.settings(), function checkSettingValidity( settingId ) {
+				var validityState = api.settingValidities( settingId );
 				if ( validityState && true !== validityState.get() ) {
 					hasInvalidSettings = true;
 				}
@@ -35,7 +35,7 @@
 			if ( hasInvalidSettings ) {
 				return;
 			}
-			api.selectiveRefresh.Partial.prototype.fallback.call( this );
+			api.selectiveRefresh.Partial.prototype.fallback.call( partial );
 		},
 
 		/**
@@ -73,7 +73,7 @@
 			refreshPromise.done( function() {
 				var hasInvalidSettings = false;
 				_.each( partial.settings(), function( settingId ) {
-					var validityState = api.previewPosts.settingValidities( settingId );
+					var validityState = api.settingValidities( settingId );
 					if ( validityState && true !== validityState.get() ) {
 						hasInvalidSettings = true;
 					}
