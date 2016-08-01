@@ -80,7 +80,7 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 			<?php
 			$tz_string = get_option( 'timezone_string' );
 			if ( $tz_string ) {
-				$tz = new DateTimezone( get_option( 'timezone_string' ) );
+				$tz = new DateTimezone( $tz_string );
 				$formatted_gmt_offset = $this->posts_component->format_gmt_offset( $tz->getOffset( new DateTime() ) / 3600 );
 				$tz_name = str_replace( '_', ' ', $tz->getName() );
 
