@@ -5,19 +5,15 @@
 (function( api, $ ) {
 	'use strict';
 
-	if ( ! api.previewPosts ) {
-		api.previewPosts = {};
-	}
-
 	/**
 	 * A partial representing a post field.
 	 *
 	 * @class
-	 * @augments wp.customize.previewPosts.DeferredPartial
+	 * @augments wp.customize.selectiveRefresh.partialConstructor.deferred
 	 * @augments wp.customize.selectiveRefresh.Partial
 	 * @augments wp.customize.Class
 	 */
-	api.previewPosts.PostFieldPartial = api.previewPosts.DeferredPartial.extend({
+	api.selectiveRefresh.partialConstructor.post_field = api.selectiveRefresh.partialConstructor.deferred.extend({
 
 		/**
 		 * @inheritdoc
@@ -36,7 +32,7 @@
 			args.params.field_id = matches[3];
 			args.params.placement = matches[4] || '';
 
-			api.previewPosts.DeferredPartial.prototype.initialize.call( partial, id, args );
+			api.selectiveRefresh.partialConstructor.deferred.prototype.initialize.call( partial, id, args );
 
 			partial.addInstantPreviews();
 
@@ -101,7 +97,7 @@
 				return refreshPromise;
 			}
 
-			refreshPromise = api.previewPosts.DeferredPartial.prototype.refresh.call( partial );
+			refreshPromise = api.selectiveRefresh.partialConstructor.deferred.prototype.refresh.call( partial );
 
 			/*
 			 * If the setting was failed validation, ensure the next change to the
@@ -140,11 +136,9 @@
 			if ( ! partial.hadInvalidSettings && _.isObject( newValue ) && _.isObject( oldValue ) && partial.params.field_id && newValue[ partial.params.field_id ] === oldValue[ partial.params.field_id ] ) {
 				return false;
 			}
-			return api.previewPosts.DeferredPartial.prototype.isRelatedSetting.call( partial, setting, newValue, oldValue );
+			return api.selectiveRefresh.partialConstructor.deferred.prototype.isRelatedSetting.call( partial, setting, newValue, oldValue );
 		}
 
 	});
-
-	api.selectiveRefresh.partialConstructor.post_field = api.previewPosts.PostFieldPartial;
 
 })( wp.customize, jQuery );
