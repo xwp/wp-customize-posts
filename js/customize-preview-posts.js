@@ -94,6 +94,39 @@
 			} else {
 				return api.selectiveRefresh.Partial.prototype.isRelatedSetting.call( this, setting, newValue, oldValue );
 			}
+		},
+
+		/**
+		 * Request the new partial and render it into the placements.
+		 *
+		 * @return {jQuery.Promise} Refresh promise.
+		 */
+		refresh: function() {
+			var partial = this, refreshPromise;
+
+			refreshPromise = api.selectiveRefresh.Partial.prototype.refresh.call( partial );
+
+			refreshPromise.done( function() {
+				var hasInvalidSettings = false;
+				_.each( partial.settings(), function( settingId ) {
+					var validityState = api.previewPosts.settingValidities( settingId );
+					if ( validityState && true !== validityState.get() ) {
+						hasInvalidSettings = true;
+					}
+				} );
+
+				/*
+				 * Leave partial placements in a loading state after they get
+				 * refreshed but have invalid settings (and thus revert to original values).
+				 */
+				if ( hasInvalidSettings ) {
+					_.each( partial.placements(), function( placement ) {
+						partial.preparePlacement( placement );
+					} );
+				}
+			} );
+
+			return refreshPromise;
 		}
 	});
 
