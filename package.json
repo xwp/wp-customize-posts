@@ -23,6 +23,6 @@
   },
   "author": "XWP",
   "scripts": {
-    "postinstall": "grunt build"
+    "postinstall": "if php -r 'die( version_compare( PHP_VERSION, \"5.2\", \">\" ) ? 0 : 1 );'; then grunt build; fi"
   }
 }
