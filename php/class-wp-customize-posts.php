@@ -599,21 +599,6 @@ final class WP_Customize_Posts {
 			);
 		}
 
-		$tz_string = get_option( 'timezone_string' );
-		if ( $tz_string ) {
-			$tz = new DateTimezone( get_option( 'timezone_string' ) );
-			$formatted_gmt_offset = $this->format_gmt_offset( $tz->getOffset( new DateTime() ) / 3600 );
-			$tz_name = str_replace( '_', ' ', $tz->getName() );
-
-			/* translators: 1: timezone name, 2: gmt offset  */
-			$date_control_description = sprintf( __( 'This site\'s dates are in the %1$s timezone (currently UTC%2$s).', 'customize-posts' ), $tz_name, $formatted_gmt_offset );
-		} else {
-			$formatted_gmt_offset = $this->format_gmt_offset( get_option( 'gmt_offset' ) );
-
-			/* translators: %s: gmt offset  */
-			$date_control_description = sprintf( __( 'Dates are in UTC%s.', 'customize-posts' ), $formatted_gmt_offset );
-		}
-
 		$exports = array(
 			'postTypes' => $post_types,
 			'postStatusChoices' => $this->get_post_status_choices(),
@@ -628,7 +613,6 @@ final class WP_Customize_Posts {
 				'fieldSlugLabel' => __( 'Slug', 'customize-posts' ),
 				'fieldStatusLabel' => __( 'Status', 'customize-posts' ),
 				'fieldDateLabel' => __( 'Date', 'customize-posts' ),
-				'fieldDateDescription' => $date_control_description,
 				'fieldContentLabel' => __( 'Content', 'customize-posts' ),
 				'fieldExcerptLabel' => __( 'Excerpt', 'customize-posts' ),
 				'fieldDiscussionLabel' => __( 'Discussion', 'customize-posts' ),
@@ -759,6 +743,27 @@ final class WP_Customize_Posts {
 			<button class="customize-posts-navigation dashicons dashicons-visibility" tabindex="0">
 				<span class="screen-reader-text"><?php esc_html_e( 'Preview', 'customize-posts' ); ?> {{ data.label }}</span>
 			</button>
+		</script>
+
+		<script id="tmpl-customize-posts-scheduled-countdown" type="text/html">
+			<# if ( data.remainingTime < 2 * 60 ) { #>
+				<?php esc_html_e( 'This is scheduled for publishing in about a minute.', 'customize-posts' ); ?>
+			<# } else if ( data.remainingTime < 60 * 60 ) { #>
+				<?php
+				/* translators: %s is a placeholder for the Underscore template var */
+				echo sprintf( esc_html__( 'This is scheduled for publishing in about %s minutes.', 'customize-posts' ), '{{ Math.ceil( data.remainingTime / 60 ) }}' );
+				?>
+			<# } else if ( data.remainingTime < 24 * 60 * 60 ) { #>
+				<?php
+				/* translators: %s is a placeholder for the Underscore template var */
+				echo sprintf( esc_html__( 'This is scheduled for publishing in about %s hours.', 'customize-posts' ), '{{ Math.round( data.remainingTime / 60 / 60 * 10 ) / 10 }}' );
+				?>
+			<# } else { #>
+				<?php
+				/* translators: %s is a placeholder for the Underscore template var */
+				echo sprintf( esc_html__( 'This is scheduled for publishing in about %s days.', 'customize-posts' ), '{{ Math.round( data.remainingTime / 60 / 60 / 24 * 10 ) / 10 }}' );
+				?>
+			<# } #>
 		</script>
 
 		<script id="tmpl-customize-posts-trashed" type="text/html">

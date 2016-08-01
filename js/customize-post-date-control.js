@@ -20,6 +20,7 @@
 					active: true,
 					setting_property: 'post_date',
 					updatePlaceholdersInterval: 1000,
+					updateScheduledCountdownInterval: 60 * 1000,
 					choices: api.Posts.data.dateMonthChoices
 				},
 				options.params || {}
@@ -32,6 +33,8 @@
 			control.deferred.embedded.done( function() {
 				control.dateInputs = control.container.find( '.date-input' );
 				control.resetTimeButton = control.container.find( '.reset-time' );
+				control.scheduledCountdownContainer = control.container.find( '.scheduled-countdown' );
+				control.scheduledCountdownTemplate = wp.template( 'customize-posts-scheduled-countdown' );
 
 				control.dateInputs.each( function() {
 					var input = $( this ), component;
@@ -65,13 +68,19 @@
 				} );
 
 				// Populate the inputs when the setting changes.
-				control.setting.bind( function() {
-					control.populateInputs();
+				control.setting.bind( function( newData, oldData ) {
+					if ( newData.post_date !== oldData.post_date ) {
+						control.populateInputs();
+					}
+					if ( newData.post_date !== oldData.post_date || newData.post_status !== oldData.post_status ) {
+						control.updateScheduledCountdown();
+					}
 				} );
 
 				// Start updating the placeholders once the control is registered.
 				api.control( control.id, function() {
 					control.keepUpdatingPlaceholders();
+					control.keepUpdatingScheduledCountdown();
 				} );
 
 				// Update choices whenever the setting changes.
@@ -134,6 +143,53 @@
 			control.updatePlaceholdersIntervalId = setTimeout( function() {
 				control.keepUpdatingPlaceholders();
 			}, control.params.updatePlaceholdersInterval );
+		},
+
+		/**
+		 * Update the scheduled countdown.
+		 *
+		 * Hides countdown if post_status is not already future.
+		 * Toggles the countdown if there is no remaining time.
+		 *
+		 * @returns {void}
+		 */
+		updateScheduledCountdown: function updateScheduledCountdown() {
+			var control = this, remainingTime;
+
+			if ( 'future' !== control.setting.get().post_status ) {
+				control.scheduledCountdownContainer.hide();
+				return;
+			}
+
+			remainingTime = ( new Date( control.setting.get().post_date ) ).valueOf();
+			remainingTime -= ( new Date( api.Posts.getCurrentTime() ) ).valueOf();
+			remainingTime = Math.ceil( remainingTime / 1000 );
+			if ( remainingTime > 0 ) {
+				control.scheduledCountdownContainer.text( control.scheduledCountdownTemplate( { remainingTime: remainingTime } ) );
+				control.scheduledCountdownContainer.show();
+			} else {
+				control.scheduledCountdownContainer.hide();
+			}
+		},
+
+		/**
+		 * Keep updating the scheduled countdown.
+		 *
+		 * @return {void}
+		 */
+		keepUpdatingScheduledCountdown: function keepUpdatingScheduledCountdown() {
+			var control = this;
+
+			// Stop updating once the control has been removed.
+			if ( ! api.control.has( control.id ) ) {
+				control.updateScheduledCountdownIntervalId = null;
+				return;
+			}
+
+			control.updateScheduledCountdown();
+			control.updateScheduledCountdownIntervalId = setTimeout( function() {
+				control.keepUpdatingScheduledCountdown();
+			}, control.params.updateScheduledCountdownInterval );
 		},
 
 		/**
