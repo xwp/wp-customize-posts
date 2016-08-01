@@ -33,6 +33,7 @@
 			control.deferred.embedded.done( function() {
 				control.dateInputs = control.container.find( '.date-input' );
 				control.resetTimeButton = control.container.find( '.reset-time' );
+				control.resetTimeWrap = control.container.find( '.wrap-reset-time' );
 				control.scheduledCountdownContainer = control.container.find( '.scheduled-countdown' );
 				control.scheduledCountdownTemplate = wp.template( 'customize-posts-scheduled-countdown' );
 
@@ -119,9 +120,11 @@
 					}
 				} );
 				control.resetTimeButton.hide();
+				control.resetTimeWrap.hide();
 			} else {
 				control.dateInputs.prop( 'placeholder', '' );
 				control.resetTimeButton.show();
+				control.resetTimeWrap.show();
 			}
 		},
 

@@ -56,7 +56,10 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 		_.defaults( data, <?php echo wp_json_encode( $data ) ?> );
 		data.input_id = 'input-' + String( Math.random() );
 		#>
-		<span class="customize-control-title"><label for="{{ data.input_id }}">{{ data.label }}</label></span>
+		<span class="customize-control-title">
+			<label for="{{ data.input_id }}">{{ data.label }}</label>
+			<span class="wrap-reset-time">(<button type="button" class="reset-time"><?php esc_html_e( 'Reset', 'customize-posts' ) ?></button>)</span>
+		</span>
 		<div class="date-inputs">
 			<select id="{{ data.input_id }}" class="date-input month" data-component="month">
 				<# _.each( data.choices, function( choice ) { #>
@@ -94,7 +97,6 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 			}
 			?>
 			<span class="timezone-info"><?php echo esc_html( $date_control_description ); ?></span>
-			<button type="button" class="button button-secondary reset-time"><?php esc_html_e( 'Reset to current time', 'customize-posts' ) ?></button>
 		</small>
 		<?php
 	}
