@@ -3,8 +3,6 @@
 ( function( api, $ ) {
 	'use strict';
 
-	var previousFallback = api.selectiveRefresh.Partial.prototype.fallback;
-
 	if ( ! api.previewPosts ) {
 		api.previewPosts = {};
 	}
@@ -12,57 +10,69 @@
 		api.previewPosts.data = {};
 	}
 
-	/**
-	 * Scrub setting validities when a setting is changed.
-	 *
-	 * @todo This needs to be part of Core.
-	 *
-	 * @returns {void}
-	 */
-	api.previewPosts.deleteSettingValidityOnChange = function deleteSettingValidityOnChange() {
-		api.bind( 'change', function onChangeForDeleteSettingValidity( setting ) {
-			delete api.settings.settingValidities[ setting.id ];
+	api.previewPosts.settingValidities = new api.Values();
+	api.bind( 'preview-ready', function() {
+		_.each( api.settings.settingValidities, function( validity, settingId ) {
+			var validityValue = new api.Value( validity );
+			api.previewPosts.settingValidities.add( settingId, validityValue );
 		} );
-	};
-
-	// Start deleting setting validities after the settings have been synced from the pane.
-	api.bind( 'preview-ready', function onPreviewReadyForDeleteSettingValidity() {
-		api.preview.bind( 'active', api.previewPosts.deleteSettingValidityOnChange );
 	} );
 
-	/**
-	 * Handle fail to render partial.
-	 *
-	 * {@inheritdoc}
-	 *
-	 * @this {wp.customize.selectiveRefresh.Partial}
-	 * @returns {void}
-	 */
-	api.selectiveRefresh.Partial.prototype.fallback = function fallback() {
-		var hasInvalidSettings = false;
+	// Replenish the settingValidities when selective refresh returns.
+	api.selectiveRefresh.bind( 'render-partials-response', function augmentSettingValidities( data ) {
+		if ( ! data.setting_validities ) {
+			return;
+		}
 
-		_.each( this.settings(), function( settingId ) {
-			var validity = api.settings.settingValidities[ settingId ];
-			if ( ! _.isUndefined( validity ) && true !== validity ) {
-				hasInvalidSettings = true;
+		// Update the setting validities collection.
+		_.each( data.setting_validities, function( validity, settingId ) {
+			var validityValue = api.previewPosts.settingValidities( settingId );
+			if ( validityValue ) {
+				validityValue.set( validity );
+			} else {
+				validityValue = new api.Value( validity );
+				api.previewPosts.settingValidities.add( settingId, validityValue );
 			}
 		} );
 
-		// Prevent infinite selective refresh reloading for partials that have fallbackRefresh.
-		if ( hasInvalidSettings ) {
-			return;
-		}
-		previousFallback.call( this );
-	};
+		// Also update the exported object for good measure.
+		_.extend( api.settings.settingValidities, data.setting_validities );
+	} );
 
 	/**
 	 * A deferred partial for settings that created at runtime.
+	 *
+	 * @todo Move this into a different file.
 	 *
 	 * @class
 	 * @augments wp.customize.selectiveRefresh.Partial
 	 * @augments wp.customize.Class
 	 */
 	api.previewPosts.DeferredPartial = api.selectiveRefresh.Partial.extend({
+
+		/**
+		 * Handle fail to render partial.
+		 *
+		 * {@inheritdoc}
+		 *
+		 * @this {wp.customize.selectiveRefresh.Partial}
+		 * @returns {void}
+		 */
+		fallback: function deferredPartialFallback() {
+			var hasInvalidSettings = false;
+
+			// Prevent infinite selective refresh reloading for partials that have fallbackRefresh.
+			_.each( this.settings(), function( settingId ) {
+				var validityState = api.previewPosts.settingValidities( settingId );
+				if ( validityState && true !== validityState.get() ) {
+					hasInvalidSettings = true;
+				}
+			} );
+			if ( hasInvalidSettings ) {
+				return;
+			}
+			api.selectiveRefresh.Partial.prototype.fallback.call( this );
+		},
 
 		/**
 		 * Return whether the setting is related to the partial.

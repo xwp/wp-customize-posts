@@ -101,7 +101,24 @@
 				return refreshPromise;
 			}
 
-			return api.previewPosts.DeferredPartial.prototype.refresh.call( partial );
+			refreshPromise = api.previewPosts.DeferredPartial.prototype.refresh.call( partial );
+
+			/*
+			 * If the setting was failed validation, ensure the next change to the
+			 * setting will pass the isRelatedSetting check so that the partial
+			 * will be refreshed even if the related field_id wasn't just changed.
+			 */
+			refreshPromise.done( function() {
+				partial.hadInvalidSettings = false;
+				_.each( partial.settings(), function( settingId ) {
+					var validityState = api.previewPosts.settingValidities( settingId );
+					if ( validityState && true !== validityState.get() ) {
+						partial.hadInvalidSettings = true;
+					}
+				} );
+			} );
+
+			return refreshPromise;
 		},
 
 		/**
@@ -120,7 +137,7 @@
 		 */
 		isRelatedSetting: function( setting, newValue, oldValue ) {
 			var partial = this;
-			if ( _.isObject( newValue ) && _.isObject( oldValue ) && partial.params.field_id && newValue[ partial.params.field_id ] === oldValue[ partial.params.field_id ] ) {
+			if ( ! partial.hadInvalidSettings && _.isObject( newValue ) && _.isObject( oldValue ) && partial.params.field_id && newValue[ partial.params.field_id ] === oldValue[ partial.params.field_id ] ) {
 				return false;
 			}
 			return api.previewPosts.DeferredPartial.prototype.isRelatedSetting.call( partial, setting, newValue, oldValue );
