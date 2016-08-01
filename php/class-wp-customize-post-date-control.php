@@ -75,7 +75,7 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 			@ <input type="number" size="2" maxlength="2" autocomplete="off" class="date-input hour" data-component="hour" min="0" max="23" />:<?php
 			?><input type="number" size="2" maxlength="2" autocomplete="off" class="date-input minute" data-component="minute" min="0" max="59" />
 		</div>
-		<span class="description customize-control-description">
+		<small class="description customize-control-description">
 			<span class="scheduled-countdown"></span>
 			<?php
 			$tz_string = get_option( 'timezone_string' );
@@ -87,7 +87,7 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 				/* translators: 1: timezone name, 2: gmt offset  */
 				$date_control_description = sprintf( __( 'This site\'s dates are in the %1$s timezone (currently UTC%2$s).', 'customize-posts' ), $tz_name, $formatted_gmt_offset );
 			} else {
-				$formatted_gmt_offset = $this->posts_component( get_option( 'gmt_offset' ) );
+				$formatted_gmt_offset = $this->posts_component->format_gmt_offset( get_option( 'gmt_offset' ) );
 
 				/* translators: %s: gmt offset  */
 				$date_control_description = sprintf( __( 'Dates are in UTC%s.', 'customize-posts' ), $formatted_gmt_offset );
@@ -95,7 +95,7 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 			?>
 			<span class="timezone-info"><?php echo esc_html( $date_control_description ); ?></span>
 			<button type="button" class="button button-secondary reset-time"><?php esc_html_e( 'Reset to current time', 'customize-posts' ) ?></button>
-		</span>
+		</small>
 		<?php
 	}
 }
