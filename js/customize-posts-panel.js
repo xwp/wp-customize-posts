@@ -183,6 +183,9 @@
 				 */
 				function focusControlOnceFocusable() {
 					var firstControl = data.section.controls()[0];
+					if ( ! firstControl ) {
+						return;
+					}
 					function onChangeActive( isActive ) {
 						if ( isActive ) {
 							data.section.active.unbind( onChangeActive );
@@ -195,13 +198,24 @@
 							} );
 						}
 					}
-					if ( firstControl ) {
+					if ( data.section.active.get() ) {
+						onChangeActive( true );
+					} else {
 						data.section.active.bind( onChangeActive );
 					}
 				}
 
 				data.section.focus( {
-					completeCallback: focusControlOnceFocusable
+					completeCallback: function() {
+						var delay = 500;
+
+						/*
+						 * Note the delay is because the controls get embedded
+						 * once the section is expanded and also because it seems
+						 * that focus fails when the input is not visible yet.
+						 */
+						_.defer( focusControlOnceFocusable, delay );
+					}
 				} );
 			} );
 			promise.always( function() {
