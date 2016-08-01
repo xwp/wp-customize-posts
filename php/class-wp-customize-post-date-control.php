@@ -58,7 +58,7 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 		#>
 		<span class="customize-control-title">
 			<label for="{{ data.input_id }}">{{ data.label }}</label>
-			<span class="wrap-reset-time">(<button type="button" class="reset-time"><?php esc_html_e( 'Reset', 'customize-posts' ) ?></button>)</span>
+			<span class="wrap-reset-time">(<a href="javascript:void(0)" class="reset-time"><?php esc_html_e( 'Reset', 'customize-posts' ) ?></a>)</span>
 		</span>
 		<div class="date-inputs">
 			<select id="{{ data.input_id }}" class="date-input month" data-component="month">

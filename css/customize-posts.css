@@ -239,10 +239,7 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	font-size: 75%;
 }
 .customize-control-post_date .reset-time {
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-	border: none;
-    background: none;
-    color: #008ec2;
-    cursor: pointer;
+	cursor: pointer;
+	margin-left: 0.25ex;
+	margin-right: 0.25ex;
 }
