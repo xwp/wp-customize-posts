@@ -221,6 +221,34 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	vertical-align: middle;
 }
 
+.customize-control-post_date .customize-control-description {
+	font-style: normal;
+	display: block;
+	margin-bottom: 0;
+	margin-top: -28px;
+}
+.customize-control-post_date .customize-control-description summary {
+	font-size: 14px;
+	line-height: 24px;
+	margin-bottom: 4px;
+	display: block;
+	float: right;
+	cursor: pointer;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+.customize-control-post_date .customize-control-description[open] {
+	margin-bottom: 5px;
+}
+.customize-control-post_date .customize-control-description .time-details {
+	clear: both;
+}
+.customize-control-post_date .date-inputs {
+	clear: both;
+}
+
 .customize-control-post_date select,
 .customize-control-post_date input.date-input {
 	min-width: 10%;

@@ -48,6 +48,7 @@
 					var parsed, setComponentInputValue;
 
 					// Hydrate post inputs from current time as soon as the user starts entering a time.
+					// @todo Should this be done on focus instead?
 					if ( '0000-00-00 00:00:00' === control.setting.get().post_date ) {
 						parsed = control.parseDateTime( api.Posts.getCurrentTime() );
 						setComponentInputValue = function( value, component ) {
