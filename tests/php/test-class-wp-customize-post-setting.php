@@ -581,17 +581,20 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	 * @covers WP_Customize_Post_Setting::augment_gmt_dates()
 	 */
 	public function test_augment_gmt_dates() {
+		$empty_date = '0000-00-00 00:00:00';
 		$setting = $this->create_post_setting();
 		$data = array();
 		$this->assertEmpty( $setting->augment_gmt_dates( $data ) );
 
-		$data = $setting->augment_gmt_dates( array( 'post_date' => '0000-00-00 00:00:00' ) );
+		$data = $setting->augment_gmt_dates( array( 'post_date' => $empty_date ) );
 		$this->assertArrayHasKey( 'post_date', $data );
-		$this->assertArrayNotHasKey( 'post_date_gmt', $data );
+		$this->assertArrayHasKey( 'post_date_gmt', $data );
+		$this->assertEquals( $empty_date, $data['post_date_gmt'] );
 
-		$data = $setting->augment_gmt_dates( array( 'post_modified' => '0000-00-00 00:00:00' ) );
+		$data = $setting->augment_gmt_dates( array( 'post_modified' => $empty_date ) );
 		$this->assertArrayHasKey( 'post_modified', $data );
-		$this->assertArrayNotHasKey( 'post_modified_gmt', $data );
+		$this->assertArrayHasKey( 'post_modified_gmt', $data );
+		$this->assertEquals( $empty_date, $data['post_modified_gmt'] );
 
 		$data = $setting->augment_gmt_dates( array( 'post_date' => current_time( 'mysql',  false ) ) );
 		$this->assertArrayHasKey( 'post_date', $data );

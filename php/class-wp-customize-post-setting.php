@@ -502,11 +502,20 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	 * @return array Post data augmented with GMT dates.
 	 */
 	public function augment_gmt_dates( $data ) {
-		if ( ! empty( $data['post_date'] ) && '0000-00-00 00:00:00' !== $data['post_date'] ) {
-			$data['post_date_gmt'] = get_gmt_from_date( $data['post_date'] );
+		$empty_date = '0000-00-00 00:00:00';
+		if ( ! empty( $data['post_date'] ) ) {
+			if ( $empty_date !== $data['post_date'] ) {
+				$data['post_date_gmt'] = get_gmt_from_date( $data['post_date'] );
+			} else {
+				$data['post_date_gmt'] = $empty_date;
+			}
 		}
-		if ( ! empty( $data['post_modified'] ) && '0000-00-00 00:00:00' !== $data['post_modified'] ) {
-			$data['post_modified_gmt'] = get_gmt_from_date( $data['post_modified'] );
+		if ( ! empty( $data['post_modified'] ) ) {
+			if ( $empty_date !== $data['post_modified'] ) {
+				$data['post_modified_gmt'] = get_gmt_from_date( $data['post_modified'] );
+			} else {
+				$data['post_modified_gmt'] = $empty_date;
+			}
 		}
 		return $data;
 	}
