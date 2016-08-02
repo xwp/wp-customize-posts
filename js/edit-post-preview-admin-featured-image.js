@@ -7,7 +7,7 @@
 	// Handle syncing settings from edit post admin page to Customizer.
 	wp.customize.bind( 'settings-from-edit-post-screen', function( settings ) {
 		var settingId = EditPostPreviewAdmin.getPostMetaSettingId( metaKey ),
-		    featuredImageId = parseInt( $( inputSelector ).val(), 10 );
+			featuredImageId = parseInt( $( inputSelector ).val(), 10 );
 
 		if ( featuredImageId <= 0 ) {
 			featuredImageId = '';

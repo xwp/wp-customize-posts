@@ -123,7 +123,8 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertEquals( 10, has_action( 'wp_enqueue_scripts', array( $preview, 'enqueue_scripts' ) ) );
 		$this->assertEquals( 10, has_filter( 'customize_dynamic_partial_args', array( $preview, 'filter_customize_dynamic_partial_args' ) ) );
 		$this->assertEquals( 10, has_filter( 'customize_dynamic_partial_class', array( $preview, 'filter_customize_dynamic_partial_class' ) ) );
-
+		$this->assertEquals( 1000, has_filter( 'the_posts', array( $preview, 'filter_the_posts_to_tally_previewed_posts' ) ) );
+		$this->assertEquals( 10, has_filter( 'the_posts', array( $preview, 'filter_the_posts_to_tally_orderby_keys' ) ) );
 		$this->assertEquals( 10, has_action( 'wp_footer', array( $preview, 'export_preview_data' ) ) );
 		$this->assertEquals( 10, has_filter( 'edit_post_link', array( $preview, 'filter_edit_post_link' ) ) );
 		$this->assertEquals( 10, has_filter( 'get_edit_post_link', array( $preview, 'filter_get_edit_post_link' ) ) );
@@ -234,49 +235,118 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test filter_the_posts_to_add_dynamic_post_settings_and_sections().
+	 * Test filter_the_posts_to_tally_previewed_posts().
 	 *
-	 * @see WP_Customize_Posts_Preview::filter_the_posts_to_add_dynamic_post_settings_and_sections()
+	 * @covers WP_Customize_Posts_Preview::filter_the_posts_to_tally_previewed_posts()
 	 */
-	public function filter_the_posts_to_add_dynamic_post_settings_and_sections() {
-		$post = get_post( $this->post_id );
-		$original_post_content = $post->post_content;
-		$input_posts = array( $post );
-		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
-
-		$this->posts_component->register_post_type_meta( 'post', 'foo' );
-		$foo_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, 'foo' );
-		$this->posts_component->register_post_type_meta( 'post', 'bar' );
-		$bar_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, 'bar' );
-
-		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
-		$this->do_customize_boot_actions( array(
-			$setting_id => array_merge(
-				$post->to_array(),
-				array(
-					'post_content' => 'test_preview_setup_postdata',
-				)
-			),
-		) );
-		$section_id = sprintf( 'post[%s][%d]', $post->post_type, $post->ID );
-
-		wp_set_current_user( 0 );
-		$filtered_posts = $preview->filter_the_posts_to_add_dynamic_post_settings_and_sections( $input_posts );
-		$section = $this->posts_component->manager->get_section( $section_id );
-		$this->assertEmpty( $section );
-		$this->assertEquals( $original_post_content, $filtered_posts[0]->post_content );
-
-		wp_set_current_user( $this->user_id );
-		$filtered_posts = $preview->filter_the_posts_to_add_dynamic_post_settings_and_sections( $input_posts );
-		$section = $this->posts_component->manager->get_section( $section_id );
-		$this->assertNotEmpty( $section );
-		$this->assertNotEquals( $original_post_content, $filtered_posts[0]->post_content );
-
-		$foo_setting = $this->posts_component->manager->get_setting( $foo_setting_id );
-		$bar_setting = $this->posts_component->manager->get_setting( $bar_setting_id );
-		$this->assertInstanceOf( 'WP_Customize_Postmeta_Setting', $foo_setting );
-		$this->assertInstanceOf( 'WP_Customize_Postmeta_Setting', $bar_setting );
+	public function test_filter_the_posts_to_tally_previewed_posts() {
+		$post_ids = $this->factory()->post->create_many( 3 );
+		$this->assertEmpty( $this->posts_component->preview->queried_post_ids );
+		$this->posts_component->preview->customize_preview_init();
+		$query = new WP_Query( array( 'post__in' => $post_ids ) );
+		$this->assertCount( 3, $query->posts );
+		$this->assertNotEmpty( $this->posts_component->preview->queried_post_ids );
+		$this->assertEqualSets( $post_ids, $this->posts_component->preview->queried_post_ids );
 	}
+
+	/**
+	 * Test filter_the_posts_to_preview_settings().
+	 *
+	 * @covers WP_Customize_Posts_Preview::filter_the_posts_to_preview_settings()
+	 * @covers WP_Customize_Posts_Preview::compare_posts_to_resort_posts_for_query()
+	 */
+	public function test_filter_the_posts_to_preview_settings() {
+		$data = array(
+			'foo' => array(
+				'initial' => array( 'post_title' => 'Foo', 'post_date' => '2010-01-02 03:04:05' ),
+				'preview' => array( 'post_title' => 'Bad', 'post_date' => '2013-01-02 03:04:05' ),
+			),
+			'bar' => array(
+				'initial' => array( 'post_title' => 'Bar', 'post_date' => '2011-01-02 03:04:05' ),
+				'preview' => array( 'post_title' => 'Bar', 'post_date' => '2012-01-02 03:04:05' ),
+			),
+			'baz' => array(
+				'initial' => array( 'post_title' => 'Baz', 'post_date' => '2012-01-02 03:04:05' ),
+				'preview' => array( 'post_title' => 'Baz', 'post_date' => '2011-01-02 03:04:05' ),
+			),
+		);
+
+		foreach ( $data as $key => &$post_data ) {
+			$post_data['post_id'] = $this->factory()->post->create( $post_data['initial'] );
+			$post_data['setting_id'] = WP_Customize_Post_Setting::get_post_setting_id( get_post( $post_data['post_id'] ) );
+			$this->wp_customize->add_dynamic_settings( array( $post_data['setting_id'] ) );
+			$post_data['setting'] = $this->wp_customize->get_setting( $post_data['setting_id'] );
+			$this->wp_customize->set_post_value( $post_data['setting_id'], array_merge(
+				$post_data['setting']->value(),
+				$post_data['preview']
+			) );
+			unset( $post_data );
+		}
+
+		// Non-preview sort by date asc.
+		$query = new WP_Query( array(
+			'post__in' => wp_list_pluck( $data, 'post_id' ),
+			'orderby' => 'date',
+			'order' => 'DESC',
+		) );
+		$this->assertCount( 3, $query->posts );
+		$this->assertEquals( $data['baz']['post_id'], $query->posts[0]->ID );
+		$this->assertEquals( $data['foo']['post_id'], $query->posts[2]->ID );
+
+		// Non-preview sort by title desc.
+		$query = new WP_Query( array(
+			'post__in' => wp_list_pluck( $data, 'post_id' ),
+			'orderby' => 'title',
+			'order' => 'ASC',
+		) );
+		$this->assertCount( 3, $query->posts );
+		$this->assertEquals( $data['foo']['post_id'], $query->posts[2]->ID );
+		$this->assertEquals( $data['baz']['post_id'], $query->posts[1]->ID );
+
+		// Preview the settings.
+		foreach ( wp_list_pluck( $data, 'setting' ) as $setting ) {
+			$setting->preview();
+		}
+
+		// Previewed sort by date asc
+		$query = new WP_Query( array(
+			'post__in' => wp_list_pluck( $data, 'post_id' ),
+			'orderby' => 'date',
+			'order' => 'DESC',
+		) );
+		$this->assertEquals( $data['foo']['post_id'], $query->posts[0]->ID );
+		$this->assertEquals( $data['baz']['post_id'], $query->posts[2]->ID );
+
+		// Preview sort by title desc.
+		$query = new WP_Query( array(
+			'post__in' => wp_list_pluck( $data, 'post_id' ),
+			'orderby' => 'title',
+			'order' => 'ASC',
+		) );
+		$this->assertCount( 3, $query->posts );
+		$this->assertEquals( $data['foo']['post_id'], $query->posts[0]->ID ); // Now it is "Bad".
+		$this->assertEquals( $data['baz']['post_id'], $query->posts[2]->ID );
+	}
+
+	/**
+	 * Test filter_the_posts_to_tally_orderby_keys().
+	 *
+	 * @covers WP_Customize_Posts_Preview::filter_the_posts_to_tally_orderby_keys()
+	 */
+	public function test_filter_the_posts_to_tally_orderby_keys() {
+		$post_ids = $this->factory()->post->create_many( 3 );
+		$this->assertEmpty( $this->posts_component->preview->queried_orderby_keys );
+		$this->posts_component->preview->customize_preview_init();
+		$query = new WP_Query( array( 'post__in' => $post_ids ) );
+		$this->assertCount( 3, $query->posts );
+		$this->assertEquals( array( 'date' ), $this->posts_component->preview->queried_orderby_keys );
+
+		$query = new WP_Query( array( 'post__in' => $post_ids, 'orderby' => 'title' ) );
+		$this->assertCount( 3, $query->posts );
+		$this->assertEqualSets( array( 'date', 'title' ), $this->posts_component->preview->queried_orderby_keys );
+	}
+
+	// See test_filter_the_posts_to_preview_settings for WP_Customize_Posts_Preview::compare_posts_to_resort_posts_for_query()
 
 	/**
 	 * Test get_previewed_posts_for_query method.
@@ -724,6 +794,35 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Tests get_post_field_partial_schema().
+	 *
+	 * @covers WP_Customize_Posts_Preview::get_post_field_partial_schema()
+	 */
+	public function test_get_post_field_partial_schema() {
+		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
+		add_filter( 'customize_posts_partial_schema', array( $this, 'filter_customize_posts_partial_schema' ) );
+		$schema = $preview->get_post_field_partial_schema();
+		$this->assertInternalType( 'array', $schema );
+		$this->assertArrayHasKey( 'post_title', $schema );
+		$this->assertEquals( $schema['post_title'], $preview->get_post_field_partial_schema( 'post_title' ) );
+		$this->assertArrayHasKey( 'post_title[footer]', $schema );
+	}
+
+	/**
+	 * Filter partial schema.
+	 *
+	 * @param array $schema Schema.
+	 * @returns array Schema.
+	 */
+	public function filter_customize_posts_partial_schema( $schema ) {
+		$this->assertInternalType( 'array', $schema );
+		$schema['post_title[footer]'] = array(
+			'selector' => '.footer .entry-title',
+		);
+		return $schema;
+	}
+
+	/**
 	 * Test export_preview_data().
 	 *
 	 * @see WP_Customize_Posts_Preview::export_preview_data()
@@ -740,6 +839,8 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'isSingular', $data );
 		$this->assertArrayHasKey( 'queriedPostId', $data );
 		$this->assertArrayHasKey( 'postIds', $data );
+		$this->assertArrayHasKey( 'partialSchema', $data );
+		$this->assertArrayHasKey( 'queriedOrderbyFields', $data );
 
 		$this->assertFalse( $data['isPostPreview'] );
 		$this->assertFalse( $data['isSingular'] );

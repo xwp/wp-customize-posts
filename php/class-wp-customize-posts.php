@@ -80,6 +80,7 @@ final class WP_Customize_Posts {
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-discussion-fields-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-setting.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-setting.php';
+		require_once dirname( __FILE__ ) . '/class-wp-customize-post-date-control.php';
 		require_once ABSPATH . WPINC . '/customize/class-wp-customize-partial.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-field-partial.php';
 
@@ -285,6 +286,7 @@ final class WP_Customize_Posts {
 		$this->manager->register_section_type( 'WP_Customize_Post_Section' );
 		$this->manager->register_control_type( 'WP_Customize_Dynamic_Control' );
 		$this->manager->register_control_type( 'WP_Customize_Post_Discussion_Fields_Control' );
+		$this->manager->register_control_type( 'WP_Customize_Post_Date_Control' );
 
 		$panel_priority = 900; // Before widgets.
 
@@ -439,6 +441,10 @@ final class WP_Customize_Posts {
 				'text'  => __( 'Published', 'customize-posts' ),
 			),
 			array(
+				'value' => 'future',
+				'text'  => __( 'Scheduled', 'customize-posts' ),
+			),
+			array(
 				'value' => 'trash',
 				'text'  => __( 'Trash', 'customize-posts' ),
 			),
@@ -471,6 +477,29 @@ final class WP_Customize_Posts {
 		}
 
 		return $choices;
+	}
+
+	/**
+	 * Generate options for the month Select.
+	 *
+	 * Based on touch_time().
+	 *
+	 * @see touch_time()
+	 *
+	 * @return array
+	 */
+	public function get_date_month_choices() {
+		global $wp_locale;
+		$months = array();
+		for ( $i = 1; $i < 13; $i = $i + 1 ) {
+			$month_number = zeroise( $i, 2 );
+			$month_text = $wp_locale->get_month_abbrev( $wp_locale->get_month( $i ) );
+
+			/* translators: 1: month number, 2: month abbreviation */
+			$months[ $i ]['text'] = sprintf( __( '%1$s-%2$s', 'customize-posts' ), $month_number, $month_text );
+			$months[ $i ]['value'] = $month_number;
+		}
+		return $months;
 	}
 
 	/**
@@ -574,12 +603,16 @@ final class WP_Customize_Posts {
 			'postTypes' => $post_types,
 			'postStatusChoices' => $this->get_post_status_choices(),
 			'authorChoices' => $this->get_author_choices(),
+			'dateMonthChoices' => $this->get_date_month_choices(),
+			'initialServerDate' => current_time( 'mysql', false ),
+			'initialServerTimestamp' => floor( microtime( true ) * 1000 ),
 			'l10n' => array(
 				/* translators: &#9656; is the unicode right-pointing triangle, and %s is the section title in the Customizer */
 				'sectionCustomizeActionTpl' => __( 'Customizing &#9656; %s', 'customize-posts' ),
 				'fieldTitleLabel' => __( 'Title', 'customize-posts' ),
 				'fieldSlugLabel' => __( 'Slug', 'customize-posts' ),
-				'fieldPostStatusLabel' => __( 'Post Status', 'customize-posts' ),
+				'fieldStatusLabel' => __( 'Status', 'customize-posts' ),
+				'fieldDateLabel' => __( 'Date', 'customize-posts' ),
 				'fieldContentLabel' => __( 'Content', 'customize-posts' ),
 				'fieldExcerptLabel' => __( 'Excerpt', 'customize-posts' ),
 				'fieldDiscussionLabel' => __( 'Discussion', 'customize-posts' ),
@@ -588,11 +621,35 @@ final class WP_Customize_Posts {
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
 				'openEditor' => __( 'Open Editor', 'customize-posts' ),
 				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
+				'invalidDateError' => __( 'Whoops, the provided date is invalid.', 'customize-posts' ),
+
+				/* translators: %s post type */
 				'jumpToPostPlaceholder' => __( 'Jump to %s', 'customize-posts' ),
 			),
 		);
 
 		wp_scripts()->add_data( 'customize-posts', 'data', sprintf( 'var _wpCustomizePostsExports = %s;', wp_json_encode( $exports ) ) );
+	}
+
+	/**
+	 * Format GMT Offset.
+	 *
+	 * @see wp_timezone_choice()
+	 * @param float $offset Offset in hours.
+	 * @return string Formatted offset.
+	 */
+	public function format_gmt_offset( $offset ) {
+		if ( 0 <= $offset ) {
+			$formatted_offset = '+' . (string) $offset;
+		} else {
+			$formatted_offset = (string) $offset;
+		}
+		$formatted_offset = str_replace(
+			array( '.25', '.5', '.75' ),
+			array( ':15', ':30', ':45' ),
+			$formatted_offset
+		);
+		return $formatted_offset;
 	}
 
 	/**
@@ -686,6 +743,27 @@ final class WP_Customize_Posts {
 			<button class="customize-posts-navigation dashicons dashicons-visibility" tabindex="0">
 				<span class="screen-reader-text"><?php esc_html_e( 'Preview', 'customize-posts' ); ?> {{ data.label }}</span>
 			</button>
+		</script>
+
+		<script id="tmpl-customize-posts-scheduled-countdown" type="text/html">
+			<# if ( data.remainingTime < 2 * 60 ) { #>
+				<?php esc_html_e( 'This is scheduled for publishing in about a minute.', 'customize-posts' ); ?>
+			<# } else if ( data.remainingTime < 60 * 60 ) { #>
+				<?php
+				/* translators: %s is a placeholder for the Underscore template var */
+				echo sprintf( esc_html__( 'This is scheduled for publishing in about %s minutes.', 'customize-posts' ), '{{ Math.ceil( data.remainingTime / 60 ) }}' );
+				?>
+			<# } else if ( data.remainingTime < 24 * 60 * 60 ) { #>
+				<?php
+				/* translators: %s is a placeholder for the Underscore template var */
+				echo sprintf( esc_html__( 'This is scheduled for publishing in about %s hours.', 'customize-posts' ), '{{ Math.round( data.remainingTime / 60 / 60 * 10 ) / 10 }}' );
+				?>
+			<# } else { #>
+				<?php
+				/* translators: %s is a placeholder for the Underscore template var */
+				echo sprintf( esc_html__( 'This is scheduled for publishing in about %s days.', 'customize-posts' ), '{{ Math.round( data.remainingTime / 60 / 60 / 24 * 10 ) / 10 }}' );
+				?>
+			<# } #>
 		</script>
 
 		<script id="tmpl-customize-posts-trashed" type="text/html">
@@ -816,23 +894,21 @@ final class WP_Customize_Posts {
 			return new WP_Error( 'unknown_post_type', __( 'Unknown post type', 'customize-posts' ) );
 		}
 
-		add_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
 		$this->suppress_post_link_filters = true;
-		$date_local = current_time( 'mysql', 0 );
-		$date_gmt = current_time( 'mysql', 1 );
 		$args = array(
 			'post_status' => 'auto-draft',
 			'post_type' => $post_type,
-			'post_date' => $date_local, // @todo Eliminate in favor of just post_date_gmt?
-			'post_date_gmt' => $date_gmt,
-			'post_modified' => $date_local, // @todo Eliminate in favor of just post_modified_gmt?
-			'post_modified_gmt' => $date_gmt,
 			'meta_input' => array(
 				// Dummy postmeta so that snapshot meta queries won't fail in WP_Customize_Posts_Preview::get_previewed_posts_for_query().
 				'_snapshot_auto_draft' => true,
 			),
 		);
+		add_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
+		add_filter( 'wp_insert_post_data', array( $this, 'force_empty_post_dates' ) );
+		add_filter( 'wp_insert_attachment_data', array( $this, 'force_empty_post_dates' ) );
 		$r = wp_insert_post( wp_slash( $args ), true );
+		remove_filter( 'wp_insert_post_data', array( $this, 'force_empty_post_dates' ) );
+		remove_filter( 'wp_insert_attachment_data', array( $this, 'force_empty_post_dates' ) );
 		remove_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
 		$this->suppress_post_link_filters = false;
 
@@ -841,6 +917,27 @@ final class WP_Customize_Posts {
 		} else {
 			return get_post( $r );
 		}
+	}
+
+	/**
+	 * Ensure that a post array has empty dates supplied.
+	 *
+	 * @param array $data Slashed post data.
+	 * @return array Post data.
+	 */
+	public function force_empty_post_dates( $data ) {
+		$empty_date = '0000-00-00 00:00:00';
+		$date_fields = array(
+			'post_date',
+			'post_date_gmt',
+			'post_modified',
+			'post_modified_gmt',
+		);
+		$data = array_merge(
+			$data,
+			wp_slash( array_fill_keys( $date_fields, $empty_date ) )
+		);
+		return $data;
 	}
 
 	/**

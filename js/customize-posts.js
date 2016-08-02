@@ -1,5 +1,6 @@
 /* global jQuery, wp, _, _wpCustomizePostsExports, console */
 /* eslint no-magic-numbers: [ "error", { "ignore": [0,1,2,3,4] } ] */
+/* eslint-disable consistent-this */
 
 (function( api, $ ) {
 	'use strict';
@@ -14,6 +15,9 @@
 
 	component.data = {
 		postTypes: {},
+		initialServerDate: '',
+		initialServerTimestamp: 0,
+		initialClientTimestamp: ( new Date() ).valueOf(),
 		l10n: {
 			sectionCustomizeActionTpl: '',
 			fieldTitleLabel: '',
@@ -189,15 +193,20 @@
 	 * Handle receiving customized-posts messages from the preview.
 	 *
 	 * @param {object} data Data from preview.
+	 * @param {boolean} data.isPartial Whether it is a full refresh or partial refresh.
+	 * @param {Array} data.postIds Post IDs previewed.
 	 * @return {void}
 	 */
 	component.receivePreviewData = function receivePreviewData( data ) {
-		var postIds;
-		component.previewedQuery.set( data );
-		postIds = component.previewedQuery.get().postIds;
-		if ( postIds.length > 0 ) {
-			component.ensurePosts( postIds );
+		var previewerQuery = component.previewedQuery.get();
+		if ( data.isPartial ) {
+			previewerQuery = _.clone( previewerQuery );
+			previewerQuery.postIds = previewerQuery.postIds.concat( data.postIds );
+			component.previewedQuery.set( previewerQuery );
+		} else {
+			component.previewedQuery.set( data );
 		}
+		component.ensurePosts( component.previewedQuery.get().postIds );
 	};
 
 	/**
@@ -413,6 +422,41 @@
 	};
 
 	/**
+	 * Format a Date Object. Returns 'Y-m-d H:i:s' format.
+	 *
+	 * @param {Date} date A Date object.
+	 * @returns {string} A formatted date String.
+	 */
+	component.formatDate = function formatDate( date ) {
+		var formattedDate, yearLength = 4, nonYearLength = 2;
+
+		// Props: http://stackoverflow.com/questions/10073699/pad-a-number-with-leading-zeros-in-javascript#comment33639551_10073699
+		formattedDate = ( '0000' + date.getFullYear() ).substr( -yearLength, yearLength );
+		formattedDate += '-' + ( '00' + ( date.getMonth() + 1 ) ).substr( -nonYearLength, nonYearLength );
+		formattedDate += '-' + ( '00' + date.getDate() ).substr( -nonYearLength, nonYearLength );
+		formattedDate += ' ' + ( '00' + date.getHours() ).substr( -nonYearLength, nonYearLength );
+		formattedDate += ':' + ( '00' + date.getMinutes() ).substr( -nonYearLength, nonYearLength );
+		formattedDate += ':' + ( '00' + date.getSeconds() ).substr( -nonYearLength, nonYearLength );
+
+		return formattedDate;
+	};
+
+	/**
+	 * Get current date/time in the site's timezone, as does the current_time( 'mysql', false ) function in PHP.
+	 *
+	 * @returns {string} Current datetime string.
+	 */
+	component.getCurrentTime = function getCurrentTime() {
+		var currentDate, currentTimestamp, timestampDifferential;
+		currentTimestamp = ( new Date() ).valueOf();
+		currentDate = new Date( component.data.initialServerDate );
+		timestampDifferential = currentTimestamp - component.data.initialClientTimestamp;
+		timestampDifferential += component.data.initialClientTimestamp - component.data.initialServerTimestamp;
+		currentDate.setTime( currentDate.getTime() + timestampDifferential );
+		return component.formatDate( currentDate );
+	};
+
+	/**
 	 * Focus on the control requested from the preview.
 	 *
 	 * If the control doesn't exist yet, try to determine the section it would
@@ -491,7 +535,7 @@
 
 		component.previewedQuery = new api.Value();
 		component.previewedQuery.validate = function( query ) {
-			var mergedQuery = _.extend(
+			return _.extend(
 				{
 					isSingular: false,
 					isPostPreview: false,
@@ -500,7 +544,6 @@
 				},
 				query
 			);
-			return mergedQuery;
 		};
 		component.previewedQuery.set( {} );
 

@@ -9,6 +9,7 @@
 	 * @see FeaturedImage.updateSelection()
 	 *
 	 * @link https://core.trac.wordpress.org/ticket/36521
+	 * @returns {void}
 	 */
 	api.MediaControl.prototype.ready = function() {
 		var control = this;
@@ -47,6 +48,7 @@
 		 * attachmentData before calling the renderContent method.
 		 *
 		 * @param {number|string} value Attachment
+		 * @returns {void}
 		 */
 		function setAttachmentDataAndRenderContent( value ) {
 			var hasAttachmentData = $.Deferred(), attachmentId = value;
