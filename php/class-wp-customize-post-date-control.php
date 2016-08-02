@@ -66,18 +66,18 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 		if ( $tz_string ) {
 			$tz = new DateTimezone( $tz_string );
 			$now = new DateTime( 'now', $tz );
-			$formatted_gmt_offset = $this->posts_component->format_gmt_offset( $tz->getOffset( $now ) / 3600 );
+			$formatted_gmt_offset = sprintf( 'UTC%s', $this->posts_component->format_gmt_offset( $tz->getOffset( $now ) / 3600 ) );
 			$tz_name = str_replace( '_', ' ', $tz->getName() );
 			$tz_abbr = $now->format( 'T' );
 
 			/* translators: 1: timezone name, 2: timezone abbreviation, 3: gmt offset  */
-			$date_control_description = sprintf( __( 'Timezone is %1$s (%2$s), currently UTC%3$s.', 'customize-posts' ), $tz_name, $tz_abbr, $formatted_gmt_offset );
+			$date_control_description = sprintf( __( 'Timezone is %1$s (%2$s), currently %3$s.', 'customize-posts' ), $tz_name, $tz_abbr, $formatted_gmt_offset );
 		} else {
 			$formatted_gmt_offset = $this->posts_component->format_gmt_offset( get_option( 'gmt_offset' ) );
-			$tz_abbr = $formatted_gmt_offset;
+			$tz_abbr = sprintf( 'UTC%s', $formatted_gmt_offset );
 
-			/* translators: %s: gmt offset  */
-			$date_control_description = sprintf( __( 'Dates are in UTC%s.', 'customize-posts' ), $formatted_gmt_offset );
+			/* translators: %s: UTC offset  */
+			$date_control_description = sprintf( __( 'Timezone is %s.', 'customize-posts' ), $tz_abbr );
 		}
 		?>
 		<details class="description customize-control-description">
