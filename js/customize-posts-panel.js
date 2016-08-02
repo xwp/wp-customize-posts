@@ -1,5 +1,5 @@
 /* global wp, jQuery */
-/* eslint consistent-this: [ "error", "panel" ], no-magic-numbers: [ "error", { "ignore": [-1,0,1,500] } ] */
+/* eslint consistent-this: [ "error", "panel" ], no-magic-numbers: [ "error", { "ignore": [-1,0,1,100] } ] */
 
 (function( api, $ ) {
 	'use strict';
@@ -183,25 +183,39 @@
 				 */
 				function focusControlOnceFocusable() {
 					var firstControl = data.section.controls()[0];
+					if ( ! firstControl ) {
+						return;
+					}
 					function onChangeActive( isActive ) {
 						if ( isActive ) {
 							data.section.active.unbind( onChangeActive );
-							_.defer( function() {
+
+							// @todo Determine why a delay is required.
+							_.delay( function focusControlAfterDelay() {
 								firstControl.focus( {
 									completeCallback: function() {
 										firstControl.container.find( 'input:first' ).select();
 									}
 								} );
-							} );
+							}, 100 );
 						}
 					}
-					if ( firstControl ) {
+					if ( data.section.active.get() ) {
+						onChangeActive( true );
+					} else {
 						data.section.active.bind( onChangeActive );
 					}
 				}
 
 				data.section.focus( {
-					completeCallback: focusControlOnceFocusable
+					completeCallback: function() {
+						/*
+						 * Note the defer is because the controls get embedded
+						 * once the section is expanded and also because it seems
+						 * that focus fails when the input is not visible yet.
+						 */
+						_.defer( focusControlOnceFocusable );
+					}
 				} );
 			} );
 			promise.always( function() {

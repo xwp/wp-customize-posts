@@ -370,6 +370,15 @@
 			section.postFieldControls.post_title = control;
 			api.control.add( control.id, control );
 
+			// Select the input's contents when the value is a placeholder.
+			control.deferred.embedded.done( function() {
+				control.container.find( 'input[type=text]' ).on( 'focus', function() {
+					if ( api.Posts.data.l10n.noTitle === control.setting().post_title ) {
+						$( this ).select();
+					}
+				} );
+			} );
+
 			if ( control.notifications ) {
 				control.notifications.add = section.addPostFieldControlNotification;
 				control.notifications.setting_property = control.params.setting_property;
