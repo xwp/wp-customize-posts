@@ -372,7 +372,7 @@
 
 			// Select the input's contents when the value is a placeholder.
 			control.deferred.embedded.done( function() {
-				control.container.find( ':input' ).on( 'focus', function() {
+				control.container.find( 'input[type=text]' ).on( 'focus', function() {
 					if ( api.Posts.data.l10n.noTitle === control.setting().post_title ) {
 						$( this ).select();
 					}
