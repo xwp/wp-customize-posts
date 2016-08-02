@@ -33,6 +33,10 @@
 			control.deferred.embedded.done( function() {
 				var embeddedDelay = 50;
 
+				control.selectElement = control.container.find( 'select' );
+				control.optionFutureElement = control.selectElement.find( 'option[value=future]' );
+				control.optionPublishElement = control.selectElement.find( 'option[value=publish]' );
+
 				// Defer updating until control explicitly added, because it will short-circuit if not registered yet.
 				api.control( control.id, function() {
 					control.keepUpdatingChoices();
@@ -68,7 +72,7 @@
 		 * @returns {void}
 		 */
 		updateChoices: function updateChoices() {
-			var control = this, data = control.setting.get(), isFuture, optionFuture, optionPublish, postTimestamp, currentTimestamp;
+			var control = this, data = control.setting.get(), isFuture, postTimestamp, currentTimestamp;
 			postTimestamp = ( new Date( data.post_date ) ).valueOf();
 			currentTimestamp = ( new Date( api.Posts.getCurrentTime() ) ).valueOf();
 			isFuture = postTimestamp > currentTimestamp;
@@ -83,23 +87,18 @@
 				isFuture = false;
 			}
 
-			optionFuture = control.container.find( 'select option[value=future]' );
-			optionPublish = control.container.find( 'select option[value=publish]' );
-
-			if ( optionFuture.prop( 'disabled' ) === isFuture ) {
-				optionFuture.prop( 'disabled', ! isFuture );
+			if ( control.optionFutureElement.prop( 'disabled' ) === isFuture ) {
+				control.optionFutureElement.prop( 'disabled', ! isFuture );
 			}
-			if ( optionPublish.prop( 'disabled' ) !== isFuture ) {
-				optionPublish.prop( 'disabled', isFuture );
+			if ( control.optionPublishElement.prop( 'disabled' ) !== isFuture ) {
+				control.optionPublishElement.prop( 'disabled', isFuture );
 			}
 
-			if ( isFuture && 'publish' === data.post_status ) {
+			if ( isFuture && 'publish' === data.post_status || ! isFuture && 'future' === data.post_status ) {
 				data = _.clone( data );
-				data.post_status = 'future';
-				control.setting.set( data );
-			} else if ( ! isFuture && 'future' === data.post_status ) {
-				data = _.clone( data );
-				data.post_status = 'publish';
+				data.post_status = isFuture ? 'future' : 'publish';
+
+				// @todo Only do this if already _dirty? Otherwise, set quietly by setting _value directly and update selected status option?
 				control.setting.set( data );
 			}
 		},
