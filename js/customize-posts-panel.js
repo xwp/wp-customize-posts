@@ -1,5 +1,5 @@
 /* global wp, jQuery */
-/* eslint consistent-this: [ "error", "panel" ], no-magic-numbers: [ "error", { "ignore": [-1,0,1,500] } ] */
+/* eslint consistent-this: [ "error", "panel" ], no-magic-numbers: [ "error", { "ignore": [-1,0,1,100] } ] */
 
 (function( api, $ ) {
 	'use strict';
@@ -189,13 +189,15 @@
 					function onChangeActive( isActive ) {
 						if ( isActive ) {
 							data.section.active.unbind( onChangeActive );
-							_.delay( function() {
+
+							// @todo Determine why a delay is required.
+							_.delay( function focusControlAfterDelay() {
 								firstControl.focus( {
 									completeCallback: function() {
 										firstControl.container.find( 'input:first' ).select();
 									}
 								} );
-							}, 500 );
+							}, 100 );
 						}
 					}
 					if ( data.section.active.get() ) {
