@@ -1,5 +1,6 @@
 /* global wp, _ */
 /* eslint consistent-this: [ "error", "control" ] */
+/* eslint no-magic-numbers: [ "error", { "ignore": [0,15,1000] } ] */
 
 (function( api ) {
 	'use strict';
@@ -67,8 +68,20 @@
 		 * @returns {void}
 		 */
 		updateChoices: function updateChoices() {
-			var control = this, data = control.setting.get(), isFuture, optionFuture, optionPublish;
-			isFuture = data.post_date > api.Posts.getCurrentTime();
+			var control = this, data = control.setting.get(), isFuture, optionFuture, optionPublish, postTimestamp, currentTimestamp;
+			postTimestamp = ( new Date( data.post_date ) ).valueOf();
+			currentTimestamp = ( new Date( api.Posts.getCurrentTime() ) ).valueOf();
+			isFuture = postTimestamp > currentTimestamp;
+
+			/*
+			 * Account for race condition when saving a post with an empty date
+			 * when server time and client time aren't exactly aligned. If the
+			 * status is publish, and yet the post date is less than 15 seconds
+			 * into the future, consider it as not future.
+			 */
+			if ( isFuture && 'publish' === data.post_status && postTimestamp - currentTimestamp < 15 * 1000 ) {
+				isFuture = false;
+			}
 
 			optionFuture = control.container.find( 'select option[value=future]' );
 			optionPublish = control.container.find( 'select option[value=publish]' );
