@@ -11,38 +11,6 @@
 	}
 
 	/**
-	 * A deferred partial for settings that created at runtime.
-	 *
-	 * @class
-	 * @augments wp.customize.selectiveRefresh.Partial
-	 * @augments wp.customize.Class
-	 */
-	api.previewPosts.DeferredPartial = api.selectiveRefresh.Partial.extend({
-
-		/**
-		 * Return whether the setting is related to the partial.
-		 *
-		 * This is needed because selective refresh has the behavior of calling
-		 * `handleSettingChange` when a setting is added, but since we are deferring
-		 * to create settings until they are needed, we need to prevent created
-		 * settings from triggering a partial refresh.
-		 *
-		 * @param {wp.customize.Value|string} setting  ID or object for setting.
-		 * @param {*}                         newValue New value.
-		 * @param {*}                         oldValue Old value.
-		 * @return {boolean} Whether the setting is related to the partial.
-		 */
-		isRelatedSetting: function( setting, newValue, oldValue ) {
-			var isSettingCreated = null === oldValue;
-			if ( isSettingCreated ) {
-				return false;
-			} else {
-				return api.selectiveRefresh.Partial.prototype.isRelatedSetting.call( this, setting, newValue, oldValue );
-			}
-		}
-	});
-
-	/**
 	 * Prevent shift-clicking from inadvertently causing text selection.
 	 */
 	$( document.body ).on( 'mousedown', function( e ) {
@@ -92,12 +60,12 @@
 					schema.params.archiveOnly && ! api.previewPosts.data.isSingular;
 
 				if ( addPartial ) {
-					partial = new api.previewPosts.PostFieldPartial( schema.id, { params: schema.params } );
+					partial = new api.selectiveRefresh.partialConstructor.post_field( schema.id, { params: schema.params } );
 					api.selectiveRefresh.partial.add( partial.id, partial );
 					addedPartials.push( partial );
 				}
 			} else {
-				partial = new api.previewPosts.PostFieldPartial( schema.id, { params: schema.params } );
+				partial = new api.selectiveRefresh.partialConstructor.post_field( schema.id, { params: schema.params } );
 
 				/**
 				 * Suppress wasted partial refreshes for partials that lack selectors.
@@ -209,7 +177,8 @@
 		api.selectiveRefresh.bind( 'render-partials-response', function( data ) {
 			if ( data.queried_post_ids ) {
 				api.preview.send( 'customized-posts', {
-					postIds: data.queried_post_ids
+					postIds: data.queried_post_ids,
+					isPartial: true
 				} );
 			}
 		} );
@@ -227,7 +196,8 @@
 			}
 			if ( data.queried_post_ids ) {
 				api.preview.send( 'customized-posts', {
-					postIds: data.queried_post_ids
+					postIds: data.queried_post_ids,
+					isPartial: true
 				} );
 			}
 		} );

@@ -70,7 +70,8 @@ var EditPostPreviewAdmin = (function( $ ) {
 				if ( editor ) {
 					editor.setContent( wp.editor.autop( data[ postSettingId ].post_content ) );
 				}
-				// @todo Handle post-status sync.
+
+				// @todo Handle post_status and post_date sync.
 				$( '#content' ).val( data[ postSettingId ].post_content ).trigger( 'change' );
 				$( '#excerpt' ).val( data[ postSettingId ].post_excerpt ).trigger( 'change' );
 				$( '#comment_status' ).prop( 'checked', 'open' === data[ postSettingId ].comment_status ).trigger( 'change' );
@@ -105,6 +106,8 @@ var EditPostPreviewAdmin = (function( $ ) {
 	 * sections not related to this post are deactivated, and any changes
 	 * for this post's settings is synced to the parent frame, the edit post
 	 * screen.
+	 *
+	 * @returns {void}
 	 */
 	component.closeLoader = function() {
 		if ( ! this.active ) {

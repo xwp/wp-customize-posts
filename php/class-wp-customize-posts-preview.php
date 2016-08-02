@@ -43,6 +43,13 @@ final class WP_Customize_Posts_Preview {
 	public $previewed_postmeta_settings = array();
 
 	/**
+	 * List of the orderby keys used in queries in the response.
+	 *
+	 * @var array
+	 */
+	public $queried_orderby_keys = array();
+
+	/**
 	 * Whether the preview filters have been added.
 	 *
 	 * @see WP_Customize_Posts_Preview::add_preview_filters()
@@ -71,6 +78,7 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'customize_dynamic_partial_args', array( $this, 'filter_customize_dynamic_partial_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_partial_class', array( $this, 'filter_customize_dynamic_partial_class' ), 10, 3 );
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_tally_previewed_posts' ), 1000 );
+		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_tally_orderby_keys' ), 10, 2 );
 		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
 		add_filter( 'edit_post_link', array( $this, 'filter_edit_post_link' ), 10, 2 );
 		add_filter( 'get_edit_post_link', array( $this, 'filter_get_edit_post_link' ), 10, 2 );
@@ -86,7 +94,7 @@ final class WP_Customize_Posts_Preview {
 		if ( $this->has_preview_filters ) {
 			return false;
 		}
-		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_preview_settings' ), 1000 );
+		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_preview_settings' ), 1000, 2 );
 		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
 		add_filter( 'the_title', array( $this, 'filter_the_title' ), 1, 2 );
 		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_preview' ), 1000, 4 );
@@ -213,10 +221,11 @@ final class WP_Customize_Posts_Preview {
 	/**
 	 * Override post data for previewed settings.
 	 *
-	 * @param array $posts Posts.
-	 * @return array
+	 * @param array    $posts Posts.
+	 * @param WP_Query $query Query.
+	 * @return array Previewed posts.
 	 */
-	public function filter_the_posts_to_preview_settings( array $posts ) {
+	public function filter_the_posts_to_preview_settings( array $posts, WP_Query $query ) {
 		foreach ( $posts as &$post ) {
 			$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
 			$setting = $this->component->manager->get_setting( $post_setting_id );
@@ -224,13 +233,99 @@ final class WP_Customize_Posts_Preview {
 				$setting->override_post_data( $post );
 			}
 		}
+
+		// Re-sort the posts in the query.
+		$orderby = $query->get( 'orderby' );
+		if ( empty( $orderby ) ) {
+			$orderby = 'date';
+		}
+		// @todo This is short-sighted because the LIMIT clause can cause the expected post to not be in the result set. This can only be solved in get_previewed_posts_for_query by re-implementing WP_Query.
+		if ( in_array( $orderby, $this->supported_orderby_keys, true ) ) {
+			$this->current_query = $query;
+			usort( $posts, array( $this, 'compare_posts_to_resort_posts_for_query' ) );
+			$this->current_query = null;
+		}
+
 		return $posts;
+	}
+
+	/**
+	 * Keep track of the orderby keys used in queries on the page.
+	 *
+	 * @param array    $posts Posts.
+	 * @param WP_Query $query Query.
+	 * @return array Previewed posts.
+	 */
+	public function filter_the_posts_to_tally_orderby_keys( array $posts, WP_Query $query ) {
+		$orderby = $query->get( 'orderby' );
+		if ( empty( $orderby ) ) {
+			$orderby = 'date';
+		}
+		$this->queried_orderby_keys[] = $orderby;
+		return $posts;
+	}
+
+	/**
+	 * Current query.
+	 *
+	 * @var WP_Query
+	 */
+	protected $current_query;
+
+	/**
+	 * Supported orderby keys.
+	 *
+	 * Unsupported orderby keys that need to be implemented include:
+	 *  - 'name',
+	 *  - 'author',
+	 *  - 'meta_value',
+	 *  - 'meta_value_num',
+	 *  - 'post_name__in',
+	 *  - 'post_parent__in'
+	 *
+	 * @todo Implement more and more of these in compare_posts_to_resort_posts_for_query.
+	 *
+	 * @var array
+	 */
+	public $supported_orderby_keys = array( 'title', 'modified', 'menu_order', 'parent', 'date' );
+
+	/**
+	 * Compare two posts for re-sorting with previewed changes applied.
+	 *
+	 * @param WP_Post $post1 Post 1.
+	 * @param WP_Post $post2 Post 2.
+	 * @return int Comparison.
+	 */
+	public function compare_posts_to_resort_posts_for_query( $post1, $post2 ) {
+		$comparison = 0;
+		$orderby = $this->current_query->get( 'orderby' );
+		if ( empty( $orderby ) ) {
+			$orderby = 'date';
+		}
+
+		if ( 'date' === $orderby ) {
+			$comparison = strcmp( $post1->post_date, $post2->post_date );
+		} elseif ( 'title' ) {
+			$comparison = strcmp( $post1->post_title, $post2->post_title );
+		} elseif ( 'modified' ) {
+			$comparison = strcmp( $post1->post_modified, $post2->post_modified );
+		} elseif ( 'menu_order' ) {
+			$comparison = $post1->menu_order - $post2->menu_order;
+		} elseif ( 'parent' ) {
+			$comparison = $post1->post_parent - $post2->post_parent;
+		}
+
+		if ( 'ASC' !== strtoupper( $this->current_query->get( 'order' ) ) ) {
+			$comparison = -$comparison;
+		}
+
+		return $comparison;
 	}
 
 	/**
 	 * Get current posts being previewed which should be included in the given query.
 	 *
-	 * @todo The $published flag is likely a vestigate of when this was specifically for post_status. Refactoring needed.
+	 * @todo The $published flag is likely a vestige of when this was specifically for post_status. Refactoring needed.
 	 *
 	 * @access public
 	 *
@@ -688,6 +783,10 @@ final class WP_Customize_Posts_Preview {
 			'post_status' => array(
 				'fallback_refresh' => true,
 			),
+			'post_date' => array(
+				'selector' => 'time.entry-date',
+				'fallback_refresh' => false,
+			),
 			'post_content' => array(
 				'selector' => '.entry-content',
 			),
@@ -758,12 +857,30 @@ final class WP_Customize_Posts_Preview {
 			$exported_partial_schema[ $key ] = $schema;
 		}
 
+		// Build up list of fields that are used for ordering posts on the page.
+		$orderby_key_field_mapping = array(
+			'date' => 'post_date',
+			'title' => 'post_title',
+			'modified' => 'post_modified',
+			'parent' => 'post_parent',
+		);
+		$queried_orderby_fields = array();
+		foreach ( array_unique( $this->queried_orderby_keys ) as $key ) {
+			if ( isset( $orderby_key_field_mapping[ $key ] ) ) {
+				$queried_orderby_fields[] = $orderby_key_field_mapping[ $key ];
+			} else {
+				$queried_orderby_fields[] = $key;
+			}
+		}
+
 		$exported = array(
 			'isPostPreview' => is_preview(),
 			'isSingular' => is_singular(),
+			'isPartial' => false,
 			'queriedPostId' => $queried_post_id,
 			'postIds' => array_values( array_unique( $this->queried_post_ids ) ),
 			'partialSchema' => $exported_partial_schema,
+			'queriedOrderbyFields' => $queried_orderby_fields,
 		);
 
 		$data = sprintf( 'var _wpCustomizePreviewPostsData = %s;', wp_json_encode( $exported ) );

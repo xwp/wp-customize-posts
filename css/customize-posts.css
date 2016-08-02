@@ -106,7 +106,7 @@
 	transition: all 0.2s;
 	visibility: hidden;
 }
- 
+
 body.customize-posts-content-editor-pane-resize #customize-preview,
 body.customize-posts-content-editor-pane-resize #customize-posts-content-editor-pane {
 	-webkit-transition: none;
@@ -219,4 +219,55 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	height: 20px;
 	width: auto;
 	vertical-align: middle;
+}
+
+.customize-control-post_date .customize-control-description {
+	font-style: normal;
+	display: block;
+	margin-bottom: 0;
+	margin-top: -28px;
+}
+.customize-control-post_date .customize-control-description summary {
+	font-size: 14px;
+	line-height: 24px;
+	margin-bottom: 4px;
+	display: block;
+	float: right;
+	cursor: pointer;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+.customize-control-post_date .customize-control-description[open] {
+	margin-bottom: 5px;
+}
+.customize-control-post_date .customize-control-description .time-details {
+	clear: both;
+}
+.customize-control-post_date .date-inputs {
+	clear: both;
+}
+
+.customize-control-post_date select,
+.customize-control-post_date input.date-input {
+	min-width: 10%;
+	width: auto;
+}
+.customize-control-post_date input.date-input {
+	-moz-appearance: textfield;
+}
+.customize-control-post_date input.date-input::-webkit-outer-spin-button,
+.customize-control-post_date input.date-input::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+.wrap-reset-time {
+	font-weight: normal;
+	font-size: 75%;
+}
+.customize-control-post_date .reset-time {
+	cursor: pointer;
+	margin-left: 0.25ex;
+	margin-right: 0.25ex;
 }

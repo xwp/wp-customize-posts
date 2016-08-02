@@ -301,7 +301,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test that the previed post is null.
+	 * Test that the previewed post is null.
 	 *
 	 * @see WP_Customize_Posts::get_previewed_post()
 	 */
@@ -310,6 +310,56 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->do_customize_boot_actions();
 		$post = $posts->get_previewed_post();
 		$this->assertNull( $post );
+	}
+
+	/**
+	 * Tests get_post_status_choices().
+	 *
+	 * @covers WP_Customize_Posts::get_post_status_choices().
+	 */
+	public function test_get_post_status_choices() {
+		$posts = new WP_Customize_Posts( $this->wp_customize );
+		$choices = $posts->get_post_status_choices();
+		$this->assertTrue( count( $choices ) > 0 );
+		foreach ( $choices as $choice ) {
+			$this->assertInternalType( 'array', $choice );
+			$this->assertArrayHasKey( 'text', $choice );
+			$this->assertArrayHasKey( 'value', $choice );
+			$this->assertTrue( (bool) get_post_status_object( $choice['value'] ) );
+		}
+	}
+
+	/**
+	 * Tests get_author_choices().
+	 *
+	 * @covers WP_Customize_Posts::get_author_choices().
+	 */
+	public function test_get_author_choices() {
+		$posts = new WP_Customize_Posts( $this->wp_customize );
+		$choices = $posts->get_author_choices();
+		$this->assertTrue( count( $choices ) > 0 );
+		foreach ( $choices as $choice ) {
+			$this->assertInternalType( 'array', $choice );
+			$this->assertArrayHasKey( 'text', $choice );
+			$this->assertArrayHasKey( 'value', $choice );
+			$this->assertTrue( (bool) get_user_by( 'ID', $choice['value'] ) );
+		}
+	}
+
+	/**
+	 * Get month choices.
+	 *
+	 * @covers WP_Customize_Dynamic_Control::get_date_month_choices()
+	 */
+	public function test_get_date_month_choices() {
+		$posts = new WP_Customize_Posts( $this->wp_customize );
+		$choices = $posts->get_date_month_choices();
+		$this->assertCount( 12, $choices );
+		foreach ( $choices as $choice ) {
+			$this->assertInternalType( 'array', $choice );
+			$this->assertArrayHasKey( 'text', $choice );
+			$this->assertArrayHasKey( 'value', $choice );
+		}
 	}
 
 	/**
@@ -341,6 +391,34 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertTrue( wp_script_is( 'customize-post-section', 'enqueued' ) );
 		$this->assertTrue( wp_script_is( 'customize-dynamic-control', 'enqueued' ) );
 		$this->assertTrue( wp_style_is( 'customize-posts', 'enqueued' ) );
+
+		$data = wp_scripts()->get_data( 'customize-posts', 'data' );
+		$this->assertTrue( (bool) preg_match( '#_wpCustomizePostsExports\s*=\s*({.+});#', $data, $matches ) );
+		$exports = json_decode( $matches[1], true );
+
+		$this->assertArrayHasKey( 'postTypes', $exports );
+		$this->assertArrayHasKey( 'post', $exports['postTypes'] );
+		$this->assertArrayHasKey( 'postStatusChoices', $exports );
+		$this->assertArrayHasKey( 'dateMonthChoices', $exports );
+		$this->assertArrayHasKey( 'authorChoices', $exports );
+		$this->assertArrayHasKey( 'initialServerDate', $exports );
+		$this->assertInternalType( 'int', strtotime( $exports['initialServerDate'] ) );
+		$this->assertArrayHasKey( 'initialServerTimestamp', $exports );
+		$this->assertTrue( is_numeric( $exports['initialServerTimestamp'] ) ); // Can be too big for int.
+		$this->assertArrayHasKey( 'l10n', $exports );
+	}
+
+	/**
+	 * Tests format_gmt_offset().
+	 *
+	 * @covers WP_Customize_Posts::format_gmt_offset()
+	 */
+	public function test_format_gmt_offset() {
+		$this->assertSame( '-1', $this->posts->format_gmt_offset( -1 ) );
+		$this->assertSame( '+2', $this->posts->format_gmt_offset( 2 ) );
+		$this->assertSame( '+3:15', $this->posts->format_gmt_offset( 3.25 ) );
+		$this->assertSame( '+3:30', $this->posts->format_gmt_offset( 3.5 ) );
+		$this->assertSame( '-3:45', $this->posts->format_gmt_offset( -3.75 ) );
 	}
 
 	/**
@@ -514,11 +592,29 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertTrue( is_customize_preview() );
 		$post = $this->posts->insert_auto_draft_post( 'post' );
 		$this->assertEquals( 'auto-draft', $post->post_status );
-		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_date );
-		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_date_gmt );
-		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_modified );
-		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_modified_gmt );
+		$this->assertEquals( '0000-00-00 00:00:00', $post->post_date );
+		$this->assertEquals( '0000-00-00 00:00:00', $post->post_date_gmt );
+		$this->assertEquals( '0000-00-00 00:00:00', $post->post_modified );
+		$this->assertEquals( '0000-00-00 00:00:00', $post->post_modified_gmt );
 		$this->assertEquals( sprintf( '%s?p=%d', home_url( '/' ), $post->ID ), $post->guid );
+	}
+
+	/**
+	 * Tests force_empty_post_dates().
+	 *
+	 * @covers WP_Customize_Posts::force_empty_post_dates()
+	 */
+	public function test_force_empty_post_dates() {
+		$original_data = array_fill_keys(
+			array( 'post_date', 'post_date_gmt', 'post_modified', 'post_modified_gmt' ),
+			current_time( 'mysql', true )
+		);
+		$data = $this->posts->force_empty_post_dates( $original_data );
+		$this->assertCount( 4, $data );
+		$this->assertNotEquals( $original_data, $data );
+		foreach ( $data as $value ) {
+			$this->assertEquals( '0000-00-00 00:00:00', $value );
+		}
 	}
 
 	/**

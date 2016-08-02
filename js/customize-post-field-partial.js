@@ -2,22 +2,18 @@
 /* eslint consistent-this: [ "error", "partial" ] */
 /* eslint-disable no-magic-numbers */
 
-(function( api ) {
+(function( api, $ ) {
 	'use strict';
-
-	if ( ! api.previewPosts ) {
-		api.previewPosts = {};
-	}
 
 	/**
 	 * A partial representing a post field.
 	 *
 	 * @class
-	 * @augments wp.customize.previewPosts.DeferredPartial
+	 * @augments wp.customize.selectiveRefresh.partialConstructor.deferred
 	 * @augments wp.customize.selectiveRefresh.Partial
 	 * @augments wp.customize.Class
 	 */
-	api.previewPosts.PostFieldPartial = api.previewPosts.DeferredPartial.extend({
+	api.selectiveRefresh.partialConstructor.post_field = api.selectiveRefresh.partialConstructor.deferred.extend({
 
 		/**
 		 * @inheritdoc
@@ -36,9 +32,11 @@
 			args.params.field_id = matches[3];
 			args.params.placement = matches[4] || '';
 
-			api.previewPosts.DeferredPartial.prototype.initialize.call( partial, id, args );
+			api.selectiveRefresh.partialConstructor.deferred.prototype.initialize.call( partial, id, args );
 
 			partial.addInstantPreviews();
+
+			// @todo If singular_only, and this is not the post singular post for this partial, then no refresh!
 		},
 
 		/**
@@ -62,8 +60,8 @@
 			// Post title.
 			if ( 'post_title' === partial.params.field_id ) {
 				api( settingId, function( setting ) {
-					setting.bind( function( postData ) {
-						if ( ! postData || ! _.isString( postData.post_title ) ) {
+					setting.bind( function( newPostData, oldPostData ) {
+						if ( ! newPostData || oldPostData && newPostData.post_title === oldPostData.post_title ) {
 							return;
 						}
 						_.each( partial.placements(), function( placement ) {
@@ -71,11 +69,52 @@
 							if ( ! target.length ) {
 								target = placement.container;
 							}
-							target.text( postData.post_title );
+							target.text( newPostData.post_title );
 						} );
 					} );
 				} );
 			}
+		},
+
+		/**
+		 * Request the new post field partial and render it into the placements.
+		 *
+		 * @this {wp.customize.selectiveRefresh.Partial}
+		 * @return {jQuery.Promise} Promise.
+		 */
+		refresh: function() {
+			var partial = this, refreshPromise;
+
+			/*
+			 * Force a full refresh for post_date changes which aren't on a
+			 * singular query, since this will most likely mean a change to
+			 * the ordering of the posts on the page.
+			 */
+			if ( ! api.previewPosts.data.isSingular && -1 !== _.indexOf( api.previewPosts.data.queriedOrderbyFields, partial.params.field_id ) ) {
+				api.selectiveRefresh.requestFullRefresh();
+				refreshPromise = $.Deferred();
+				refreshPromise.reject();
+				return refreshPromise;
+			}
+
+			refreshPromise = api.selectiveRefresh.partialConstructor.deferred.prototype.refresh.call( partial );
+
+			/*
+			 * If the setting was failed validation, ensure the next change to the
+			 * setting will pass the isRelatedSetting check so that the partial
+			 * will be refreshed even if the related field_id wasn't just changed.
+			 */
+			refreshPromise.done( function() {
+				partial.hadInvalidSettings = false;
+				_.each( partial.settings(), function( settingId ) {
+					var validityState = api.settingValidities( settingId );
+					if ( validityState && true !== validityState.get() ) {
+						partial.hadInvalidSettings = true;
+					}
+				} );
+			} );
+
+			return refreshPromise;
 		},
 
 		/**
@@ -94,14 +133,12 @@
 		 */
 		isRelatedSetting: function( setting, newValue, oldValue ) {
 			var partial = this;
-			if ( _.isObject( newValue ) && _.isObject( oldValue ) && partial.params.field_id && newValue[ partial.params.field_id ] === oldValue[ partial.params.field_id ] ) {
+			if ( ! partial.hadInvalidSettings && _.isObject( newValue ) && _.isObject( oldValue ) && partial.params.field_id && newValue[ partial.params.field_id ] === oldValue[ partial.params.field_id ] ) {
 				return false;
 			}
-			return api.previewPosts.DeferredPartial.prototype.isRelatedSetting.call( partial, setting, newValue, oldValue );
+			return api.selectiveRefresh.partialConstructor.deferred.prototype.isRelatedSetting.call( partial, setting, newValue, oldValue );
 		}
 
 	});
 
-	api.selectiveRefresh.partialConstructor.post_field = api.previewPosts.PostFieldPartial;
-
-})( wp.customize );
+})( wp.customize, jQuery );

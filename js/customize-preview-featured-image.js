@@ -29,11 +29,11 @@ var CustomizePreviewFeaturedImage = (function( api, $ ) {
 	 * A partial representing a featured image.
 	 *
 	 * @class
-	 * @augments wp.customize.previewPosts.DeferredPartial
+	 * @augments wp.customize.selectiveRefresh.partialConstructor.deferred
 	 * @augments wp.customize.selectiveRefresh.Partial
 	 * @augments wp.customize.Class
 	 */
-	component.FeaturedImagePartial = api.previewPosts.DeferredPartial.extend({
+	component.FeaturedImagePartial = api.selectiveRefresh.partialConstructor.deferred.extend({
 
 		/**
 		 * Force fallback (full page refresh) behavior when the featured image is removed.

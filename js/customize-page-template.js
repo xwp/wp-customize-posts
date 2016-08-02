@@ -94,7 +94,7 @@ var CustomizePageTemplate = (function( api ) {
 		/**
 		 * Make sure that control only appears if there are page templates (other than 'default').
 		 *
-		 * @returns {boolean}
+		 * @returns {boolean} Is active.
 		 */
 		isActiveCallback = function() {
 			var defaultSize = 1;

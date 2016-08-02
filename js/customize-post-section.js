@@ -43,12 +43,11 @@
 	api.Posts.PostSection = api.Section.extend({
 
 		initialize: function( id, options ) {
-			var section = this, args, postTypeObj, setting, setPriority, isDefaultPriority;
+			var section = this, args, setting, isDefaultPriority;
 
 			args = options || {};
 			args.params = args.params || {};
-			postTypeObj = api.Posts.data.postTypes[ args.params.post_type ];
-			if ( ! postTypeObj ) {
+			if ( ! api.Posts.data.postTypes[ args.params.post_type ] ) {
 				throw new Error( 'Missing post_type' );
 			}
 			if ( _.isNaN( args.params.post_id ) ) {
@@ -73,30 +72,8 @@
 			isDefaultPriority = 'undefined' === typeof args.params.priority;
 			api.Section.prototype.initialize.call( section, id, args );
 
-			// Let priority (position) of section be determined by menu_order or post_date_gmt.
 			if ( isDefaultPriority ) {
-				setPriority = function( postData ) {
-					var priority;
-					if ( ! postData ) {
-						return;
-					}
-					if ( postTypeObj.hierarchical || postTypeObj.supports['page-attributes'] ) {
-						priority = postData.menu_order;
-					} else {
-						priority = Date.parse( postData.post_date_gmt.replace( ' ', 'T' ) );
-
-						// Handle case where post_date_gmt is "0000-00-00 00:00:00".
-						if ( isNaN( priority ) ) {
-							priority = 0;
-						} else {
-							priority = new Date().valueOf() - priority;
-						}
-					}
-
-					section.priority.set( priority );
-				};
-				setPriority( setting() );
-				setting.bind( setPriority );
+				section.derivePriority();
 			}
 
 			/*
@@ -108,6 +85,55 @@
 			section.active.validate = function() {
 				return true;
 			};
+		},
+
+		/**
+		 * Let priority (position) of section be determined by menu_order or post_date.
+		 *
+		 * @returns {void}
+		 */
+		derivePriority: function() {
+			var section = this, setting, setPriority, postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+			setting = api( section.id );
+			setPriority = function( postData ) {
+				var priority;
+
+				/*
+				 * Abort if there is no postData (which there should always be)
+				 * but more importantly abort if the section is expanded. This
+				 * is important because if the priority changes while the section
+				 * is expanded, it can cause unintended blur events when entering
+				 * data into date inputs. Since the priority only makes sense
+				 * when the section is collapsed anyway (as that is when it is seen)
+				 * we can skip setting priority if the section is expanded,
+				 * and instead re-set the priority whenever the section is collapsed.
+				 */
+				if ( ! postData || section.expanded.get() ) {
+					return;
+				}
+				if ( postTypeObj.hierarchical || postTypeObj.supports['page-attributes'] ) {
+					priority = postData.menu_order;
+				} else {
+					priority = Date.parse( postData.post_date.replace( ' ', 'T' ) );
+
+					// Handle case where post_date is "0000-00-00 00:00:00".
+					if ( isNaN( priority ) ) {
+						priority = 0;
+					} else {
+						priority = new Date().valueOf() - priority;
+					}
+				}
+
+				section.priority.set( priority );
+			};
+			setPriority( setting() );
+			setting.bind( setPriority );
+			section.expanded.bind( function( isExpanded ) {
+				if ( ! isExpanded ) {
+					setPriority( setting() );
+				}
+			} );
 		},
 
 		/**
@@ -197,7 +223,7 @@
 		 * @returns {void}
 		 */
 		setupPostNavigation: function setupPostNavigation() {
-			var section = this, sectionNavigationButton, sectionContainer, sectionTitle, sectionNavigationButtonTemplate, postTypeObj;
+			var section = this, setting = api( section.id ), sectionNavigationButton, sectionContainer, sectionTitle, sectionNavigationButtonTemplate, postTypeObj;
 			sectionContainer = section.container.closest( '.accordion-section' );
 			sectionTitle = sectionContainer.find( '.customize-section-title:first' );
 			sectionNavigationButtonTemplate = wp.template( 'customize-posts-navigation' );
@@ -216,7 +242,7 @@
 			// Hide the link when the post is currently in the preview.
 			sectionNavigationButton.toggle( section.params.post_id !== api.Posts.previewedQuery.get().queriedPostId );
 			api.Posts.previewedQuery.bind( function( query ) {
-				sectionNavigationButton.toggle( section.params.post_id !== query.queriedPostId );
+				sectionNavigationButton.toggle( section.params.post_id !== query.queriedPostId && 'trash' !== setting.get().post_status );
 			} );
 
 			sectionNavigationButton.on( 'click', function( event ) {
@@ -240,8 +266,11 @@
 			if ( postTypeObj.supports.title || postTypeObj.supports.slug ) {
 				section.addSlugControl();
 			}
+
+			// @todo Add support for syncing status and date from Customizer to post edit screen.
 			if ( 'undefined' === typeof EditPostPreviewCustomize ) {
-				section.addPostStatusControl();
+				section.addStatusControl();
+				section.addDateControl();
 			}
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
@@ -402,51 +431,18 @@
 		 *
 		 * @returns {wp.customize.Control} Added control.
 		 */
-		addPostStatusControl: function() {
-			var section = this, control, setting = api( section.id ), sectionContainer, sectionTitle, postTypeObj;
+		addStatusControl: function() {
+			var section = this, control, setting = api( section.id ), postTypeObj;
 			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 
-			sectionContainer = section.container.closest( '.accordion-section' );
-			sectionTitle = sectionContainer.find( '.accordion-section-title:first' );
-
-			control = new api.controlConstructor.dynamic( section.id + '[post_status]', {
+			control = new api.controlConstructor.post_status( section.id + '[post_status]', {
 				params: {
 					section: section.id,
 					priority: 20,
-					label: postTypeObj.labels.status_field ? postTypeObj.labels.status_field : api.Posts.data.l10n.fieldPostStatusLabel,
-					active: true,
+					label: postTypeObj.labels.status_field ? postTypeObj.labels.status_field : api.Posts.data.l10n.fieldStatusLabel,
 					settings: {
 						'default': setting.id
-					},
-					field_type: 'select',
-					setting_property: 'post_status',
-					choices: api.Posts.data.postStatusChoices
-				}
-			} );
-
-			/**
-			 * Update the UI when a post is transitioned from/to trash.
-			 *
-			 * @param {boolean} trashed - Whether or not the post_status is 'trash'.
-			 * @returns {void}
-			 */
-			control.toggleTrash = function( trashed ) {
-				sectionContainer.toggleClass( 'is-trashed', trashed );
-				if ( true === trashed ) {
-					if ( 0 === sectionTitle.find( '.customize-posts-trashed' ).length ) {
-						sectionTitle.append( wp.template( 'customize-posts-trashed' )() );
 					}
-				} else {
-					sectionContainer.find( '.customize-posts-trashed' ).remove();
-				}
-			};
-
-			/**
-			 * Update the status UI when the setting changes its state.
-			 */
-			setting.bind( function( newPostData, oldPostData ) {
-				if ( newPostData.post_status !== oldPostData.post_status ) {
-					control.toggleTrash( 'trash' === newPostData.post_status );
 				}
 			} );
 
@@ -460,17 +456,47 @@
 			api.control.add( control.id, control );
 
 			// Initialize the trashed UI.
-			api.panel( 'posts[' + section.params.post_type + ']' ).expanded.bind( function() {
-				control.toggleTrash( 'trash' === setting.get().post_status );
+			// @todo Is this redundant with logic in post_status control's constructor?
+			api.panel( section.panel.get() ).expanded.bind( function() {
+				control.toggleTrash();
 			} );
 
-			control.deferred.embedded.done( function() {
-				var embeddedDelay = 50;
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
+				control.notifications.setting_property = control.params.setting_property;
+			}
+			return control;
+		},
 
-				_.delay( function() {
-					control.toggleTrash( 'trash' === setting.get().post_status );
-				}, embeddedDelay );
+		/**
+		 * Add post date control.
+		 *
+		 * @returns {wp.customize.Control} Added control.
+		 */
+		addDateControl: function() {
+			var section = this, control, setting = api( section.id ), postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+
+			control = new api.controlConstructor.post_date( section.id + '[post_date]', {
+				params: {
+					section: section.id,
+					priority: 21,
+					label: postTypeObj.labels.date_field ? postTypeObj.labels.date_field : api.Posts.data.l10n.fieldDateLabel,
+					description: api.Posts.data.l10n.fieldDateDescription,
+					settings: {
+						'default': setting.id
+					}
+				}
 			} );
+
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.post_date = control;
+			api.control.add( control.id, control );
 
 			if ( control.notifications ) {
 				control.notifications.add = section.addPostFieldControlNotification;
@@ -488,17 +514,17 @@
 		 */
 		addContentControl: function() {
 			var section = this,
-			    control,
-			    setting = api( section.id ),
-			    preview = $( '#customize-preview' ),
-			    editorPane = $( '#customize-posts-content-editor-pane' ),
-			    editorFrame = $( '#customize-posts-content_ifr' ),
-			    mceTools = $( '#wp-customize-posts-content-editor-tools' ),
-			    mceToolbar = $( '.mce-toolbar-grp' ),
-			    mceStatusbar = $( '.mce-statusbar' ),
-			    dragbar = $( '#customize-posts-content-editor-dragbar' ),
-			    collapse = $( '.collapse-sidebar' ),
-			    resizeHeight,
+				control,
+				setting = api( section.id ),
+				preview = $( '#customize-preview' ),
+				editorPane = $( '#customize-posts-content-editor-pane' ),
+				editorFrame = $( '#customize-posts-content_ifr' ),
+				mceTools = $( '#wp-customize-posts-content-editor-tools' ),
+				mceToolbar = $( '.mce-toolbar-grp' ),
+				mceStatusbar = $( '.mce-statusbar' ),
+				dragbar = $( '#customize-posts-content-editor-dragbar' ),
+				collapse = $( '.collapse-sidebar' ),
+				resizeHeight,
 				postTypeObj;
 
 			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
@@ -647,15 +673,15 @@
 			 */
 			control.resizeEditor = function( position ) {
 				var windowHeight = window.innerHeight,
-				    windowWidth = window.innerWidth,
-				    sectionContent = $( '[id^=accordion-panel-posts] ul.accordion-section-content' ),
-				    minScroll = 40,
-				    maxScroll = 1,
-				    mobileWidth = 782,
-				    collapseMinSpacing = 56,
-				    collapseBottomOutsideEditor = 8,
-				    collapseBottomInsideEditor = 4,
-				    args = {};
+					windowWidth = window.innerWidth,
+					sectionContent = $( '[id^=accordion-panel-posts] ul.accordion-section-content' ),
+					minScroll = 40,
+					maxScroll = 1,
+					mobileWidth = 782,
+					collapseMinSpacing = 56,
+					collapseBottomOutsideEditor = 8,
+					collapseBottomInsideEditor = 4,
+					args = {};
 
 				if ( ! $( document.body ).hasClass( 'customize-posts-content-editor-pane-open' ) ) {
 					return;
@@ -836,7 +862,7 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addAuthorControl: function() {
-			var section = this, control, setting = api( section.id ), postTypeObj;
+			var section = this, control, setting = api( section.id ), postTypeObj, previousValidate;
 			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 			control = new api.controlConstructor.dynamic( section.id + '[post_author]', {
 				params: {
@@ -852,6 +878,15 @@
 					choices: api.Posts.data.authorChoices
 				}
 			} );
+
+			// Ensure selected author is integer, and not a string of digits.
+			previousValidate = setting.validate;
+			setting.validate = function ensurePostAuthorInteger( inputData ) {
+				var data = _.clone( inputData );
+				data = previousValidate.call( this, data );
+				data.post_author = parseInt( data.post_author, 10 );
+				return data;
+			};
 
 			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
 			control.active.validate = function() {
@@ -922,7 +957,7 @@
 				var ourValue;
 				e.preventDefault();
 				ourValue = _.clone( setting.get() );
-				ourValue.post_modified_gmt = '';
+				ourValue.post_modified = '';
 				setting.set( ourValue );
 
 				_.each( section.postFieldControls, function( control ) {
@@ -946,7 +981,7 @@
 				ourValue = setting.get();
 				_.each( theirValue, function( theirFieldValue, fieldId ) {
 					var control, notification;
-					if ( 'post_modified' === fieldId || 'post_modified_gmt' === fieldId || theirFieldValue === ourValue[ fieldId ] ) {
+					if ( 'post_modified' === fieldId || theirFieldValue === ourValue[ fieldId ] ) {
 						return;
 					}
 					control = api.control( setting.id + '[' + fieldId + ']' );

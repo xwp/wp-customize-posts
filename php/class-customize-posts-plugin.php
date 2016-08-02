@@ -203,9 +203,21 @@ class Customize_Posts_Plugin {
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
+		$handle = 'customize-post-date-control';
+		$src = plugins_url( 'js/customize-post-date-control' . $suffix, dirname( __FILE__ ) );
+		$deps = array( 'customize-dynamic-control', 'jquery' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
+		$handle = 'customize-post-status-control';
+		$src = plugins_url( 'js/customize-post-status-control' . $suffix, dirname( __FILE__ ) );
+		$deps = array( 'customize-dynamic-control', 'jquery' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
 		$handle = 'customize-post-section';
 		$src = plugins_url( 'js/customize-post-section' . $suffix, dirname( __FILE__ ) );
-		$deps = array( 'customize-controls' );
+		$deps = array( 'customize-controls', 'customize-post-date-control', 'customize-post-status-control' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
@@ -232,15 +244,28 @@ class Customize_Posts_Plugin {
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
+		// This can be incorporated into customize-preview.js during 4.7.
+		$handle = 'customize-preview-setting-validities';
+		$src = plugins_url( 'js/customize-preview-setting-validities' . $suffix, dirname( __FILE__ ) );
+		$deps = array( 'customize-selective-refresh' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
+		$handle = 'customize-deferred-partial';
+		$src = plugins_url( 'js/customize-deferred-partial' . $suffix, dirname( __FILE__ ) );
+		$deps = array( 'customize-selective-refresh', 'customize-preview-setting-validities' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
 		$handle = 'customize-post-field-partial';
 		$src = plugins_url( 'js/customize-post-field-partial' . $suffix, dirname( __FILE__ ) );
-		$deps = array( 'customize-selective-refresh', 'customize-preview-posts' );
+		$deps = array( 'customize-selective-refresh', 'customize-preview-setting-validities', 'customize-deferred-partial' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		$handle = 'customize-preview-posts';
 		$src = plugins_url( 'js/customize-preview-posts' . $suffix, dirname( __FILE__ ) );
-		$deps = array( 'jquery', 'customize-preview' );
+		$deps = array( 'jquery', 'customize-preview', 'customize-deferred-partial', 'customize-deferred-partial' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
