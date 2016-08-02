@@ -189,13 +189,13 @@
 					function onChangeActive( isActive ) {
 						if ( isActive ) {
 							data.section.active.unbind( onChangeActive );
-							_.defer( function() {
+							_.delay( function() {
 								firstControl.focus( {
 									completeCallback: function() {
 										firstControl.container.find( 'input:first' ).select();
 									}
 								} );
-							} );
+							}, 500 );
 						}
 					}
 					if ( data.section.active.get() ) {
@@ -207,14 +207,12 @@
 
 				data.section.focus( {
 					completeCallback: function() {
-						var delay = 500;
-
 						/*
-						 * Note the delay is because the controls get embedded
+						 * Note the defer is because the controls get embedded
 						 * once the section is expanded and also because it seems
 						 * that focus fails when the input is not visible yet.
 						 */
-						_.defer( focusControlOnceFocusable, delay );
+						_.defer( focusControlOnceFocusable );
 					}
 				} );
 			} );
