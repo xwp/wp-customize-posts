@@ -63,7 +63,9 @@ module.exports = function( grunt ) {
 					'css/*',
 					'js/*',
 					'php/**',
-					'readme.txt'
+					'readme.txt',
+					'bower_components/select2/dist/js/select2.full*',
+					'bower_components/select2/dist/css/*'
 				],
 				dest: 'build',
 				expand: true,
