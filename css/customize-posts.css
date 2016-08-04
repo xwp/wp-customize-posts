@@ -221,6 +221,16 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	vertical-align: middle;
 }
 
+.customize-control-post_status .trash {
+	color: #a00;
+	float: right;
+	display: inline-block;
+	margin-top: 5px;
+}
+.customize-control-post_status .trash:hover {
+	color: #f00;
+}
+
 .customize-control-post_date .customize-control-description {
 	font-style: normal;
 	display: block;
