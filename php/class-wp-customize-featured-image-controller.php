@@ -393,7 +393,7 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 			||
 			-1 === $attachment_id
 			||
-			( is_int( $attachment_id ) && $attachment_id > 0 )
+			( is_int( $attachment_id ) && $attachment_id >= 0 )
 		);
 
 		/*
