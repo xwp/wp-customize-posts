@@ -676,12 +676,61 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests get_setting_param().
+	 * Tests get_setting_params() for published post.
 	 *
-	 * @covers WP_Customize_Posts::get_setting_param()
+	 * @covers WP_Customize_Posts::get_setting_params()
 	 */
-	public function test_get_setting_params() {
-		$this->markTestIncomplete();
+	public function test_get_setting_params_for_published_post() {
+		$post_id = $this->factory()->post->create( array( 'post_status' => 'publish' ) );
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $post_id ) );
+		$settings = $this->posts->manager->add_dynamic_settings( array( $setting_id ) );
+		$setting = array_shift( $settings );
+		$this->assertInstanceOf( 'WP_Customize_Post_Setting', $setting );
+
+		$setting_params = $this->posts->get_setting_params( $setting );
+		$this->assertInternalType( 'array', $setting_params );
+		$this->assertArrayHasKey( 'value', $setting_params );
+		$this->assertArrayHasKey( 'transport', $setting_params );
+		$this->assertArrayHasKey( 'dirty', $setting_params );
+		$this->assertArrayHasKey( 'type', $setting_params );
+
+		$this->assertFalse( $setting_params['dirty'] );
+		$this->assertEquals( 'post', $setting_params['type'] );
+		$this->assertEquals( 'postMessage', $setting_params['transport'] );
+		$this->assertInternalType( 'array', $setting_params['value'] );
+		$this->assertEquals( 'publish', $setting_params['value']['post_status'] );
+	}
+
+	/**
+	 * Tests get_setting_params() for trashed post.
+	 *
+	 * @covers WP_Customize_Posts::get_setting_params()
+	 */
+	public function test_get_setting_params_for_trashed_post() {
+		$post_id = $this->factory()->post->create( array( 'post_status' => 'private', 'post_name' => 'foo' ) );
+		wp_trash_post( $post_id );
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $post_id ) );
+		$settings = $this->posts->manager->add_dynamic_settings( array( $setting_id ) );
+		$setting = array_shift( $settings );
+		$this->assertInstanceOf( 'WP_Customize_Post_Setting', $setting );
+
+		$setting_params = $this->posts->get_setting_params( $setting );
+		$this->assertInternalType( 'array', $setting_params );
+		$this->assertArrayHasKey( 'value', $setting_params );
+		$this->assertArrayHasKey( 'transport', $setting_params );
+		$this->assertArrayHasKey( 'dirty', $setting_params );
+		$this->assertArrayHasKey( 'type', $setting_params );
+
+		$underlying_post_value = $setting->js_value();
+		$this->assertEquals( 'trash', $underlying_post_value['post_status'] );
+		$this->assertEquals( 'foo__trashed', $underlying_post_value['post_name'] );
+
+		$this->assertTrue( $setting_params['dirty'] );
+		$this->assertEquals( 'post', $setting_params['type'] );
+		$this->assertEquals( 'postMessage', $setting_params['transport'] );
+		$this->assertInternalType( 'array', $setting_params['value'] );
+		$this->assertEquals( 'private', $setting_params['value']['post_status'] );
+		$this->assertEquals( 'foo', $setting_params['value']['post_name'] );
 	}
 
 	// See Ajax tests in test-ajax-class-wp-customize-posts.php
