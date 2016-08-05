@@ -981,10 +981,10 @@ final class WP_Customize_Posts {
 	 */
 	public function get_setting_params( WP_Customize_Setting $setting ) {
 		if ( method_exists( $setting, 'json' ) ) { // New in 4.6-alpha.
-			return $setting->json();
+			$setting_params = $setting->json();
 		} else {
 			// @codeCoverageIgnoreStart
-			return array(
+			$setting_params = array(
 				'value' => $setting->js_value(),
 				'transport' => $setting->transport,
 				'dirty' => $setting->dirty,
@@ -992,6 +992,27 @@ final class WP_Customize_Posts {
 			);
 			// @codeCoverageIgnoreEnd
 		}
+
+		// Amend trashed post setting values with the pre-trashed state.
+		if ( $setting instanceof WP_Customize_Post_Setting && 'trash' === $setting_params['value']['post_status'] ) {
+			$setting_params['dirty'] = true;
+
+			// Resurrect the old status.
+			$former_status = get_post_meta( $setting->post_id, '_wp_trash_meta_status', true );
+			if ( ! $former_status ) {
+				$former_status = 'draft';
+			}
+			$setting_params['value']['post_status'] = $former_status;
+
+			// Resurrect the old slug.
+			$former_slug = get_post_meta( $setting->post_id, '_wp_desired_post_slug', true );
+			if ( ! $former_slug ) {
+				$former_slug = preg_replace( '#__trashed$#', '', $setting_params['value']['post_name'] );
+			}
+			$setting_params['value']['post_name'] = $former_slug;
+		}
+
+		return $setting_params;
 	}
 
 	/**

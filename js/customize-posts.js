@@ -300,6 +300,12 @@
 					previewer: api.previewer
 				} );
 
+				// Mark as dirty and trigger change if setting is pre-dirty; see code in wp.customize.Value.prototype.set().
+				if ( settingArgs.dirty ) {
+					setting._dirty = true;
+					setting.callbacks.fireWith( setting, [ setting.get(), setting.get() ] );
+				}
+
 				/*
 				 * Ensure that the setting gets created in the preview as well. When the post/postmeta settings
 				 * are sent to the preview, this is the point at which the related selective refresh partials
