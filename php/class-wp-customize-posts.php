@@ -564,7 +564,7 @@ final class WP_Customize_Posts {
 		$response['saved_post_setting_values'] = array();
 		foreach ( array_keys( $this->manager->unsanitized_post_values() ) as $setting_id ) {
 			$setting = $this->manager->get_setting( $setting_id );
-			if ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting ) {
+			if ( ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting ) && get_post( $setting->post_id ) ) {
 				$response['saved_post_setting_values'][ $setting->id ] = $setting->js_value();
 			}
 		}
