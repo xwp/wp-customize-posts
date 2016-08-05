@@ -86,6 +86,7 @@ class WP_Customize_Post_Status_Control extends WP_Customize_Dynamic_Control {
 			<# } ); #>
 		</select>
 		<a class="trash" href="javascript:void(0)"><?php esc_html_e( 'Move to Trash', 'customize-posts' ) ?></a>
+		<a class="untrash" href="javascript:void(0)"><?php esc_html_e( 'Undo Trash', 'customize-posts' ) ?></a>
 		<?php
 	}
 }

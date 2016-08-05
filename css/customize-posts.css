@@ -224,11 +224,15 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	text-decoration: line-through;
 }
 
-.customize-control-post_status .trash {
-	color: #a00;
+.customize-control-post_status .trash,
+.customize-control-post_status .untrash {
 	float: right;
 	display: inline-block;
 	margin-top: 5px;
+}
+
+.customize-control-post_status .trash {
+	color: #a00;
 }
 .customize-control-post_status .trash:hover {
 	color: #f00;

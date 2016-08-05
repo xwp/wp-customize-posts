@@ -36,6 +36,7 @@
 				control.optionFutureElement = control.selectElement.find( 'option[value=future]' );
 				control.optionPublishElement = control.selectElement.find( 'option[value=publish]' );
 				control.trashLink = control.container.find( '.trash' );
+				control.untrashLink = control.container.find( '.untrash' );
 
 				// Defer updating until control explicitly added, because it will short-circuit if not registered yet.
 				api.control( control.id, function() {
@@ -56,6 +57,7 @@
 				}, embeddedDelay );
 
 				// Update the status UI when the setting changes its state.
+				control.originalPostStatus = control.setting().post_status;
 				control.setting.bind( function( newPostData, oldPostData ) {
 					if ( newPostData.post_status !== oldPostData.post_status && 'trash' === newPostData.post_status || 'trash' === oldPostData.post_status ) {
 						control.toggleTrash();
@@ -87,6 +89,14 @@
 					 * change to trash (so they can undo it later).
 					 */
 					_.delay( collapseSection, trashCollapseDelay );
+				} );
+
+				// Restore the original post status when clicking the untrash link.
+				control.untrashLink.on( 'click', function( e ) {
+					var postData = _.clone( control.setting.get() );
+					e.preventDefault();
+					postData.post_status = control.originalPostStatus;
+					control.setting.set( postData );
 				} );
 			} );
 		},
@@ -161,6 +171,9 @@
 
 			if ( control.trashLink ) {
 				control.trashLink.toggle( ! trashed );
+			}
+			if ( control.originalPostStatus ) {
+				control.untrashLink.toggle( Boolean( trashed && control.originalPostStatus ) );
 			}
 
 			section = api.section( control.section.get() );
