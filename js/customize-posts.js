@@ -391,13 +391,21 @@
 	component.purgeTrash = function purgeTrash() {
 		api.section.each( function( section ) {
 			if ( section.extended( component.PostSection ) && 'trash' === api( section.id ).get().post_status ) {
-				api.section.remove( section.id );
 				section.active.set( false );
 				section.collapse();
+				_.each( section.controls(), function( control ) {
+					control.container.remove();
+					api.control.remove( control.id );
+				} );
+				api.section.remove( section.id );
 				section.container.remove();
 				if ( true === component.previewedQuery.get().isSingular ) {
 					api.previewer.previewUrl( api.settings.url.home );
 				}
+
+				// @todo Also remove all postmeta settings for this post?
+				api.remove( section.id );
+				delete component.fetchedPosts[ section.params.post_id ];
 			}
 		} );
 	};
