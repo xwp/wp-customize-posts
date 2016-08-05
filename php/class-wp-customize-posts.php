@@ -556,6 +556,11 @@ final class WP_Customize_Posts {
 	 * @return array
 	 */
 	public function filter_customize_save_response_to_export_saved_values( $response ) {
+		// Short circuit if there there were invalidities.
+		if ( isset( $response['setting_validities'] ) && count( array_filter( $response['setting_validities'], 'is_array' ) ) > 0 ) {
+			return $response;
+		}
+
 		$response['saved_post_setting_values'] = array();
 		foreach ( array_keys( $this->manager->unsanitized_post_values() ) as $setting_id ) {
 			$setting = $this->manager->get_setting( $setting_id );
