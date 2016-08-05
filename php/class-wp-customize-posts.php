@@ -1150,6 +1150,9 @@ final class WP_Customize_Posts {
 				get_post_stati( array( 'public' => true ) )
 			);
 		}
+		if ( isset( $post_type_obj->cap->delete_posts ) && current_user_can( $post_type_obj->cap->delete_posts ) ) {
+			$query_args['post_status'][] = 'trash';
+		}
 		if ( isset( $post_type_obj->cap->edit_others_posts ) || ! current_user_can( $post_type_obj->cap->edit_others_posts ) ) {
 			$query_args['post_author'] = get_current_user_id();
 		}

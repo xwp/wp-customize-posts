@@ -220,6 +220,9 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	width: auto;
 	vertical-align: middle;
 }
+.select2-results__option .trashed-title {
+	text-decoration: line-through;
+}
 
 .customize-control-post_status .trash {
 	color: #a00;
