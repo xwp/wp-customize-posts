@@ -698,6 +698,15 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test update() for untrashing.
+	 *
+	 * @see WP_Customize_Post_Setting::update()
+	 */
+	function test_save_untrash() {
+		$this->markTestIncomplete();
+	}
+
+	/**
 	 * Test update() for trashing auto-draft posts (which means delete).
 	 *
 	 * @see WP_Customize_Post_Setting::update()

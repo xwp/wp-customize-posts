@@ -516,6 +516,15 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Tests preview_customize_draft_post_ids().
+	 *
+	 * @covers WP_Customize_Posts::preview_customize_draft_post_ids()
+	 */
+	public function test_preview_customize_draft_post_ids() {
+		$this->markTestIncomplete();
+	}
+
+	/**
 	 * Test preview_customize_draft method.
 	 *
 	 * @see WP_Customize_Posts::preview_customize_draft()
@@ -572,6 +581,18 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Check filtering the post link in the preview.
+	 *
+	 * @see WP_Customize_Posts::post_link_draft()]
+	 */
+	public function test_post_link_draft() {
+		global $wp_customize;
+		$this->assertNotContains( 'preview=true', get_permalink( $this->post_id ) );
+		$wp_customize->start_previewing_theme();
+		$this->assertContains( 'preview=true', get_permalink( $this->post_id ) );
+	}
+
+	/**
 	 * Test insert_auto_draft_post method.
 	 *
 	 * @see WP_Customize_Posts::insert_auto_draft_post()
@@ -618,16 +639,24 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Check filtering the post link in the preview.
+	 * Tests get_settings().
 	 *
-	 * @see WP_Customize_Posts::post_link_draft()]
+	 * @covers WP_Customize_Posts::get_settings()
 	 */
-	public function test_post_link_draft() {
-		global $wp_customize;
-		$this->assertNotContains( 'preview=true', get_permalink( $this->post_id ) );
-		$wp_customize->start_previewing_theme();
-		$this->assertContains( 'preview=true', get_permalink( $this->post_id ) );
+	public function test_get_settings() {
+		$this->markTestIncomplete();
 	}
+
+	/**
+	 * Tests get_setting_param().
+	 *
+	 * @covers WP_Customize_Posts::get_setting_param()
+	 */
+	public function test_get_setting_params() {
+		$this->markTestIncomplete();
+	}
+
+	// See Ajax tests in test-ajax-class-wp-customize-posts.php
 
 	/**
 	 * Test get_select2_item_result.
