@@ -331,7 +331,7 @@ class Customize_Posts_Plugin {
 
 		$handle = 'customize-posts';
 		$src = plugins_url( 'css/customize-posts' . $suffix, dirname( __FILE__ ) );
-		$deps = array( 'wp-admin' );
+		$deps = array( 'wp-admin', 'select2' );
 		$version = $this->version;
 		$wp_styles->add( $handle, $src, $deps, $version );
 
