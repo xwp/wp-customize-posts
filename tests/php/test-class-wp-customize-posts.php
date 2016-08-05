@@ -672,7 +672,24 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 * @covers WP_Customize_Posts::get_settings()
 	 */
 	public function test_get_settings() {
-		$this->markTestIncomplete();
+		$published_post_id = $this->factory()->post->create( array( 'post_status' => 'publish', 'post_name' => 'foo' ) );
+		$trashed_post_id = $this->factory()->post->create( array( 'post_status' => 'private', 'post_name' => 'bar' ) );
+		$draft_page_id = $this->factory()->post->create( array( 'post_status' => 'draft', 'post_name' => 'quux', 'post_type' => 'page' ) );
+		$this->posts->register_post_type_meta( 'post', 'baz' );
+		wp_trash_post( $trashed_post_id );
+
+		$settings_params = $this->posts->get_settings( array( $published_post_id, $trashed_post_id, $draft_page_id ) );
+		$this->assertCount( 5, $settings_params );
+		$this->assertEqualSets(
+			array(
+				WP_Customize_Post_Setting::get_post_setting_id( get_post( $published_post_id ) ),
+				WP_Customize_Post_Setting::get_post_setting_id( get_post( $trashed_post_id ) ),
+				WP_Customize_Post_Setting::get_post_setting_id( get_post( $draft_page_id ) ),
+				WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $published_post_id ), 'baz' ),
+				WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $trashed_post_id ), 'baz' )
+			),
+			array_keys( $settings_params )
+		);
 	}
 
 	/**
