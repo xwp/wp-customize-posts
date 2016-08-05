@@ -75,6 +75,8 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		unset( $_POST['customized'] );
 		unset( $GLOBALS['wp_customize'] );
 		unset( $GLOBALS['wp_scripts'] );
+		unset( $_REQUEST['preview'] );
+		unset( $_REQUEST['customize_snapshot_uuid'] );
 		parent::tearDown();
 	}
 
@@ -521,63 +523,89 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 * @covers WP_Customize_Posts::preview_customize_draft_post_ids()
 	 */
 	public function test_preview_customize_draft_post_ids() {
-		$this->markTestIncomplete();
+		$this->assertEmpty( $this->posts->customize_draft_post_ids );
+
+		$this->posts->preview_customize_draft_post_ids();
+		$this->assertEmpty( $this->posts->customize_draft_post_ids );
+
+		$_REQUEST['preview'] = 'true';
+		$this->posts->preview_customize_draft_post_ids();
+		$this->assertEmpty( $this->posts->customize_draft_post_ids );
+
+		$post_id = $this->factory()->post->create();
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $post_id ) );
+		$settings = $this->posts->manager->add_dynamic_settings( array( $setting_id ) );
+		$setting = array_shift( $settings );
+		$this->assertInstanceOf( 'WP_Customize_Post_Setting', $setting );
+		$this->posts->preview_customize_draft_post_ids();
+		$this->assertEmpty( $this->posts->customize_draft_post_ids );
+
+		wp_update_post( array( 'ID' => $post_id, 'post_status' => 'customize-draft' ) );
+		$this->posts->manager->set_post_value( $setting_id, array_merge(
+			$setting->value(),
+			array(
+				'post_status' => 'publish',
+			)
+		) );
+		$this->posts->preview_customize_draft_post_ids();
+		$this->assertEquals( array( $post_id ), $this->posts->customize_draft_post_ids );
+	}
+
+	/**
+	 * Data provider for test_preview_customize_draft.
+	 *
+	 * @return array
+	 */
+	public function preview_customize_draft_data() {
+		return array(
+			array( 'post' ),
+			array( 'page' ),
+		);
 	}
 
 	/**
 	 * Test preview_customize_draft method.
 	 *
-	 * @see WP_Customize_Posts::preview_customize_draft()
+	 * @dataProvider  preview_customize_draft_data
+	 * @param string $post_type Post Type.
+	 *
+	 * @covers WP_Customize_Posts::preview_customize_draft()
+	 * @covers WP_Customize_Posts::preview_customize_draft_post_ids()
 	 */
-	public function test_preview_customize_draft_post() {
-		$post = $this->posts->insert_auto_draft_post( 'post' );
+	public function test_preview_customize_draft( $post_type ) {
+		$post = $this->posts->insert_auto_draft_post( $post_type );
 		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
-		$data[ $setting_id ] = array(
-			'value' => array(
-				'post_title' => 'Preview Post',
+		$settings = $this->posts->manager->add_dynamic_settings( array( $setting_id ) );
+		$setting = array_shift( $settings );
+		$data = array();
+		$this->posts->manager->set_post_value( $setting_id, array_merge(
+			$setting->value(),
+			array(
+				'post_title' => sprintf( 'Preview %s', $post_type ),
 				'post_status' => 'publish',
-			),
-		);
+			)
+		) );
+		foreach ( $this->posts->manager->unsanitized_post_values() as $setting_id => $value ) {
+			$data[ $setting_id ] = array(
+				'value' => array_merge(
+					$setting->value(),
+					$value
+				),
+			);
+		}
 		$this->posts->transition_customize_draft( $data );
-		$this->posts->customize_draft_post_ids[] = $post->ID;
 
 		$GLOBALS['current_user'] = null;
-		$this->go_to( home_url( '?p=' . $post->ID . '&preview=true' ) );
+
+		$this->go_to( home_url( sprintf( '?%s=%d&preview=true', 'page' === $post_type ? 'page_id' : 'p', $post->ID ) ) );
+		$_REQUEST['preview'] = 'true';
+		$this->posts->preview_customize_draft_post_ids();
+		$GLOBALS['wp_query']->query( $GLOBALS['wp']->query_vars );
 
 		$this->assertTrue( $GLOBALS['wp_query']->is_preview );
 		$this->assertEquals( 'true', $GLOBALS['wp_query']->query_vars['preview'] );
 		$this->assertEquals( $post->ID, $GLOBALS['wp_query']->query_vars['p'] );
 		$this->assertEquals( 'customize-draft', $GLOBALS['wp_query']->query_vars['post_status'] );
-
-		unset( $_REQUEST['customize_snapshot_uuid'] );
-	}
-
-	/**
-	 * Test preview_customize_draft method.
-	 *
-	 * @see WP_Customize_Posts::preview_customize_draft()
-	 */
-	public function test_preview_customize_draft_page() {
-		$post = $this->posts->insert_auto_draft_post( 'page' );
-		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
-		$data[ $setting_id ] = array(
-			'value' => array(
-				'post_title' => 'Preview Page',
-				'post_status' => 'publish',
-			),
-		);
-		$this->posts->transition_customize_draft( $data );
-		$this->posts->customize_draft_post_ids[] = $post->ID;
-
-		$GLOBALS['current_user'] = null;
-		$this->go_to( home_url( '?page_id=' . $post->ID . '&preview=true' ) );
-
-		$this->assertTrue( $GLOBALS['wp_query']->is_preview );
-		$this->assertEquals( 'true', $GLOBALS['wp_query']->query_vars['preview'] );
-		$this->assertEquals( $post->ID, $GLOBALS['wp_query']->query_vars['page_id'] );
-		$this->assertEquals( 'customize-draft', $GLOBALS['wp_query']->query_vars['post_status'] );
-
-		unset( $_REQUEST['customize_snapshot_uuid'] );
 	}
 
 	/**
