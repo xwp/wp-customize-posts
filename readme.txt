@@ -64,7 +64,7 @@ The following are listed in reverse chronological order. The first, more recent 
 
 == Changelog ==
 
-= [0.7.0] - 2017-08-06 =
+= [0.7.0] - 2016-08-06 =
 
 Added:
 
@@ -75,7 +75,7 @@ Added:
  * Allow post field control labels to be defined in <code>register_post_type()</code> so that the names can be repurposed to be appropriate to the custom post type. (<a href="https://github.com/xwp/wp-customize-posts/pull/195" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/195" data-id="163751896" data-error-text="Failed to load issue title" data-permission-text="Issue title is private">#195</a>)
  * Add low-fidelity live JS-applied previews to post title changes while waiting for high-fidelity PHP-applied selective refresh requests to response. (<a href="https://github.com/xwp/wp-customize-posts/issues/43" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/43" data-id="139483578" data-error-text="Failed to load issue title" data-permission-text="Issue title is private">#43</a>)
 
-Fixes:
+Fixed:
 
  * Ensure title is focused and selected when creating a new post. (<a href="https://github.com/xwp/wp-customize-posts/issues/209" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/209" data-id="168734888" data-error-text="Failed to load issue title" data-permission-text="Issue title is private">#209</a>, <a href="https://github.com/xwp/wp-customize-posts/pull/208" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/208" data-id="168732561" data-error-text="Failed to load issue title" data-permission-text="Issue title is private">#208</a>, <a href="https://github.com/xwp/wp-customize-posts/pull/206" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/206" data-id="168702760" data-error-text="Failed to load issue title" data-permission-text="Issue title is private">#206</a>)
  * Make sure that posts are loaded for any post sections/controls that are autofocused. (<a href="https://github.com/xwp/wp-customize-posts/issues/204" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/204" data-id="168454674" data-error-text="Failed to load issue title" data-permission-text="Issue title is private">#204</a>, <a href="https://github.com/xwp/wp-customize-posts/pull/205" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/205" data-id="168479600" data-error-text="Failed to load issue title" data-permission-text="Issue title is private">#205</a>)
