@@ -577,6 +577,7 @@ final class WP_Customize_Posts {
 	public function enqueue_scripts() {
 		wp_enqueue_script( 'customize-posts' );
 		wp_enqueue_style( 'customize-posts' );
+		$this->enqueue_select2_locale_script();
 
 		$post_types = array();
 		foreach ( $this->get_post_types() as $post_type => $post_type_obj ) {
@@ -636,6 +637,35 @@ final class WP_Customize_Posts {
 		);
 
 		wp_scripts()->add_data( 'customize-posts', 'data', sprintf( 'var _wpCustomizePostsExports = %s;', wp_json_encode( $exports ) ) );
+	}
+
+	/**
+	 * Enqueue select2 locale script.
+	 */
+	public function enqueue_select2_locale_script() {
+		$plugin_dir = dirname( dirname( __FILE__ ) );
+		$locale = str_replace( '_', '-', get_locale() );
+		$locale_files = array();
+		$locale_files[ $locale ] = 'bower_components/select2/dist/js/i18n/' . $locale . '.js';
+		if ( false !== strpos( $locale, '-' ) ) {
+			$language = strtok( $locale, '-' );
+			$locale_files[ $language ] = 'bower_components/select2/dist/js/i18n/' . $language . '.js';
+		}
+		foreach ( $locale_files as $locale => $locale_file ) {
+			if ( file_exists( $plugin_dir . '/' . $locale_file ) ) {
+				$handle = 'select2-locale-' . strtolower( $locale );
+				$src = plugins_url( $locale_file, dirname( __FILE__ ) );
+				wp_enqueue_script(
+					$handle,
+					$src,
+					array( 'select2' ),
+					wp_scripts()->query( 'select2' )->ver
+				);
+				$data = sprintf( 'jQuery.fn.select2.defaults.set( "language", %s );', wp_json_encode( $locale ) );
+				wp_add_inline_script( $handle, $data, 'after' );
+				break;
+			}
+		}
 	}
 
 	/**

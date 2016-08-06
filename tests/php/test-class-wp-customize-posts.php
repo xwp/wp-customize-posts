@@ -384,15 +384,24 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	/**
 	 * Test scripts and styles are enqueued.
 	 *
-	 * @see WP_Customize_Posts::enqueue_scripts()
+	 * @covers WP_Customize_Posts::enqueue_scripts()
+	 * @covers WP_Customize_Posts::enqueue_select2_locale_script()
 	 */
 	public function test_enqueue_scripts() {
+		add_filter( 'locale', array( $this, 'return_es_mx_locale' ) );
+
 		$this->posts->enqueue_scripts();
 		$this->assertTrue( wp_script_is( 'customize-posts', 'enqueued' ) );
 		$this->assertTrue( wp_script_is( 'customize-posts-panel', 'enqueued' ) );
 		$this->assertTrue( wp_script_is( 'customize-post-section', 'enqueued' ) );
 		$this->assertTrue( wp_script_is( 'customize-dynamic-control', 'enqueued' ) );
 		$this->assertTrue( wp_style_is( 'customize-posts', 'enqueued' ) );
+
+		$this->assertTrue( wp_script_is( 'select2', 'enqueued' ) );
+		$this->assertTrue( wp_script_is( 'select2-locale-es', 'enqueued' ) );
+		$locale_script = wp_scripts()->query( 'select2-locale-es' );
+		$this->assertArrayHasKey( 'after', $locale_script->extra );
+		$this->assertContains( 'jQuery.fn.select2.defaults.set( "language", "es" )', join( '', $locale_script->extra['after'] ) );
 
 		$data = wp_scripts()->get_data( 'customize-posts', 'data' );
 		$this->assertTrue( (bool) preg_match( '#_wpCustomizePostsExports\s*=\s*({.+});#', $data, $matches ) );
@@ -408,6 +417,13 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'initialServerTimestamp', $exports );
 		$this->assertTrue( is_numeric( $exports['initialServerTimestamp'] ) ); // Can be too big for int.
 		$this->assertArrayHasKey( 'l10n', $exports );
+	}
+
+	/**
+	 * Return Mexican Spanish locale.
+	 */
+	public function return_es_mx_locale() {
+		return 'es_MX';
 	}
 
 	/**
