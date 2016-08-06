@@ -90,7 +90,7 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 		<div class="description customize-control-description">
 			<?php // @todo Use an HTML5 details element for the time info once browser support is better. ?>
 
-			<a href="javascript:void(0)" tabindex="0" role="button" class="time-info-handle">
+			<a href="javascript:void(0)" tabindex="0" role="button" aria-controls="{{ data.input_id_base }}_time_info" class="time-info-handle" aria-pressed="false">
 				<span class="time-handle-arrow dashicons dashicons-arrow-down"></span>
 				<?php echo esc_html( $tz_abbr ); ?>
 			</a>
