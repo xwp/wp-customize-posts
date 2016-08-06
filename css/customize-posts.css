@@ -223,28 +223,26 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 .select2-results__option .trashed-title {
 	text-decoration: line-through;
 }
-
 .customize-control-post_status .trash,
 .customize-control-post_status .untrash {
 	float: right;
 	display: inline-block;
 	margin-top: 5px;
 }
-
 .customize-control-post_status .trash {
 	color: #a00;
 }
 .customize-control-post_status .trash:hover {
 	color: #f00;
 }
-
 .customize-control-post_date .customize-control-description {
 	font-style: normal;
 	display: block;
 	margin-bottom: 0;
 	margin-top: -28px;
 }
-.customize-control-post_date .customize-control-description summary {
+
+.customize-control-post_date .time-info-handle {
 	font-size: 14px;
 	line-height: 24px;
 	margin-bottom: 4px;
@@ -255,25 +253,61 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	-moz-user-select: none;
 	-ms-user-select: none;
 	user-select: none;
+	color: #555;
 }
+
+.customize-control-post_date .time-info-handle.active .time-handle-arrow {
+	-webkit-transform: rotate( 180deg );
+	-moz-transform: rotate( 180deg );
+	-ms-transform: rotate( 180deg );
+	-o-transform: rotate( 180deg );
+	transform: rotate( 180deg );
+	vertical-align: bottom;
+	-webkit-transform-origin:56% 50%;
+	-moz-transform-origin:56% 50%;
+	-ms-transform-origin:56% 50%;
+	-o-transform-origin:56% 50%;
+	transform-origin:56% 50%;
+}
+
+.customize-control-post_date .time-details {
+	padding-bottom: 10px;
+}
+
 .customize-control-post_date .customize-control-description[open] {
 	margin-bottom: 5px;
 }
-.customize-control-post_date .customize-control-description .time-details {
-	clear: both;
-}
+
 .customize-control-post_date .date-inputs {
-	clear: both;
+	display: flex;
+	display: -ms-flexbox;
+	align-items: center;
+	-webkit-box-align: center;
+	-ms-flex-align: center;
+	justify-content: flex-start;
+	-webkit-box-pack: start;
+	-ms-flex-pack: start;
 }
 
-.customize-control-post_date select,
-.customize-control-post_date input.date-input {
-	min-width: 10%;
-	width: auto;
-}
 .customize-control-post_date input.date-input {
 	-moz-appearance: textfield;
+	-webkit-appearance: textfield;
+	padding-left: 5px; /* 10px padding is not ideal for such small inputs */
+	padding-right: 5px;
 }
+.customize-control-post_date label {
+	display: inline-block; /* To align items when flex is not supported */
+}
+
+.customize-control-post_date .year.date-input {
+	min-width: 4em;
+}
+
+.customize-control-post_date .time-special-char {
+	padding-left:2px;
+	padding-right:2px;
+}
+
 .customize-control-post_date input.date-input::-webkit-outer-spin-button,
 .customize-control-post_date input.date-input::-webkit-inner-spin-button {
 	-webkit-appearance: none;
@@ -287,4 +321,10 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	cursor: pointer;
 	margin-left: 0.25ex;
 	margin-right: 0.25ex;
+}
+
+@media screen and ( max-width: 782px ) {
+	.customize-control-post_date select {
+		height: 40px;
+	}
 }

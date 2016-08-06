@@ -33,6 +33,8 @@
 			control.deferred.embedded.done( function() {
 				control.dateInputs = control.container.find( '.date-input' );
 				control.resetTimeButton = control.container.find( '.reset-time' );
+				control.timeInfoHandle = control.container.find( '.time-info-handle' );
+				control.timeDetailsContainer = control.container.find( '.time-details' );
 				control.resetTimeWrap = control.container.find( '.wrap-reset-time' );
 				control.scheduledCountdownContainer = control.container.find( '.scheduled-countdown' );
 				control.scheduledCountdownTemplate = wp.template( 'customize-posts-scheduled-countdown' );
@@ -92,11 +94,27 @@
 					}
 				} );
 
+				// Reset date/time.
 				control.resetTimeButton.on( 'click', function() {
 					var value;
 					value = _.clone( control.setting.get() );
 					value.post_date = '0000-00-00 00:00:00';
 					control.setting.set( value );
+				} );
+
+				// Implement toggle behavior for what should eventually be replaced with an HTML5 details element.
+				control.timeInfoHandle.on( 'click', function() {
+					if ( control.timeInfoHandle.hasClass( 'active' ) ) {
+						control.timeInfoHandle.removeClass( 'active' );
+						control.timeInfoHandle.attr( 'aria-pressed', 'false' );
+						control.timeDetailsContainer.attr( 'aria-expanded', 'false' );
+						control.timeDetailsContainer.stop().slideUp( 'fast' );
+					} else {
+						control.timeInfoHandle.addClass( 'active' );
+						control.timeInfoHandle.attr( 'aria-pressed', 'true' );
+						control.timeDetailsContainer.attr( 'aria-expanded', 'true' );
+						control.timeDetailsContainer.stop().slideDown( 'fast' );
+					}
 				} );
 			} );
 		},
