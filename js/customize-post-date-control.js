@@ -94,6 +94,7 @@
 					}
 				} );
 
+				// Reset date/time.
 				control.resetTimeButton.on( 'click', function() {
 					var value;
 					value = _.clone( control.setting.get() );
@@ -101,15 +102,14 @@
 					control.setting.set( value );
 				} );
 
+				// Implement toggle behavior for what should eventually be replaced with an HTML5 details element.
 				control.timeInfoHandle.on( 'click', function() {
 					if ( control.timeInfoHandle.hasClass( 'active' ) ) {
-						control.timeDetailsContainer.slideUp( 'fast', function() {
-							control.timeInfoHandle.removeClass( 'active' );
-						} );
+						control.timeInfoHandle.removeClass( 'active' );
+						control.timeDetailsContainer.stop().slideUp( 'fast' );
 					} else {
-						control.timeDetailsContainer.slideDown( 'fast', function() {
-							control.timeInfoHandle.addClass( 'active' );
-						} );
+						control.timeInfoHandle.addClass( 'active' );
+						control.timeDetailsContainer.stop().slideDown( 'fast' );
 					}
 				} );
 			} );
