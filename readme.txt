@@ -55,6 +55,13 @@ The following are listed in reverse chronological order. The first, more recent 
 
 [youtube https://www.youtube.com/watch?v=nYfph3NbNCc]
 
+== Screenshots ==
+
+1. [0.7.0] Select2 dropdown in a post type's panel allows all posts of that type to be searched, including trashes. Selecting a post here causes its section to be added and expanded, with the preview then navigating to the URL for that post.
+2. [0.7.0] Post status control is now accompanied by a post date control. A Move to Trash link also appears with the status control.
+3. [0.7.0] Selecting a future date switches status form published to scheduled, and a countdown for when the post will be scheduled is available along with the timezone information.
+4. [0.7.0] Clicking the date reset link causes the setting's date to be emptied, with the control's inputs then receiving the current date/time as placeholders which update each minute to correspond to the current date/time.
+
 == Changelog ==
 
 = [0.7.0] - 2017-08-06 =

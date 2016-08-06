@@ -58,6 +58,24 @@ The following are listed in reverse chronological order. The first, more recent 
 [![Play video on YouTube](https://i1.ytimg.com/vi/nYfph3NbNCc/hqdefault.jpg)](https://www.youtube.com/watch?v=nYfph3NbNCc)
 
 
+## Screenshots ##
+
+### [0.7.0] Select2 dropdown in a post type's panel allows all posts of that type to be searched, including trashes. Selecting a post here causes its section to be added and expanded, with the preview then navigating to the URL for that post.
+
+![[0.7.0] Select2 dropdown in a post type's panel allows all posts of that type to be searched, including trashes. Selecting a post here causes its section to be added and expanded, with the preview then navigating to the URL for that post.](wp-assets/screenshot-1.png)
+
+### [0.7.0] Post status control is now accompanied by a post date control. A Move to Trash link also appears with the status control.
+
+![[0.7.0] Post status control is now accompanied by a post date control. A Move to Trash link also appears with the status control.](wp-assets/screenshot-2.png)
+
+### [0.7.0] Selecting a future date switches status form published to scheduled, and a countdown for when the post will be scheduled is available along with the timezone information.
+
+![[0.7.0] Selecting a future date switches status form published to scheduled, and a countdown for when the post will be scheduled is available along with the timezone information.](wp-assets/screenshot-3.png)
+
+### [0.7.0] Clicking the date reset link causes the setting's date to be emptied, with the control's inputs then receiving the current date/time as placeholders which update each minute to correspond to the current date/time.
+
+![[0.7.0] Clicking the date reset link causes the setting's date to be emptied, with the control's inputs then receiving the current date/time as placeholders which update each minute to correspond to the current date/time.](wp-assets/screenshot-4.png)
+
 ## Changelog ##
 
 ### [0.7.0] - 2017-08-06 ###
