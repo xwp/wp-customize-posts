@@ -264,20 +264,56 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 }
 .customize-control-post_date .date-inputs {
 	clear: both;
+	display: -webkit-box;
+	display: -ms-flexbox;
+	display: flex;
+	-webkit-box-align: baseline;
+	-ms-flex-align: baseline;
+	align-items: baseline;
+	-webkit-box-pack: justify;
+	-ms-flex-pack: justify;
+	justify-content: space-between;
 }
 
 .customize-control-post_date select,
 .customize-control-post_date input.date-input {
-	min-width: 10%;
-	width: auto;
+	width: 12%;
+	min-width: 12%;
+	-ms-flex-preferred-size: 8%;
+	flex-basis: 8%;
+}
+.customize-control-post_date select {
+	width: 30%;
+	-ms-flex-preferred-size: 25%;
+	flex-basis: 12%;
+	-webkit-box-flex: 6;
+	-ms-flex-positive: 6;
+	flex-grow: 6;
+}
+@media screen and ( max-width: 782px ) {
+	.customize-control-post_date select {
+		height: 40px;
+	}
 }
 .customize-control-post_date input.date-input {
+	display: inline-block;
+	-webkit-box-flex: 2;
+	-ms-flex-positive: 2;
+	flex-grow: 2;
 	-moz-appearance: textfield;
 }
 .customize-control-post_date input.date-input::-webkit-outer-spin-button,
 .customize-control-post_date input.date-input::-webkit-inner-spin-button {
 	-webkit-appearance: none;
 	margin: 0;
+}
+.customize-control-post_date input.date-input.year {
+	width: 18%;
+	-ms-flex-preferred-size: 15%;
+	flex-basis: 10%;
+	-webkit-box-flex: 4;
+	-ms-flex-positive: 4;
+	flex-grow: 4;
 }
 .wrap-reset-time {
 	font-weight: normal;
