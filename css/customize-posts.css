@@ -255,7 +255,7 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	user-select: none;
 }
 
-.customize-control-post_date .time-info-handle.active .time-handle-arrow{
+.customize-control-post_date .time-info-handle.active .time-handle-arrow {
 	-webkit-transform: rotate( 180deg );
 	-moz-transform: rotate( 180deg );
 	-ms-transform: rotate( 180deg );
@@ -269,7 +269,7 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	transform-origin:56% 50%;
 }
 
-.customize-control-post_date .time-details{
+.customize-control-post_date .time-details {
 	padding-bottom: 10px;
 }
 
@@ -277,7 +277,7 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	margin-bottom: 5px;
 }
 
-.customize-control-post_date .date-inputs{
+.customize-control-post_date .date-inputs {
 	display: flex;
 	display: -ms-flexbox;
 	align-items: center;
@@ -294,15 +294,15 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	padding-left: 5px; /* 10px padding is not ideal for such small inputs */
 	padding-right: 5px;
 }
-.customize-control-post_date label{
+.customize-control-post_date label {
 	display: inline-block; /* To align items when flex is not supported */
 }
 
-.customize-control-post_date .year.date-input{
+.customize-control-post_date .year.date-input {
 	min-width: 4em;
 }
 
-.customize-control-post_date .time-special-char{
+.customize-control-post_date .time-special-char {
 	padding-left:2px;
 	padding-right:2px;
 }
