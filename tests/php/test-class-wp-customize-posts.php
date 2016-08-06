@@ -317,7 +317,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	/**
 	 * Tests get_post_status_choices().
 	 *
-	 * @covers WP_Customize_Posts::get_post_status_choices().
+	 * @covers WP_Customize_Posts::get_post_status_choices()
 	 */
 	public function test_get_post_status_choices() {
 		$posts = new WP_Customize_Posts( $this->wp_customize );
@@ -334,7 +334,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	/**
 	 * Tests get_author_choices().
 	 *
-	 * @covers WP_Customize_Posts::get_author_choices().
+	 * @covers WP_Customize_Posts::get_author_choices()
 	 */
 	public function test_get_author_choices() {
 		$posts = new WP_Customize_Posts( $this->wp_customize );
