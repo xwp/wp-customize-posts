@@ -2,8 +2,8 @@
 Contributors:      xwp, westonruter, valendesigns
 Tags:              customizer, customize, posts, preview, featured-image, page-template
 Requires at least: 4.5
-Tested up to:      4.6-alpha
-Stable tag:        0.6.1
+Tested up to:      4.6
+Stable tag:        0.7.0
 License:           GPLv2 or later
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -56,6 +56,15 @@ The following are listed in reverse chronological order. The first, more recent 
 [youtube https://www.youtube.com/watch?v=nYfph3NbNCc]
 
 == Changelog ==
+
+= [0.7.0] - 2017-08-06 =
+...
+
+See full commit log: [`0.6.1...0.7.0`](https://github.com/xwp/wp-customize-posts/compare/0.6.1...0.7.0)
+
+Issues in milestone: [`milestone:0.7.0`](https://github.com/xwp/wp-customize-posts/issues?q=milestone%3A0.7.0)
+
+Props: Weston Ruter (<a href="https://github.com/westonruter" class="user-mention">@westonruter</a>), John Regan (<a href="https://github.com/johnregan3" class="user-mention">@johnregan3</a>), Utkarsh Patel (<a href="https://github.com/PatelUtkarsh" class="user-mention">@PatelUtkarsh</a>), Luke Gedeon (<a href="https://github.com/lgedeon" class="user-mention">@lgedeon</a>), Sayed Taqui (<a href="https://github.com/sayedwp" class="user-mention">@sayedwp</a>), Ahmad Awais (<a href="https://github.com/ahmadawais" class="user-mention">@ahmadawais</a>), Derek Herman (<a href="https://github.com/valendesigns" class="user-mention">@valendesigns</a>)
 
 = [0.6.1] - 2016-06-16 =
 

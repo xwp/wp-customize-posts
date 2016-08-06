@@ -7,8 +7,8 @@ Edit posts and postmeta in the Customizer. Stop editing your posts/postmeta blin
 **Contributors:** [xwp](https://profiles.wordpress.org/xwp), [westonruter](https://profiles.wordpress.org/westonruter), [valendesigns](https://profiles.wordpress.org/valendesigns)  
 **Tags:** [customizer](https://wordpress.org/plugins/tags/customizer), [customize](https://wordpress.org/plugins/tags/customize), [posts](https://wordpress.org/plugins/tags/posts), [preview](https://wordpress.org/plugins/tags/preview), [featured-image](https://wordpress.org/plugins/tags/featured-image), [page-template](https://wordpress.org/plugins/tags/page-template)  
 **Requires at least:** 4.5  
-**Tested up to:** 4.6-alpha  
-**Stable tag:** 0.6.1  
+**Tested up to:** 4.6  
+**Stable tag:** 0.7.0  
 **License:** [GPLv2 or later](http://www.gnu.org/licenses/gpl-2.0.html)  
 
 [![Build Status](https://travis-ci.org/xwp/wp-customize-posts.svg?branch=master)](https://travis-ci.org/xwp/wp-customize-posts) [![Coverage Status](https://coveralls.io/repos/xwp/wp-customize-posts/badge.svg?branch=master)](https://coveralls.io/github/xwp/wp-customize-posts) [![Built with Grunt](https://cdn.gruntjs.com/builtwith.svg)](http://gruntjs.com) [![devDependency Status](https://david-dm.org/xwp/wp-customize-posts/dev-status.svg)](https://david-dm.org/xwp/wp-customize-posts#info=devDependencies) 
@@ -59,6 +59,15 @@ The following are listed in reverse chronological order. The first, more recent 
 
 
 ## Changelog ##
+
+### [0.7.0] - 2017-08-06 ###
+...
+
+See full commit log: [`0.6.1...0.7.0`](https://github.com/xwp/wp-customize-posts/compare/0.6.1...0.7.0)
+
+Issues in milestone: [`milestone:0.7.0`](https://github.com/xwp/wp-customize-posts/issues?q=milestone%3A0.7.0)
+
+Props: Weston Ruter (<a href="https://github.com/westonruter" class="user-mention">@westonruter</a>), John Regan (<a href="https://github.com/johnregan3" class="user-mention">@johnregan3</a>), Utkarsh Patel (<a href="https://github.com/PatelUtkarsh" class="user-mention">@PatelUtkarsh</a>), Luke Gedeon (<a href="https://github.com/lgedeon" class="user-mention">@lgedeon</a>), Sayed Taqui (<a href="https://github.com/sayedwp" class="user-mention">@sayedwp</a>), Ahmad Awais (<a href="https://github.com/ahmadawais" class="user-mention">@ahmadawais</a>), Derek Herman (<a href="https://github.com/valendesigns" class="user-mention">@valendesigns</a>)
 
 ### [0.6.1] - 2016-06-16 ###
 * Send values to JS via `js_value()` and use the settings `json` method if available.
