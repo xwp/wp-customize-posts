@@ -61,10 +61,10 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 		?>
 		<#
 		_.defaults( data, <?php echo wp_json_encode( $data ) ?> );
-		data.input_id = 'input-' + String( Math.random() );
+		data.input_id_base = 'input-' + String( Math.random() );
 		#>
 		<span class="customize-control-title">
-			<label for="{{ data.input_id }}">{{ data.label }}</label>
+			<label for="{{ data.input_id_base }}_month">{{ data.label }}</label>
 			<span class="wrap-reset-time">(<a href="javascript:void(0)" class="reset-time"><?php esc_html_e( 'Reset', 'customize-posts' ) ?></a>)</span>
 		</span>
 
@@ -89,11 +89,11 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 		?>
 		<div class="description customize-control-description">
 			<?php // @todo Use an HTML5 details element for the time info once browser support is better. ?>
-			<div class="time-info-handle">
+			<div role="button" class="time-info-handle" aria-controls="{{ data.input_id_base }}_time_info" aria-pressed="false">
 				<span class="time-handle-arrow dashicons dashicons-arrow-down"></span>
 				<?php echo esc_html( $tz_abbr ); ?>
 			</div>
-			<div class="time-details clear hidden">
+			<div class="time-details clear hidden" aria-expanded="false" id="{{ data.input_id_base }}_time_info">
 				<span class="scheduled-countdown"></span>
 				<span class="timezone-info"><?php echo esc_html( $date_control_description ); ?></span>
 			</div>
@@ -102,7 +102,7 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 		<div class="date-inputs clear">
 			<label>
 				<span class="screen-reader-text"><?php esc_html_e( 'Month', 'customize-posts' ); ?></span>
-				<select id="{{ data.input_id }}" class="date-input month" data-component="month">
+				<select id="{{ data.input_id_base }}_month" class="date-input month" data-component="month">
 					<# _.each( data.choices, function( choice ) { #>
 						<#
 						if ( _.isObject( choice ) && ! _.isUndefined( choice.text ) && ! _.isUndefined( choice.value ) ) {
