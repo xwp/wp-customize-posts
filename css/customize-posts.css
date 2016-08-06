@@ -262,6 +262,11 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	-o-transform: rotate( 180deg );
 	transform: rotate( 180deg );
 	vertical-align: bottom;
+	-webkit-transform-origin:56% 50%;
+	-moz-transform-origin:56% 50%;
+	-ms-transform-origin:56% 50%;
+	-o-transform-origin:56% 50%;
+	transform-origin:56% 50%;
 }
 
 .customize-control-post_date .time-details{
