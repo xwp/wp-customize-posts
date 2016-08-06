@@ -242,7 +242,7 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	margin-top: -28px;
 }
 
-.customize-control-post_date .customize-control-description summary {
+.customize-control-post_date .time-info-handle {
 	font-size: 14px;
 	line-height: 24px;
 	margin-bottom: 4px;
@@ -254,6 +254,20 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	-ms-user-select: none;
 	user-select: none;
 }
+
+.customize-control-post_date .time-info-handle.active .time-handle-arrow{
+	-webkit-transform: rotate( 180deg );
+	-moz-transform: rotate( 180deg );
+	-ms-transform: rotate( 180deg );
+	-o-transform: rotate( 180deg );
+	transform: rotate( 180deg );
+	vertical-align: bottom;
+}
+
+.customize-control-post_date .time-details{
+	padding-bottom: 10px;
+}
+
 .customize-control-post_date .customize-control-description[open] {
 	margin-bottom: 5px;
 }

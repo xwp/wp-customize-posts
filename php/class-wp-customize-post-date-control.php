@@ -87,13 +87,16 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 			$date_control_description = sprintf( __( 'Timezone is %s.', 'customize-posts' ), $tz_abbr );
 		}
 		?>
-		<details class="description customize-control-description">
-			<summary><?php echo esc_html( $tz_abbr ); ?></summary>
-			<div class="time-details clear">
+		<div class="description customize-control-description">
+			<div class="time-info-handle">
+				<span class="time-handle-arrow dashicons dashicons-arrow-down"></span>
+				<?php echo esc_html( $tz_abbr ); ?>
+			</div>
+			<div class="time-details clear hidden">
 				<span class="scheduled-countdown"></span>
 				<span class="timezone-info"><?php echo esc_html( $date_control_description ); ?></span>
 			</div>
-		</details>
+		</div>
 		<div class="customize-control-notifications-container"></div>
 		<div class="date-inputs clear">
 			<label>

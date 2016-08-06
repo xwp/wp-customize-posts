@@ -33,6 +33,8 @@
 			control.deferred.embedded.done( function() {
 				control.dateInputs = control.container.find( '.date-input' );
 				control.resetTimeButton = control.container.find( '.reset-time' );
+				control.timeInfoHandle = control.container.find( '.time-info-handle' );
+				control.timeDetailsContainer = control.container.find( '.time-details' );
 				control.resetTimeWrap = control.container.find( '.wrap-reset-time' );
 				control.scheduledCountdownContainer = control.container.find( '.scheduled-countdown' );
 				control.scheduledCountdownTemplate = wp.template( 'customize-posts-scheduled-countdown' );
@@ -97,6 +99,18 @@
 					value = _.clone( control.setting.get() );
 					value.post_date = '0000-00-00 00:00:00';
 					control.setting.set( value );
+				} );
+
+				control.timeInfoHandle.on( 'click', function() {
+					if ( control.timeInfoHandle.hasClass( 'active' ) ) {
+						control.timeDetailsContainer.slideUp( 'fast', function() {
+							control.timeInfoHandle.removeClass( 'active' );
+						} );
+					} else {
+						control.timeDetailsContainer.slideDown( 'fast', function() {
+							control.timeInfoHandle.addClass( 'active' );
+						} );
+					}
 				} );
 			} );
 		},
