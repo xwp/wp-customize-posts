@@ -16,14 +16,13 @@
 			opt = {};
 			opt.params = _.extend(
 				{
+					type: 'post_status', // Used for template.
 					label: api.Posts.data.l10n.fieldStatusLabel,
-					type: 'dynamic', // To re-use the dynamic template.
 					active: true,
 					setting_property: 'post_status',
 					field_type: 'select',
-					choices: api.Posts.data.postStatusChoices,
+					choices: api.Posts.data.postStatusChoices, // @todo Allow post status choices to be specific to post types.
 					updateChoicesInterval: 1000
-
 				},
 				options.params || {}
 			);
@@ -31,11 +30,13 @@
 			api.controlConstructor.dynamic.prototype.initialize.call( control, id, opt );
 
 			control.deferred.embedded.done( function() {
-				var embeddedDelay = 50;
+				var embeddedDelay = 50, collapseSection, trashCollapseDelay = 500;
 
 				control.selectElement = control.container.find( 'select' );
 				control.optionFutureElement = control.selectElement.find( 'option[value=future]' );
 				control.optionPublishElement = control.selectElement.find( 'option[value=publish]' );
+				control.trashLink = control.container.find( '.trash' );
+				control.untrashLink = control.container.find( '.untrash' );
 
 				// Defer updating until control explicitly added, because it will short-circuit if not registered yet.
 				api.control( control.id, function() {
@@ -56,10 +57,46 @@
 				}, embeddedDelay );
 
 				// Update the status UI when the setting changes its state.
+				control.originalPostStatus = control.setting().post_status;
 				control.setting.bind( function( newPostData, oldPostData ) {
 					if ( newPostData.post_status !== oldPostData.post_status && 'trash' === newPostData.post_status || 'trash' === oldPostData.post_status ) {
 						control.toggleTrash();
 					}
+				} );
+
+				/**
+				 * Collapse section.
+				 *
+				 * @return {void}
+				 */
+				collapseSection = function() {
+					var section = api.section( control.section() );
+					if ( section ) {
+						section.collapse();
+					}
+				};
+
+				// Trash the post when clicking the delete link.
+				control.trashLink.on( 'click', function( e ) {
+					var postData = _.clone( control.setting.get() );
+					e.preventDefault();
+					postData.post_status = 'trash';
+					control.setting.set( postData );
+
+					/*
+					 * Collapse the section momentarily after trashing the post
+					 * so that the user can visually see the status dropdown
+					 * change to trash (so they can undo it later).
+					 */
+					_.delay( collapseSection, trashCollapseDelay );
+				} );
+
+				// Restore the original post status when clicking the untrash link.
+				control.untrashLink.on( 'click', function( e ) {
+					var postData = _.clone( control.setting.get() );
+					e.preventDefault();
+					postData.post_status = control.originalPostStatus;
+					control.setting.set( postData );
 				} );
 			} );
 		},
@@ -130,20 +167,27 @@
 		 */
 		toggleTrash: function() {
 			var control = this, section, sectionContainer, sectionTitle, trashed;
-			section = api.section( control.section.get() );
-			if ( ! section ) {
-				return;
-			}
 			trashed = 'trash' === control.setting.get().post_status;
-			sectionContainer = section.container.closest( '.accordion-section' );
-			sectionTitle = sectionContainer.find( '.accordion-section-title:first' );
-			sectionContainer.toggleClass( 'is-trashed', trashed );
-			if ( true === trashed ) {
-				if ( 0 === sectionTitle.find( '.customize-posts-trashed' ).length ) {
-					sectionTitle.append( wp.template( 'customize-posts-trashed' )() );
+
+			if ( control.trashLink ) {
+				control.trashLink.toggle( ! trashed );
+			}
+			if ( control.originalPostStatus ) {
+				control.untrashLink.toggle( Boolean( trashed && control.originalPostStatus ) );
+			}
+
+			section = api.section( control.section.get() );
+			if ( section ) {
+				sectionContainer = section.container.closest( '.accordion-section' );
+				sectionTitle = sectionContainer.find( '.accordion-section-title:first' );
+				sectionContainer.toggleClass( 'is-trashed', trashed );
+				if ( true === trashed ) {
+					if ( 0 === sectionTitle.find( '.customize-posts-trashed' ).length ) {
+						sectionTitle.append( wp.template( 'customize-posts-trashed' )() );
+					}
+				} else {
+					sectionContainer.find( '.customize-posts-trashed' ).remove();
 				}
-			} else {
-				sectionContainer.find( '.customize-posts-trashed' ).remove();
 			}
 		}
 	});

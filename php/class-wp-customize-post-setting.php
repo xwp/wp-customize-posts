@@ -526,6 +526,9 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	 * Please note that the capability check will have already been done.
 	 *
 	 * @see WP_Customize_Setting::save()
+	 * @see wp_update_post()
+	 * @see wp_trash_post()
+	 * @see wp_untrash_post()
 	 *
 	 * @param string $data The value to update.
 	 * @return bool The result of saving the value.
@@ -542,7 +545,10 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		$data = $this->augment_gmt_dates( $data );
 
 		$is_trashed = 'trash' === $data['post_status'];
+		$was_trashed = 'trash' === get_post_status( $this->post_id );
 		$is_auto_draft = in_array( get_post_status( $this->post_id ), array( 'auto-draft', 'customize-draft' ), true );
+		$transition_to_trash = $is_trashed && ! $was_trashed;
+		$transition_from_trash = ! $is_trashed && $was_trashed;
 
 		// If trashing an auto-draft, just delete it straight-away and short-circuit.
 		if ( $is_trashed && $is_auto_draft ) {
@@ -574,6 +580,15 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			add_filter( 'wp_insert_post_data', array( $this->posts_component, 'force_empty_post_dates' ) );
 			add_filter( 'wp_insert_attachment_data', array( $this->posts_component, 'force_empty_post_dates' ) );
 		}
+
+		if ( $transition_from_trash ) {
+			/** This action is documented in wp-includes/post.php */
+			do_action( 'untrash_post', $this->post_id );
+
+			// Ensure that the post_name supplied in the setting will be used.
+			delete_post_meta( $this->post_id, '_wp_desired_post_slug' );
+		}
+
 		$r = wp_update_post( wp_slash( $data ), true );
 		if ( $should_store_empty_date ) {
 			remove_filter( 'wp_insert_post_data', array( $this->posts_component, 'force_empty_post_dates' ) );
@@ -581,9 +596,19 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		}
 		$result = ! is_wp_error( $r );
 
-		if ( $is_trashed ) {
+		if ( $transition_to_trash ) {
 			$result = wp_trash_post( $this->post_id );
 			remove_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
+		}
+
+		if ( $transition_from_trash ) {
+			wp_untrash_post_comments( $this->post_id );
+
+			/** This action is documented in wp-includes.php */
+			do_action( 'untrashed_post', $this->post_id );
+
+			delete_post_meta( $this->post_id, '_wp_trash_meta_status' );
+			delete_post_meta( $this->post_id, '_wp_trash_meta_time' );
 		}
 
 		return $result;

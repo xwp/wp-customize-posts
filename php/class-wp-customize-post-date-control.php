@@ -19,6 +19,14 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 	public $posts_component;
 
 	/**
+	 * Type of control, used by JS.
+	 *
+	 * @access public
+	 * @var string
+	 */
+	public $type = 'post_date';
+
+	/**
 	 * Constructor.
 	 *
 	 * @throws Exception If posts component not available.
@@ -36,12 +44,11 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 	}
 
 	/**
-	 * Type of control, used by JS.
-	 *
-	 * @access public
-	 * @var string
+	 * Enqueue control related scripts/styles.
 	 */
-	public $type = 'post_date';
+	public function enqueue() {
+		wp_enqueue_script( 'customize-post-date-control' );
+	}
 
 	/**
 	 * Render the Underscore template for this control.

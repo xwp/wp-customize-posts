@@ -60,6 +60,9 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$this->wp_customize = null;
 		unset( $_POST['customized'] );
 		unset( $GLOBALS['wp_customize'] );
+		$this->trashed_post_id = null;
+		$this->untrash_post_id = null;
+		$this->untrashed_post_id = null;
 		parent::tearDown();
 	}
 
@@ -562,7 +565,6 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$this->assertEquals( 'publish', $sanitized['post_status'] );
 	}
 
-
 	/**
 	 * Test preview().
 	 *
@@ -672,12 +674,13 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	/**
 	 * Test update() for trashing.
 	 *
-	 * @see WP_Customize_Post_Setting::update()
+	 * @covers WP_Customize_Post_Setting::update()
 	 */
 	function test_save_trash() {
 		add_action( 'trashed_post', array( $this, 'handle_action_trashed_post' ) );
 		$original_data = array(
 			'post_title' => 'Food',
+			'post_name' => 'food',
 		);
 		$setting = $this->create_post_setting( $original_data );
 
@@ -695,6 +698,92 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$this->assertEquals( 'trash', $post->post_status );
 		$this->assertEquals( $setting->post_id, $this->trashed_post_id );
 		$this->assertEquals( $trash_post_count + 1, did_action( 'trashed_post' ) );
+		$this->assertEquals( 'food__trashed', $post->post_name );
+		$this->assertEquals( 'food', get_post_meta( $post->ID, '_wp_desired_post_slug', true ) );
+	}
+
+	/**
+	 * Arg passed to untrash_post action.
+	 *
+	 * @var int
+	 */
+	public $untrash_post_id;
+
+	/**
+	 * Arg passed to untrashed_post action.
+	 *
+	 * @var int
+	 */
+	public $untrashed_post_id;
+
+	/**
+	 * Test update() for untrashing.
+	 *
+	 * @covers WP_Customize_Post_Setting::update()
+	 */
+	function test_save_untrash() {
+		add_action( 'untrash_post', array( $this, 'handle_action_untrash_post' ) );
+		add_action( 'untrashed_post', array( $this, 'handle_action_untrashed_post' ) );
+		$post_id = $this->factory()->post->create( array( 'post_status' => 'private', 'post_name' => 'foo' ) );
+		$comment_id = wp_insert_comment( array(
+			'comment_post_ID' => $post_id,
+			'comment_content' => 'Comment',
+			'comment_approved' => '1',
+		) );
+
+		wp_trash_post( $post_id );
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $post_id ) );
+		$this->posts_component->manager->add_dynamic_settings( array( $setting_id ) );
+		$setting = $this->posts_component->manager->get_setting( $setting_id );
+		$this->assertInstanceOf( 'WP_Customize_Post_Setting', $setting );
+		$trashed_value = $setting->value();
+		$this->assertEquals( 'foo__trashed', $trashed_value['post_name'] );
+		$this->assertEquals( 'trash', $trashed_value['post_status'] );
+		$this->posts_component->manager->set_post_value( $setting_id, array_merge(
+			$setting->value(),
+			array(
+				'post_status' => 'private',
+				'post_name' => 'foo',
+			)
+		) );
+
+		$this->assertEquals( 'foo', get_post_meta( $post_id, '_wp_desired_post_slug', true ) );
+		$this->assertEquals( 'private', get_post_meta( $post_id, '_wp_trash_meta_status', true ) );
+		$this->assertNotEmpty( get_post_meta( $post_id, '_wp_trash_meta_time', true ) );
+		$this->assertNotEmpty( get_post_meta( $post_id, '_wp_trash_meta_comments_status', true ) );
+		$this->assertNull( $this->untrash_post_id );
+		$this->assertNull( $this->untrashed_post_id );
+		$this->assertEquals( 'trash', get_post_status( $post_id ) );
+		$this->assertEquals( 'foo__trashed', get_post( $post_id )->post_name );
+		$this->assertEquals( 'post-trashed', get_comment( $comment_id )->comment_approved );
+		$setting->save();
+		$this->assertEquals( 'private', get_post_status( $post_id ) );
+		$this->assertEquals( 'foo', get_post( $post_id )->post_name );
+		$this->assertEquals( $post_id, $this->untrash_post_id );
+		$this->assertEquals( $post_id, $this->untrashed_post_id );
+		$this->assertEmpty( get_post_meta( $post_id, '_wp_desired_post_slug', true ) );
+		$this->assertEmpty( get_post_meta( $post_id, '_wp_trash_meta_status', true ) );
+		$this->assertEmpty( get_post_meta( $post_id, '_wp_trash_meta_time', true ) );
+		$this->assertEmpty( get_post_meta( $post_id, '_wp_trash_meta_comments_status', true ) );
+		$this->assertEquals( '1', get_comment( $comment_id )->comment_approved );
+	}
+
+	/**
+	 * Handle untrash_post action.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	function handle_action_untrash_post( $post_id ) {
+		$this->untrash_post_id = $post_id;
+	}
+
+	/**
+	 * Handle untrashed_post action.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	function handle_action_untrashed_post( $post_id ) {
+		$this->untrashed_post_id = $post_id;
 	}
 
 	/**
@@ -726,7 +815,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	/**
 	 * Trashed post ID.
 	 *
-	 * @var int
+	 * @var int Trashed post ID.
 	 */
 	public $trashed_post_id;
 

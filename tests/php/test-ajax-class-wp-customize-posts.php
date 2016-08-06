@@ -401,6 +401,9 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 	 */
 	public function test_ajax_posts_select2_query_successes() {
 		$this->factory()->post->create_many( 30 );
+		$draft_post_id = $this->factory()->post->create( array( 'post_status' => 'draft', 'post_date' => gmdate( 'Y-m-d H:i:s', time() + 60 ) ) );
+		$private_post_id = $this->factory()->post->create( array( 'post_status' => 'private', 'post_date' => gmdate( 'Y-m-d H:i:s', time() + 2 * 60 ) ) );
+		$trashed_post_id = $this->factory()->post->create( array( 'post_status' => 'trash', 'post_date' => gmdate( 'Y-m-d H:i:s', time() + 3 * 60 ) ) );
 
 		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$_POST = wp_slash( array(
@@ -419,6 +422,10 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 		$this->assertArrayHasKey( 'featured_image', $first_item );
 		$this->assertTrue( $response['data']['pagination']['more'] );
 		$this->_last_response = '';
+
+		$this->assertEquals( $trashed_post_id, $response['data']['results'][0]['id'] );
+		$this->assertEquals( $private_post_id, $response['data']['results'][1]['id'] );
+		$this->assertEquals( $draft_post_id, $response['data']['results'][2]['id'] );
 
 		$_POST = wp_slash( array(
 			'customize-posts-nonce' => wp_create_nonce( 'customize-posts' ),

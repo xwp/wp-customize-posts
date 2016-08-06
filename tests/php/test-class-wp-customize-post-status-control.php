@@ -1,15 +1,15 @@
 <?php
 /**
- * Tests for Test_WP_Customize_Post_Date_Control.
+ * Tests for Test_WP_Customize_Post_Status_Control.
  *
  * @package WordPress
  * @subpackage Customize
  */
 
 /**
- * Class Test_WP_Customize_Post_Date_Control
+ * Class Test_WP_Customize_Post_Status_Control
  */
-class Test_WP_Customize_Post_Date_Control extends WP_UnitTestCase {
+class Test_WP_Customize_Post_Status_Control extends WP_UnitTestCase {
 
 	/**
 	 * Customize Manager instance.
@@ -61,13 +61,13 @@ class Test_WP_Customize_Post_Date_Control extends WP_UnitTestCase {
 	/**
 	 * Test constructor when posts component doesn't exists.
 	 *
-	 * @covers WP_Customize_Post_Date_Control::__construct()
+	 * @covers WP_Customize_Post_Status_Control::__construct()
 	 */
 	public function test_construct_without_posts_component() {
 		$this->wp_customize->posts = null;
 		$exception = null;
 		try {
-			new WP_Customize_Post_Date_Control( $this->wp_customize, $this->setting_id . '[post_date]', array() );
+			new WP_Customize_Post_Status_Control( $this->wp_customize, $this->setting_id . '[post_status]', array() );
 		} catch ( Exception $e ) {
 			$exception = $e;
 		}
@@ -78,24 +78,24 @@ class Test_WP_Customize_Post_Date_Control extends WP_UnitTestCase {
 	/**
 	 * Test constructor when posts component does exists.
 	 *
-	 * @covers WP_Customize_Post_Date_Control::__construct()
+	 * @covers WP_Customize_Post_Status_Control::__construct()
 	 */
 	public function test_construct_with_posts_component() {
-		$control = new WP_Customize_Post_Date_Control( $this->wp_customize, $this->setting_id . '[post_date]', array() );
+		$control = new WP_Customize_Post_Status_Control( $this->wp_customize, $this->setting_id . '[post_status]', array() );
 		$this->assertEquals( $this->posts, $control->posts_component );
 	}
 
 	/**
 	 * Test enqueue.
 	 *
-	 * @covers WP_Customize_Post_Date_Control::enqueue()
+	 * @covers WP_Customize_Post_Status_Control::enqueue()
 	 */
 	public function test_enqueue() {
-		$control = new WP_Customize_Post_Date_Control( $this->wp_customize, $this->setting_id . '[post_date]', array() );
-		$this->assertNotEmpty( wp_scripts()->query( 'customize-post-date-control', 'registered' ) );
-		$this->assertFalse( wp_scripts()->query( 'customize-post-date-control', 'enqueued' ) );
+		$control = new WP_Customize_Post_Status_Control( $this->wp_customize, $this->setting_id . '[post_status]', array() );
+		$this->assertNotEmpty( wp_scripts()->query( 'customize-post-status-control', 'registered' ) );
+		$this->assertFalse( wp_scripts()->query( 'customize-post-status-control', 'enqueued' ) );
 		$control->enqueue();
-		$this->assertTrue( wp_scripts()->query( 'customize-post-date-control', 'enqueued' ) );
+		$this->assertTrue( wp_scripts()->query( 'customize-post-status-control', 'enqueued' ) );
 	}
 
 	/**
@@ -104,13 +104,13 @@ class Test_WP_Customize_Post_Date_Control extends WP_UnitTestCase {
 	 * @covers WP_Customize_Dynamic_Control::json()
 	 */
 	public function test_json() {
-		$control = new WP_Customize_Post_Date_Control( $this->wp_customize, 'post[post][123][post_date]', array(
+		$control = new WP_Customize_Post_Status_Control( $this->wp_customize, $this->setting_id . '[post_status]', array(
 			'label'            => 'Heading Text',
 			'section'          => $this->setting_id,
 			'settings'         => $this->setting_id,
 			'priority'         => 1,
-			'field_type'       => 'post_date',
-			'setting_property' => 'post_date',
+			'field_type'       => 'post_status',
+			'setting_property' => 'post_status',
 			'input_attrs'      => array( 'data-test' => 'value-test' ),
 		) );
 		$json = $control->json();
@@ -119,7 +119,7 @@ class Test_WP_Customize_Post_Date_Control extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'field_type', $json );
 		$this->assertArrayHasKey( 'setting_property', $json );
 		$this->assertEquals( array( 'data-test' => 'value-test' ), $json['input_attrs'] );
-		$this->assertEquals( 'post_date', $json['field_type'] );
-		$this->assertEquals( 'post_date', $json['setting_property'] );
+		$this->assertEquals( 'post_status', $json['field_type'] );
+		$this->assertEquals( 'post_status', $json['setting_property'] );
 	}
 }

@@ -81,6 +81,7 @@ final class WP_Customize_Posts {
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-setting.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-setting.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-date-control.php';
+		require_once dirname( __FILE__ ) . '/class-wp-customize-post-status-control.php';
 		require_once ABSPATH . WPINC . '/customize/class-wp-customize-partial.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-field-partial.php';
 
@@ -287,6 +288,7 @@ final class WP_Customize_Posts {
 		$this->manager->register_control_type( 'WP_Customize_Dynamic_Control' );
 		$this->manager->register_control_type( 'WP_Customize_Post_Discussion_Fields_Control' );
 		$this->manager->register_control_type( 'WP_Customize_Post_Date_Control' );
+		$this->manager->register_control_type( 'WP_Customize_Post_Status_Control' );
 
 		$panel_priority = 900; // Before widgets.
 
@@ -554,10 +556,15 @@ final class WP_Customize_Posts {
 	 * @return array
 	 */
 	public function filter_customize_save_response_to_export_saved_values( $response ) {
+		// Short circuit if there there were invalidities.
+		if ( isset( $response['setting_validities'] ) && count( array_filter( $response['setting_validities'], 'is_array' ) ) > 0 ) {
+			return $response;
+		}
+
 		$response['saved_post_setting_values'] = array();
 		foreach ( array_keys( $this->manager->unsanitized_post_values() ) as $setting_id ) {
 			$setting = $this->manager->get_setting( $setting_id );
-			if ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting ) {
+			if ( ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting ) && get_post( $setting->post_id ) ) {
 				$response['saved_post_setting_values'][ $setting->id ] = $setting->js_value();
 			}
 		}
@@ -824,7 +831,7 @@ final class WP_Customize_Posts {
 	 * @access public
 	 */
 	public function preview_customize_draft_post_ids() {
-		if ( isset( $_REQUEST['preview'] ) ) {
+		if ( isset( $_REQUEST['preview'] ) ) { // @todo Why not look at $wp_query->is_preview()?
 			$this->customize_draft_post_ids = array();
 			foreach ( $this->manager->unsanitized_post_values() as $id => $post_data ) {
 				if ( ! preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches ) ) {
@@ -979,10 +986,10 @@ final class WP_Customize_Posts {
 	 */
 	public function get_setting_params( WP_Customize_Setting $setting ) {
 		if ( method_exists( $setting, 'json' ) ) { // New in 4.6-alpha.
-			return $setting->json();
+			$setting_params = $setting->json();
 		} else {
 			// @codeCoverageIgnoreStart
-			return array(
+			$setting_params = array(
 				'value' => $setting->js_value(),
 				'transport' => $setting->transport,
 				'dirty' => $setting->dirty,
@@ -990,6 +997,27 @@ final class WP_Customize_Posts {
 			);
 			// @codeCoverageIgnoreEnd
 		}
+
+		// Amend trashed post setting values with the pre-trashed state.
+		if ( $setting instanceof WP_Customize_Post_Setting && 'trash' === $setting_params['value']['post_status'] ) {
+			$setting_params['dirty'] = true;
+
+			// Resurrect the old status.
+			$former_status = get_post_meta( $setting->post_id, '_wp_trash_meta_status', true );
+			if ( ! $former_status ) {
+				$former_status = 'draft';
+			}
+			$setting_params['value']['post_status'] = $former_status;
+
+			// Resurrect the old slug.
+			$former_slug = get_post_meta( $setting->post_id, '_wp_desired_post_slug', true );
+			if ( ! $former_slug ) {
+				$former_slug = preg_replace( '#__trashed$#', '', $setting_params['value']['post_name'] );
+			}
+			$setting_params['value']['post_name'] = $former_slug;
+		}
+
+		return $setting_params;
 	}
 
 	/**
@@ -1147,6 +1175,9 @@ final class WP_Customize_Posts {
 				$query_args['post_status'],
 				get_post_stati( array( 'public' => true ) )
 			);
+		}
+		if ( isset( $post_type_obj->cap->delete_posts ) && current_user_can( $post_type_obj->cap->delete_posts ) ) {
+			$query_args['post_status'][] = 'trash';
 		}
 		if ( isset( $post_type_obj->cap->edit_others_posts ) || ! current_user_can( $post_type_obj->cap->edit_others_posts ) ) {
 			$query_args['post_author'] = get_current_user_id();

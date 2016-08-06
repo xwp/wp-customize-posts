@@ -464,12 +464,6 @@
 			section.postFieldControls.post_status = control;
 			api.control.add( control.id, control );
 
-			// Initialize the trashed UI.
-			// @todo Is this redundant with logic in post_status control's constructor?
-			api.panel( section.panel.get() ).expanded.bind( function() {
-				control.toggleTrash();
-			} );
-
 			if ( control.notifications ) {
 				control.notifications.add = section.addPostFieldControlNotification;
 				control.notifications.setting_property = control.params.setting_property;

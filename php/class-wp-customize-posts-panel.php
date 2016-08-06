@@ -87,7 +87,10 @@ class WP_Customize_Posts_Panel extends WP_Customize_Panel {
 			<# if ( data.featured_image && data.featured_image.sizes && data.featured_image.sizes.thumbnail && data.featured_image.sizes.thumbnail.url ) { #>
 				<img class="customize-posts-select2-thumbnail" src="{{ data.featured_image.sizes.thumbnail.url }}">
 			<# } #>
-			<# if ( data.text ) { #>
+			<# if ( data.status && 'trash' === data.status ) { #>
+				<em><?php esc_html_e( '[Trashed]', 'customize-posts' ) ?></em>
+				<span class="trashed-title">{{ data.title }}</span>
+			<# } else if ( data.text ) { #>
 				{{ data.text }}
 			<# } else { #>
 				<em><?php esc_html_e( '(No title)', 'customize-posts' ); ?></em>
