@@ -89,29 +89,46 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 		?>
 		<details class="description customize-control-description">
 			<summary><?php echo esc_html( $tz_abbr ); ?></summary>
-			<div class="time-details">
+			<div class="time-details clear">
 				<span class="scheduled-countdown"></span>
 				<span class="timezone-info"><?php echo esc_html( $date_control_description ); ?></span>
 			</div>
 		</details>
 		<div class="customize-control-notifications-container"></div>
-		<div class="date-inputs">
-			<select id="{{ data.input_id }}" class="date-input month" data-component="month">
-				<# _.each( data.choices, function( choice ) { #>
-					<#
-					if ( _.isObject( choice ) && ! _.isUndefined( choice.text ) && ! _.isUndefined( choice.value ) ) {
-						text = choice.text;
-						value = choice.value;
-					}
-					#>
-					<option value="{{ value }}">{{ text }}</option>
-				<# } ); #>
-			</select>
-
-			<input type="number" size="2" maxlength="2" autocomplete="off" class="date-input day" data-component="day" min="1" max="31" />,
-			<input type="number" size="4" maxlength="4" autocomplete="off" class="date-input year" data-component="year" min="1000" max="9999" />
-			@ <input type="number" size="2" maxlength="2" autocomplete="off" class="date-input hour" data-component="hour" min="0" max="23" />:<?php
-			?><input type="number" size="2" maxlength="2" autocomplete="off" class="date-input minute" data-component="minute" min="0" max="59" />
+		<div class="date-inputs clear">
+			<label>
+				<span class="screen-reader-text"><?php _e( 'Month', 'customize-posts' ); ?></span>
+				<select id="{{ data.input_id }}" class="date-input month" data-component="month">
+					<# _.each( data.choices, function( choice ) { #>
+						<#
+						if ( _.isObject( choice ) && ! _.isUndefined( choice.text ) && ! _.isUndefined( choice.value ) ) {
+							text = choice.text;
+							value = choice.value;
+						}
+						#>
+						<option value="{{ value }}">{{ text }}</option>
+					<# } ); #>
+				</select>
+			</label>
+			<label>
+				<span class="screen-reader-text"><?php _e( 'Day', 'customize-posts' ); ?></span>
+				<input type="number" maxlength="2" autocomplete="off" class="date-input day" data-component="day" min="1" max="31" />
+			</label>
+			<span class="time-special-char">,</span>
+			<label>
+				<span class="screen-reader-text"><?php _e( 'Year', 'customize-posts' ); ?></span>
+				<input type="number" maxlength="4" autocomplete="off" class="date-input year" data-component="year" min="1000" max="9999" />
+			</label>
+			<span class="time-special-char">@</span>
+			<label>
+				<span class="screen-reader-text"><?php _e( 'Hour', 'customize-posts' ); ?></span>
+				<input type="number" maxlength="2" autocomplete="off" class="date-input hour" data-component="hour" min="0" max="23" />
+			</label>
+			<span class="time-special-char">:</span>
+			<label>
+				<span class="screen-reader-text"><?php _e( 'Minute', 'customize-posts' ); ?></span>
+				<input type="number" maxlength="2" autocomplete="off" class="date-input minute" data-component="minute" min="0" max="59" />
+			</label>
 		</div>
 		<?php
 	}
