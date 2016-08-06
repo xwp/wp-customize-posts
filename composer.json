@@ -1,7 +1,7 @@
 {
 	"name": "xwp/wp-customize-posts",
 	"description": "Manage posts and postmeta via the Customizer.",
-	"version": "0.6.1",
+	"version": "0.7.0",
 	"type": "wordpress-plugin",
 	"keywords": [ "customizer", "customize", "posts", "postmeta", "preview", "featured-image", "page-template" ],
 	"homepage": "https://github.com/xwp/wp-customize-posts/",

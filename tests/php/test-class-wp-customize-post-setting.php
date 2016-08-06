@@ -60,6 +60,9 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$this->wp_customize = null;
 		unset( $_POST['customized'] );
 		unset( $GLOBALS['wp_customize'] );
+		$this->trashed_post_id = null;
+		$this->untrash_post_id = null;
+		$this->untrashed_post_id = null;
 		parent::tearDown();
 	}
 
@@ -175,6 +178,8 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$this->assertEquals( $post->post_type, $setting->post_type );
 		$this->assertEquals( $this->wp_customize->posts, $setting->posts_component );
 		$this->assertEquals( get_current_user_id(), $setting->default['post_author'] );
+		$this->assertEquals( '0000-00-00 00:00:00', $setting->default['post_date'] );
+		$this->assertEquals( '0000-00-00 00:00:00', $setting->default['post_modified'] );
 	}
 
 	/**
@@ -218,6 +223,32 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test override_post_data() supplying dates for empty dates.
+	 *
+	 * @see WP_Customize_Post_Setting::override_post_data()
+	 */
+	public function test_override_post_data_for_empty_dates() {
+		$empty_date = '0000-00-00 00:00:00';
+
+		$setting = $this->create_post_setting();
+		$this->wp_customize->add_setting( $setting );
+		$this->wp_customize->set_post_value( $setting->id, array_merge(
+			$setting->value(),
+			array(
+				'post_date' => $empty_date,
+				'post_modified' => $empty_date,
+			)
+		) );
+		$post = get_post( $setting->post_id );
+		$setting->preview();
+		$setting->override_post_data( $post );
+
+		$this->assertNotEquals( $empty_date, $post->post_date );
+		$this->assertNotEquals( $empty_date, $post->post_modified );
+		$this->assertEquals( $post->post_modified, $post->post_date );
+	}
+
+	/**
 	 * Test value().
 	 *
 	 * @see WP_Customize_Post_Setting::value()
@@ -235,10 +266,8 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'post_author', $value );
 		$this->assertArrayHasKey( 'post_name', $value );
 		$this->assertArrayHasKey( 'post_date', $value );
-		$this->assertArrayHasKey( 'post_date_gmt', $value );
 		$this->assertArrayHasKey( 'post_mime_type', $value );
 		$this->assertArrayHasKey( 'post_modified', $value );
-		$this->assertArrayHasKey( 'post_modified_gmt', $value );
 		$this->assertArrayHasKey( 'post_content', $value );
 		$this->assertArrayHasKey( 'post_content_filtered', $value );
 		$this->assertArrayHasKey( 'post_title', $value );
@@ -390,24 +419,23 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$setting = $this->create_post_setting();
 
 		$diff = -60;
-		$post_modified_gmt = gmdate( 'Y-m-d H:i:s', time() + $diff );
 		$post_modified = gmdate( 'Y-m-d H:i:s' , ( time() + $diff + ( get_option( 'gmt_offset' ) * HOUR_IN_SECONDS ) ) );
 
 		$dirty_value = array_merge(
 			$setting->value(),
-			compact( 'post_modified_gmt', 'post_modified' )
+			compact( 'post_modified' )
 		);
 		$this->assertInternalType( 'array', $setting->sanitize( $dirty_value ) );
 
 		$post_title = 'Override post title';
 		$dirty_value = array_merge(
 			$setting->value(),
-			compact( 'post_modified_gmt', 'post_modified', 'post_title' )
+			compact( 'post_modified', 'post_title' )
 		);
 
 		$this->assertInternalType( 'array', $setting->sanitize( $dirty_value ) );
 		do_action( 'customize_save_validation_before', $this->wp_customize );
-		$error = $setting->sanitize( $dirty_value, true );
+		$error = $setting->sanitize( $dirty_value );
 		if ( $has_setting_validation ) {
 			$this->assertInstanceOf( 'WP_Error', $error );
 			$this->assertEquals( 'post_update_conflict', $error->get_error_code() );
@@ -490,19 +518,17 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$sanitized = $setting->sanitize( array_merge(
 			$setting->value(),
 			array(
-				'post_date_gmt' => '',
-				'post_date' => '',
+				'post_date' => '0000-00-00 00:00:00',
 			)
 		) );
-		$this->assertNotEmpty( $sanitized['post_date_gmt'] );
-		$this->assertNotEmpty( $sanitized['post_date'] );
+		$this->assertEquals( '0000-00-00 00:00:00', $sanitized['post_date'] );
 
 		$sanitized = $setting->sanitize( array_merge(
 			$setting->value(),
 			array(
 				'post_date' => '9999-99-99',
 			)
-		), true );
+		) );
 		if ( $has_setting_validation ) {
 			$this->assertInstanceOf( 'WP_Error', $sanitized );
 		} else {
@@ -523,8 +549,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$sanitized = $setting->sanitize( array_merge(
 			$setting->value(),
 			array(
-				'post_date_gmt' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 month' ) ),
-				'post_date' => '',
+				'post_date' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 month' ) ),
 				'post_status' => 'publish',
 			)
 		) );
@@ -533,14 +558,12 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$sanitized = $setting->sanitize( array_merge(
 			$setting->value(),
 			array(
-				'post_date_gmt' => gmdate( 'Y-m-d H:i:s', strtotime( '-1 month' ) ),
-				'post_date' => '',
+				'post_date' => gmdate( 'Y-m-d H:i:s', strtotime( '-1 month' ) ),
 				'post_status' => 'future',
 			)
 		) );
 		$this->assertEquals( 'publish', $sanitized['post_status'] );
 	}
-
 
 	/**
 	 * Test preview().
@@ -552,6 +575,36 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$this->assertTrue( empty( $setting->posts_component->preview->previewed_post_settings[ $setting->post_id ] ) );
 		$setting->preview();
 		$this->assertTrue( ! empty( $setting->posts_component->preview->previewed_post_settings[ $setting->post_id ] ) );
+	}
+
+	/**
+	 * Test augment_gmt_dates().
+	 *
+	 * @covers WP_Customize_Post_Setting::augment_gmt_dates()
+	 */
+	public function test_augment_gmt_dates() {
+		$empty_date = '0000-00-00 00:00:00';
+		$setting = $this->create_post_setting();
+		$data = array();
+		$this->assertEmpty( $setting->augment_gmt_dates( $data ) );
+
+		$data = $setting->augment_gmt_dates( array( 'post_date' => $empty_date ) );
+		$this->assertArrayHasKey( 'post_date', $data );
+		$this->assertArrayHasKey( 'post_date_gmt', $data );
+		$this->assertEquals( $empty_date, $data['post_date_gmt'] );
+
+		$data = $setting->augment_gmt_dates( array( 'post_modified' => $empty_date ) );
+		$this->assertArrayHasKey( 'post_modified', $data );
+		$this->assertArrayHasKey( 'post_modified_gmt', $data );
+		$this->assertEquals( $empty_date, $data['post_modified_gmt'] );
+
+		$data = $setting->augment_gmt_dates( array( 'post_date' => current_time( 'mysql',  false ) ) );
+		$this->assertArrayHasKey( 'post_date', $data );
+		$this->assertArrayHasKey( 'post_date_gmt', $data );
+
+		$data = $setting->augment_gmt_dates( array( 'post_modified' => current_time( 'mysql',  false ) ) );
+		$this->assertArrayHasKey( 'post_modified', $data );
+		$this->assertArrayHasKey( 'post_modified_gmt', $data );
 	}
 
 	/**
@@ -576,6 +629,37 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test update() so that draft post can be saved with empty date.
+	 *
+	 * @see WP_Customize_Post_Setting::update()
+	 */
+	function test_save_with_empty_date() {
+		$empty_date = '0000-00-00 00:00:00';
+		$setting = $this->create_post_setting();
+		$setting->manager->set_post_value( $setting->id, array_merge(
+			$setting->value(),
+			array(
+				'post_status' => 'draft',
+				'post_date' => $empty_date
+			)
+		) );
+		$setting->save();
+		$post = get_post( $setting->post_id );
+		$this->assertEquals( $empty_date, $post->post_date );
+
+		$setting->manager->set_post_value( $setting->id, array_merge(
+			$setting->value(),
+			array(
+				'post_status' => 'publish',
+				'post_date' => $empty_date
+			)
+		) );
+		$setting->save();
+		$post = get_post( $setting->post_id );
+		$this->assertNotEquals( $empty_date, $post->post_date );
+	}
+
+	/**
 	 * Test update().
 	 *
 	 * @see WP_Customize_Post_Setting::update()
@@ -590,12 +674,13 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	/**
 	 * Test update() for trashing.
 	 *
-	 * @see WP_Customize_Post_Setting::update()
+	 * @covers WP_Customize_Post_Setting::update()
 	 */
 	function test_save_trash() {
 		add_action( 'trashed_post', array( $this, 'handle_action_trashed_post' ) );
 		$original_data = array(
 			'post_title' => 'Food',
+			'post_name' => 'food',
 		);
 		$setting = $this->create_post_setting( $original_data );
 
@@ -613,8 +698,93 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$this->assertEquals( 'trash', $post->post_status );
 		$this->assertEquals( $setting->post_id, $this->trashed_post_id );
 		$this->assertEquals( $trash_post_count + 1, did_action( 'trashed_post' ) );
+		$this->assertEquals( 'food__trashed', $post->post_name );
+		$this->assertEquals( 'food', get_post_meta( $post->ID, '_wp_desired_post_slug', true ) );
 	}
 
+	/**
+	 * Arg passed to untrash_post action.
+	 *
+	 * @var int
+	 */
+	public $untrash_post_id;
+
+	/**
+	 * Arg passed to untrashed_post action.
+	 *
+	 * @var int
+	 */
+	public $untrashed_post_id;
+
+	/**
+	 * Test update() for untrashing.
+	 *
+	 * @covers WP_Customize_Post_Setting::update()
+	 */
+	function test_save_untrash() {
+		add_action( 'untrash_post', array( $this, 'handle_action_untrash_post' ) );
+		add_action( 'untrashed_post', array( $this, 'handle_action_untrashed_post' ) );
+		$post_id = $this->factory()->post->create( array( 'post_status' => 'private', 'post_name' => 'foo' ) );
+		$comment_id = wp_insert_comment( array(
+			'comment_post_ID' => $post_id,
+			'comment_content' => 'Comment',
+			'comment_approved' => '1',
+		) );
+
+		wp_trash_post( $post_id );
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $post_id ) );
+		$this->posts_component->manager->add_dynamic_settings( array( $setting_id ) );
+		$setting = $this->posts_component->manager->get_setting( $setting_id );
+		$this->assertInstanceOf( 'WP_Customize_Post_Setting', $setting );
+		$trashed_value = $setting->value();
+		$this->assertEquals( 'foo__trashed', $trashed_value['post_name'] );
+		$this->assertEquals( 'trash', $trashed_value['post_status'] );
+		$this->posts_component->manager->set_post_value( $setting_id, array_merge(
+			$setting->value(),
+			array(
+				'post_status' => 'private',
+				'post_name' => 'foo',
+			)
+		) );
+
+		$this->assertEquals( 'foo', get_post_meta( $post_id, '_wp_desired_post_slug', true ) );
+		$this->assertEquals( 'private', get_post_meta( $post_id, '_wp_trash_meta_status', true ) );
+		$this->assertNotEmpty( get_post_meta( $post_id, '_wp_trash_meta_time', true ) );
+		$this->assertNotEmpty( get_post_meta( $post_id, '_wp_trash_meta_comments_status', true ) );
+		$this->assertNull( $this->untrash_post_id );
+		$this->assertNull( $this->untrashed_post_id );
+		$this->assertEquals( 'trash', get_post_status( $post_id ) );
+		$this->assertEquals( 'foo__trashed', get_post( $post_id )->post_name );
+		$this->assertEquals( 'post-trashed', get_comment( $comment_id )->comment_approved );
+		$setting->save();
+		$this->assertEquals( 'private', get_post_status( $post_id ) );
+		$this->assertEquals( 'foo', get_post( $post_id )->post_name );
+		$this->assertEquals( $post_id, $this->untrash_post_id );
+		$this->assertEquals( $post_id, $this->untrashed_post_id );
+		$this->assertEmpty( get_post_meta( $post_id, '_wp_desired_post_slug', true ) );
+		$this->assertEmpty( get_post_meta( $post_id, '_wp_trash_meta_status', true ) );
+		$this->assertEmpty( get_post_meta( $post_id, '_wp_trash_meta_time', true ) );
+		$this->assertEmpty( get_post_meta( $post_id, '_wp_trash_meta_comments_status', true ) );
+		$this->assertEquals( '1', get_comment( $comment_id )->comment_approved );
+	}
+
+	/**
+	 * Handle untrash_post action.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	function handle_action_untrash_post( $post_id ) {
+		$this->untrash_post_id = $post_id;
+	}
+
+	/**
+	 * Handle untrashed_post action.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	function handle_action_untrashed_post( $post_id ) {
+		$this->untrashed_post_id = $post_id;
+	}
 
 	/**
 	 * Test update() for trashing auto-draft posts (which means delete).
@@ -645,7 +815,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	/**
 	 * Trashed post ID.
 	 *
-	 * @var int
+	 * @var int Trashed post ID.
 	 */
 	public $trashed_post_id;
 

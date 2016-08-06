@@ -41,6 +41,8 @@ class Customize_Posts_Twenty_Ten_Support extends Customize_Posts_Theme_Support {
 	public function filter_partial_schema( $schema ) {
 		$schema['comment_status[comments-area]']['selector'] = '#comments';
 
+		$schema['post_date']['selector'] = 'span.entry-date';
+
 		$schema['post_author[biography]'] = array(
 			'selector' => '#entry-author-info',
 			'singular_only' => true,

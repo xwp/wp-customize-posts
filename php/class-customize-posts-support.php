@@ -33,12 +33,8 @@ abstract class Customize_Posts_Support {
 	 * @access public
 	 *
 	 * @param WP_Customize_Posts $posts_component Component.
-	 * @throws Exception If the Posts component is not instantiated.
 	 */
 	public function __construct( WP_Customize_Posts $posts_component ) {
-		if ( empty( $posts_component ) || ! ( $posts_component instanceof WP_Customize_Posts ) ) {
-			throw new Exception( 'Posts component not instantiated.' );
-		}
 		$this->posts_component = $posts_component;
 	}
 

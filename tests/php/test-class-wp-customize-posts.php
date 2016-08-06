@@ -75,6 +75,8 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		unset( $_POST['customized'] );
 		unset( $GLOBALS['wp_customize'] );
 		unset( $GLOBALS['wp_scripts'] );
+		unset( $_REQUEST['preview'] );
+		unset( $_REQUEST['customize_snapshot_uuid'] );
 		parent::tearDown();
 	}
 
@@ -117,6 +119,40 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertEquals( 5, has_action( 'customize_dynamic_setting_class', array( $posts, 'filter_customize_dynamic_setting_class' ) ) );
 		$this->assertEquals( 10, has_action( 'customize_save_response', array( $posts, 'filter_customize_save_response_for_conflicts' ) ) );
 		$this->assertInstanceOf( 'WP_Customize_Posts_Preview', $posts->preview );
+	}
+
+	/**
+	 * Test add_customize_nonce.
+	 *
+	 * @covers WP_Customize_Posts::add_customize_nonce()
+	 */
+	public function test_add_customize_nonce() {
+		$posts = new WP_Customize_Posts( $this->wp_customize );
+		$nonces = array( 'foo' => wp_create_nonce( 'foo' ) );
+		$amended_nonces = $posts->add_customize_nonce( $nonces );
+		$this->assertArrayHasKey( 'foo', $amended_nonces );
+		$this->assertArrayHasKey( 'customize-posts', $amended_nonces );
+	}
+
+	/**
+	 * Test add_support.
+	 *
+	 * @covers WP_Customize_Posts::add_support()
+	 */
+	public function test_add_support() {
+		$posts = new WP_Customize_Posts( $this->wp_customize );
+		require_once dirname( __FILE__ ) . '/../../php/class-customize-posts-support.php';
+		require_once dirname( __FILE__ ) . '/../../php/class-customize-posts-theme-support.php';
+		require_once dirname( __FILE__ ) . '/../../php/class-customize-posts-plugin-support.php';
+		require_once dirname( __FILE__ ) . '/../../php/plugin-support/class-customize-posts-jetpack-support.php';
+
+		$this->assertEmpty( $posts->supports );
+		$posts->add_support( 'Customize_Posts_Jetpack_Support' );
+		$this->assertArrayHasKey( 'Customize_Posts_Jetpack_Support', $posts->supports );
+
+		$posts = new WP_Customize_Posts( $this->wp_customize );
+		$posts->add_support( new Customize_Posts_Jetpack_Support( $posts ) );
+		$this->assertArrayHasKey( 'Customize_Posts_Jetpack_Support', $posts->supports );
 	}
 
 	/**
@@ -230,7 +266,6 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 */
 	public function test_register_constructs() {
 		add_action( 'customize_register', array( $this, 'customize_register' ), 15 );
-		add_action( 'customize_register', array( $this, 'customize_register_after' ), 25 );
 
 		$this->wp_customize->set_preview_url( get_permalink( $this->post_id ) );
 		$posts = new WP_Customize_Posts( $this->wp_customize );
@@ -255,19 +290,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Filter to test after registration.
-	 */
-	public function customize_register_after() {
-		$posts = new WP_Customize_Posts( $this->wp_customize );
-		foreach ( $posts->manager->settings() as $setting ) {
-			if ( $setting instanceof WP_Customize_Post_Setting ) {
-				$this->assertInstanceOf( 'WP_Customize_Post_Section', $posts->manager->get_section( $setting->id ) );
-			}
-		}
-	}
-
-	/**
-	 * Test that the previed post is retuned.
+	 * Test that the previewed post is returned.
 	 *
 	 * @see WP_Customize_Posts::get_previewed_post()
 	 */
@@ -280,7 +303,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test that the previed post is null.
+	 * Test that the previewed post is null.
 	 *
 	 * @see WP_Customize_Posts::get_previewed_post()
 	 */
@@ -289,6 +312,56 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->do_customize_boot_actions();
 		$post = $posts->get_previewed_post();
 		$this->assertNull( $post );
+	}
+
+	/**
+	 * Tests get_post_status_choices().
+	 *
+	 * @covers WP_Customize_Posts::get_post_status_choices()
+	 */
+	public function test_get_post_status_choices() {
+		$posts = new WP_Customize_Posts( $this->wp_customize );
+		$choices = $posts->get_post_status_choices();
+		$this->assertTrue( count( $choices ) > 0 );
+		foreach ( $choices as $choice ) {
+			$this->assertInternalType( 'array', $choice );
+			$this->assertArrayHasKey( 'text', $choice );
+			$this->assertArrayHasKey( 'value', $choice );
+			$this->assertTrue( (bool) get_post_status_object( $choice['value'] ) );
+		}
+	}
+
+	/**
+	 * Tests get_author_choices().
+	 *
+	 * @covers WP_Customize_Posts::get_author_choices()
+	 */
+	public function test_get_author_choices() {
+		$posts = new WP_Customize_Posts( $this->wp_customize );
+		$choices = $posts->get_author_choices();
+		$this->assertTrue( count( $choices ) > 0 );
+		foreach ( $choices as $choice ) {
+			$this->assertInternalType( 'array', $choice );
+			$this->assertArrayHasKey( 'text', $choice );
+			$this->assertArrayHasKey( 'value', $choice );
+			$this->assertTrue( (bool) get_user_by( 'ID', $choice['value'] ) );
+		}
+	}
+
+	/**
+	 * Get month choices.
+	 *
+	 * @covers WP_Customize_Posts::get_date_month_choices()
+	 */
+	public function test_get_date_month_choices() {
+		$posts = new WP_Customize_Posts( $this->wp_customize );
+		$choices = $posts->get_date_month_choices();
+		$this->assertCount( 12, $choices );
+		foreach ( $choices as $choice ) {
+			$this->assertInternalType( 'array', $choice );
+			$this->assertArrayHasKey( 'text', $choice );
+			$this->assertArrayHasKey( 'value', $choice );
+		}
 	}
 
 	/**
@@ -311,15 +384,59 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	/**
 	 * Test scripts and styles are enqueued.
 	 *
-	 * @see WP_Customize_Posts::enqueue_scripts()
+	 * @covers WP_Customize_Posts::enqueue_scripts()
+	 * @covers WP_Customize_Posts::enqueue_select2_locale_script()
 	 */
 	public function test_enqueue_scripts() {
+		add_filter( 'locale', array( $this, 'return_es_mx_locale' ) );
+
 		$this->posts->enqueue_scripts();
 		$this->assertTrue( wp_script_is( 'customize-posts', 'enqueued' ) );
 		$this->assertTrue( wp_script_is( 'customize-posts-panel', 'enqueued' ) );
 		$this->assertTrue( wp_script_is( 'customize-post-section', 'enqueued' ) );
 		$this->assertTrue( wp_script_is( 'customize-dynamic-control', 'enqueued' ) );
 		$this->assertTrue( wp_style_is( 'customize-posts', 'enqueued' ) );
+
+		$this->assertTrue( wp_script_is( 'select2', 'enqueued' ) );
+		$this->assertTrue( wp_script_is( 'select2-locale-es', 'enqueued' ) );
+		$locale_script = wp_scripts()->query( 'select2-locale-es' );
+		$this->assertArrayHasKey( 'after', $locale_script->extra );
+		$this->assertContains( 'jQuery.fn.select2.defaults.set( "language", "es" )', join( '', $locale_script->extra['after'] ) );
+
+		$data = wp_scripts()->get_data( 'customize-posts', 'data' );
+		$this->assertTrue( (bool) preg_match( '#_wpCustomizePostsExports\s*=\s*({.+});#', $data, $matches ) );
+		$exports = json_decode( $matches[1], true );
+
+		$this->assertArrayHasKey( 'postTypes', $exports );
+		$this->assertArrayHasKey( 'post', $exports['postTypes'] );
+		$this->assertArrayHasKey( 'postStatusChoices', $exports );
+		$this->assertArrayHasKey( 'dateMonthChoices', $exports );
+		$this->assertArrayHasKey( 'authorChoices', $exports );
+		$this->assertArrayHasKey( 'initialServerDate', $exports );
+		$this->assertInternalType( 'int', strtotime( $exports['initialServerDate'] ) );
+		$this->assertArrayHasKey( 'initialServerTimestamp', $exports );
+		$this->assertTrue( is_numeric( $exports['initialServerTimestamp'] ) ); // Can be too big for int.
+		$this->assertArrayHasKey( 'l10n', $exports );
+	}
+
+	/**
+	 * Return Mexican Spanish locale.
+	 */
+	public function return_es_mx_locale() {
+		return 'es_MX';
+	}
+
+	/**
+	 * Tests format_gmt_offset().
+	 *
+	 * @covers WP_Customize_Posts::format_gmt_offset()
+	 */
+	public function test_format_gmt_offset() {
+		$this->assertSame( '-1', $this->posts->format_gmt_offset( -1 ) );
+		$this->assertSame( '+2', $this->posts->format_gmt_offset( 2 ) );
+		$this->assertSame( '+3:15', $this->posts->format_gmt_offset( 3.25 ) );
+		$this->assertSame( '+3:30', $this->posts->format_gmt_offset( 3.5 ) );
+		$this->assertSame( '-3:45', $this->posts->format_gmt_offset( -3.75 ) );
 	}
 
 	/**
@@ -370,9 +487,9 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->posts->render_templates();
 		$markup = ob_get_contents();
 		ob_end_clean();
-		$this->assertContains( '<script type="text/html" id="tmpl-customize-posts-add-new">', $markup );
-		$this->assertContains( '<li class="customize-posts-add-new">', $markup );
-		$this->assertContains( '<button class="button-secondary add-new-post-stub">', $markup );
+		$this->assertContains( 'tmpl-customize-posts-navigation', $markup );
+		$this->assertContains( 'tmpl-customize-posts-trashed', $markup );
+		$this->assertContains( 'tmpl-customize-post-section-notifications', $markup );
 	}
 
 	/**
@@ -417,59 +534,106 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test preview_customize_draft method.
+	 * Tests preview_customize_draft_post_ids().
 	 *
-	 * @see WP_Customize_Posts::preview_customize_draft()
+	 * @covers WP_Customize_Posts::preview_customize_draft_post_ids()
 	 */
-	public function test_preview_customize_draft_post() {
-		$post = $this->posts->insert_auto_draft_post( 'post' );
-		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
-		$data[ $setting_id ] = array(
-			'value' => array(
-				'post_title' => 'Preview Post',
+	public function test_preview_customize_draft_post_ids() {
+		$this->assertEmpty( $this->posts->customize_draft_post_ids );
+
+		$this->posts->preview_customize_draft_post_ids();
+		$this->assertEmpty( $this->posts->customize_draft_post_ids );
+
+		$_REQUEST['preview'] = 'true';
+		$this->posts->preview_customize_draft_post_ids();
+		$this->assertEmpty( $this->posts->customize_draft_post_ids );
+
+		$post_id = $this->factory()->post->create();
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $post_id ) );
+		$settings = $this->posts->manager->add_dynamic_settings( array( $setting_id ) );
+		$setting = array_shift( $settings );
+		$this->assertInstanceOf( 'WP_Customize_Post_Setting', $setting );
+		$this->posts->preview_customize_draft_post_ids();
+		$this->assertEmpty( $this->posts->customize_draft_post_ids );
+
+		wp_update_post( array( 'ID' => $post_id, 'post_status' => 'customize-draft' ) );
+		$this->posts->manager->set_post_value( $setting_id, array_merge(
+			$setting->value(),
+			array(
 				'post_status' => 'publish',
-			),
+			)
+		) );
+		$this->posts->preview_customize_draft_post_ids();
+		$this->assertEquals( array( $post_id ), $this->posts->customize_draft_post_ids );
+	}
+
+	/**
+	 * Data provider for test_preview_customize_draft.
+	 *
+	 * @return array
+	 */
+	public function preview_customize_draft_data() {
+		return array(
+			array( 'post' ),
+			array( 'page' ),
 		);
-		$this->posts->transition_customize_draft( $data );
-		$this->posts->customize_draft_post_ids[] = $post->ID;
-
-		$GLOBALS['current_user'] = null;
-		$this->go_to( home_url( '?p=' . $post->ID . '&preview=true' ) );
-
-		$this->assertTrue( $GLOBALS['wp_query']->is_preview );
-		$this->assertEquals( 'true', $GLOBALS['wp_query']->query_vars['preview'] );
-		$this->assertEquals( $post->ID, $GLOBALS['wp_query']->query_vars['p'] );
-		$this->assertEquals( 'customize-draft', $GLOBALS['wp_query']->query_vars['post_status'] );
-
-		unset( $_REQUEST['customize_snapshot_uuid'] );
 	}
 
 	/**
 	 * Test preview_customize_draft method.
 	 *
-	 * @see WP_Customize_Posts::preview_customize_draft()
+	 * @dataProvider  preview_customize_draft_data
+	 * @param string $post_type Post Type.
+	 *
+	 * @covers WP_Customize_Posts::preview_customize_draft()
+	 * @covers WP_Customize_Posts::preview_customize_draft_post_ids()
 	 */
-	public function test_preview_customize_draft_page() {
-		$post = $this->posts->insert_auto_draft_post( 'page' );
+	public function test_preview_customize_draft( $post_type ) {
+		$post = $this->posts->insert_auto_draft_post( $post_type );
 		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
-		$data[ $setting_id ] = array(
-			'value' => array(
-				'post_title' => 'Preview Page',
+		$settings = $this->posts->manager->add_dynamic_settings( array( $setting_id ) );
+		$setting = array_shift( $settings );
+		$data = array();
+		$this->posts->manager->set_post_value( $setting_id, array_merge(
+			$setting->value(),
+			array(
+				'post_title' => sprintf( 'Preview %s', $post_type ),
 				'post_status' => 'publish',
-			),
-		);
+			)
+		) );
+		foreach ( $this->posts->manager->unsanitized_post_values() as $setting_id => $value ) {
+			$data[ $setting_id ] = array(
+				'value' => array_merge(
+					$setting->value(),
+					$value
+				),
+			);
+		}
 		$this->posts->transition_customize_draft( $data );
-		$this->posts->customize_draft_post_ids[] = $post->ID;
 
 		$GLOBALS['current_user'] = null;
-		$this->go_to( home_url( '?page_id=' . $post->ID . '&preview=true' ) );
+
+		$this->go_to( home_url( sprintf( '?%s=%d&preview=true', 'page' === $post_type ? 'page_id' : 'p', $post->ID ) ) );
+		$_REQUEST['preview'] = 'true';
+		$this->posts->preview_customize_draft_post_ids();
+		$GLOBALS['wp_query']->query( $GLOBALS['wp']->query_vars );
 
 		$this->assertTrue( $GLOBALS['wp_query']->is_preview );
 		$this->assertEquals( 'true', $GLOBALS['wp_query']->query_vars['preview'] );
-		$this->assertEquals( $post->ID, $GLOBALS['wp_query']->query_vars['page_id'] );
+		$this->assertEquals( $post->ID, $GLOBALS['wp_query']->query_vars['p'] );
 		$this->assertEquals( 'customize-draft', $GLOBALS['wp_query']->query_vars['post_status'] );
+	}
 
-		unset( $_REQUEST['customize_snapshot_uuid'] );
+	/**
+	 * Check filtering the post link in the preview.
+	 *
+	 * @see WP_Customize_Posts::post_link_draft()]
+	 */
+	public function test_post_link_draft() {
+		global $wp_customize;
+		$this->assertNotContains( 'preview=true', get_permalink( $this->post_id ) );
+		$wp_customize->start_previewing_theme();
+		$this->assertContains( 'preview=true', get_permalink( $this->post_id ) );
 	}
 
 	/**
@@ -493,22 +657,153 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertTrue( is_customize_preview() );
 		$post = $this->posts->insert_auto_draft_post( 'post' );
 		$this->assertEquals( 'auto-draft', $post->post_status );
-		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_date );
-		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_date_gmt );
-		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_modified );
-		$this->assertNotEquals( '0000-00-00 00:00:00', $post->post_modified_gmt );
+		$this->assertEquals( '0000-00-00 00:00:00', $post->post_date );
+		$this->assertEquals( '0000-00-00 00:00:00', $post->post_date_gmt );
+		$this->assertEquals( '0000-00-00 00:00:00', $post->post_modified );
+		$this->assertEquals( '0000-00-00 00:00:00', $post->post_modified_gmt );
 		$this->assertEquals( sprintf( '%s?p=%d', home_url( '/' ), $post->ID ), $post->guid );
 	}
 
 	/**
-	 * Check filtering the post link in the preview.
+	 * Tests force_empty_post_dates().
 	 *
-	 * @see WP_Customize_Posts::post_link_draft()]
+	 * @covers WP_Customize_Posts::force_empty_post_dates()
 	 */
-	public function test_post_link_draft() {
-		global $wp_customize;
-		$this->assertNotContains( 'preview=true', get_permalink( $this->post_id ) );
-		$wp_customize->start_previewing_theme();
-		$this->assertContains( 'preview=true', get_permalink( $this->post_id ) );
+	public function test_force_empty_post_dates() {
+		$original_data = array_fill_keys(
+			array( 'post_date', 'post_date_gmt', 'post_modified', 'post_modified_gmt' ),
+			current_time( 'mysql', true )
+		);
+		$data = $this->posts->force_empty_post_dates( $original_data );
+		$this->assertCount( 4, $data );
+		$this->assertNotEquals( $original_data, $data );
+		foreach ( $data as $value ) {
+			$this->assertEquals( '0000-00-00 00:00:00', $value );
+		}
+	}
+
+	/**
+	 * Tests get_settings().
+	 *
+	 * @covers WP_Customize_Posts::get_settings()
+	 */
+	public function test_get_settings() {
+		$published_post_id = $this->factory()->post->create( array( 'post_status' => 'publish', 'post_name' => 'foo' ) );
+		$trashed_post_id = $this->factory()->post->create( array( 'post_status' => 'private', 'post_name' => 'bar' ) );
+		$draft_page_id = $this->factory()->post->create( array( 'post_status' => 'draft', 'post_name' => 'quux', 'post_type' => 'page' ) );
+		$this->posts->register_post_type_meta( 'post', 'baz' );
+		wp_trash_post( $trashed_post_id );
+
+		$settings_params = $this->posts->get_settings( array( $published_post_id, $trashed_post_id, $draft_page_id ) );
+		$this->assertCount( 5, $settings_params );
+		$this->assertEqualSets(
+			array(
+				WP_Customize_Post_Setting::get_post_setting_id( get_post( $published_post_id ) ),
+				WP_Customize_Post_Setting::get_post_setting_id( get_post( $trashed_post_id ) ),
+				WP_Customize_Post_Setting::get_post_setting_id( get_post( $draft_page_id ) ),
+				WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $published_post_id ), 'baz' ),
+				WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $trashed_post_id ), 'baz' )
+			),
+			array_keys( $settings_params )
+		);
+	}
+
+	/**
+	 * Tests get_setting_params() for published post.
+	 *
+	 * @covers WP_Customize_Posts::get_setting_params()
+	 */
+	public function test_get_setting_params_for_published_post() {
+		$post_id = $this->factory()->post->create( array( 'post_status' => 'publish' ) );
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $post_id ) );
+		$settings = $this->posts->manager->add_dynamic_settings( array( $setting_id ) );
+		$setting = array_shift( $settings );
+		$this->assertInstanceOf( 'WP_Customize_Post_Setting', $setting );
+
+		$setting_params = $this->posts->get_setting_params( $setting );
+		$this->assertInternalType( 'array', $setting_params );
+		$this->assertArrayHasKey( 'value', $setting_params );
+		$this->assertArrayHasKey( 'transport', $setting_params );
+		$this->assertArrayHasKey( 'dirty', $setting_params );
+		$this->assertArrayHasKey( 'type', $setting_params );
+
+		$this->assertFalse( $setting_params['dirty'] );
+		$this->assertEquals( 'post', $setting_params['type'] );
+		$this->assertEquals( 'postMessage', $setting_params['transport'] );
+		$this->assertInternalType( 'array', $setting_params['value'] );
+		$this->assertEquals( 'publish', $setting_params['value']['post_status'] );
+	}
+
+	/**
+	 * Tests get_setting_params() for trashed post.
+	 *
+	 * @covers WP_Customize_Posts::get_setting_params()
+	 */
+	public function test_get_setting_params_for_trashed_post() {
+		$post_id = $this->factory()->post->create( array( 'post_status' => 'private', 'post_name' => 'foo' ) );
+		wp_trash_post( $post_id );
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $post_id ) );
+		$settings = $this->posts->manager->add_dynamic_settings( array( $setting_id ) );
+		$setting = array_shift( $settings );
+		$this->assertInstanceOf( 'WP_Customize_Post_Setting', $setting );
+
+		$setting_params = $this->posts->get_setting_params( $setting );
+		$this->assertInternalType( 'array', $setting_params );
+		$this->assertArrayHasKey( 'value', $setting_params );
+		$this->assertArrayHasKey( 'transport', $setting_params );
+		$this->assertArrayHasKey( 'dirty', $setting_params );
+		$this->assertArrayHasKey( 'type', $setting_params );
+
+		$underlying_post_value = $setting->js_value();
+		$this->assertEquals( 'trash', $underlying_post_value['post_status'] );
+		$this->assertEquals( 'foo__trashed', $underlying_post_value['post_name'] );
+
+		$this->assertTrue( $setting_params['dirty'] );
+		$this->assertEquals( 'post', $setting_params['type'] );
+		$this->assertEquals( 'postMessage', $setting_params['transport'] );
+		$this->assertInternalType( 'array', $setting_params['value'] );
+		$this->assertEquals( 'private', $setting_params['value']['post_status'] );
+		$this->assertEquals( 'foo', $setting_params['value']['post_name'] );
+	}
+
+	// See Ajax tests in test-ajax-class-wp-customize-posts.php
+
+	/**
+	 * Test get_select2_item_result.
+	 *
+	 * @covers WP_Customize_Posts::get_select2_item_result()
+	 */
+	public function test_get_select2_item_result() {
+		$page_id = $this->factory()->post->create( array(
+			'post_title' => 'Foo',
+			'post_type' => 'page',
+			'post_status' => 'draft',
+		) );
+		$page = get_post( $page_id );
+		$result = $this->posts->get_select2_item_result( $page );
+		$this->assertInternalType( 'array', $result );
+		$this->assertArrayHasKey( 'id', $result );
+		$this->assertArrayHasKey( 'title', $result );
+		$this->assertEquals( 'Foo', $result['title'] );
+		$this->assertArrayHasKey( 'status', $result );
+		$this->assertEquals( 'draft', $result['status'] );
+		$this->assertArrayHasKey( 'date', $result );
+		$this->assertArrayHasKey( 'author', $result );
+		$this->assertArrayHasKey( 'text', $result );
+		$this->assertEquals( $result['text'], $result['title'] );
+		$this->assertArrayHasKey( 'featured_image', $result );
+		$this->assertNull( $result['featured_image'] );
+
+		$attachment_id = $this->factory()->attachment->create_object( 'foo.jpg', 0, array(
+			'post_mime_type' => 'image/jpeg'
+		) );
+		set_post_thumbnail( $page_id, $attachment_id );
+		$result = $this->posts->get_select2_item_result( $page );
+		$this->assertInternalType( 'array', $result['featured_image'] );
+		$this->assertArrayHasKey( 'filename', $result['featured_image'] );
+
+		remove_post_type_support( 'page', 'thumbnail' );
+		$result = $this->posts->get_select2_item_result( $page );
+		$this->assertArrayNotHasKey( 'featured_image', $result );
 	}
 }

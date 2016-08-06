@@ -23,6 +23,8 @@ var EditPostPreviewCustomize = (function( $, api ) {
 
 	/**
 	 * Populate settings passed from the post edit screen via sessionStorage.
+	 *
+	 * @returns {void}
 	 */
 	component.populateSettings = function() {
 		var itemId, settings;
@@ -51,6 +53,8 @@ var EditPostPreviewCustomize = (function( $, api ) {
 
 	/**
 	 * Set up the UI and passing settings data back to the post edit screen.
+	 *
+	 * @returns {void}
 	 */
 	component.ready = function() {
 
@@ -97,7 +101,8 @@ var EditPostPreviewCustomize = (function( $, api ) {
 	/**
 	 * Send settings to edit post screen.
 	 *
-	 * @param {object} settings
+	 * @param {object} settings Settings to send.
+	 * @returns {void}
 	 */
 	component.sendSettingsToEditPostScreen = function( settings ) {
 		component.parentFrame.send( 'customize-post-settings-data', settings );
@@ -106,7 +111,8 @@ var EditPostPreviewCustomize = (function( $, api ) {
 	/**
 	 * Deactivate panels not related to the previewed post.
 	 *
-	 * @param {wp.customize.Panel} panel
+	 * @param {wp.customize.Panel} panel Panel to deactivate.
+	 * @returns {void}
 	 */
 	component.deactivatePanel = function( panel ) {
 		var active = 'posts[' + component.data.previewed_post.post_type + ']' === panel.id;
@@ -119,7 +125,8 @@ var EditPostPreviewCustomize = (function( $, api ) {
 	/**
 	 * Deactivate sections not related to the previewed post.
 	 *
-	 * @param {wp.customize.Section} section
+	 * @param {wp.customize.Section} section Section to deactivate.
+	 * @returns {void}
 	 */
 	component.deactivateSection = function( section ) {
 		var active = 'post[' + component.data.previewed_post.post_type + '][' + String( component.data.previewed_post.ID ) + ']' === section.id;

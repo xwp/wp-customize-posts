@@ -14,7 +14,7 @@ class Test_Customize_Posts_Plugin extends WP_UnitTestCase {
 	/**
 	 * Plugin instance.
 	 *
-	 * @var Plugin
+	 * @var Customize_Posts_Plugin
 	 */
 	public $plugin;
 
@@ -34,7 +34,7 @@ class Test_Customize_Posts_Plugin extends WP_UnitTestCase {
 		parent::setUp();
 		$this->plugin = $GLOBALS['customize_posts_plugin'];
 		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
-		$GLOBALS['wp_customize'] = new WP_Customize_Manager();
+		$GLOBALS['wp_customize'] = new WP_Customize_Manager(); // WPCS: global override ok.
 		$this->wp_customize = $GLOBALS['wp_customize'];
 	}
 
@@ -153,6 +153,8 @@ class Test_Customize_Posts_Plugin extends WP_UnitTestCase {
 		$this->assertTrue( wp_script_is( 'edit-post-preview-admin', 'registered' ) );
 		$this->assertTrue( wp_script_is( 'edit-post-preview-customize', 'registered' ) );
 		$this->assertTrue( wp_script_is( 'customize-page-template', 'registered' ) );
+		$this->assertTrue( wp_script_is( 'customize-post-date-control', 'registered' ) );
+		$this->assertTrue( wp_script_is( 'customize-post-status-control', 'registered' ) );
 	}
 
 	/**

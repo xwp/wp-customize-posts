@@ -22,6 +22,13 @@ final class WP_Customize_Posts_Preview {
 	public $component;
 
 	/**
+	 * Post IDs for all posts that were seen by the_posts filters.
+	 *
+	 * @var int[]
+	 */
+	public $queried_post_ids = array();
+
+	/**
 	 * Previewed post settings by post ID.
 	 *
 	 * @var WP_Customize_Post_Setting[]
@@ -34,6 +41,13 @@ final class WP_Customize_Posts_Preview {
 	 * @var WP_Customize_Postmeta_Setting[]
 	 */
 	public $previewed_postmeta_settings = array();
+
+	/**
+	 * List of the orderby keys used in queries in the response.
+	 *
+	 * @var array
+	 */
+	public $queried_orderby_keys = array();
 
 	/**
 	 * Whether the preview filters have been added.
@@ -63,14 +77,14 @@ final class WP_Customize_Posts_Preview {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_filter( 'customize_dynamic_partial_args', array( $this, 'filter_customize_dynamic_partial_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_partial_class', array( $this, 'filter_customize_dynamic_partial_class' ), 10, 3 );
-		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_add_dynamic_post_settings_and_sections' ), 1000 );
-		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_add_dynamic_postmeta_settings' ), 1000, 2 );
+		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_tally_previewed_posts' ), 1000 );
+		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_tally_orderby_keys' ), 10, 2 );
 		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
 		add_filter( 'edit_post_link', array( $this, 'filter_edit_post_link' ), 10, 2 );
 		add_filter( 'get_edit_post_link', array( $this, 'filter_get_edit_post_link' ), 10, 2 );
 		add_filter( 'get_avatar', array( $this, 'filter_get_avatar' ), 10, 6 );
-		add_filter( 'infinite_scroll_results', array( $this, 'export_registered_settings' ), 10 );
-		add_filter( 'customize_render_partials_response', array( $this, 'export_registered_settings' ), 10 );
+		add_filter( 'infinite_scroll_results', array( $this, 'amend_with_queried_post_ids' ) );
+		add_filter( 'customize_render_partials_response', array( $this, 'amend_with_queried_post_ids' ) );
 	}
 
 	/**
@@ -80,7 +94,7 @@ final class WP_Customize_Posts_Preview {
 		if ( $this->has_preview_filters ) {
 			return false;
 		}
-		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_preview_settings' ), 1000 );
+		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_preview_settings' ), 1000, 2 );
 		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
 		add_filter( 'the_title', array( $this, 'filter_the_title' ), 1, 2 );
 		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_preview' ), 1000, 4 );
@@ -88,6 +102,7 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'wp_setup_nav_menu_item', array( $this, 'filter_nav_menu_item_to_set_url' ) );
 		add_filter( 'comments_open', array( $this, 'filter_preview_comments_open' ), 10, 2 );
 		add_filter( 'pings_open', array( $this, 'filter_preview_pings_open' ), 10, 2 );
+		add_filter( 'get_post_status', array( $this, 'filter_get_post_status' ), 10, 2 );
 		$this->has_preview_filters = true;
 		return true;
 	}
@@ -191,24 +206,14 @@ final class WP_Customize_Posts_Preview {
 	}
 
 	/**
-	 * Create dynamic post/postmeta settings and sections for posts queried in the page.
+	 * Tally the posts that are previewed in the page.
 	 *
 	 * @param array $posts Posts.
 	 * @return array
 	 */
-	public function filter_the_posts_to_add_dynamic_post_settings_and_sections( array $posts ) {
-		foreach ( $posts as &$post ) {
-			$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
-			$this->component->manager->add_dynamic_settings( array( $post_setting_id ) );
-			$setting = $this->component->manager->get_setting( $post_setting_id );
-			if ( $setting instanceof WP_Customize_Post_Setting && ! $this->component->manager->get_section( $setting->id ) ) {
-				$section = new WP_Customize_Post_Section( $this->component->manager, $setting->id, array(
-					'panel' => sprintf( 'posts[%s]', $setting->post_type ),
-					'post_setting' => $setting,
-				) );
-				$this->component->manager->add_section( $section );
-			}
-			$this->component->register_post_type_meta_settings( $post->ID );
+	public function filter_the_posts_to_tally_previewed_posts( array $posts ) {
+		foreach ( $posts as $post ) {
+			$this->queried_post_ids[] = $post->ID;
 		}
 		return $posts;
 	}
@@ -216,10 +221,11 @@ final class WP_Customize_Posts_Preview {
 	/**
 	 * Override post data for previewed settings.
 	 *
-	 * @param array $posts Posts.
-	 * @return array
+	 * @param array    $posts Posts.
+	 * @param WP_Query $query Query.
+	 * @return array Previewed posts.
 	 */
-	public function filter_the_posts_to_preview_settings( array $posts ) {
+	public function filter_the_posts_to_preview_settings( array $posts, WP_Query $query ) {
 		foreach ( $posts as &$post ) {
 			$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
 			$setting = $this->component->manager->get_setting( $post_setting_id );
@@ -227,11 +233,99 @@ final class WP_Customize_Posts_Preview {
 				$setting->override_post_data( $post );
 			}
 		}
+
+		// Re-sort the posts in the query.
+		$orderby = $query->get( 'orderby' );
+		if ( empty( $orderby ) ) {
+			$orderby = 'date';
+		}
+		// @todo This is short-sighted because the LIMIT clause can cause the expected post to not be in the result set. This can only be solved in get_previewed_posts_for_query by re-implementing WP_Query.
+		if ( in_array( $orderby, $this->supported_orderby_keys, true ) ) {
+			$this->current_query = $query;
+			usort( $posts, array( $this, 'compare_posts_to_resort_posts_for_query' ) );
+			$this->current_query = null;
+		}
+
 		return $posts;
 	}
 
 	/**
+	 * Keep track of the orderby keys used in queries on the page.
+	 *
+	 * @param array    $posts Posts.
+	 * @param WP_Query $query Query.
+	 * @return array Previewed posts.
+	 */
+	public function filter_the_posts_to_tally_orderby_keys( array $posts, WP_Query $query ) {
+		$orderby = $query->get( 'orderby' );
+		if ( empty( $orderby ) ) {
+			$orderby = 'date';
+		}
+		$this->queried_orderby_keys[] = $orderby;
+		return $posts;
+	}
+
+	/**
+	 * Current query.
+	 *
+	 * @var WP_Query
+	 */
+	protected $current_query;
+
+	/**
+	 * Supported orderby keys.
+	 *
+	 * Unsupported orderby keys that need to be implemented include:
+	 *  - 'name',
+	 *  - 'author',
+	 *  - 'meta_value',
+	 *  - 'meta_value_num',
+	 *  - 'post_name__in',
+	 *  - 'post_parent__in'
+	 *
+	 * @todo Implement more and more of these in compare_posts_to_resort_posts_for_query.
+	 *
+	 * @var array
+	 */
+	public $supported_orderby_keys = array( 'title', 'modified', 'menu_order', 'parent', 'date' );
+
+	/**
+	 * Compare two posts for re-sorting with previewed changes applied.
+	 *
+	 * @param WP_Post $post1 Post 1.
+	 * @param WP_Post $post2 Post 2.
+	 * @return int Comparison.
+	 */
+	public function compare_posts_to_resort_posts_for_query( $post1, $post2 ) {
+		$comparison = 0;
+		$orderby = $this->current_query->get( 'orderby' );
+		if ( empty( $orderby ) ) {
+			$orderby = 'date';
+		}
+
+		if ( 'date' === $orderby ) {
+			$comparison = strcmp( $post1->post_date, $post2->post_date );
+		} elseif ( 'title' ) {
+			$comparison = strcmp( $post1->post_title, $post2->post_title );
+		} elseif ( 'modified' ) {
+			$comparison = strcmp( $post1->post_modified, $post2->post_modified );
+		} elseif ( 'menu_order' ) {
+			$comparison = $post1->menu_order - $post2->menu_order;
+		} elseif ( 'parent' ) {
+			$comparison = $post1->post_parent - $post2->post_parent;
+		}
+
+		if ( 'ASC' !== strtoupper( $this->current_query->get( 'order' ) ) ) {
+			$comparison = -$comparison;
+		}
+
+		return $comparison;
+	}
+
+	/**
 	 * Get current posts being previewed which should be included in the given query.
+	 *
+	 * @todo The $published flag is likely a vestige of when this was specifically for post_status. Refactoring needed.
 	 *
 	 * @access public
 	 *
@@ -256,45 +350,140 @@ final class WP_Customize_Posts_Preview {
 
 		$post_ids = array();
 		$settings = $this->component->manager->unsanitized_post_values();
-		if ( ! empty( $settings ) ) {
-			foreach ( (array) $settings as $id => $post_data ) {
-				if ( ! preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches ) ) {
-					continue;
-				}
-				$post_id = intval( $matches['post_id'] );
-				$statuses = $query_vars['post_status'];
+		foreach ( $settings as $id => $setting_value ) {
+			$is_match = (
+				preg_match( WP_Customize_Postmeta_Setting::SETTING_ID_PATTERN, $id, $matches )
+				||
+				preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches )
+			);
+			if ( ! $is_match ) {
+				continue;
+			}
+			$statuses = $query_vars['post_status'];
+			$setting_post_id = intval( $matches['post_id'] );
+			$setting_post_type = $matches['post_type'];
+			$setting_post_meta_key = isset( $matches['meta_key'] ) ? $matches['meta_key'] : null;
+			$setting_type = $setting_post_meta_key ? 'postmeta' : 'post';
 
+			if ( 'post' === $setting_type ) {
+				// Post type match.
 				$post_type_match = (
 					empty( $query_vars['post_type'] )
 					||
-					in_array( $matches['post_type'], $query_vars['post_type'], true )
+					in_array( $setting_post_type, $query_vars['post_type'], true )
 					||
 					(
 						in_array( 'any', $query_vars['post_type'], true )
 						&&
-						in_array( $matches['post_type'], get_post_types( array( 'exclude_from_search' => false ) ), true )
+						in_array( $setting_post_type, get_post_types( array( 'exclude_from_search' => false ) ), true )
 					)
 				);
 
-				$post_type_obj = get_post_type_object( $matches['post_type'] );
-				if ( $post_type_obj && current_user_can( $post_type_obj->cap->read_private_posts, $post_id ) ) {
+				// Post status match.
+				$post_type_obj = get_post_type_object( $setting_post_type );
+				if ( $post_type_obj && current_user_can( $post_type_obj->cap->read_private_posts, $setting_post_id ) ) {
 					$statuses[] = 'private';
 				}
-
 				if ( empty( $query_vars['post_status'] ) ) {
 					$post_status_match = true;
 				} elseif ( false === $published ) {
-					$post_status_match = ! in_array( $post_data['post_status'], array( 'publish', 'private' ), true );
+					$post_status_match = ! in_array( $setting_value['post_status'], array( 'publish', 'private' ), true );
 				} else {
-					$post_status_match = in_array( $post_data['post_status'], $statuses, true );
+					$post_status_match = in_array( $setting_value['post_status'], $statuses, true );
 				}
 
-				$post__in_match = empty( $query_vars['post__in'] ) || in_array( $post_id, $query_vars['post__in'], true );
+				// Post IN match.
+				$post__in_match = empty( $query_vars['post__in'] ) || in_array( $setting_post_id, $query_vars['post__in'], true );
 				if ( $post_status_match && $post_type_match && $post__in_match ) {
-					$post_ids[] = $post_id;
+					$post_ids[] = $setting_post_id;
+				}
+			} elseif ( ! empty( $query->meta_query ) && ! empty( $query->meta_query->queries ) ) { // @todo The $published flag is probably an indication of something awry.
+				$meta_queries = $query->meta_query->queries;
+				$relation = $meta_queries['relation'];
+				unset( $meta_queries['relation'] );
+				$matched_queries = array();
+
+				foreach ( $meta_queries as $meta_query ) {
+					if ( empty( $meta_query['key'] ) || $meta_query['key'] !== $setting_post_meta_key ) {
+						continue;
+					}
+
+					if ( ! isset( $meta_query['value'] ) || '' === $meta_query['value'] ) {
+						$matched_queries[] = true;
+						continue;
+					}
+
+					if ( is_array( $meta_query['value'] ) && ! empty( $meta_query['compare'] ) && 'IN' !== $meta_query['compare'] ) {
+						continue;
+					}
+
+					if ( empty( $meta_query['compare'] ) ) {
+						if ( is_array( $meta_query['value'] ) ) {
+							$meta_query['compare'] = 'IN';
+						} else {
+							$meta_query['compare'] = '=';
+						}
+					}
+					$is_setting_value_array = is_array( $setting_value );
+					if ( '=' === $meta_query['compare'] ) {
+						$values = $is_setting_value_array ? $setting_value : array( $setting_value );
+						$compared_flag = in_array( (string) $meta_query['value'], array_map( 'strval', $values ), true );
+					} elseif ( '>=' === $meta_query['compare'] && ! $is_setting_value_array ) {
+						$compared_flag = ( (string) $setting_value >= (string) $meta_query['value'] );
+					} elseif ( '<=' === $meta_query['compare'] && ! $is_setting_value_array ) {
+						$compared_flag = ( (string) $setting_value <= (string) $meta_query['value'] );
+					} elseif ( '>' === $meta_query['compare'] && ! $is_setting_value_array ) {
+						$compared_flag = ( (string) (string) $setting_value > $meta_query['value'] );
+					} elseif ( '<' === $meta_query['compare'] && ! $is_setting_value_array ) {
+						$compared_flag = ( (string) $setting_value < (string) $meta_query['value'] );
+					} elseif ( 'IN' === $meta_query['compare'] && is_array( $meta_query['value'] ) ) {
+						$values = $is_setting_value_array ? $setting_value : array( $setting_value );
+						$common_values = array_intersect( array_map( 'strval', $values ), array_map( 'strval', $meta_query['value'] ) );
+						$compared_flag = empty( $common_values ) ? false : true;
+					}
+
+					if ( isset( $compared_flag ) ) {
+						// Check should we include this in IN query or NOT IN query.
+						if ( true === $published ) {
+							$matched_queries[] = $compared_flag;
+						} else {
+							$matched_queries[] = ! $compared_flag;
+						}
+					} else {
+						$matched_queries[] = false;
+					}
+				}
+
+				if ( 'AND' === $relation ) {
+					if ( in_array( false, $matched_queries, true ) ) {
+						$matched_queries = array();
+					}
+				} else {
+					$matched_queries = array_filter( $matched_queries );
+				}
+
+				if ( ! empty( $matched_queries ) ) {
+					$post_ids[] = $setting_post_id;
 				}
 			}
 		}
+		/**
+		 * Filter customize preview posts.
+		 *
+		 * @param array $post_ids Post ids being filtered.
+		 * @param array array {
+		 *     Args.
+		 *
+		 *     @type \WP_Query $query   WP_Query obj.
+		 *     @type array     $settings Field Values in snapshot.
+		 *     @type bool      $publish IN query or NOT IN query.
+		 * }
+		 */
+		$post_ids = apply_filters( 'customize_previewed_posts_for_query', $post_ids, array(
+			'query' => $query,
+			'settings' => $settings,
+			'publish' => $published,
+		) );
 
 		return $post_ids;
 	}
@@ -312,6 +501,7 @@ final class WP_Customize_Posts_Preview {
 	public function filter_posts_where_to_include_previewed_posts( $where, $query ) {
 		global $wpdb;
 
+		// @todo There are undoubtedly hundreds of possible conditions that are not being accounted for in regards to all of the possible query vars a WP_Query can take.
 		if ( ! $query->is_singular() ) {
 			$post__not_in = implode( ',', array_map( 'absint', $this->get_previewed_posts_for_query( $query, false ) ) );
 			if ( ! empty( $post__not_in ) ) {
@@ -389,18 +579,6 @@ final class WP_Customize_Posts_Preview {
 			$open = 'open' === $post_data['ping_status'];
 		}
 		return $open;
-	}
-
-	/**
-	 * Filter postmeta to dynamically add postmeta settings.
-	 *
-	 * @param null|array|string $value     The value get_metadata() should return - a single metadata value, or an array of values.
-	 * @param int               $object_id Object ID.
-	 * @return mixed Value.
-	 */
-	public function filter_get_post_meta_to_add_dynamic_postmeta_settings( $value, $object_id ) {
-		$this->component->register_post_type_meta_settings( $object_id );
-		return $value;
 	}
 
 	/**
@@ -537,10 +715,6 @@ final class WP_Customize_Posts_Preview {
 		if ( ! $this->component->current_user_can_edit_post( $edit_post ) ) {
 			return null;
 		}
-		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $edit_post );
-		if ( ! $this->component->manager->get_setting( $setting_id ) ) {
-			return null;
-		}
 		return $url;
 	}
 
@@ -552,9 +726,7 @@ final class WP_Customize_Posts_Preview {
 	 * @return string Edit link.
 	 */
 	function filter_edit_post_link( $link, $post_id ) {
-		$edit_post = get_post( $post_id );
-		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $edit_post );
-		$data_attributes = sprintf( ' data-customize-post-setting-id="%s"', $setting_id );
+		$data_attributes = sprintf( ' data-customize-post-id="%d"', $post_id );
 		$link = preg_replace( '/(?<=<a\s)/', $data_attributes, $link );
 		return $link;
 	}
@@ -610,6 +782,10 @@ final class WP_Customize_Posts_Preview {
 			),
 			'post_status' => array(
 				'fallback_refresh' => true,
+			),
+			'post_date' => array(
+				'selector' => 'time.entry-date',
+				'fallback_refresh' => false,
 			),
 			'post_content' => array(
 				'selector' => '.entry-content',
@@ -675,33 +851,36 @@ final class WP_Customize_Posts_Preview {
 			$queried_post_id = get_queried_object_id();
 		}
 
-		$setting_properties = array();
-		foreach ( $this->component->manager->settings() as $setting ) {
-			if ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting ) {
-				if ( ! $setting->check_capabilities() ) {
-					continue;
-				}
-
-				// Note that the value and dirty properties are already exported in wp.customize.settings.
-				$setting_properties[ $setting->id ] = array(
-					'transport' => $setting->transport,
-					'type' => $setting->type,
-				);
-			}
-		}
-
 		$exported_partial_schema = array();
 		foreach ( $this->get_post_field_partial_schema() as $key => $schema ) {
 			unset( $schema['render_callback'] ); // PHP callbacks are generally not JSON-serializable.
 			$exported_partial_schema[ $key ] = $schema;
 		}
 
+		// Build up list of fields that are used for ordering posts on the page.
+		$orderby_key_field_mapping = array(
+			'date' => 'post_date',
+			'title' => 'post_title',
+			'modified' => 'post_modified',
+			'parent' => 'post_parent',
+		);
+		$queried_orderby_fields = array();
+		foreach ( array_unique( $this->queried_orderby_keys ) as $key ) {
+			if ( isset( $orderby_key_field_mapping[ $key ] ) ) {
+				$queried_orderby_fields[] = $orderby_key_field_mapping[ $key ];
+			} else {
+				$queried_orderby_fields[] = $key;
+			}
+		}
+
 		$exported = array(
 			'isPostPreview' => is_preview(),
 			'isSingular' => is_singular(),
+			'isPartial' => false,
 			'queriedPostId' => $queried_post_id,
-			'settingProperties' => $setting_properties,
+			'postIds' => array_values( array_unique( $this->queried_post_ids ) ),
 			'partialSchema' => $exported_partial_schema,
+			'queriedOrderbyFields' => $queried_orderby_fields,
 		);
 
 		$data = sprintf( 'var _wpCustomizePreviewPostsData = %s;', wp_json_encode( $exported ) );
@@ -716,32 +895,38 @@ final class WP_Customize_Posts_Preview {
 	 * @param array $results Array of Infinite Scroll results.
 	 * @return array $results Results.
 	 */
-	public function export_registered_settings( $results ) {
+	public function amend_with_queried_post_ids( $results ) {
+		$results['queried_post_ids'] = array_unique( $this->queried_post_ids );
+		return $results;
+	}
 
-		$results['customize_post_settings'] = array();
-		foreach ( $this->component->manager->settings() as $setting ) {
-			/**
-			 * Setting.
-			 *
-			 * @var WP_Customize_Setting $setting
-			 */
-			if ( ! $setting->check_capabilities() ) {
-				continue;
-			}
-			if ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting ) {
-				if ( method_exists( $setting, 'json' ) ) { // New in 4.6-alpha.
-					$results['customize_post_settings'][ $setting->id ] = $setting->json();
-				} else {
-					$results['customize_post_settings'][ $setting->id ] = array(
-						'value' => $setting->js_value(),
-						'transport' => $setting->transport,
-						'dirty' => $setting->dirty,
-						'type' => $setting->type,
-					);
-				}
-			}
+	/**
+	 * Filter post_status to return snapshot value if available.
+	 *
+	 * @param string  $post_status Default status. Used if no changes have been made.
+	 * @param WP_Post $post        Post object that may have a new value for post_status.
+	 * @return string Value of post_status stored in snapshot, or original value if unchanged.
+	 */
+	public function filter_get_post_status( $post_status, $post ) {
+		if ( empty( $post ) ) {
+			return $post_status;
+		}
+		$post = get_post( $post );
+		if ( empty( $post ) ) {
+			return $post_status;
 		}
 
-		return $results;
+		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+		$setting = $this->component->manager->get_setting( $setting_id );
+
+		if ( ! ( $setting instanceof WP_Customize_Post_Setting ) ) {
+			return $post_status;
+		}
+		$post_data = $setting->post_value();
+		if ( ! is_array( $post_data ) || ! isset( $post_data['post_status'] ) ) {
+			return $post_status;
+		}
+
+		return $post_data['post_status'];
 	}
 }

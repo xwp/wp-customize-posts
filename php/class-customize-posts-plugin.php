@@ -179,6 +179,14 @@ class Customize_Posts_Plugin {
 	public function register_scripts( WP_Scripts $wp_scripts ) {
 		$suffix = ( SCRIPT_DEBUG ? '' : '.min' ) . '.js';
 
+		$handle = 'select2';
+		if ( ! $wp_scripts->query( $handle, 'registered' ) ) {
+			$src = plugins_url( 'bower_components/select2/dist/js/select2.full' . $suffix, dirname( __FILE__ ) );
+			$deps = array( 'jquery' );
+			$in_footer = 1;
+			$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+		}
+
 		require_once ABSPATH . WPINC . '/class-wp-customize-setting.php';
 		$is_gte_wp46_beta = method_exists( 'WP_Customize_Setting', 'validate' );
 		if ( ! $is_gte_wp46_beta ) {
@@ -191,13 +199,25 @@ class Customize_Posts_Plugin {
 
 		$handle = 'customize-posts-panel';
 		$src = plugins_url( 'js/customize-posts-panel' . $suffix, dirname( __FILE__ ) );
-		$deps = array( 'customize-controls' );
+		$deps = array( 'select2', 'customize-controls' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
+		$handle = 'customize-post-date-control';
+		$src = plugins_url( 'js/customize-post-date-control' . $suffix, dirname( __FILE__ ) );
+		$deps = array( 'customize-dynamic-control', 'jquery' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
+		$handle = 'customize-post-status-control';
+		$src = plugins_url( 'js/customize-post-status-control' . $suffix, dirname( __FILE__ ) );
+		$deps = array( 'customize-dynamic-control', 'jquery' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		$handle = 'customize-post-section';
 		$src = plugins_url( 'js/customize-post-section' . $suffix, dirname( __FILE__ ) );
-		$deps = array( 'customize-controls' );
+		$deps = array( 'customize-controls', 'customize-post-date-control', 'customize-post-status-control' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
@@ -224,15 +244,28 @@ class Customize_Posts_Plugin {
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
+		// This can be incorporated into customize-preview.js during 4.7.
+		$handle = 'customize-preview-setting-validities';
+		$src = plugins_url( 'js/customize-preview-setting-validities' . $suffix, dirname( __FILE__ ) );
+		$deps = array( 'customize-selective-refresh' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
+		$handle = 'customize-deferred-partial';
+		$src = plugins_url( 'js/customize-deferred-partial' . $suffix, dirname( __FILE__ ) );
+		$deps = array( 'customize-selective-refresh', 'customize-preview-setting-validities' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
 		$handle = 'customize-post-field-partial';
 		$src = plugins_url( 'js/customize-post-field-partial' . $suffix, dirname( __FILE__ ) );
-		$deps = array( 'customize-selective-refresh' );
+		$deps = array( 'customize-selective-refresh', 'customize-preview-setting-validities', 'customize-deferred-partial' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
 		$handle = 'customize-preview-posts';
 		$src = plugins_url( 'js/customize-preview-posts' . $suffix, dirname( __FILE__ ) );
-		$deps = array( 'jquery', 'customize-preview', 'customize-post-field-partial' );
+		$deps = array( 'jquery', 'customize-preview', 'customize-deferred-partial', 'customize-deferred-partial' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
@@ -276,7 +309,7 @@ class Customize_Posts_Plugin {
 
 		$handle = 'customize-preview-featured-image';
 		$src = plugins_url( 'js/customize-preview-featured-image' . $suffix, dirname( __FILE__ ) );
-		$deps = array( 'customize-preview', 'customize-selective-refresh' );
+		$deps = array( 'customize-preview', 'customize-selective-refresh', 'customize-preview-posts' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 	}
@@ -289,9 +322,16 @@ class Customize_Posts_Plugin {
 	public function register_styles( WP_Styles $wp_styles ) {
 		$suffix = ( SCRIPT_DEBUG ? '' : '.min' ) . '.css';
 
+		$handle = 'select2';
+		if ( ! $wp_styles->query( $handle, 'registered' ) ) {
+			$src = plugins_url( 'bower_components/select2/dist/css/select2' . $suffix, dirname( __FILE__ ) );
+			$deps = array();
+			$wp_styles->add( $handle, $src, $deps, $this->version );
+		}
+
 		$handle = 'customize-posts';
 		$src = plugins_url( 'css/customize-posts' . $suffix, dirname( __FILE__ ) );
-		$deps = array( 'wp-admin' );
+		$deps = array( 'wp-admin', 'select2' );
 		$version = $this->version;
 		$wp_styles->add( $handle, $src, $deps, $version );
 

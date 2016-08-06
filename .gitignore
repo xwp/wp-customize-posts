@@ -13,3 +13,9 @@ composer.lock
 # Compiled files
 *.min.js
 *.min.css
+
+/bower_components/select2/*
+!/bower_components/select2/dist
+/bower_components/select2/dist/js/*.js
+!/bower_components/select2/dist/js/select2.full*
+!/bower_components/select2/dist/css/*

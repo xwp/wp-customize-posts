@@ -1,5 +1,5 @@
 /* global wp, jQuery */
-/* eslint consistent-this: [ "error", "panel" ], no-magic-numbers: [ "error", { "ignore": [0,500] } ] */
+/* eslint consistent-this: [ "error", "panel" ], no-magic-numbers: [ "error", { "ignore": [-1,0,1,100] } ] */
 
 (function( api, $ ) {
 	'use strict';
@@ -30,38 +30,7 @@
 			}
 
 			panel.deferred.embedded.done(function() {
-				var descriptionContainer, noPreviewedPostsNotice, shouldShowNotice;
-				descriptionContainer = panel.container.find( '.panel-meta:first' );
-
-				noPreviewedPostsNotice = $( $.trim( wp.template( 'customize-panel-posts-' + panel.postType + '-notice' )({
-					message: panel.params.noPostsLoadedMessage
-				}) ) );
-				descriptionContainer.append( noPreviewedPostsNotice );
-
-				shouldShowNotice = function() {
-					return 0 === _.filter( panel.sections(), function( section ) {
-						return section.active();
-					} ).length;
-				};
-
-				panel.setupPostAddition();
-
-				/*
-				 * Set the initial visibility state for rendered notice.
-				 * Update the visibility of the notice whenever a reflow happens.
-				 */
-				noPreviewedPostsNotice.toggle( shouldShowNotice() );
-				api.previewer.deferred.active.done( function() {
-					noPreviewedPostsNotice.toggle( shouldShowNotice() );
-				});
-				api.bind( 'pane-contents-reflowed', function() {
-					var duration = 'resolved' === api.previewer.deferred.active.state() ? 'fast' : 0;
-					if ( shouldShowNotice() ) {
-						noPreviewedPostsNotice.slideDown( duration );
-					} else {
-						noPreviewedPostsNotice.slideUp( duration );
-					}
-				});
+				panel.setupPanelActions();
 			});
 		},
 
@@ -70,82 +39,188 @@
 		 *
 		 * @return {void}
 		 */
-		setupPostAddition: function() {
-			var panel = this, descriptionContainer, addNewButton, postObj;
+		setupPanelActions: function() {
+			var panel = this, descriptionContainer, panelActionsTemplate, postTypeObj, actionsContainer;
 
 			descriptionContainer = panel.container.find( '.panel-meta:first' );
-			addNewButton = wp.template( 'customize-posts-add-new' );
-			postObj = api.Posts.data.postTypes[ panel.postType ];
+			panelActionsTemplate = wp.template( 'customize-posts-' + panel.postType + '-panel-actions' );
+			postTypeObj = api.Posts.data.postTypes[ panel.postType ];
 
-			if ( postObj.current_user_can.create_posts ) {
-				descriptionContainer.after( addNewButton( {
-					label: postObj.labels.singular_name
-				} ) );
+			panel.queriedPostSelect2ItemSelectionTemplate = wp.template( 'customize-posts-' + panel.postType + '-panel-select2-selection-item' );
+			panel.queriedPostSelect2ItemResultTemplate = wp.template( 'customize-posts-' + panel.postType + '-panel-select2-result-item' );
 
-				panel.container.find( '.add-new-post-stub' ).on( 'click', function( event ) {
-					var postData, button = $( this ), promise;
-					event.preventDefault();
-					button.prop( 'disabled', true );
+			actionsContainer = $( panelActionsTemplate( {
+				can_create_posts: postTypeObj.current_user_can.create_posts,
+				add_new_post_label: postTypeObj.labels.add_new_item
+			} ) );
 
-					postData = {
-						post_status: 'publish'
-					};
-					if ( postObj.supports.title ) {
-						postData.post_title = api.Posts.data.l10n.noTitle;
+			panel.postSelectionLookupSelect2 = actionsContainer.find( '.post-selection-lookup' ).select2({
+				ajax: {
+					transport: function( params, success, failure ) {
+						var request = panel.queryPosts({
+							s: params.data.term,
+							paged: params.data.page || 1
+						});
+						request.done( success );
+						request.fail( failure );
 					}
+				},
+				templateResult: function( data ) {
+					return panel.queriedPostSelect2ItemResultTemplate( data );
+				},
+				templateSelection: function( data ) {
+					return panel.queriedPostSelect2ItemSelectionTemplate( data );
+				},
+				escapeMarkup: function( m ) {
 
-					promise = api.Posts.insertAutoDraftPost( panel.postType );
-					promise.done( function( data ) {
-						data.setting.set( _.extend(
-							{},
-							data.setting.get(),
-							postData
-						) );
+					// Do not escape HTML in the select options text.
+					return m;
+				},
+				multiple: false,
+				placeholder: api.Posts.data.l10n.jumpToPostPlaceholder.replace( '%s', postTypeObj.labels.singular_name ),
+				width: '80%' // @todo Flex box?
+			});
 
-						// Navigate to the newly-created post if it is public; otherwise, refresh the preview.
-						if ( postObj['public'] && data.url ) {
-							api.previewer.previewUrl( data.url );
-						} else {
-							api.previewer.refresh();
-						}
+			panel.postSelectionLookupSelect2.on( 'select2:select', function() {
+				var postId = panel.postSelectionLookupSelect2.val(), ensuredPromise;
+				panel.postSelectionLookupSelect2.prop( 'disabled', true );
+				postId = parseInt( postId, 10 );
+				ensuredPromise = api.Posts.ensurePosts( [ postId ] );
+				ensuredPromise.done( function( postsData ) {
+					var postData = postsData[ postId ], isPostVisibleInPreview;
+					if ( ! postData ) {
+						return;
+					}
+					isPostVisibleInPreview = -1 !== _.indexOf( api.Posts.previewedQuery.get().postIds, postId );
+					postData.section.focus();
+					if ( postTypeObj['public'] && ! isPostVisibleInPreview ) {
+						api.previewer.previewUrl( api.Posts.getPreviewUrl( {
+							post_type: panel.postType,
+							post_id: postId
+						} ) );
+					}
+				} );
+				ensuredPromise.always( function() {
+					panel.postSelectionLookupSelect2.val( null ).trigger( 'change' );
+					panel.postSelectionLookupSelect2.prop( 'disabled', false );
+				} );
+			} );
 
-						/**
-						 * Perform a dance to focus on the first control in the section.
-						 *
-						 * There is a race condition where focusing on a control too
-						 * early can result in the focus logic not being able to see
-						 * any visible inputs to focus on.
-						 *
-						 * @returns {void}
-						 */
-						function focusControlOnceFocusable() {
-							var firstControl = data.section.controls()[0];
-							function onChangeActive( isActive ) {
-								if ( isActive ) {
-									data.section.active.unbind( onChangeActive );
-									_.defer( function() {
-										firstControl.focus( {
-											completeCallback: function() {
-												firstControl.container.find( 'input:first' ).select();
-											}
-										} );
-									} );
-								}
-							}
-							if ( firstControl ) {
-								data.section.active.bind( onChangeActive );
-							}
-						}
-
-						data.section.focus( {
-							completeCallback: focusControlOnceFocusable
-						} );
-					} );
-					promise.always( function() {
-						button.prop( 'disabled', false );
-					} );
+			if ( postTypeObj.current_user_can.create_posts ) {
+				actionsContainer.find( '.add-new-post-stub' ).on( 'click', function( event ) {
+					panel.onClickAddPostButton( event );
 				} );
 			}
+
+			descriptionContainer.after( actionsContainer );
+		},
+
+		/**
+		 * Query posts.
+		 *
+		 * @param {object} queryVars Query vars.
+		 * @returns {jQuery.promise} Promise.
+		 */
+		queryPosts: function( queryVars ) {
+			var panel = this, action, data;
+			action = 'customize-posts-select2-query';
+			data = _.extend(
+				api.previewer.query(),
+				{
+					'customize-posts-nonce': api.settings.nonce['customize-posts'],
+					post_type: panel.postType
+				},
+				queryVars || {}
+			);
+			return wp.ajax.post( action, data );
+		},
+
+		/**
+		 * Handle click on add post button.
+		 *
+		 * @param {jQuery.Event} event Event.
+		 * @returns {void}
+		 */
+		onClickAddPostButton: function onClickAddPostButton( event ) {
+			var panel = this, postData, postObj, button = $( event.target ), promise;
+			event.preventDefault();
+			button.prop( 'disabled', true );
+			postObj = api.Posts.data.postTypes[ panel.postType ];
+
+			postData = {
+				post_status: 'publish'
+			};
+			if ( postObj.supports.title ) {
+				postData.post_title = api.Posts.data.l10n.noTitle;
+			}
+
+			promise = api.Posts.insertAutoDraftPost( panel.postType );
+			promise.done( function( data ) {
+				data.setting.set( _.extend(
+					{},
+					data.setting.get(),
+					postData
+				) );
+
+				// Navigate to the newly-created post if it is public; otherwise, refresh the preview.
+				if ( postObj['public'] ) {
+					api.previewer.previewUrl( api.Posts.getPreviewUrl( {
+						post_type: panel.postType,
+						post_id: data.postId
+					} ) );
+				} else {
+					api.previewer.refresh();
+				}
+
+				/**
+				 * Perform a dance to focus on the first control in the section.
+				 *
+				 * There is a race condition where focusing on a control too
+				 * early can result in the focus logic not being able to see
+				 * any visible inputs to focus on.
+				 *
+				 * @returns {void}
+				 */
+				function focusControlOnceFocusable() {
+					var firstControl = data.section.controls()[0];
+					if ( ! firstControl ) {
+						return;
+					}
+					function onChangeActive( isActive ) {
+						if ( isActive ) {
+							data.section.active.unbind( onChangeActive );
+
+							// @todo Determine why a delay is required.
+							_.delay( function focusControlAfterDelay() {
+								firstControl.focus( {
+									completeCallback: function() {
+										firstControl.container.find( 'input:first' ).select();
+									}
+								} );
+							}, 100 );
+						}
+					}
+					if ( data.section.active.get() ) {
+						onChangeActive( true );
+					} else {
+						data.section.active.bind( onChangeActive );
+					}
+				}
+
+				data.section.focus( {
+					completeCallback: function() {
+						/*
+						 * Note the defer is because the controls get embedded
+						 * once the section is expanded and also because it seems
+						 * that focus fails when the input is not visible yet.
+						 */
+						_.defer( focusControlOnceFocusable );
+					}
+				} );
+			} );
+			promise.always( function() {
+				button.prop( 'disabled', false );
+			} );
 		},
 
 		/**

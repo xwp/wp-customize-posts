@@ -279,6 +279,10 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 
 		$this->assertEquals( 'ok!', $setting->sanitize( 'OK!' ) );
 		$this->assertStringStartsWith( 'js-value', $setting->js_value( 'OK!' ) );
+
+		$value = new stdClass();
+		$this->assertEquals( $value, $stub->sanitize_setting( $value, $setting ) );
+		$this->assertEquals( $value, $stub->js_value( $value, $setting ) );
 	}
 
 	/**
@@ -313,6 +317,11 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 		$validity = $setting->validate( 'OK!' );
 		$this->assertInstanceOf( 'WP_Error', $validity );
 		$this->assertEquals( 'shout_error', $validity->get_error_code() );
+
+		$validity = new WP_Error();
+		$value = new stdClass();
+		$validity = $stub->validate_setting( $validity, $value, $setting );
+		$this->assertEmpty( $validity->errors );
 	}
 
 	/**

@@ -70,22 +70,20 @@
 	outline: none;
 }
 
-.customize-posts-add-new {
+.customize-posts-panel-actions {
 	padding: 15px 12px;
 	margin: 0;
 	overflow: hidden;
 }
 
-.customize-posts-add-new .add-new-post-stub {
+.customize-posts-panel-actions .add-new-post-stub {
 	float: right;
 }
 
-.customize-posts-add-new .add-new-post-stub:before {
+.customize-posts-panel-actions .add-new-post-stub:before {
 	content: "\f132";
 	display: inline-block;
 	position: relative;
-	left: -2px;
-	top: -1px;
 	font: normal 20px/1 dashicons;
 	vertical-align: middle;
 	-webkit-transition: all 0.2s;
@@ -108,7 +106,7 @@
 	transition: all 0.2s;
 	visibility: hidden;
 }
- 
+
 body.customize-posts-content-editor-pane-resize #customize-preview,
 body.customize-posts-content-editor-pane-resize #customize-posts-content-editor-pane {
 	-webkit-transition: none;
@@ -212,4 +210,121 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 }
 .customize-posts-content-editor-pane-open.mce-fullscreen .wp-full-overlay.collapsed .collapse-sidebar {
 	bottom: 8px !important;
+}
+
+.select2-container {
+	z-index: 1000000;
+}
+.customize-posts-select2-thumbnail {
+	height: 20px;
+	width: auto;
+	vertical-align: middle;
+}
+.select2-results__option .trashed-title {
+	text-decoration: line-through;
+}
+.customize-control-post_status .trash,
+.customize-control-post_status .untrash {
+	float: right;
+	display: inline-block;
+	margin-top: 5px;
+}
+.customize-control-post_status .trash {
+	color: #a00;
+}
+.customize-control-post_status .trash:hover {
+	color: #f00;
+}
+.customize-control-post_date .customize-control-description {
+	font-style: normal;
+	display: block;
+	margin-bottom: 0;
+	margin-top: -28px;
+}
+
+.customize-control-post_date .time-info-handle {
+	font-size: 14px;
+	line-height: 24px;
+	margin-bottom: 4px;
+	display: block;
+	float: right;
+	cursor: pointer;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	color: #555;
+}
+
+.customize-control-post_date .time-info-handle.active .time-handle-arrow {
+	-webkit-transform: rotate( 180deg );
+	-moz-transform: rotate( 180deg );
+	-ms-transform: rotate( 180deg );
+	-o-transform: rotate( 180deg );
+	transform: rotate( 180deg );
+	vertical-align: bottom;
+	-webkit-transform-origin:56% 50%;
+	-moz-transform-origin:56% 50%;
+	-ms-transform-origin:56% 50%;
+	-o-transform-origin:56% 50%;
+	transform-origin:56% 50%;
+}
+
+.customize-control-post_date .time-details {
+	padding-bottom: 10px;
+}
+
+.customize-control-post_date .customize-control-description[open] {
+	margin-bottom: 5px;
+}
+
+.customize-control-post_date .date-inputs {
+	display: flex;
+	display: -ms-flexbox;
+	align-items: center;
+	-webkit-box-align: center;
+	-ms-flex-align: center;
+	justify-content: flex-start;
+	-webkit-box-pack: start;
+	-ms-flex-pack: start;
+}
+
+.customize-control-post_date input.date-input {
+	-moz-appearance: textfield;
+	-webkit-appearance: textfield;
+	padding-left: 5px; /* 10px padding is not ideal for such small inputs */
+	padding-right: 5px;
+}
+.customize-control-post_date label {
+	display: inline-block; /* To align items when flex is not supported */
+}
+
+.customize-control-post_date .year.date-input {
+	min-width: 4em;
+}
+
+.customize-control-post_date .time-special-char {
+	padding-left:2px;
+	padding-right:2px;
+}
+
+.customize-control-post_date input.date-input::-webkit-outer-spin-button,
+.customize-control-post_date input.date-input::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+.wrap-reset-time {
+	font-weight: normal;
+	font-size: 75%;
+}
+.customize-control-post_date .reset-time {
+	cursor: pointer;
+	margin-left: 0.25ex;
+	margin-right: 0.25ex;
+}
+
+@media screen and ( max-width: 782px ) {
+	.customize-control-post_date select {
+		height: 40px;
+	}
 }
