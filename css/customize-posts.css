@@ -321,3 +321,9 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	margin-left: 0.25ex;
 	margin-right: 0.25ex;
 }
+
+@media screen and ( max-width: 782px ) {
+	.customize-control-post_date select {
+		height: 40px;
+	}
+}
