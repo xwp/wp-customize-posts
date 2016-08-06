@@ -89,7 +89,7 @@ See full commit log: [`0.6.1...0.7.0`](https://github.com/xwp/wp-customize-posts
 
 Issues in milestone: [`milestone:0.7.0`](https://github.com/xwp/wp-customize-posts/issues?q=milestone%3A0.7)
 
-Props: Weston Ruter (<a href="https://github.com/westonruter" class="user-mention">@westonruter</a>), John Regan (<a href="https://github.com/johnregan3" class="user-mention">@johnregan3</a>), Utkarsh Patel (<a href="https://github.com/PatelUtkarsh" class="user-mention">@PatelUtkarsh</a>), Luke Gedeon (<a href="https://github.com/lgedeon" class="user-mention">@lgedeon</a>), Sayed Taqui (<a href="https://github.com/sayedwp" class="user-mention">@sayedwp</a>), Ahmad Awais (<a href="https://github.com/ahmadawais" class="user-mention">@ahmadawais</a>), Derek Herman (<a href="https://github.com/valendesigns" class="user-mention">@valendesigns</a>)
+Props: Weston Ruter (<a href="https://github.com/westonruter" class="user-mention">@westonruter</a>), John Regan (<a href="https://github.com/johnregan3" class="user-mention">@johnregan3</a>), Sayed Taqui (<a href="https://github.com/sayedwp" class="user-mention">@sayedwp</a>), Utkarsh Patel (<a href="https://github.com/PatelUtkarsh" class="user-mention">@PatelUtkarsh</a>), Luke Gedeon (<a href="https://github.com/lgedeon" class="user-mention">@lgedeon</a>), Ahmad Awais (<a href="https://github.com/ahmadawais" class="user-mention">@ahmadawais</a>), Derek Herman (<a href="https://github.com/valendesigns" class="user-mention">@valendesigns</a>), Piotr Delawski (<a href="https://github.com/delawski" class="user-mention">@delawski</a>)
 
 = [0.6.1] - 2016-06-16 =
 
