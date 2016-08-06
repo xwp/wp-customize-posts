@@ -253,6 +253,7 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	-moz-user-select: none;
 	-ms-user-select: none;
 	user-select: none;
+	color: #555;
 }
 
 .customize-control-post_date .time-info-handle.active .time-handle-arrow {
