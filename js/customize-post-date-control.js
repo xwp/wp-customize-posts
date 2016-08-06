@@ -106,9 +106,13 @@
 				control.timeInfoHandle.on( 'click', function() {
 					if ( control.timeInfoHandle.hasClass( 'active' ) ) {
 						control.timeInfoHandle.removeClass( 'active' );
+						control.timeInfoHandle.attr( 'aria-pressed', 'false' );
+						control.timeDetailsContainer.attr( 'aria-expanded', 'false' );
 						control.timeDetailsContainer.stop().slideUp( 'fast' );
 					} else {
 						control.timeInfoHandle.addClass( 'active' );
+						control.timeInfoHandle.attr( 'aria-pressed', 'true' );
+						control.timeDetailsContainer.attr( 'aria-expanded', 'true' );
 						control.timeDetailsContainer.stop().slideDown( 'fast' );
 					}
 				} );
