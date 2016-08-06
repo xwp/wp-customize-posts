@@ -62,11 +62,17 @@ class Test_WP_Customize_Post_Status_Control extends WP_UnitTestCase {
 	 * Test constructor when posts component doesn't exists.
 	 *
 	 * @covers WP_Customize_Post_Status_Control::__construct()
-	 * @expectedException Exception
 	 */
 	public function test_construct_without_posts_component() {
 		$this->wp_customize->posts = null;
-		new WP_Customize_Post_Status_Control( $this->wp_customize, $this->setting_id . '[post_date]', array() );
+		$exception = null;
+		try {
+			new WP_Customize_Post_Status_Control( $this->wp_customize, $this->setting_id . '[post_status]', array() );
+		} catch ( Exception $e ) {
+			$exception = $e;
+		}
+		$this->assertInstanceOf( 'Exception', $exception );
+		$this->assertEquals( 'Missing Posts component.', $exception->getMessage() );
 	}
 
 	/**
