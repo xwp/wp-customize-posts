@@ -89,10 +89,10 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 		?>
 		<div class="description customize-control-description">
 			<?php // @todo Use an HTML5 details element for the time info once browser support is better. ?>
-			<div class="time-info-handle">
+			<a href="javascript:void(0)" tabindex="0" role="button" class="time-info-handle">
 				<span class="time-handle-arrow dashicons dashicons-arrow-down"></span>
 				<?php echo esc_html( $tz_abbr ); ?>
-			</div>
+			</a>
 			<div class="time-details clear hidden">
 				<span class="scheduled-countdown"></span>
 				<span class="timezone-info"><?php echo esc_html( $date_control_description ); ?></span>
