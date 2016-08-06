@@ -599,7 +599,9 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		if ( $transition_to_trash ) {
 			$result = wp_trash_post( $this->post_id );
 			remove_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
-		} elseif ( $transition_from_trash ) {
+		}
+
+		if ( $transition_from_trash ) {
 			wp_untrash_post_comments( $this->post_id );
 
 			/** This action is documented in wp-includes.php */
