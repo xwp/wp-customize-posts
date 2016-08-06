@@ -7,6 +7,7 @@
  * Author: XWP
  * Author URI: https://make.xwp.co/
  * License: GPLv2+
+ * Text Domain: customize-posts
  *
  * Copyright (c) 2016 XWP (https://xwp.co/)
  *
