@@ -771,7 +771,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	/**
 	 * Handle untrash_post action.
 	 *
-	 * @param $post_id Post ID.
+	 * @param int $post_id Post ID.
 	 */
 	function handle_action_untrash_post( $post_id ) {
 		$this->untrash_post_id = $post_id;
@@ -780,7 +780,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	/**
 	 * Handle untrashed_post action.
 	 *
-	 * @param $post_id Post ID.
+	 * @param int $post_id Post ID.
 	 */
 	function handle_action_untrashed_post( $post_id ) {
 		$this->untrashed_post_id = $post_id;
@@ -815,7 +815,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	/**
 	 * Trashed post ID.
 	 *
-	 * @var int
+	 * @var int Trashed post ID.
 	 */
 	public $trashed_post_id;
 

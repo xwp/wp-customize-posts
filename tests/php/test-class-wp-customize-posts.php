@@ -351,7 +351,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	/**
 	 * Get month choices.
 	 *
-	 * @covers WP_Customize_Dynamic_Control::get_date_month_choices()
+	 * @covers WP_Customize_Posts::get_date_month_choices()
 	 */
 	public function test_get_date_month_choices() {
 		$posts = new WP_Customize_Posts( $this->wp_customize );
