@@ -27,6 +27,13 @@ class WP_Customize_Editor_Control extends WP_Customize_Dynamic_Control {
 	public $field_type = 'textarea';
 
 	/**
+	 * Enqueue control related scripts/styles.
+	 */
+	public function enqueue() {
+		wp_enqueue_script( 'customize-editor-control' );
+	}
+
+	/**
 	 * Render the Underscore template for this control.
 	 * This textarea will always be hidden and will be synced with the editor.
 	 *

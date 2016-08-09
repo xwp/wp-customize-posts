@@ -1,4 +1,4 @@
-/* global wp, tinyMCE */
+/* global wp */
 /* eslint consistent-this: [ "error", "section" ], no-magic-numbers: [ "error", { "ignore": [-1,0,1] } ] */
 
 (function( api, $ ) {
