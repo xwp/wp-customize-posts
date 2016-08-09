@@ -289,6 +289,7 @@ final class WP_Customize_Posts {
 		$this->manager->register_control_type( 'WP_Customize_Post_Discussion_Fields_Control' );
 		$this->manager->register_control_type( 'WP_Customize_Post_Date_Control' );
 		$this->manager->register_control_type( 'WP_Customize_Post_Status_Control' );
+		$this->manager->register_control_type( 'WP_Customize_Editor_Control' );
 
 		$panel_priority = 900; // Before widgets.
 
