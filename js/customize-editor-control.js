@@ -9,7 +9,7 @@
 	 */
 	api.EditorControl = api.controlConstructor.dynamic.extend({
 
-		initialize: function( id, options ) {
+		initialize: function initialize( id, options ) {
 			var control = this, args;
 
 			args = {};
@@ -33,7 +33,7 @@
 			});
 		},
 
-		editorControl: function() {
+		editorControl: function editorControl() {
 			var control  = this,
 			    section  = api.section( control.section() ),
 			    setting  = api( section.id );
@@ -156,19 +156,6 @@
 				}
 			} );
 
-			/**
-			 * Expand the editor and focus on it when the post content control is focused.
-			 *
-			 * @param {object} args Focus args.
-			 * @returns {void}
-			 */
-			control.focus = function( args ) {
-				var editor = tinyMCE.get( 'customize-posts-content' );
-				api.controlConstructor.dynamic.prototype.focus.call( control, args );
-				control.editorExpanded.set( true );
-				editor.focus();
-			};
-
 			// Resize the editor.
 			control.editorDragbar.on( 'mousedown', function() {
 				if ( ! section.expanded() ) {
@@ -211,7 +198,7 @@
 		 *
 		 * @return void
 	     */
-		injectButton: function() {
+		injectButton: function injectButton() {
 			var control = this,
 			    textarea = control.container.find( 'textarea:first' );
 
@@ -226,7 +213,7 @@
 	     * @param expanded
 		 * @return void
 		 */
-		updateEditorToggleExpandButtonLabel: function( expanded ) {
+		updateEditorToggleExpandButtonLabel: function updateEditorToggleExpandButtonLabel( expanded ) {
 			var control = this;
 			control.editorToggleExpandButton.text( expanded ? api.Posts.data.l10n.closeEditor : api.Posts.data.l10n.openEditor );
 		},
@@ -237,7 +224,7 @@
 		 * @param {int} position - The position of the post editor from the top of the browser window.
 		 * @returns {void}
 		 */
-		resizeEditor: function( position ) {
+		resizeEditor: function resizeEditor( position ) {
 			var control = this,
 				windowHeight = window.innerHeight,
 			    windowWidth = window.innerWidth,
@@ -291,8 +278,21 @@
 			} else {
 				sectionContent.css( 'padding-bottom', '' );
 			}
-		}
+		},
 
+		/**
+		 * Expand the editor and focus on it when the post content control is focused.
+		 *
+		 * @param {object} args Focus args.
+		 * @returns {void}
+		 */
+		focus: function focus( args ) {
+			var control = this,
+			    editor = tinyMCE.get( 'customize-posts-content' );
+			api.controlConstructor.dynamic.prototype.focus.call( control, args );
+			control.editorExpanded.set( true );
+			editor.focus();
+		}
 });
 
 	api.controlConstructor.editor = api.EditorControl;
