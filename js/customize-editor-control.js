@@ -34,24 +34,18 @@
 		},
 
 		editorControl: function() {
-			var control = this,
-			    section = api.section( control.section() ),
-			    setting = api( section.id ),
-			    preview = $( '#customize-preview' ),
-			    editorPane = $( '#customize-posts-content-editor-pane' ),
-			    editorFrame = $( '#customize-posts-content_ifr' ),
-			    mceTools = $( '#wp-customize-posts-content-editor-tools' ),
-			    mceToolbar = $( '.mce-toolbar-grp' ),
-			    mceStatusbar = $( '.mce-statusbar' ),
-			    dragbar = $( '#customize-posts-content-editor-dragbar' ),
-			    collapse = $( '.collapse-sidebar' ),
-			    resizeHeight;
+			var control  = this,
+			    section  = api.section( control.section() ),
+			    setting  = api( section.id );
+
+			control.customizePreview = $( '#customize-preview' );
+			control.editorDragbar    = $( '#customize-posts-content-editor-dragbar' );
+			control.editorPane       = $( '#customize-posts-content-editor-pane' );
+			control.editorFrame      = $( '#customize-posts-content_ifr' );
+			control.collapseSidebar  = $( '.collapse-sidebar' );
 
 			control.editorExpanded = new api.Value( false );
 			control.editorToggleExpandButton = $( '<button type="button" class="button"></button>' );
-			control.updateEditorToggleExpandButtonLabel = function( expanded ) {
-				control.editorToggleExpandButton.text( expanded ? api.Posts.data.l10n.closeEditor : api.Posts.data.l10n.openEditor );
-			};
 			control.updateEditorToggleExpandButtonLabel( control.editorExpanded.get() );
 
 			/**
@@ -126,7 +120,7 @@
 					}
 					editor.on( 'input change keyup', control.onVisualEditorChange );
 					textarea.on( 'input', control.onTextEditorChange );
-					control.resizeEditor( window.innerHeight - editorPane.height() );
+					control.resizeEditor.call( control, window.innerHeight - control.editorPane.height() );
 				} else {
 					editor.off( 'input change keyup', control.onVisualEditorChange );
 					textarea.off( 'input', control.onTextEditorChange );
@@ -134,8 +128,8 @@
 					// Cancel link and force a click event to exit fullscreen & kitchen sink mode.
 					editor.execCommand( 'wp_link_cancel' );
 					$( '.mce-active' ).click();
-					preview.css( 'bottom', '' );
-					collapse.css( 'bottom', '' );
+					control.customizePreview.css( 'bottom', '' );
+					control.collapseSidebar.css( 'bottom', '' );
 				}
 			} );
 
@@ -175,84 +169,27 @@
 				editor.focus();
 			};
 
-			/**
-			 * Vertically Resize Expanded Post Editor.
-			 *
-			 * @param {int} position - The position of the post editor from the top of the browser window.
-			 * @returns {void}
-			 */
-			control.resizeEditor = function( position ) {
-				var windowHeight = window.innerHeight,
-				    windowWidth = window.innerWidth,
-				    sectionContent = $( '[id^=accordion-panel-posts] ul.accordion-section-content' ),
-				    minScroll = 40,
-				    maxScroll = 1,
-				    mobileWidth = 782,
-				    collapseMinSpacing = 56,
-				    collapseBottomOutsideEditor = 8,
-				    collapseBottomInsideEditor = 4,
-				    args = {};
-
-				if ( ! $( document.body ).hasClass( 'customize-posts-content-editor-pane-open' ) ) {
-					return;
-				}
-
-				if ( ! _.isNaN( position ) ) {
-					resizeHeight = windowHeight - position;
-				}
-
-				args.height = resizeHeight;
-				args.components = mceTools.outerHeight() + mceToolbar.outerHeight() + mceStatusbar.outerHeight();
-
-				if ( resizeHeight < minScroll ) {
-					args.height = minScroll;
-				}
-
-				if ( resizeHeight > windowHeight - maxScroll ) {
-					args.height = windowHeight - maxScroll;
-				}
-
-				if ( windowHeight < editorPane.outerHeight() ) {
-					args.height = windowHeight;
-				}
-
-				preview.css( 'bottom', args.height );
-				editorPane.css( 'height', args.height );
-				editorFrame.css( 'height', args.height - args.components );
-				collapse.css( 'bottom', args.height + collapseBottomOutsideEditor );
-
-				if ( collapseMinSpacing > windowHeight - args.height ) {
-					collapse.css( 'bottom', mceStatusbar.outerHeight() + collapseBottomInsideEditor );
-				}
-
-				if ( windowWidth <= mobileWidth ) {
-					sectionContent.css( 'padding-bottom', args.height );
-				} else {
-					sectionContent.css( 'padding-bottom', '' );
-				}
-			};
-
 			// Resize the editor.
-			dragbar.on( 'mousedown', function() {
+			control.editorDragbar.on( 'mousedown', function() {
 				if ( ! section.expanded() ) {
 					return;
 				}
 				$( document ).on( 'mousemove.customize-posts-editor', function( event ) {
 					event.preventDefault();
 					$( document.body ).addClass( 'customize-posts-content-editor-pane-resize' );
-					editorFrame.css( 'pointer-events', 'none' );
-					control.resizeEditor( event.pageY );
+					control.editorFrame.css( 'pointer-events', 'none' );
+					control.resizeEditor.call( control, event.pageY );
 				} );
 			} );
 
 			// Remove editor resize.
-			dragbar.on( 'mouseup', function() {
+			control.editorDragbar.on( 'mouseup', function() {
 				if ( ! section.expanded() ) {
 					return;
 				}
 				$( document ).off( 'mousemove.customize-posts-editor' );
 				$( document.body ).removeClass( 'customize-posts-content-editor-pane-resize' );
-				editorFrame.css( 'pointer-events', '' );
+				control.editorFrame.css( 'pointer-events', '' );
 			} );
 
 			// Resize the editor when the viewport changes.
@@ -262,19 +199,99 @@
 					return;
 				}
 				_.delay( function() {
-					control.resizeEditor( window.innerHeight - editorPane.height() );
+					control.resizeEditor.call( control, window.innerHeight - control.editorPane.height() );
 				}, resizeDelay );
 			} );
 
-			// Inject button in place of textarea.
-			control.deferred.embedded.done( function() {
-				var textarea = control.container.find( 'textarea:first' );
-				// textarea.hide();
-				control.editorToggleExpandButton.attr( 'id', textarea.attr( 'id' ) );
-				textarea.attr( 'id', '' );
-				control.container.append( control.editorToggleExpandButton );
-			} );
-	}
+			control.injectButton();
+		},
+
+		/**
+		 * Inject button in place of textarea.
+		 *
+		 * @return void
+	     */
+		injectButton: function() {
+			var control = this,
+			    textarea = control.container.find( 'textarea:first' );
+
+			control.editorToggleExpandButton.attr( 'id', textarea.attr( 'id' ) );
+			textarea.attr( 'id', '' );
+			control.container.append( control.editorToggleExpandButton );
+		},
+
+		/**
+		 * Update editor toggle expand button text.
+		 *
+	     * @param expanded
+		 * @return void
+		 */
+		updateEditorToggleExpandButtonLabel: function( expanded ) {
+			var control = this;
+			control.editorToggleExpandButton.text( expanded ? api.Posts.data.l10n.closeEditor : api.Posts.data.l10n.openEditor );
+		},
+
+		/**
+		 * Vertically Resize Expanded Post Editor.
+		 *
+		 * @param {int} position - The position of the post editor from the top of the browser window.
+		 * @returns {void}
+		 */
+		resizeEditor: function( position ) {
+			var control = this,
+				windowHeight = window.innerHeight,
+			    windowWidth = window.innerWidth,
+			    sectionContent = $( '[id^=accordion-panel-posts] ul.accordion-section-content' ),
+			    mceTools = $ ('#wp-customize-posts-content-editor-tools'),
+			    mceToolbar = $ ('.mce-toolbar-grp'),
+			    mceStatusbar = $ ('.mce-statusbar'),
+			    minScroll = 40,
+			    maxScroll = 1,
+			    mobileWidth = 782,
+			    collapseMinSpacing = 56,
+			    collapseBottomOutsideEditor = 8,
+			    collapseBottomInsideEditor = 4,
+			    args = {},
+			    resizeHeight;
+
+			if ( ! $( document.body ).hasClass( 'customize-posts-content-editor-pane-open' ) ) {
+				return;
+			}
+
+			if ( ! _.isNaN( position ) ) {
+				resizeHeight = windowHeight - position;
+			}
+
+			args.height = resizeHeight;
+			args.components = mceTools.outerHeight() + mceToolbar.outerHeight() + mceStatusbar.outerHeight();
+
+			if ( resizeHeight < minScroll ) {
+				args.height = minScroll;
+			}
+
+			if ( resizeHeight > windowHeight - maxScroll ) {
+				args.height = windowHeight - maxScroll;
+			}
+
+			if ( windowHeight < control.editorPane.outerHeight() ) {
+				args.height = windowHeight;
+			}
+
+			control.customizePreview.css( 'bottom', args.height );
+			control.editorPane.css( 'height', args.height );
+			control.editorFrame.css( 'height', args.height - args.components );
+			control.collapseSidebar.css( 'bottom', args.height + collapseBottomOutsideEditor );
+
+			if ( collapseMinSpacing > windowHeight - args.height ) {
+				control.collapseSidebar.css( 'bottom', mceStatusbar.outerHeight() + collapseBottomInsideEditor );
+			}
+
+			if ( windowWidth <= mobileWidth ) {
+				sectionContent.css( 'padding-bottom', args.height );
+			} else {
+				sectionContent.css( 'padding-bottom', '' );
+			}
+		}
 
 });
 
