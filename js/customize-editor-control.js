@@ -39,6 +39,9 @@
 			});
 		},
 
+		/**
+		 * Create editor control
+		 */
 		editorControl: function editorControl() {
 			var control = this,
 			    section = api.section (control.section ()),
@@ -215,6 +218,13 @@
 			control.injectButton();
 		},
 
+		/**
+		 * Filters the expanded state, when there are multiple editor controls.
+		 *
+		 * @param {Boolean} expanded Expanded state of the editor.
+		 * @param {wp.customize.Section} section Section that control is added to.
+		 * @return {void}
+		 */
 		filterExpandState: function toggleEditor( expanded, section ) {
 			var control = this, editorRequiredByAnyControl = false;
 
@@ -225,6 +235,10 @@
 				}
 			} );
 
+			/**
+			 * SlideToggle the editor when the expanded state is false
+			 * however any other control states otherwise.
+			 */
 			if ( editorRequiredByAnyControl && ! expanded ) {
 				control.toggleEditor( false );
 				_.delay( function() {
@@ -235,10 +249,21 @@
 			}
 		},
 
+		/**
+		 * Toggle the editor by adding or remove the class to the body.
+		 *
+		 * @param {Boolean} expanded Expanded state of the editor.
+		 */
 		toggleEditor: function( expanded ) {
 			$( document.body ).toggleClass( 'customize-posts-content-editor-pane-open', expanded );
 		},
 
+		/**
+		 * Update other controls expand state, if there are multiple editor controls.
+		 *
+		 * @param {wp.customize.Section} section Section that control is added to.
+		 * @returns {void}
+		 */
 		updateOtherControlsExpandState: function updateOtherControlsExpandState( section ) {
 			var control = this;
 			_.each( section.controls(), function( currentControl ) {
@@ -251,7 +276,7 @@
 		/**
 		 * Inject button in place of textarea.
 		 *
-		 * @return void
+		 * @returns {void}
 	     */
 		injectButton: function injectButton() {
 			var control = this,
@@ -265,8 +290,8 @@
 		/**
 		 * Update editor toggle expand button text.
 		 *
-	     * @param expanded
-		 * @return void
+		 * @param {Boolean} expanded Expanded state of the editor.
+		 * @returns {void}
 		 */
 		updateEditorToggleExpandButtonLabel: function updateEditorToggleExpandButtonLabel( expanded ) {
 			var control = this;
