@@ -131,7 +131,7 @@
 
 				editor = tinyMCE.get( 'customize-posts-content' );
 				control.updateEditorToggleExpandButtonLabel( expanded );
-				$( document.body ).toggleClass( 'customize-posts-content-editor-pane-open', expanded );
+				control.filterExpandState.apply( control, [ expanded, section ] );
 
 				if ( expanded ) {
 					if ( editor && ! editor.isHidden() ) {
@@ -175,6 +175,7 @@
 				if ( control.editorExpanded() ) {
 					editor.focus();
 				}
+				control.updateOtherControlsExpandState.call( control, section );
 			} );
 
 			// Resize the editor.
@@ -212,6 +213,39 @@
 			} );
 
 			control.injectButton();
+		},
+
+		filterExpandState: function toggleEditor( expanded, section ) {
+			var control = this, editorRequiredByAnyControl = false;
+
+			// Check if editor is required by any other control.
+			_.each( section.controls(), function( currentControl ) {
+				if ( currentControl.editorExpanded && currentControl.editorExpanded() ) {
+					editorRequiredByAnyControl = true;
+				}
+			} );
+
+			if ( editorRequiredByAnyControl && ! expanded ) {
+				control.toggleEditor( false );
+				_.delay( function() {
+					control.toggleEditor( true );
+				}, 300 );
+			} else {
+				control.toggleEditor( expanded );
+			}
+		},
+
+		toggleEditor: function( expanded ) {
+			$( document.body ).toggleClass( 'customize-posts-content-editor-pane-open', expanded );
+		},
+
+		updateOtherControlsExpandState: function updateOtherControlsExpandState( section ) {
+			var control = this;
+			_.each( section.controls(), function( currentControl ) {
+				if ( currentControl.editorExpanded && currentControl !== control ) {
+					currentControl.editorExpanded.set( false );
+				}
+			} );
 		},
 
 		/**
