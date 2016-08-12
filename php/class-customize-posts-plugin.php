@@ -52,6 +52,8 @@ class Customize_Posts_Plugin {
 			return;
 		}
 
+		load_plugin_textdomain( 'customize-posts' );
+
 		// Parse plugin version.
 		if ( preg_match( '/Version:\s*(\S+)/', file_get_contents( dirname( __FILE__ ) . '/../customize-posts.php' ), $matches ) ) {
 			$this->version = $matches[1];
