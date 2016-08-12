@@ -6,6 +6,11 @@
 
 	/**
 	 * An editor control.
+	 *
+	 * @class
+	 * @augments wp.customize.DynamicControl
+	 * @augments wp.customize.Control
+	 * @augments wp.customize.Class
 	 */
 	api.EditorControl = api.controlConstructor.dynamic.extend({
 
@@ -21,7 +26,8 @@
 					label: api.Posts.data.l10n.fieldContentLabel,
 					active: true,
 					field_type: 'textarea',
-					setting_property: 'post_content'
+					setting_property: null,
+					input_attrs: {}
 				},
 				options.params || {}
 			);
@@ -34,9 +40,10 @@
 		},
 
 		editorControl: function editorControl() {
-			var control  = this,
-			    section  = api.section( control.section() ),
-			    setting  = api( section.id );
+			var control = this,
+			    section = api.section (control.section ()),
+			    setting = control.setting,
+			    isMeta  = null === control.params.setting_property;
 
 			control.customizePreview = $( '#customize-preview' );
 			control.editorDragbar    = $( '#customize-posts-content-editor-dragbar' );
@@ -61,7 +68,13 @@
 				editor = tinyMCE.get( 'customize-posts-content' );
 				value = wp.editor.removep( editor.getContent() );
 				control.editorSyncSuspended = true;
-				control.propertyElements[0].set( value );
+
+				if ( isMeta ) {
+					control.setting.set( value );
+				} else {
+					control.propertyElements[0].set( value );
+				}
+
 				control.editorSyncSuspended = false;
 			};
 
@@ -71,11 +84,18 @@
 			 * @returns {void}
 			 */
 			control.onTextEditorChange = function() {
+				var value = $( this ).val();
 				if ( control.editorSyncSuspended ) {
 					return;
 				}
 				control.editorSyncSuspended = true;
-				control.propertyElements[0].set( $( this ).val() );
+
+				if ( isMeta ) {
+					control.setting.set( value );
+				} else {
+					control.propertyElements[0].set( value );
+				}
+
 				control.editorSyncSuspended = false;
 			};
 
@@ -84,15 +104,16 @@
 			 */
 			setting.bind( function( newPostData, oldPostData ) {
 				var editor, textarea = $( '#customize-posts-content' ),
-				    differentSettingValues = newPostData[ control.params.setting_property ] !== oldPostData[ control.params.setting_property ];
+				    newData = isMeta ? newPostData : newPostData[ control.params.setting_property ],
+				    oldData = isMeta ? oldPostData : oldPostData[ control.params.setting_property ];
 
-				if ( control.editorExpanded.get() && ! control.editorSyncSuspended && differentSettingValues ) {
+				if ( control.editorExpanded.get() && ! control.editorSyncSuspended && newData !== oldData ) {
 					control.editorSyncSuspended = true;
 					editor = tinyMCE.get( 'customize-posts-content' );
 					if ( editor && ! editor.isHidden() ) {
-						editor.setContent( wp.editor.autop( newPostData[ control.params.setting_property ] ) );
+						editor.setContent( wp.editor.autop( newData ) );
 					} else {
-						textarea.val( newPostData[ control.params.setting_property ] );
+						textarea.val( newData );
 					}
 					control.editorSyncSuspended = false;
 				}
@@ -106,7 +127,7 @@
 			control.editorExpanded.bind( function( expanded ) {
 				var editor,
 				    textarea = $( '#customize-posts-content' ),
-					settingValue = setting()[ control.params.setting_property ];
+					settingValue = isMeta ? setting.get() : setting()[ control.params.setting_property ];
 
 				editor = tinyMCE.get( 'customize-posts-content' );
 				control.updateEditorToggleExpandButtonLabel( expanded );

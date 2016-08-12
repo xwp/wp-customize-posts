@@ -51,19 +51,17 @@ class WP_Customize_Editor_Control extends WP_Customize_Dynamic_Control {
 			<# if ( data.description ) { #>
 				<span class="description customize-control-description">{{ data.description }}</span>
 			<# } #>
-			<# if ( 'textarea' === data.field_type ) { #>
-				<textarea
-					class="widefat hidden"
-					rows="5"
-					id="{{ data.input_id }}"
-					<# _.each( data.input_attrs, function( value, key ) { #>
-						{{{ key }}}="{{ value }}"
-					<# } ) #>
-					<# if ( data.setting_property ) { #>
-						data-customize-setting-property-link="{{ data.setting_property }}"
-					<# } #>
-					></textarea>
-			<# } #>
+			<textarea
+				class="widefat hidden"
+				rows="5"
+				id="{{ data.input_id }}"
+				<# _.each( data.input_attrs, function( value, key ) { #>
+					{{{ key }}}="{{ value }}"
+				<# } ) #>
+				<# if ( data.setting_property ) { #>
+					data-customize-setting-property-link="{{ data.setting_property }}"
+				<# } #>
+			></textarea>
 		<?php
 	}
 }
