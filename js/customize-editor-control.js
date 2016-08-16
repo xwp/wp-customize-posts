@@ -40,13 +40,15 @@
 		},
 
 		/**
-		 * Create editor control
+		 * Create editor control.
+		 *
+		 * @returns {void}
 		 */
 		editorControl: function editorControl() {
 			var control = this,
-			    section = api.section (control.section ()),
-			    setting = control.setting,
-			    isMeta  = null === control.params.setting_property;
+				section = api.section( control.section() ),
+				setting = control.setting,
+				isMeta  = null === control.params.setting_property;
 
 			control.customizePreview = $( '#customize-preview' );
 			control.editorDragbar    = $( '#customize-posts-content-editor-dragbar' );
@@ -107,8 +109,8 @@
 			 */
 			setting.bind( function( newPostData, oldPostData ) {
 				var editor, textarea = $( '#customize-posts-content' ),
-				    newData = isMeta ? newPostData : newPostData[ control.params.setting_property ],
-				    oldData = isMeta ? oldPostData : oldPostData[ control.params.setting_property ];
+					newData = isMeta ? newPostData : newPostData[ control.params.setting_property ],
+					oldData = isMeta ? oldPostData : oldPostData[ control.params.setting_property ];
 
 				if ( control.editorExpanded.get() && ! control.editorSyncSuspended && newData !== oldData ) {
 					control.editorSyncSuspended = true;
@@ -129,12 +131,12 @@
 			 */
 			control.editorExpanded.bind( function( expanded ) {
 				var editor,
-				    textarea = $( '#customize-posts-content' ),
+					textarea = $( '#customize-posts-content' ),
 					settingValue = isMeta ? setting.get() : setting()[ control.params.setting_property ];
 
 				editor = tinyMCE.get( 'customize-posts-content' );
 				control.updateEditorToggleExpandButtonLabel( expanded );
-				control.filterExpandState.apply( control, [ expanded, section ] );
+				control.filterExpandState( expanded, section );
 
 				if ( expanded ) {
 					if ( editor && ! editor.isHidden() ) {
@@ -144,7 +146,7 @@
 					}
 					editor.on( 'input change keyup', control.onVisualEditorChange );
 					textarea.on( 'input', control.onTextEditorChange );
-					control.resizeEditor.call( control, window.innerHeight - control.editorPane.height() );
+					control.resizeEditor( window.innerHeight - control.editorPane.height() );
 				} else {
 					editor.off( 'input change keyup', control.onVisualEditorChange );
 					textarea.off( 'input', control.onTextEditorChange );
@@ -178,7 +180,7 @@
 				if ( control.editorExpanded() ) {
 					editor.focus();
 				}
-				control.updateOtherControlsExpandState.call( control, section );
+				control.updateOtherControlsExpandState( section );
 			} );
 
 			// Resize the editor.
@@ -190,7 +192,7 @@
 					event.preventDefault();
 					$( document.body ).addClass( 'customize-posts-content-editor-pane-resize' );
 					control.editorFrame.css( 'pointer-events', 'none' );
-					control.resizeEditor.call( control, event.pageY );
+					control.resizeEditor( event.pageY );
 				} );
 			} );
 
@@ -211,7 +213,7 @@
 					return;
 				}
 				_.delay( function() {
-					control.resizeEditor.call( control, window.innerHeight - control.editorPane.height() );
+					control.resizeEditor( window.innerHeight - control.editorPane.height() );
 				}, resizeDelay );
 			} );
 
@@ -226,7 +228,7 @@
 		 * @return {void}
 		 */
 		filterExpandState: function toggleEditor( expanded, section ) {
-			var control = this, editorRequiredByAnyControl = false;
+			var control = this, editorRequiredByAnyControl = false, toggleDelay = 300;
 
 			// Check if editor is required by any other control.
 			_.each( section.controls(), function( currentControl ) {
@@ -243,7 +245,7 @@
 				control.toggleEditor( false );
 				_.delay( function() {
 					control.toggleEditor( true );
-				}, 300 );
+				}, toggleDelay );
 			} else {
 				control.toggleEditor( expanded );
 			}
@@ -252,7 +254,8 @@
 		/**
 		 * Toggle the editor by adding or remove the class to the body.
 		 *
-		 * @param {Boolean} expanded Expanded state of the editor.
+		 * @param {boolean} expanded Expanded state of the editor.
+		 * @returns {void}
 		 */
 		toggleEditor: function( expanded ) {
 			$( document.body ).toggleClass( 'customize-posts-content-editor-pane-open', expanded );
@@ -280,7 +283,7 @@
 	     */
 		injectButton: function injectButton() {
 			var control = this,
-			    textarea = control.container.find( 'textarea:first' );
+				textarea = control.container.find( 'textarea:first' );
 
 			control.editorToggleExpandButton.attr( 'id', textarea.attr( 'id' ) );
 			textarea.attr( 'id', '' );
@@ -307,19 +310,19 @@
 		resizeEditor: function resizeEditor( position ) {
 			var control = this,
 				windowHeight = window.innerHeight,
-			    windowWidth = window.innerWidth,
-			    sectionContent = $( '[id^=accordion-panel-posts] ul.accordion-section-content' ),
-			    mceTools = $ ('#wp-customize-posts-content-editor-tools'),
-			    mceToolbar = $ ('.mce-toolbar-grp'),
-			    mceStatusbar = $ ('.mce-statusbar'),
-			    minScroll = 40,
-			    maxScroll = 1,
-			    mobileWidth = 782,
-			    collapseMinSpacing = 56,
-			    collapseBottomOutsideEditor = 8,
-			    collapseBottomInsideEditor = 4,
-			    args = {},
-			    resizeHeight;
+				windowWidth = window.innerWidth,
+				sectionContent = $( '[id^=accordion-panel-posts] ul.accordion-section-content' ),
+				mceTools = $( '#wp-customize-posts-content-editor-tools' ),
+				mceToolbar = $( '.mce-toolbar-grp' ),
+				mceStatusbar = $( '.mce-statusbar' ),
+				minScroll = 40,
+				maxScroll = 1,
+				mobileWidth = 782,
+				collapseMinSpacing = 56,
+				collapseBottomOutsideEditor = 8,
+				collapseBottomInsideEditor = 4,
+				args = {},
+				resizeHeight;
 
 			if ( ! $( document.body ).hasClass( 'customize-posts-content-editor-pane-open' ) ) {
 				return;
@@ -368,12 +371,12 @@
 		 */
 		focus: function focus( args ) {
 			var control = this,
-			    editor = tinyMCE.get( 'customize-posts-content' );
+				editor = tinyMCE.get( 'customize-posts-content' );
 			api.controlConstructor.dynamic.prototype.focus.call( control, args );
 			control.editorExpanded.set( true );
 			editor.focus();
 		}
-});
+	});
 
 	api.controlConstructor.editor = api.EditorControl;
 
