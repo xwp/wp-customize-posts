@@ -66,12 +66,34 @@
 		 * @return {jQuery.Promise} Refresh promise.
 		 */
 		refresh: function() {
-			var partial = this, refreshPromise;
+			var partial = this, refreshPromise, scrollPartialToTopOfPage;
 
 			refreshPromise = api.selectiveRefresh.Partial.prototype.refresh.call( partial );
 
+			/**
+			 * Scroll the partial element to the top of the Customizer preview.
+			 *
+			 * The #page sometimes has a margin-top, like in Twenty Sixteen.
+			 * That would make this scrolling hide part of the partial element.
+			 * So get the offsetTop of #page, to account for the margin-top.
+			 * And subtract that from the scrolling value.
+			 *
+			 * @returns {void}
+			 */
+			scrollPartialToTopOfPage = function() {
+				var $partialElement, partialElementPositionY, pageElementOffsetTop;
+
+				$partialElement = document.querySelector( partial.params.selector );
+				if ( $partialElement ) {
+					partialElementPositionY = $partialElement.getBoundingClientRect().top;
+					pageElementOffsetTop = document.querySelector( '#page' ) ? document.querySelector( '#page' ).offsetTop : 0;
+					window.scrollBy( 0, ( partialElementPositionY - pageElementOffsetTop ) );
+				}
+			};
+
 			refreshPromise.done( function() {
 				var hasInvalidSettings = false;
+
 				_.each( partial.settings(), function( settingId ) {
 					var validityState = api.settingValidities( settingId );
 					if ( validityState && true !== validityState.get() ) {
@@ -88,6 +110,9 @@
 						partial.preparePlacement( placement );
 					} );
 				}
+
+				scrollPartialToTopOfPage();
+
 			} );
 
 			return refreshPromise;
