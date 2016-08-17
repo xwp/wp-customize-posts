@@ -66,7 +66,7 @@ class Customize_Posts_Plugin {
 		add_action( 'wp_default_styles', array( $this, 'register_styles' ), 11 );
 		add_action( 'init', array( $this, 'register_customize_draft' ) );
 		add_filter( 'user_has_cap', array( $this, 'grant_customize_capability' ), 10, 3 );
-		add_filter( 'customize_loaded_components', array( $this, 'add_posts_to_customize_loaded_components' ), 0, 2 );
+		add_filter( 'customize_loaded_components', array( $this, 'add_posts_to_customize_loaded_components' ), 0, 1 );
 		add_filter( 'customize_loaded_components', array( $this, 'filter_customize_loaded_components' ), 100, 2 );
 		add_action( 'customize_register', array( $this, 'load_support_classes' ) );
 
@@ -127,10 +127,9 @@ class Customize_Posts_Plugin {
 	 * A later filter may remove this, to avoid loading this component.
 	 *
 	 * @param array                $components   Components.
-	 * @param WP_Customize_Manager $wp_customize Manager.
 	 * @return array Components.
 	 */
-	function add_posts_to_customize_loaded_components( $components, $wp_customize ) {
+	function add_posts_to_customize_loaded_components( $components ) {
 		array_push( $components, 'posts' );
 
 		return $components;
@@ -149,7 +148,7 @@ class Customize_Posts_Plugin {
 	 */
 	function filter_customize_loaded_components( $components, $wp_customize ) {
 		require_once dirname( __FILE__ ) . '/class-wp-customize-posts.php';
-		if ( in_array( 'posts', $components ) ) {
+		if ( in_array( 'posts', $components, true ) ) {
 			$wp_customize->posts = new WP_Customize_Posts( $wp_customize );
 		}
 
