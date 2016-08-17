@@ -87,7 +87,7 @@
 				if ( $partialElement ) {
 					partialElementPositionY = $partialElement.getBoundingClientRect().top;
 					pageElementOffsetTop = document.querySelector( '#page' ) ? document.querySelector( '#page' ).offsetTop : 0;
-					window.scrollBy( 0, ( partialElementPositionY - pageElementOffsetTop ) );
+					window.scrollBy( 0, partialElementPositionY - pageElementOffsetTop );
 				}
 			};
 
