@@ -32,12 +32,138 @@
 				options.params || {}
 			);
 
-			// @todo We need to define control.extended and implement the same interface as widgets and nav menu items.
+			control.expanded = new api.Value( false );
+			control.expandedArgumentsQueue = [];
+			control.expanded.bind( function( expanded ) {
+				var expandedArgs = control.expandedArgumentsQueue.shift();
+				expandedArgs = $.extend( {}, control.defaultExpandedArguments, expandedArgs );
+				control.onChangeExpanded( expanded, expandedArgs );
+			});
+
 			api.controlConstructor.dynamic.prototype.initialize.call( control, id, args );
 
 			control.deferred.embedded.done( function() {
-				control.editorControl();
+				control.initEditor();
 			});
+		},
+
+		/**
+		 * Toggle the expanded control.
+		 *
+		 * @param {Boolean} expanded
+		 * @param {Object} [params]
+		 * @returns {Boolean} false if state already applied
+		 */
+		_toggleExpanded: api.Section.prototype._toggleExpanded,
+
+		/**
+		 * Expand the control.
+		 *
+		 * @param {Object} [params]
+		 * @returns {Boolean} false if already expanded
+		 */
+		expand: api.Section.prototype.expand,
+
+		/**
+		 * Collapse the control.
+		 *
+		 * @param {Object} [params]
+		 * @returns {Boolean} false if already collapsed
+		 */
+		collapse: api.Section.prototype.collapse,
+
+		/**
+		 * Expand or collapse control.
+		 *
+		 * @param {boolean}  [expanded] - If not supplied, will be inverse of current visibility
+		 * @param {Object}   [params] - Optional params.
+		 * @param {Function} [params.completeCallback] - Function to call when the form toggle has finished animating.
+		 * @returns {void}
+		 */
+		onChangeExpanded: function( expanded, params ) {
+			var control = this,
+				editor,
+				setting = control.setting,
+				isMeta = null === control.params.setting_property,
+				textarea = $( '#customize-posts-content' ),
+				settingValue = isMeta ? setting.get() : setting()[ control.params.setting_property ];
+
+			editor = tinyMCE.get( 'customize-posts-content' );
+			control.updateEditorToggleExpandButtonLabel( expanded );
+
+			if ( expanded ) {
+				control.collapseOtherControls();
+
+				if ( editor && ! editor.isHidden() ) {
+					editor.setContent( wp.editor.autop( settingValue ) );
+				} else {
+					textarea.val( settingValue );
+				}
+				editor.on( 'input change keyup', control.onVisualEditorChange );
+				textarea.on( 'input', control.onTextEditorChange );
+				$( document.body ).addClass( 'customize-posts-content-editor-pane-open' );
+				control.resizeEditor( window.innerHeight - control.editorPane.height() );
+			} else {
+				editor.off( 'input change keyup', control.onVisualEditorChange );
+				textarea.off( 'input', control.onTextEditorChange );
+				$( document.body ).removeClass( 'customize-posts-content-editor-pane-open' );
+
+				// Cancel link and force a click event to exit fullscreen & kitchen sink mode.
+				editor.execCommand( 'wp_link_cancel' );
+				$( '.mce-active' ).click();
+				control.customizePreview.css( 'bottom', '' );
+				control.collapseSidebar.css( 'bottom', '' );
+			}
+
+			if ( params && params.completeCallback ) {
+				params.completeCallback();
+			}
+		},
+
+		/**
+		 * Update the setting value when the editor changes its state.
+		 *
+		 * @returns {void}
+		 */
+		onVisualEditorChange: function onVisualEditorChange() {
+			var control = this, value, editor;
+			if ( control.editorSyncSuspended ) {
+				return;
+			}
+			editor = tinyMCE.get( 'customize-posts-content' );
+			value = wp.editor.removep( editor.getContent() );
+			control.editorSyncSuspended = true;
+
+			if ( null === control.params.setting_property ) { // @todo Not right.
+				control.setting.set( value );
+			} else {
+				control.propertyElements[0].set( value );
+			}
+
+			control.editorSyncSuspended = false;
+		},
+
+		/**
+		 * Update the setting value when the editor changes its state.
+		 *
+		 * @returns {void}
+		 */
+		onTextEditorChange: function onTextEditorChange() {
+			var control = this, textarea, value;
+			textarea = $( '#customize-posts-content' );
+			value = textarea.val();
+			if ( control.editorSyncSuspended ) {
+				return;
+			}
+			control.editorSyncSuspended = true;
+
+			if ( null === control.params.setting_property ) { // @todo Not right.
+				control.setting.set( value );
+			} else {
+				control.propertyElements[0].set( value );
+			}
+
+			control.editorSyncSuspended = false;
 		},
 
 		/**
@@ -45,7 +171,7 @@
 		 *
 		 * @returns {void}
 		 */
-		editorControl: function editorControl() {
+		initEditor: function initEditor() {
 			var control = this,
 				section = api.section( control.section() ),
 				setting = control.setting,
@@ -57,53 +183,10 @@
 			control.editorFrame      = $( '#customize-posts-content_ifr' );
 			control.collapseSidebar  = $( '.collapse-sidebar' );
 
-			control.editorExpanded = new api.Value( false );
 			control.editorToggleExpandButton = $( '<button type="button" class="button"></button>' );
-			control.updateEditorToggleExpandButtonLabel( control.editorExpanded.get() );
-
-			/**
-			 * Update the setting value when the editor changes its state.
-			 *
-			 * @returns {void}
-			 */
-			control.onVisualEditorChange = function() {
-				var value, editor;
-				if ( control.editorSyncSuspended ) {
-					return;
-				}
-				editor = tinyMCE.get( 'customize-posts-content' );
-				value = wp.editor.removep( editor.getContent() );
-				control.editorSyncSuspended = true;
-
-				if ( isMeta ) {
-					control.setting.set( value );
-				} else {
-					control.propertyElements[0].set( value );
-				}
-
-				control.editorSyncSuspended = false;
-			};
-
-			/**
-			 * Update the setting value when the editor changes its state.
-			 *
-			 * @returns {void}
-			 */
-			control.onTextEditorChange = function() {
-				var value = $( this ).val();
-				if ( control.editorSyncSuspended ) {
-					return;
-				}
-				control.editorSyncSuspended = true;
-
-				if ( isMeta ) {
-					control.setting.set( value );
-				} else {
-					control.propertyElements[0].set( value );
-				}
-
-				control.editorSyncSuspended = false;
-			};
+			control.updateEditorToggleExpandButtonLabel( control.expanded.get() );
+			control.onTextEditorChange = _.bind( control.onTextEditorChange, control );
+			control.onVisualEditorChange = _.bind( control.onVisualEditorChange, control );
 
 			/**
 			 * Update the editor when the setting changes its state.
@@ -113,7 +196,7 @@
 					newData = isMeta ? newPostData : newPostData[ control.params.setting_property ],
 					oldData = isMeta ? oldPostData : oldPostData[ control.params.setting_property ];
 
-				if ( control.editorExpanded.get() && ! control.editorSyncSuspended && newData !== oldData ) {
+				if ( control.expanded.get() && ! control.editorSyncSuspended && newData !== oldData ) {
 					control.editorSyncSuspended = true;
 					editor = tinyMCE.get( 'customize-posts-content' );
 					if ( editor && ! editor.isHidden() ) {
@@ -126,41 +209,6 @@
 			} );
 
 			/**
-			 * Update the button text when the expanded state changes;
-			 * toggle editor visibility, and the binding of the editor
-			 * to the post setting.
-			 */
-			control.editorExpanded.bind( function( expanded ) {
-				var editor,
-					textarea = $( '#customize-posts-content' ),
-					settingValue = isMeta ? setting.get() : setting()[ control.params.setting_property ];
-
-				editor = tinyMCE.get( 'customize-posts-content' );
-				control.updateEditorToggleExpandButtonLabel( expanded );
-				control.filterExpandState( expanded, section );
-
-				if ( expanded ) {
-					if ( editor && ! editor.isHidden() ) {
-						editor.setContent( wp.editor.autop( settingValue ) );
-					} else {
-						textarea.val( settingValue );
-					}
-					editor.on( 'input change keyup', control.onVisualEditorChange );
-					textarea.on( 'input', control.onTextEditorChange );
-					control.resizeEditor( window.innerHeight - control.editorPane.height() );
-				} else {
-					editor.off( 'input change keyup', control.onVisualEditorChange );
-					textarea.off( 'input', control.onTextEditorChange );
-
-					// Cancel link and force a click event to exit fullscreen & kitchen sink mode.
-					editor.execCommand( 'wp_link_cancel' );
-					$( '.mce-active' ).click();
-					control.customizePreview.css( 'bottom', '' );
-					control.collapseSidebar.css( 'bottom', '' );
-				}
-			} );
-
-			/**
 			 * Unlink the editor from this post and collapse the editor when the section is collapsed.
 			 */
 			section.expanded.bind( function( expanded ) {
@@ -168,7 +216,7 @@
 					api.Posts.postIdInput.val( section.params.post_id );
 				} else {
 					api.Posts.postIdInput.val( '' );
-					control.editorExpanded.set( false );
+					control.expanded.set( false );
 				}
 			} );
 
@@ -177,18 +225,20 @@
 			 */
 			control.editorToggleExpandButton.on( 'click', function() {
 				var editor = tinyMCE.get( 'customize-posts-content' );
-				control.editorExpanded.set( ! control.editorExpanded() );
-				if ( control.editorExpanded() ) {
+				control.expanded.set( ! control.expanded() );
+				if ( control.expanded() ) {
 					editor.focus();
 				}
-				control.updateOtherControlsExpandState( section );
 			} );
 
 			// Resize the editor.
 			control.editorDragbar.on( 'mousedown', function() {
-				if ( ! section.expanded() ) {
+
+				// Note this could also be accomplished by removing the event handler.
+				if ( ! control.expanded() ) {
 					return;
 				}
+
 				$( document ).on( 'mousemove.customize-posts-editor', function( event ) {
 					event.preventDefault();
 					$( document.body ).addClass( 'customize-posts-content-editor-pane-resize' );
@@ -199,9 +249,12 @@
 
 			// Remove editor resize.
 			control.editorDragbar.on( 'mouseup', function() {
-				if ( ! section.expanded() ) {
+
+				// Note this could also be accomplished by removing the event handler.
+				if ( ! control.expanded() ) {
 					return;
 				}
+
 				$( document ).off( 'mousemove.customize-posts-editor' );
 				$( document.body ).removeClass( 'customize-posts-content-editor-pane-resize' );
 				control.editorFrame.css( 'pointer-events', '' );
@@ -210,9 +263,12 @@
 			// Resize the editor when the viewport changes.
 			$( window ).on( 'resize', function() {
 				var resizeDelay = 50;
-				if ( ! section.expanded() ) {
+
+				// Note this could also be accomplished by removing the event handler.
+				if ( ! control.expanded() ) {
 					return;
 				}
+
 				_.delay( function() {
 					control.resizeEditor( window.innerHeight - control.editorPane.height() );
 				}, resizeDelay );
@@ -222,57 +278,16 @@
 		},
 
 		/**
-		 * Filters the expanded state, when there are multiple editor controls.
+		 * Collapse other controls.
 		 *
-		 * @param {Boolean} expanded Expanded state of the editor.
-		 * @param {wp.customize.Section} section Section that control is added to.
-		 * @return {void}
-		 */
-		filterExpandState: function toggleEditor( expanded, section ) {
-			var control = this, editorRequiredByAnyControl = false, toggleDelay = 300;
-
-			// Check if editor is required by any other control.
-			_.each( section.controls(), function( currentControl ) {
-				if ( currentControl.editorExpanded && currentControl.editorExpanded() ) {
-					editorRequiredByAnyControl = true;
-				}
-			} );
-
-			/**
-			 * SlideToggle the editor when the expanded state is false
-			 * however any other control states otherwise.
-			 */
-			if ( editorRequiredByAnyControl && ! expanded ) {
-				control.toggleEditor( false );
-				_.delay( function() {
-					control.toggleEditor( true );
-				}, toggleDelay );
-			} else {
-				control.toggleEditor( expanded );
-			}
-		},
-
-		/**
-		 * Toggle the editor by adding or remove the class to the body.
-		 *
-		 * @param {boolean} expanded Expanded state of the editor.
 		 * @returns {void}
 		 */
-		toggleEditor: function( expanded ) {
-			$( document.body ).toggleClass( 'customize-posts-content-editor-pane-open', expanded );
-		},
-
-		/**
-		 * Update other controls expand state, if there are multiple editor controls.
-		 *
-		 * @param {wp.customize.Section} section Section that control is added to.
-		 * @returns {void}
-		 */
-		updateOtherControlsExpandState: function updateOtherControlsExpandState( section ) {
+		collapseOtherControls: function collapseOtherControls() {
 			var control = this;
-			_.each( section.controls(), function( currentControl ) {
-				if ( currentControl.editorExpanded && currentControl !== control ) {
-					currentControl.editorExpanded.set( false );
+
+			api.control.each( function( otherControl ) {
+				if ( otherControl !== control && otherControl.extended( api.EditorControl ) && otherControl.expanded.get() ) {
+					otherControl.expanded.set( false );
 				}
 			} );
 		},
@@ -325,7 +340,7 @@
 				args = {},
 				resizeHeight;
 
-			if ( ! $( document.body ).hasClass( 'customize-posts-content-editor-pane-open' ) ) {
+			if ( ! control.expanded() ) {
 				return;
 			}
 
@@ -368,14 +383,29 @@
 		 * Expand the editor and focus on it when the post content control is focused.
 		 *
 		 * @param {object} args Focus args.
+		 * @param {Function} [args.completeCallback] - Optional callback function when focus has completed.
 		 * @returns {void}
 		 */
 		focus: function focus( args ) {
 			var control = this,
+				textarea = $( '#customize-posts-content' ),
 				editor = tinyMCE.get( 'customize-posts-content' );
-			api.controlConstructor.dynamic.prototype.focus.call( control, args );
-			control.editorExpanded.set( true );
-			editor.focus();
+
+			control.actuallyEmbed();
+
+			control.expand({
+				completeCallback: function() {
+					if ( editor ) {
+						editor.focus();
+					} else {
+						textarea.focus();
+					}
+
+					if ( args && args.completeCallback ) {
+						args.completeCallback();
+					}
+				}
+			});
 		}
 	});
 
