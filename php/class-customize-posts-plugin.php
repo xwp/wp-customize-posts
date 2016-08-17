@@ -126,7 +126,7 @@ class Customize_Posts_Plugin {
 	 *
 	 * A later filter may remove this, to avoid loading this component.
 	 *
-	 * @param array                $components   Components.
+	 * @param array $components Components.
 	 * @return array Components.
 	 */
 	function add_posts_to_customize_loaded_components( $components ) {
