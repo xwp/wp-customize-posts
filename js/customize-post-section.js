@@ -516,8 +516,8 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addContentControl: function() {
-			var section = this, control, setting = api( section.id ),
-				postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+			var section = this, control, setting = api( section.id ), postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 
 			control = new api.controlConstructor.editor( section.id + '[post_content]', {
 				params: {

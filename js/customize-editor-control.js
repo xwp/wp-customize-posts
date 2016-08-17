@@ -32,6 +32,7 @@
 				options.params || {}
 			);
 
+			// @todo We need to define control.extended and implement the same interface as widgets and nav menu items.
 			api.controlConstructor.dynamic.prototype.initialize.call( control, id, args );
 
 			control.deferred.embedded.done( function() {
