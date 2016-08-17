@@ -281,7 +281,7 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	 * @return false|array Partial args or false if not a match.
 	 */
 	public function filter_customize_dynamic_partial_args( $partial_args, $partial_id ) {
-		if ( preg_match( WP_Customize_Postmeta_Setting::SETTING_ID_PATTERN, $partial_id, $matches ) && $matches['meta_key'] === $this->meta_key ) {
+		if ( class_exists( 'WP_Customize_Postmeta_Setting' ) && preg_match( WP_Customize_Postmeta_Setting::SETTING_ID_PATTERN, $partial_id, $matches ) && $matches['meta_key'] === $this->meta_key ) {
 			if ( false === $partial_args ) {
 				$partial_args = array();
 			}
