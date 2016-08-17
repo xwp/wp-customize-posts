@@ -165,6 +165,10 @@ class Customize_Posts_Plugin {
 	 */
 	function load_support_classes( $wp_customize ) {
 
+		if ( ! isset( $wp_customize->posts ) ) {
+			return;
+		}
+
 		// Theme & Plugin Support.
 		require_once dirname( __FILE__ ) . '/class-customize-posts-support.php';
 		require_once dirname( __FILE__ ) . '/class-customize-posts-plugin-support.php';
