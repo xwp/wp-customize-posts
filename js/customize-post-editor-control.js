@@ -26,7 +26,11 @@
 					label: api.Posts.data.l10n.fieldContentLabel,
 					active: true,
 					setting_property: null,
-					input_attrs: {}
+					input_attrs: {},
+					button_labels: {
+						open_editor: api.Posts.data.l10n.openEditor,
+						close_editor: api.Posts.data.l10n.closeEditor
+					}
 				},
 				options.params || {}
 			);
@@ -316,8 +320,7 @@
 		updateEditorToggleExpandButtonLabel: function updateEditorToggleExpandButtonLabel( expanded ) {
 			var control = this;
 
-			// @todo Allow these labels to be parameters on the control.
-			control.editorToggleExpandButton.text( expanded ? api.Posts.data.l10n.closeEditor : api.Posts.data.l10n.openEditor );
+			control.editorToggleExpandButton.text( expanded ? control.params.button_labels.close_editor : control.params.button_labels.open_editor );
 		},
 
 		/**
