@@ -82,6 +82,8 @@ final class WP_Customize_Posts {
 		require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-setting.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-date-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-status-control.php';
+		require_once dirname( __FILE__ ) . '/class-wp-customize-post-editor-control.php';
+		require_once dirname( __FILE__ ) . '/class-wp-customize-editor-control.php';
 		require_once ABSPATH . WPINC . '/customize/class-wp-customize-partial.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-field-partial.php';
 
@@ -288,6 +290,7 @@ final class WP_Customize_Posts {
 		$this->manager->register_control_type( 'WP_Customize_Dynamic_Control' );
 		$this->manager->register_control_type( 'WP_Customize_Post_Discussion_Fields_Control' );
 		$this->manager->register_control_type( 'WP_Customize_Post_Date_Control' );
+		$this->manager->register_control_type( 'WP_Customize_Post_Editor_Control' );
 		$this->manager->register_control_type( 'WP_Customize_Post_Status_Control' );
 
 		$panel_priority = 900; // Before widgets.
@@ -627,7 +630,7 @@ final class WP_Customize_Posts {
 				'fieldAuthorLabel' => __( 'Author', 'customize-posts' ),
 				'noTitle' => __( '(no title)', 'customize-posts' ),
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
-				'openEditor' => __( 'Open Editor', 'customize-posts' ),
+				'openEditor' => __( 'Open Editor', 'customize-posts' ), // @todo Move this into editor control?
 				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
 				'invalidDateError' => __( 'Whoops, the provided date is invalid.', 'customize-posts' ),
 
@@ -691,6 +694,9 @@ final class WP_Customize_Posts {
 
 	/**
 	 * Enqueue a WP Editor instance we can use for rich text editing.
+	 *
+	 * @todo Consider moving this to WP_Customize_Post_Editor_Control::enqueue_scripts().
+	 * @todo This can be added at the customize_controls_enqueue_scripts action.
 	 */
 	public function enqueue_editor() {
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_editor' ), 0 );
@@ -706,6 +712,8 @@ final class WP_Customize_Posts {
 
 	/**
 	 * Render rich text editor.
+	 *
+	 * @todo Consider moving this to WP_Customize_Post_Editor_Control::enqueue_scripts().
 	 */
 	public function render_editor() {
 		?>
@@ -713,6 +721,7 @@ final class WP_Customize_Posts {
 			<div id="customize-posts-content-editor-dragbar">
 				<span class="screen-reader-text"><?php esc_html_e( 'Resize Editor', 'customize-posts' ); ?></span>
 			</div>
+			<h2 id="customize-posts-content-editor-title"></h2>
 
 			<?php
 			// The settings passed in here are derived from those used in edit-form-advanced.php.
@@ -745,6 +754,8 @@ final class WP_Customize_Posts {
 	 * Note that this action is also done in WP_Customize_Widgets::print_footer_scripts()
 	 * at priority 10, so this method runs at a later priority to ensure the action is
 	 * not done twice.
+	 *
+	 * @todo Consider moving this to WP_Customize_Post_Editor_Control::enqueue_scripts().
 	 *
 	 * @codeCoverageIgnore
 	 */
