@@ -97,6 +97,7 @@
 			if ( expanded ) {
 				control.collapseOtherControls();
 
+				control.editorHeading.text( control.params.label );
 				if ( editor && ! editor.isHidden() ) {
 					editor.setContent( wp.editor.autop( settingValue ) );
 				} else {
@@ -107,6 +108,7 @@
 				$( document.body ).addClass( 'customize-posts-content-editor-pane-open' );
 				control.resizeEditor( window.innerHeight - control.editorPane.height() );
 			} else {
+				control.editorHeading.text( '' );
 				editor.off( 'input change keyup', control.onVisualEditorChange );
 				control.contentTextarea.off( 'input', control.onTextEditorChange );
 				$( document.body ).removeClass( 'customize-posts-content-editor-pane-open' );
@@ -186,7 +188,8 @@
 				throw new Error( 'Only one setting may be associated with a post editor control.' );
 			}
 
-			control.contentTextarea =  $( '#customize-posts-content' );
+			control.editorHeading    = $( '#customize-posts-content-editor-title' );
+			control.contentTextarea  = $( '#customize-posts-content' );
 			control.customizePreview = $( '#customize-preview' );
 			control.editorDragbar    = $( '#customize-posts-content-editor-dragbar' );
 			control.editorPane       = $( '#customize-posts-content-editor-pane' );

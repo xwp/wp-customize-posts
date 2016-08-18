@@ -721,6 +721,7 @@ final class WP_Customize_Posts {
 			<div id="customize-posts-content-editor-dragbar">
 				<span class="screen-reader-text"><?php esc_html_e( 'Resize Editor', 'customize-posts' ); ?></span>
 			</div>
+			<h2 id="customize-posts-content-editor-title"></h2>
 
 			<?php
 			// The settings passed in here are derived from those used in edit-form-advanced.php.

@@ -122,6 +122,14 @@ body.customize-posts-content-editor-pane-open #customize-posts-content-editor-pa
 	visibility: inherit;
 }
 
+#customize-posts-content-editor-title {
+	position: absolute;
+	margin-left: auto;
+	margin-right: auto;
+	text-align: center;
+	width: 100%;
+}
+
 #customize-posts-content-editor-pane .wp-editor-tools {
 	padding-top: 5px;
 	padding-right: 10px;
