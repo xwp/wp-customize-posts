@@ -312,6 +312,8 @@
 		 */
 		updateEditorToggleExpandButtonLabel: function updateEditorToggleExpandButtonLabel( expanded ) {
 			var control = this;
+
+			// @todo Allow these labels to be parameters on the control.
 			control.editorToggleExpandButton.text( expanded ? api.Posts.data.l10n.closeEditor : api.Posts.data.l10n.openEditor );
 		},
 
