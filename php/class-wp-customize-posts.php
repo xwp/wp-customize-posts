@@ -83,7 +83,6 @@ final class WP_Customize_Posts {
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-date-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-status-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-editor-control.php';
-		require_once dirname( __FILE__ ) . '/class-wp-customize-editor-control.php';
 		require_once ABSPATH . WPINC . '/customize/class-wp-customize-partial.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-field-partial.php';
 

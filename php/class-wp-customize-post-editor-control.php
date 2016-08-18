@@ -115,7 +115,6 @@ class WP_Customize_Post_Editor_Control extends WP_Customize_Dynamic_Control {
 	 * at priority 10, so this method runs at a later priority to ensure the action is
 	 * not done twice.
 	 *
-	 *
 	 * @codeCoverageIgnore
 	 */
 	public static function maybe_do_admin_print_footer_scripts() {
