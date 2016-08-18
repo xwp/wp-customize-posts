@@ -511,15 +511,13 @@
 		/**
 		 * Add post content control.
 		 *
-		 * @todo It is hacky how the dynamic control is overloaded to connect to the shared TinyMCE editor.
-		 *
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addContentControl: function() {
 			var section = this, control, setting = api( section.id ), postTypeObj;
 			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 
-			control = new api.controlConstructor.editor( section.id + '[post_content]', {
+			control = new api.controlConstructor.post_editor( section.id + '[post_content]', {
 				params: {
 					section: section.id,
 					label: postTypeObj.labels.content_field ? postTypeObj.labels.content_field : api.Posts.data.l10n.fieldContentLabel,

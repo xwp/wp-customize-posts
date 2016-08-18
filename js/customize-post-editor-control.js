@@ -1,18 +1,18 @@
 /* global jQuery, wp, _, tinyMCE */
-/* eslint consistent-this: [ "error", "control" ] */
+/* eslint consistent-this: [ "error", "control" ], no-magic-numbers: [ "error", { "ignore": [1] } ] */
 
 (function( api, $ ) {
 	'use strict';
 
 	/**
-	 * An editor control.
+	 * An post editor control.
 	 *
 	 * @class
 	 * @augments wp.customize.DynamicControl
 	 * @augments wp.customize.Control
 	 * @augments wp.customize.Class
 	 */
-	api.EditorControl = api.controlConstructor.dynamic.extend({
+	api.Posts.PostEditorControl = api.controlConstructor.dynamic.extend({
 
 		initialize: function initialize( id, options ) {
 			var control = this, args;
@@ -20,12 +20,11 @@
 			args = {};
 			args.params = _.extend(
 				{
-					type: 'editor',
+					type: 'post_editor',
 					section: '',
 					priority: 25,
 					label: api.Posts.data.l10n.fieldContentLabel,
 					active: true,
-					field_type: 'textarea',
 					setting_property: null,
 					input_attrs: {}
 				},
@@ -83,10 +82,14 @@
 		onChangeExpanded: function( expanded, params ) {
 			var control = this,
 				editor,
-				setting = control.setting,
-				isMeta = null === control.params.setting_property,
-				textarea = $( '#customize-posts-content' ),
-				settingValue = isMeta ? setting.get() : setting()[ control.params.setting_property ];
+				settingValue,
+				setting = control.setting;
+
+			if ( control.params.setting_property ) {
+				settingValue = setting.get()[ control.params.setting_property ];
+			} else {
+				settingValue = setting.get();
+			}
 
 			editor = tinyMCE.get( 'customize-posts-content' );
 			control.updateEditorToggleExpandButtonLabel( expanded );
@@ -97,15 +100,15 @@
 				if ( editor && ! editor.isHidden() ) {
 					editor.setContent( wp.editor.autop( settingValue ) );
 				} else {
-					textarea.val( settingValue );
+					control.contentTextarea.val( settingValue );
 				}
 				editor.on( 'input change keyup', control.onVisualEditorChange );
-				textarea.on( 'input', control.onTextEditorChange );
+				control.contentTextarea.on( 'input', control.onTextEditorChange );
 				$( document.body ).addClass( 'customize-posts-content-editor-pane-open' );
 				control.resizeEditor( window.innerHeight - control.editorPane.height() );
 			} else {
 				editor.off( 'input change keyup', control.onVisualEditorChange );
-				textarea.off( 'input', control.onTextEditorChange );
+				control.contentTextarea.off( 'input', control.onTextEditorChange );
 				$( document.body ).removeClass( 'customize-posts-content-editor-pane-open' );
 
 				// Cancel link and force a click event to exit fullscreen & kitchen sink mode.
@@ -126,7 +129,7 @@
 		 * @returns {void}
 		 */
 		onVisualEditorChange: function onVisualEditorChange() {
-			var control = this, value, editor;
+			var control = this, value, editor, settingValue;
 			if ( control.editorSyncSuspended ) {
 				return;
 			}
@@ -134,10 +137,12 @@
 			value = wp.editor.removep( editor.getContent() );
 			control.editorSyncSuspended = true;
 
-			if ( null === control.params.setting_property ) { // @todo Not right.
-				control.setting.set( value );
+			if ( control.params.setting_property ) {
+				settingValue = _.clone( control.setting.get() );
+				settingValue[ control.params.setting_property ] = value;
+				control.setting.set( settingValue );
 			} else {
-				control.propertyElements[0].set( value );
+				control.setting.set( value );
 			}
 
 			control.editorSyncSuspended = false;
@@ -149,18 +154,19 @@
 		 * @returns {void}
 		 */
 		onTextEditorChange: function onTextEditorChange() {
-			var control = this, textarea, value;
-			textarea = $( '#customize-posts-content' );
-			value = textarea.val();
+			var control = this, value, settingValue;
 			if ( control.editorSyncSuspended ) {
 				return;
 			}
+			value = control.contentTextarea.val();
 			control.editorSyncSuspended = true;
 
-			if ( null === control.params.setting_property ) { // @todo Not right.
-				control.setting.set( value );
+			if ( control.params.setting_property ) {
+				settingValue = _.clone( control.setting.get() );
+				settingValue[ control.params.setting_property ] = value;
+				control.setting.set( settingValue );
 			} else {
-				control.propertyElements[0].set( value );
+				control.setting.set( value );
 			}
 
 			control.editorSyncSuspended = false;
@@ -174,16 +180,20 @@
 		initEditor: function initEditor() {
 			var control = this,
 				section = api.section( control.section() ),
-				setting = control.setting,
-				isMeta  = null === control.params.setting_property;
+				setting = control.setting;
 
+			if ( 1 !== _.size( control.settings ) ) {
+				throw new Error( 'Only one setting may be associated with a post editor control.' );
+			}
+
+			control.contentTextarea =  $( '#customize-posts-content' );
 			control.customizePreview = $( '#customize-preview' );
 			control.editorDragbar    = $( '#customize-posts-content-editor-dragbar' );
 			control.editorPane       = $( '#customize-posts-content-editor-pane' );
 			control.editorFrame      = $( '#customize-posts-content_ifr' );
 			control.collapseSidebar  = $( '.collapse-sidebar' );
 
-			control.editorToggleExpandButton = $( '<button type="button" class="button"></button>' );
+			control.editorToggleExpandButton = control.container.find( '.toggle-post-editor' );
 			control.updateEditorToggleExpandButtonLabel( control.expanded.get() );
 			control.onTextEditorChange = _.bind( control.onTextEditorChange, control );
 			control.onVisualEditorChange = _.bind( control.onVisualEditorChange, control );
@@ -192,9 +202,9 @@
 			 * Update the editor when the setting changes its state.
 			 */
 			setting.bind( function( newPostData, oldPostData ) {
-				var editor, textarea = $( '#customize-posts-content' ),
-					newData = isMeta ? newPostData : newPostData[ control.params.setting_property ],
-					oldData = isMeta ? oldPostData : oldPostData[ control.params.setting_property ];
+				var editor,
+					newData = control.params.setting_property ? newPostData[ control.params.setting_property ] : newPostData,
+					oldData = control.params.setting_property ? oldPostData[ control.params.setting_property ] : oldPostData;
 
 				if ( control.expanded.get() && ! control.editorSyncSuspended && newData !== oldData ) {
 					control.editorSyncSuspended = true;
@@ -202,7 +212,7 @@
 					if ( editor && ! editor.isHidden() ) {
 						editor.setContent( wp.editor.autop( newData ) );
 					} else {
-						textarea.val( newData );
+						control.contentTextarea.val( newData );
 					}
 					control.editorSyncSuspended = false;
 				}
@@ -213,7 +223,7 @@
 			 */
 			section.expanded.bind( function( expanded ) {
 				if ( expanded ) {
-					api.Posts.postIdInput.val( section.params.post_id );
+					api.Posts.postIdInput.val( section.params.post_id || false );
 				} else {
 					api.Posts.postIdInput.val( '' );
 					control.expanded.set( false );
@@ -227,7 +237,11 @@
 				var editor = tinyMCE.get( 'customize-posts-content' );
 				control.expanded.set( ! control.expanded() );
 				if ( control.expanded() ) {
-					editor.focus();
+					if ( editor ) {
+						editor.focus();
+					} else {
+						control.contentTextarea.focus();
+					}
 				}
 			} );
 
@@ -273,8 +287,6 @@
 					control.resizeEditor( window.innerHeight - control.editorPane.height() );
 				}, resizeDelay );
 			} );
-
-			control.injectButton();
 		},
 
 		/**
@@ -286,24 +298,10 @@
 			var control = this;
 
 			api.control.each( function( otherControl ) {
-				if ( otherControl !== control && otherControl.extended( api.EditorControl ) && otherControl.expanded.get() ) {
+				if ( otherControl !== control && otherControl.extended( api.Posts.PostEditorControl ) && otherControl.expanded.get() ) {
 					otherControl.expanded.set( false );
 				}
 			} );
-		},
-
-		/**
-		 * Inject button in place of textarea.
-		 *
-		 * @returns {void}
-	     */
-		injectButton: function injectButton() {
-			var control = this,
-				textarea = control.container.find( 'textarea:first' );
-
-			control.editorToggleExpandButton.attr( 'id', textarea.attr( 'id' ) );
-			textarea.attr( 'id', '' );
-			control.container.append( control.editorToggleExpandButton );
 		},
 
 		/**
@@ -388,7 +386,6 @@
 		 */
 		focus: function focus( args ) {
 			var control = this,
-				textarea = $( '#customize-posts-content' ),
 				editor = tinyMCE.get( 'customize-posts-content' );
 
 			control.actuallyEmbed();
@@ -398,7 +395,7 @@
 					if ( editor ) {
 						editor.focus();
 					} else {
-						textarea.focus();
+						control.contentTextarea.focus();
 					}
 
 					if ( args && args.completeCallback ) {
@@ -409,6 +406,6 @@
 		}
 	});
 
-	api.controlConstructor.editor = api.EditorControl;
+	api.controlConstructor.post_editor = api.Posts.PostEditorControl;
 
 })( wp.customize, jQuery );

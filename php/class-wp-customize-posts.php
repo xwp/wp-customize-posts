@@ -82,6 +82,7 @@ final class WP_Customize_Posts {
 		require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-setting.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-date-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-status-control.php';
+		require_once dirname( __FILE__ ) . '/class-wp-customize-post-editor-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-editor-control.php';
 		require_once ABSPATH . WPINC . '/customize/class-wp-customize-partial.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-field-partial.php';
@@ -289,8 +290,8 @@ final class WP_Customize_Posts {
 		$this->manager->register_control_type( 'WP_Customize_Dynamic_Control' );
 		$this->manager->register_control_type( 'WP_Customize_Post_Discussion_Fields_Control' );
 		$this->manager->register_control_type( 'WP_Customize_Post_Date_Control' );
+		$this->manager->register_control_type( 'WP_Customize_Post_Editor_Control' );
 		$this->manager->register_control_type( 'WP_Customize_Post_Status_Control' );
-		$this->manager->register_control_type( 'WP_Customize_Editor_Control' );
 
 		$panel_priority = 900; // Before widgets.
 

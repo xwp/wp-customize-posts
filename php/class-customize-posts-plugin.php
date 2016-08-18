@@ -234,8 +234,8 @@ class Customize_Posts_Plugin {
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
-		$handle = 'customize-editor-control';
-		$src = plugins_url( 'js/customize-editor-control' . $suffix, dirname( __FILE__ ) );
+		$handle = 'customize-post-editor-control';
+		$src = plugins_url( 'js/customize-post-editor-control' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'customize-dynamic-control' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
@@ -248,7 +248,7 @@ class Customize_Posts_Plugin {
 
 		$handle = 'customize-post-section';
 		$src = plugins_url( 'js/customize-post-section' . $suffix, dirname( __FILE__ ) );
-		$deps = array( 'customize-controls', 'customize-post-date-control', 'customize-post-status-control', 'customize-editor-control' );
+		$deps = array( 'customize-controls', 'customize-post-date-control', 'customize-post-status-control', 'customize-post-editor-control' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
