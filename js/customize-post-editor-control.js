@@ -144,8 +144,8 @@
 
 			if ( expanded ) {
 				control.collapseOtherControls();
+				control.updateEditorHeading();
 
-				control.editorHeading.text( control.params.label );
 				if ( editor && ! editor.isHidden() ) {
 					editor.setContent( wp.editor.autop( settingValue ) );
 				} else {
@@ -170,6 +170,30 @@
 
 			if ( params && params.completeCallback ) {
 				params.completeCallback();
+			}
+		},
+
+		/**
+		 * Update the editor heading with the control label, showing if there is more than one editor control in the section.
+		 *
+		 * @returns {void}
+		 */
+		updateEditorHeading: function updateEditorHeading() {
+			var control = this, section, editorControlCount = 0;
+			section = api.section( control.section() );
+			if ( section ) {
+				_.each( section.controls(), function iterateEditorControl( sectionControl ) {
+					if ( sectionControl.extended( api.Posts.PostEditorControl ) ) {
+						editorControlCount += 1;
+					}
+				} );
+			}
+			if ( editorControlCount > 1 ) {
+				control.editorHeading.text( control.params.label );
+				control.editorHeading.show();
+			} else {
+				control.editorHeading.text( '' );
+				control.editorHeading.hide();
 			}
 		},
 
