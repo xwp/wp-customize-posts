@@ -1,4 +1,4 @@
-/* global jQuery, wp, _, tinyMCE */
+/* global jQuery, wp, _, tinyMCE, _wpCustomizePostsEditorExports */
 /* eslint consistent-this: [ "error", "control" ], no-magic-numbers: [ "error", { "ignore": [1] } ] */
 
 (function( api, $ ) {
@@ -17,6 +17,17 @@
 		initialize: function initialize( id, options ) {
 			var control = this, args;
 
+			control.data = {
+				l10n: {
+					openEditor: '',
+					closeEditor: ''
+				}
+			};
+
+			if ( 'undefined' !== typeof _wpCustomizePostsEditorExports ) {
+				_.extend( control.data, _wpCustomizePostsEditorExports );
+			}
+
 			args = {};
 			args.params = _.extend(
 				{
@@ -28,8 +39,8 @@
 					setting_property: null,
 					input_attrs: {},
 					button_labels: {
-						open_editor: api.Posts.data.l10n.openEditor,
-						close_editor: api.Posts.data.l10n.closeEditor
+						open_editor: control.data.l10n.openEditor,
+						close_editor: control.data.l10n.closeEditor
 					}
 				},
 				options.params || {}

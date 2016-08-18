@@ -55,6 +55,15 @@ class WP_Customize_Post_Editor_Control extends WP_Customize_Dynamic_Control {
 	 */
 	public static function enqueue_scripts() {
 		self::enqueue_editor();
+
+		$exports = array(
+			'l10n' => array(
+				'openEditor' => __( 'Open Editor', 'customize-posts' ),
+				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
+			),
+		);
+
+		wp_scripts()->add_data( 'customize-post-editor-control', 'data', sprintf( 'var _wpCustomizePostsEditorExports = %s;', wp_json_encode( $exports ) ) );
 	}
 
 	/**

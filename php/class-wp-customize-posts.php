@@ -629,10 +629,7 @@ final class WP_Customize_Posts {
 				'fieldAuthorLabel' => __( 'Author', 'customize-posts' ),
 				'noTitle' => __( '(no title)', 'customize-posts' ),
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
-				'openEditor' => __( 'Open Editor', 'customize-posts' ), // @todo Move this into editor control?
-				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
 				'invalidDateError' => __( 'Whoops, the provided date is invalid.', 'customize-posts' ),
-
 				/* translators: %s post type */
 				'jumpToPostPlaceholder' => __( 'Jump to %s', 'customize-posts' ),
 			),
