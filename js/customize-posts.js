@@ -588,6 +588,9 @@
 		api.previewer.bind( 'focus-control', component.focusControl );
 
 		component.ensureAutofocusConstructPosts();
+
+		// Change 'Save & Publish' button value to 'Save'
+		api.l10n.save = 'Save';
 	} );
 
 })( wp.customize, jQuery );
