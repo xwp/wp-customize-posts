@@ -4,6 +4,39 @@
 (function( api, $ ) {
 	'use strict';
 
+	var editorDefaultSettings = {
+		media_buttons: true,
+		html_editor: true,
+		mce_buttons: {
+			bold: true,
+			italic: true,
+			underline: true,
+			blockquote: true,
+			strikethrough: true,
+			bullist: true,
+			numlist: true,
+			alignleft: true,
+			aligncenter: true,
+			alignright: true,
+			undo: true,
+			redo: true,
+			link: true,
+			unlink: true,
+			fullscreen: true,
+			wp_more: true,
+			formatselect: true,
+			alignjustify: true,
+			forecolor: true,
+			pastetext: true,
+			removeformat: true,
+			charmap: true,
+			outdent: true,
+			indent: true,
+			wp_adv: true,
+			hr: true
+		}
+	};
+
 	/**
 	 * An post editor control.
 	 *
@@ -54,7 +87,8 @@
 					button_labels: {
 						open_editor: control.data.l10n.openEditor,
 						close_editor: control.data.l10n.closeEditor
-					}
+					},
+					editor_settings: editorDefaultSettings
 				},
 				options.params || {}
 			);
@@ -166,6 +200,7 @@
 				} else {
 					control.contentTextarea.val( settingValue );
 				}
+				control.updateEditorButtons();
 				editor.on( 'input change keyup', control.onVisualEditorChange );
 				control.contentTextarea.on( 'input', control.onTextEditorChange );
 				$( document.body ).addClass( 'customize-posts-content-editor-pane-open' );
@@ -186,6 +221,27 @@
 			if ( params && params.completeCallback ) {
 				params.completeCallback();
 			}
+		},
+
+		/**
+		 * Toggle the editor buttons.
+		 *
+		 * @return {void}
+		 */
+		updateEditorButtons: function() {
+			var control = this, button,
+				editor = tinyMCE.get( 'customize-posts-content' ),
+				mediaButton = $( '#wp-customize-posts-content-media-buttons' ),
+				htmlTab = $( '#customize-posts-content-html' );
+
+			_.each( control.params.editor_settings.mce_buttons, function( buttonState, buttonName ) {
+				editor.controlManager.setDisabled( buttonName, ! buttonState );
+				button = $( '.mce-i-' + buttonName ).closest( '.mce-btn' );
+				button.toggleClass( 'hidden', ! buttonState );
+			} );
+
+			htmlTab.toggleClass( 'hidden', ! control.params.editor_settings.html_editor );
+			mediaButton.toggleClass( 'hidden', ! control.params.editor_settings.media_buttons );
 		},
 
 		/**
