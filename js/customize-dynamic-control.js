@@ -131,10 +131,6 @@
 			control._setUpSettingPropertyLinks();
 
 			api.Control.prototype.ready.call( control );
-
-			// @todo build out the controls for the post when Control is expanded.
-			// @todo Let the Control title include the post title.
-			control.deferred.embedded.done(function() {});
 		},
 
 		/**
