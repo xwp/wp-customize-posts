@@ -183,6 +183,28 @@
 		},
 
 		/**
+		 * Render the control from its JS template, if it exists.
+		 *
+		 * @returns {void}
+		 */
+		renderContent: function renderContent() {
+			var control = this, template;
+
+			if ( control.params.content_template ) {
+				if ( 'function' === typeof control.params.content_template ) {
+					template = control.params.content_template;
+				} else {
+					template = wp.template( control.params.content_template );
+				}
+				if ( control.container ) {
+					control.container.html( template( control.params ) );
+				}
+			} else {
+				api.Control.prototype.renderContent.call( control );
+			}
+		},
+
+		/**
 		 * This is not working with autofocus.
 		 *
 		 * @param {object} [args] Args.
