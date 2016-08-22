@@ -520,6 +520,7 @@
 			control = new api.controlConstructor.post_editor( section.id + '[post_content]', {
 				params: {
 					section: section.id,
+					priority: 25,
 					label: postTypeObj.labels.content_field ? postTypeObj.labels.content_field : api.Posts.data.l10n.fieldContentLabel,
 					setting_property: 'post_content',
 					settings: {
