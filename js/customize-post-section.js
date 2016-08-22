@@ -275,6 +275,9 @@
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
 			}
+			if ( 'undefined' === typeof EditPostPreviewCustomize && api.Widgets ) {
+				section.addPostWidgetAreasControl();
+			}
 			if ( postTypeObj.supports.excerpt ) {
 				section.addExcerptControl();
 			}
@@ -542,6 +545,35 @@
 				control.notifications.add = section.addPostFieldControlNotification;
 				control.notifications.setting_property = control.params.setting_property;
 			}
+			return control;
+		},
+
+		/**
+		 * Add widget area shortcuts control.
+		 *
+		 * @returns {wp.customize.Control} Control
+		 */
+		addPostWidgetAreasControl: function() {
+			var section = this, control;
+
+			control = new api.controlConstructor.sidebar_shortcuts( section.id + '[sidebar_shortcuts]', {
+				params: {
+					section: section.id,
+					priority: 26, // After content.
+					label: api.Posts.data.l10n.fieldWidgetAreasLabel,
+					settings: []
+				}
+			} );
+
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.sidebar_shortcuts = control;
+			api.control.add( control.id, control );
+
 			return control;
 		},
 
