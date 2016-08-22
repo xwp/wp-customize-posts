@@ -594,7 +594,7 @@
 				params: {
 					section: section.id,
 					priority: 60,
-					label: postTypeObj.labels.discussion_field ? postTypeObj.labels.discussion_field : api.Posts.data.l10n.fieldDiscusionLabel,
+					label: postTypeObj.labels.discussion_field ? postTypeObj.labels.discussion_field : api.Posts.data.l10n.fieldDiscussionLabel,
 					active: true,
 					settings: {
 						'default': setting.id
