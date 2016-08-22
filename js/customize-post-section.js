@@ -275,7 +275,7 @@
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
 			}
-			if ( 'undefined' === typeof EditPostPreviewCustomize && api.Widgets ) {
+			if ( 'undefined' === typeof EditPostPreviewCustomize && api.Widgets && api.Posts.data.themeSupportsWidgets ) {
 				section.addPostWidgetAreasControl();
 			}
 			if ( postTypeObj.supports.excerpt ) {

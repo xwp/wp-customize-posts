@@ -612,6 +612,7 @@ final class WP_Customize_Posts {
 
 		$exports = array(
 			'postTypes' => $post_types,
+			'themeSupportsWidgets' => current_theme_supports( 'widgets' ),
 			'postStatusChoices' => $this->get_post_status_choices(),
 			'authorChoices' => $this->get_author_choices(),
 			'dateMonthChoices' => $this->get_date_month_choices(),
