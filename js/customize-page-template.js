@@ -52,7 +52,8 @@ var CustomizePageTemplate = (function( api ) {
 	component.addControl = function( section ) {
 		var supports, control, controlId, settingId, isActiveCallback;
 		supports = api.Posts.data.postTypes[ section.params.post_type ].supports;
-		if ( ! supports['page-attributes'] ) {
+
+		if ( ! supports['page-attributes'] || 'page' !== section.params.post_type ) {
 			return null;
 		}
 
@@ -94,6 +95,9 @@ var CustomizePageTemplate = (function( api ) {
 		/**
 		 * Make sure that control only appears if there are page templates (other than 'default').
 		 *
+		 * @todo The control needs to be deactivated when the page is the same as wp.customize( 'page_on_front' ).get().
+		 * @todo Page-specific templates also need to be accounted for here (the 'theme_page_templates' filter in PHP).
+		 *
 		 * @returns {boolean} Is active.
 		 */
 		isActiveCallback = function() {
@@ -106,7 +110,7 @@ var CustomizePageTemplate = (function( api ) {
 		// Register.
 		api.control.add( control.id, control );
 
-		// @todo Fetch the page templates related to control.params.post_id to override the default choices
+		// @todo Fetch the page templates related to control.params.post_id to override the default choices (the 'theme_page_templates' filter in PHP).
 
 		return control;
 	};
