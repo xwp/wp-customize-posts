@@ -262,7 +262,6 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	font-style: normal;
 	display: block;
 	margin-bottom: 0;
-	margin-top: -28px;
 }
 
 .customize-control-post_date .time-info-handle {
@@ -277,6 +276,7 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	-ms-user-select: none;
 	user-select: none;
 	color: #555;
+	margin-top: -28px;
 }
 
 .customize-control-post_date .time-info-handle.active .time-handle-arrow {
