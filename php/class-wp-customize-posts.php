@@ -83,12 +83,11 @@ final class WP_Customize_Posts {
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-date-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-status-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-editor-control.php';
-		require_once dirname( __FILE__ ) . '/class-wp-customize-editor-control.php';
 		require_once ABSPATH . WPINC . '/customize/class-wp-customize-partial.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-field-partial.php';
 
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
-		add_action( 'customize_controls_init', array( $this, 'enqueue_editor' ) );
+		add_action( 'customize_controls_enqueue_scripts', array( 'WP_Customize_Post_Editor_Control', 'enqueue_scripts' ) );
 
 		add_filter( 'customize_refresh_nonces', array( $this, 'add_customize_nonce' ) );
 		add_action( 'customize_register', array( $this, 'register_constructs' ), 20 );
@@ -630,10 +629,7 @@ final class WP_Customize_Posts {
 				'fieldAuthorLabel' => __( 'Author', 'customize-posts' ),
 				'noTitle' => __( '(no title)', 'customize-posts' ),
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
-				'openEditor' => __( 'Open Editor', 'customize-posts' ), // @todo Move this into editor control?
-				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
 				'invalidDateError' => __( 'Whoops, the provided date is invalid.', 'customize-posts' ),
-
 				/* translators: %s post type */
 				'jumpToPostPlaceholder' => __( 'Jump to %s', 'customize-posts' ),
 			),
@@ -690,85 +686,6 @@ final class WP_Customize_Posts {
 			$formatted_offset
 		);
 		return $formatted_offset;
-	}
-
-	/**
-	 * Enqueue a WP Editor instance we can use for rich text editing.
-	 *
-	 * @todo Consider moving this to WP_Customize_Post_Editor_Control::enqueue_scripts().
-	 * @todo This can be added at the customize_controls_enqueue_scripts action.
-	 */
-	public function enqueue_editor() {
-		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_editor' ), 0 );
-
-		// Note that WP_Customize_Widgets::print_footer_scripts() happens at priority 10.
-		add_action( 'customize_controls_print_footer_scripts', array( $this, 'maybe_do_admin_print_footer_scripts' ), 20 );
-
-		// @todo These should be included in _WP_Editors::editor_settings()
-		if ( false === has_action( 'customize_controls_print_footer_scripts', array( '_WP_Editors', 'enqueue_scripts' ) ) ) {
-			add_action( 'customize_controls_print_footer_scripts', array( '_WP_Editors', 'enqueue_scripts' ) );
-		}
-	}
-
-	/**
-	 * Render rich text editor.
-	 *
-	 * @todo Consider moving this to WP_Customize_Post_Editor_Control::enqueue_scripts().
-	 */
-	public function render_editor() {
-		?>
-		<div id="customize-posts-content-editor-pane">
-			<div id="customize-posts-content-editor-dragbar">
-				<span class="screen-reader-text"><?php esc_html_e( 'Resize Editor', 'customize-posts' ); ?></span>
-			</div>
-			<h2 id="customize-posts-content-editor-title"></h2>
-
-			<?php
-			// The settings passed in here are derived from those used in edit-form-advanced.php.
-			wp_editor( '', 'customize-posts-content', array(
-				'_content_editor_dfw' => false,
-				'drag_drop_upload' => true,
-				'tabfocus_elements' => 'content-html,save-post',
-				'editor_height' => 200,
-				'default_editor' => 'tinymce',
-				'tinymce' => array(
-					'resize' => false,
-					'wp_autoresize_on' => false,
-					'add_unload_trigger' => false,
-				),
-			) );
-			?>
-
-		</div>
-		<?php
-	}
-
-	/**
-	 * Do the admin_print_footer_scripts actions if not done already.
-	 *
-	 * Another possibility here is to opt-in selectively to the desired widgets
-	 * via:
-	 * Shortcode_UI::get_instance()->action_admin_enqueue_scripts();
-	 * Shortcake_Bakery::get_instance()->action_admin_enqueue_scripts();
-	 *
-	 * Note that this action is also done in WP_Customize_Widgets::print_footer_scripts()
-	 * at priority 10, so this method runs at a later priority to ensure the action is
-	 * not done twice.
-	 *
-	 * @todo Consider moving this to WP_Customize_Post_Editor_Control::enqueue_scripts().
-	 *
-	 * @codeCoverageIgnore
-	 */
-	public function maybe_do_admin_print_footer_scripts() {
-		if ( ! did_action( 'admin_print_footer_scripts' ) ) {
-			/** This action is documented in wp-admin/admin-footer.php */
-			do_action( 'admin_print_footer_scripts' );
-		}
-
-		if ( ! did_action( 'admin_footer-post.php' ) ) {
-			/** This action is documented in wp-admin/admin-footer.php */
-			do_action( 'admin_footer-post.php' );
-		}
 	}
 
 	/**

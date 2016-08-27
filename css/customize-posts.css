@@ -346,6 +346,10 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	margin-right: 0.25ex;
 }
 
+.mce-btn.hidden{
+	display: none;
+}
+
 @media screen and ( max-width: 782px ) {
 	.customize-control-post_date select {
 		height: 40px;
