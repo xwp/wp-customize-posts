@@ -135,6 +135,7 @@ abstract class WP_Customize_Postmeta_Controller {
 			$post_types = $this->post_types;
 		}
 
+		// Note that if post_type_supports is defined, it support is missing, the post types will have already been excluded at this point.
 		foreach ( $post_types as $post_type ) {
 			$setting_args = array(
 				'sanitize_callback' => $this->sanitize_callback,
@@ -205,8 +206,11 @@ abstract class WP_Customize_Postmeta_Controller {
 	 * Sanitize an input.
 	 *
 	 * Callback for `customize_sanitize_post_meta_{$meta_key}` filter.
+	 * Note that this is redundant and unnecessary due to the `sanitize_value`
+	 * method is used in the underlying `register_meta()` call.
 	 *
 	 * @see update_metadata()
+	 * @see WP_Customize_Postmeta_Controller::sanitize_value()
 	 *
 	 * @param string                        $meta_value The value to sanitize.
 	 * @param WP_Customize_Postmeta_Setting $setting    Setting.

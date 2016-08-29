@@ -66,6 +66,15 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Reset $wp_meta_keys.
+	 */
+	function clean_up_global_scope() {
+		global $wp_meta_keys;
+		parent::clean_up_global_scope();
+		$wp_meta_keys = array();
+	}
+
+	/**
 	 * Teardown.
 	 *
 	 * @inheritdoc
@@ -189,12 +198,72 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	/**
 	 * Test register_post_type_meta().
 	 *
-	 * @see WP_Customize_Posts::register_meta()
+	 * @covers WP_Customize_Posts::register_meta()
 	 */
 	public function test_register_meta() {
+
+		$foo_args = array(
+			'sanitize_callback' => 'wp_kses_post',
+			'auth_callback' => '__return_true',
+			'show_in_customizer' => true,
+			'post_type_supports' => 'foo',
+			'theme_supports' => 'metavars',
+			'post_types' => array( 'post' ),
+			'customize_setting_args' => array(
+				'capability' => 'edit_posts',
+				'transport' => 'postMessage',
+				'sanitize_callback' => 'foo_customize_sanitize_callback',
+				'validate_callback' => 'foo_customize_validate_callback',
+				'sanitize_js_callback' => 'foo_customize_sanitize_js_callback',
+				'default' => 'FOO!',
+			),
+			'customize_setting_class' => 'Foo_Customize_Postmeta_Setting'
+		);
+
+		if ( function_exists( 'get_registered_meta_keys' ) ) {
+			add_post_type_support( 'post', 'foo' );
+			add_post_type_support( 'post', 'bar' );
+			add_post_type_support( 'post', 'baz' );
+
+			register_meta( 'post', 'foo', $foo_args );
+			register_meta( 'post', 'bar', array(
+				'sanitize_callback' => 'wp_kses_post',
+				'show_in_customizer' => true,
+				'post_type_supports' => 'bar',
+			) );
+			register_meta( 'post', 'baz', array(
+				'sanitize_callback' => 'wp_kses_post',
+				'show_in_customizer' => true,
+				'post_types' => array( 'post' ),
+			) );
+			register_meta( 'post', 'qux', array(
+				'sanitize_callback' => 'wp_kses_post',
+				'show_in_customizer' => true,
+			) );
+			register_meta( 'post', 'xyzzy', array(
+				'sanitize_callback' => 'wp_kses_post',
+				'show_in_customizer' => false,
+			) );
+		}
+
 		$count = did_action( 'customize_posts_register_meta' );
 		do_action( 'init' );
 		$this->assertEquals( $count + 1, did_action( 'customize_posts_register_meta' ) );
+
+		if ( function_exists( 'get_registered_meta_keys' ) ) {
+			$this->assertArrayHasKey( 'foo', $this->posts->registered_post_meta['post'] );
+			foreach ( array_keys( $foo_args['customize_setting_args'] ) as $key ) {
+				$this->assertEquals( $foo_args['customize_setting_args'][ $key ], $this->posts->registered_post_meta['post']['foo'][ $key ] );
+			}
+			$this->assertEquals( $foo_args['customize_setting_class'], $this->posts->registered_post_meta['post']['foo']['setting_class'] );
+			$this->assertEquals( $foo_args['theme_supports'], $this->posts->registered_post_meta['post']['foo']['theme_supports'] );
+			$this->assertEquals( $foo_args['post_type_supports'], $this->posts->registered_post_meta['post']['foo']['post_type_supports'] );
+
+			$this->assertArrayHasKey( 'bar', $this->posts->registered_post_meta['post'] );
+			$this->assertArrayHasKey( 'baz', $this->posts->registered_post_meta['post'] );
+			$this->assertArrayNotHasKey( 'qux', $this->posts->registered_post_meta['post'] );
+			$this->assertArrayNotHasKey( 'xyzzy', $this->posts->registered_post_meta['post'] );
+		}
 	}
 
 	/**
@@ -215,6 +284,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 
 		$this->assertFalse( $posts_component->auth_post_meta_callback( false, 'foo', $this->post_id, $this->user_id ) );
 
+		register_meta( 'post', 'foo', array( $this, 'pass_through' ) );
 		$posts_component->register_post_type_meta( 'post', 'foo' );
 		$this->assertTrue( $posts_component->auth_post_meta_callback( false, 'foo', $this->post_id, $this->user_id ) );
 	}
@@ -237,6 +307,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 			'validate_callback' => array( $this, 'validate_setting' ),
 			'setting_class' => 'WP_Customize_Postmeta_Setting',
 		);
+		register_meta( 'post', 'timezone', array( $this, 'pass_through' ) );
 		$this->posts->register_post_type_meta( 'post', 'timezone', $args );
 
 		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $this->post_id ), 'timezone' );
@@ -691,6 +762,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$published_post_id = $this->factory()->post->create( array( 'post_status' => 'publish', 'post_name' => 'foo' ) );
 		$trashed_post_id = $this->factory()->post->create( array( 'post_status' => 'private', 'post_name' => 'bar' ) );
 		$draft_page_id = $this->factory()->post->create( array( 'post_status' => 'draft', 'post_name' => 'quux', 'post_type' => 'page' ) );
+		register_meta( 'post', 'baz', array( $this, 'pass_through' ) );
 		$this->posts->register_post_type_meta( 'post', 'baz' );
 		wp_trash_post( $trashed_post_id );
 
@@ -805,5 +877,15 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		remove_post_type_support( 'page', 'thumbnail' );
 		$result = $this->posts->get_select2_item_result( $page );
 		$this->assertArrayNotHasKey( 'featured_image', $result );
+	}
+
+	/**
+	 * Pass through a value with out modification.
+	 *
+	 * @param mixed $x Value
+	 * @return mixed Value.
+	 */
+	public function pass_through( $x ) {
+		return $x;
 	}
 }

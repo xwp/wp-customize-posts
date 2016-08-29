@@ -84,7 +84,15 @@ class WP_Customize_Page_Template_Controller extends WP_Customize_Postmeta_Contro
 	/**
 	 * Apply rudimentary sanitization of a file path for a generic setting instance.
 	 *
+	 * The sanitization is rudimentary because `sanitize_meta()` fails to pass the
+	 * associated post ID, so we cannot get the list of page templates to check
+	 * against. Additionally, the callback used in `sanitize_meta()` cannot return
+	 * `WP_Error` to indicate invalidity, so for these reasons we also have a
+	 * `sanitize_setting` callback which is used when saving the customizer
+	 * setting.
+	 *
 	 * @see sanitize_meta()
+	 * @see WP_Customize_Page_Template_Controller::sanitize_setting()
 	 *
 	 * @param string $raw_path Path.
 	 * @return string Path.
