@@ -480,22 +480,43 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addPostParentControl: function() {
-			var section = this, control, setting = api( section.id );
+			var section = this, control, setting = api( section.id ), controlId, params;
 
-			control = new api.controlConstructor.dynamic( section.id + '[post_parent]', {
-				params: {
-					section: section.id,
-					priority: 20,
-					label: api.Posts.data.l10n.postParentLabel,
-					active: true,
-					settings: {
-						'default': setting.id
-					},
-					field_type: 'select',
-					setting_property: 'post_parent',
-					choices: api.Posts.data.postParentChoices
-				}
-			} );
+			controlId = section.id + '[post_parent]';
+			params = {
+				section: section.id,
+				priority: 20,
+				label: api.Posts.data.l10n.postParentLabel,
+				active: true,
+				settings: {
+					'default': setting.id
+				},
+				field_type: 'select',
+				setting_property: 'post_parent',
+				choices: api.Posts.data.postParentChoices
+			};
+
+			if ( api.controlConstructor.object_selector ) {
+				control = new api.controlConstructor.object_selector( controlId, {
+					params: _.extend( params, {
+						post_query_vars: {
+							post_type: section.params.post_type,
+							post_status: 'publish',
+							post__not_in: [ section.params.post_id ]
+						},
+						select2_options: {
+							multiple: false
+						}
+					} )
+				} );
+			} else {
+				control = new api.controlConstructor.dynamic( controlId, {
+					params: _.extend( params, {
+						field_type: 'select',
+						choices: api.Posts.data.postParentChoices
+					} )
+				} );
+			}
 
 			// Override preview trying to de-activate control not present in preview context.
 			control.active.validate = function() {
