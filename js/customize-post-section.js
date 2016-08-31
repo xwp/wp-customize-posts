@@ -361,11 +361,6 @@
 				}
 			} );
 
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
-
 			// Register.
 			section.postFieldControls.post_title = control;
 			api.control.add( control.id, control );
@@ -419,11 +414,6 @@
 				setting.bind( setPlaceholder );
 			} );
 
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
-
 			// Register.
 			section.postFieldControls.post_name = control;
 			api.control.add( control.id, control );
@@ -454,11 +444,6 @@
 					}
 				}
 			} );
-
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
 
 			// Register.
 			section.postFieldControls.post_status = control;
@@ -492,11 +477,6 @@
 				}
 			} );
 
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
-
 			// Register.
 			section.postFieldControls.post_date = control;
 			api.control.add( control.id, control );
@@ -527,11 +507,6 @@
 					}
 				}
 			} );
-
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
 
 			// Register.
 			section.postFieldControls.post_content = control;
@@ -566,11 +541,6 @@
 				}
 			} );
 
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
-
 			// Register.
 			section.postFieldControls.post_excerpt = control;
 			api.control.add( control.id, control );
@@ -602,11 +572,6 @@
 					post_type_supports: postTypeObj.supports
 				}
 			} );
-
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
 
 			// Register.
 			section.postFieldControls.post_discussion_fields = control;
@@ -649,11 +614,6 @@
 				data = previousValidate.call( this, data );
 				data.post_author = parseInt( data.post_author, 10 );
 				return data;
-			};
-
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
 			};
 
 			// Register.
