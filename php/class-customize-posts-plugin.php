@@ -65,6 +65,7 @@ class Customize_Posts_Plugin {
 		add_action( 'wp_default_scripts', array( $this, 'register_scripts' ), 11 );
 		add_action( 'wp_default_styles', array( $this, 'register_styles' ), 11 );
 		add_action( 'init', array( $this, 'register_customize_draft' ) );
+		add_action( 'admin_bar_menu', array( $this, 'add_admin_bar_customize_link_queried_object_autofocus' ), 41 );
 		add_filter( 'user_has_cap', array( $this, 'grant_customize_capability' ), 10, 3 );
 		add_filter( 'customize_loaded_components', array( $this, 'add_posts_to_customize_loaded_components' ), 0, 1 );
 		add_filter( 'customize_loaded_components', array( $this, 'filter_customize_loaded_components' ), 100, 2 );
@@ -103,6 +104,30 @@ class Customize_Posts_Plugin {
 			'show_in_admin_all_list'    => false,
 			'show_in_admin_status_list' => false,
 		) );
+	}
+
+	/**
+	 * Add autofocus[section] query param to the Customize link in the admin bar when there is a post queried object.
+	 *
+	 * @param \WP_Admin_Bar $wp_admin_bar WP_Admin_Bar instance.
+	 * @returns bool Whether the param was added.
+	 */
+	public function add_admin_bar_customize_link_queried_object_autofocus( $wp_admin_bar ) {
+
+		$customize_node = $wp_admin_bar->get_node( 'customize' );
+		$queried_object = get_queried_object();
+		if ( empty( $customize_node ) || ! ( $queried_object instanceof WP_Post ) ) {
+			return false;
+		}
+
+		$section_id = sprintf( 'post[%s][%d]', $queried_object->post_type, $queried_object->ID );
+		$customize_node->href = add_query_arg(
+			array( 'autofocus[section]' => $section_id ),
+			$customize_node->href
+		);
+
+		$wp_admin_bar->add_menu( (array) $customize_node );
+		return true;
 	}
 
 	/**

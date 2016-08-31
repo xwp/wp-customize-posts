@@ -61,6 +61,7 @@ class Test_Customize_Posts_Plugin extends WP_UnitTestCase {
 		$this->assertEquals( $plugin->version, $plugin_data['Version'] );
 		$this->assertInstanceOf( 'Edit_Post_Preview', $plugin->edit_post_preview );
 		$this->assertEquals( 11, has_action( 'wp_default_scripts', array( $plugin, 'register_scripts' ) ) );
+		$this->assertEquals( 41, has_action( 'admin_bar_menu', array( $plugin, 'add_admin_bar_customize_link_queried_object_autofocus' ) ) );
 		$this->assertEquals( 11, has_action( 'wp_default_styles', array( $plugin, 'register_styles' ) ) );
 		$this->assertEquals( 10, has_action( 'user_has_cap', array( $plugin, 'grant_customize_capability' ) ) );
 		$this->assertEquals( 100, has_action( 'customize_loaded_components', array( $plugin, 'filter_customize_loaded_components' ) ) );
@@ -101,6 +102,37 @@ class Test_Customize_Posts_Plugin extends WP_UnitTestCase {
 		$this->plugin->register_customize_draft();
 		global $wp_post_statuses;
 		$this->assertArrayHasKey( 'customize-draft', $wp_post_statuses );
+	}
+
+	/**
+	 * Test add_admin_bar_customize_link_queried_object_autofocus method.
+	 *
+	 * @covers Customize_Posts_Plugin::add_admin_bar_customize_link_queried_object_autofocus()
+	 */
+	public function test_add_admin_bar_customize_link_queried_object_autofocus() {
+		global $wp_admin_bar;
+		set_current_screen( 'front' );
+
+		$post_id = $this->factory()->post->create();
+		$this->go_to( get_permalink( $post_id ) );
+
+		require_once ABSPATH . WPINC . '/class-wp-admin-bar.php';
+		remove_all_actions( 'admin_bar_menu' );
+
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$wp_admin_bar = new \WP_Admin_Bar(); // WPCS: Override OK.
+		$wp_admin_bar->initialize();
+		$wp_admin_bar->add_menus();
+		do_action_ref_array( 'admin_bar_menu', array( &$wp_admin_bar ) );
+		$this->assertTrue( $this->plugin->add_admin_bar_customize_link_queried_object_autofocus( $wp_admin_bar ) );
+		$node = $wp_admin_bar->get_node( 'customize' );
+		$this->assertTrue( is_object( $node ) );
+		$parsed_url = wp_parse_url( $node->href );
+		$query_params = array();
+		parse_str( $parsed_url['query'], $query_params );
+		$this->assertArrayHasKey( 'autofocus', $query_params );
+		$this->assertArrayHasKey( 'section', $query_params['autofocus'] );
+		$this->assertEquals( sprintf( 'post[%s][%d]', get_post_type( $post_id ), $post_id ), $query_params['autofocus']['section'] );
 	}
 
 	/**
