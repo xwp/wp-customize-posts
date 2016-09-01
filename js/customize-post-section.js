@@ -273,7 +273,7 @@
 				section.addDateControl();
 			}
 			if ( postTypeObj.supports['page-attributes'] || postTypeObj.supports.parent ) {
-				section.addPostParentControl();
+				section.addParentControl();
 			}
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
@@ -475,18 +475,18 @@
 		},
 
 		/**
-		 * Add post parent control.
+		 * Add parent control.
 		 *
 		 * @returns {wp.customize.Control} Added control.
 		 */
-		addPostParentControl: function() {
+		addParentControl: function() {
 			var section = this, control, setting = api( section.id ), controlId, params;
 
 			controlId = section.id + '[post_parent]';
 			params = {
 				section: section.id,
 				priority: 20,
-				label: api.Posts.data.l10n.postParentLabel,
+				label: api.Posts.data.l10n.fieldParentLabel,
 				active: true,
 				settings: {
 					'default': setting.id
