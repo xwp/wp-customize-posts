@@ -47,6 +47,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 		// Send the current input fields from the edit post page to the Customizer via sessionStorage.
 		postSettingValue = {
 			post_title: $( '#title' ).val(),
+			post_name: $( '#post_name' ).val(),
 			post_content: editor && ! editor.isHidden() ? wp.editor.removep( editor.getContent() ) : $( '#content' ).val(),
 			post_excerpt: $( '#excerpt' ).val(),
 			comment_status: $( '#comment_status' ).prop( 'checked' ) ? 'open' : 'closed',
@@ -77,6 +78,9 @@ var EditPostPreviewAdmin = (function( $ ) {
 				$( '#comment_status' ).prop( 'checked', 'open' === data[ postSettingId ].comment_status ).trigger( 'change' );
 				$( '#ping_status' ).prop( 'checked', 'open' === data[ postSettingId ].ping_status ).trigger( 'change' );
 				$( '#post_author_override' ).val( data[ postSettingId ].post_author ).trigger( 'change' );
+				$( '#post_name' ).val( data[ postSettingId ].post_name ).trigger( 'change' );
+				$( '#new-post-slug' ).val( data[ postSettingId ].post_name );
+				$( '#editable-post-name, #editable-post-name-full' ).text( data[ postSettingId ].post_name );
 			}
 
 			// Let plugins handle updates.
