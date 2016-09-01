@@ -272,7 +272,7 @@
 				section.addStatusControl();
 				section.addDateControl();
 			}
-			if ( postTypeObj.supports['page-attributes'] ) {
+			if ( postTypeObj.supports['page-attributes'] || postTypeObj.supports.parent ) {
 				section.addPostParentControl();
 			}
 			if ( postTypeObj.supports.editor ) {
