@@ -300,7 +300,7 @@
 		 */
 		addPostFieldControlNotification: function addPostFieldControlNotification( code, notification ) {
 			var isSettingNotification, isSettingPropertyNotification;
-			isSettingNotification = -1 !== code.indexOf( ':' ) || notification.data && notification.data.setting; // Note that sniffing for ':' is deprecated as of #36944.
+			isSettingNotification = -1 !== code.indexOf( ':' ) || notification.setting; // Note that sniffing for ':' is deprecated as of #36944 & #37890.
 			isSettingPropertyNotification = notification.data && notification.data.setting_property === this.setting_property;
 			if ( isSettingPropertyNotification || ! isSettingNotification ) {
 				return api.Values.prototype.add.call( this, code, notification );
