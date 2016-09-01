@@ -78,6 +78,9 @@
 				},
 				multiple: false,
 				placeholder: api.Posts.data.l10n.jumpToPostPlaceholder.replace( '%s', postTypeObj.labels.singular_name ),
+				nextSearchTerm: function retainSearchTerm( selectedObject, currentSearchTerm ) {
+					return currentSearchTerm;
+				},
 				width: '80%' // @todo Flex box?
 			});
 
