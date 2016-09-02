@@ -332,23 +332,6 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests get_author_choices().
-	 *
-	 * @covers WP_Customize_Posts::get_author_choices()
-	 */
-	public function test_get_author_choices() {
-		$posts = new WP_Customize_Posts( $this->wp_customize );
-		$choices = $posts->get_author_choices();
-		$this->assertTrue( count( $choices ) > 0 );
-		foreach ( $choices as $choice ) {
-			$this->assertInternalType( 'array', $choice );
-			$this->assertArrayHasKey( 'text', $choice );
-			$this->assertArrayHasKey( 'value', $choice );
-			$this->assertTrue( (bool) get_user_by( 'ID', $choice['value'] ) );
-		}
-	}
-
-	/**
 	 * Get month choices.
 	 *
 	 * @covers WP_Customize_Posts::get_date_month_choices()
@@ -411,7 +394,6 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'post', $exports['postTypes'] );
 		$this->assertArrayHasKey( 'postStatusChoices', $exports );
 		$this->assertArrayHasKey( 'dateMonthChoices', $exports );
-		$this->assertArrayHasKey( 'authorChoices', $exports );
 		$this->assertArrayHasKey( 'initialServerDate', $exports );
 		$this->assertInternalType( 'int', strtotime( $exports['initialServerDate'] ) );
 		$this->assertArrayHasKey( 'initialServerTimestamp', $exports );

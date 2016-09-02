@@ -508,32 +508,6 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Get the page parent choices array.
-	 *
-	 * @return array
-	 */
-	public function get_post_parent_choices() {
-		$choices = array();
-
-		$post_id = url_to_postid( $this->manager->get_preview_url() );
-
-		$pages = get_pages( array(
-			'exclude' => array( $post_id ),
-		) );
-
-		if ( ! empty( $pages ) ) {
-			foreach ( (array) $pages as $page ) {
-				$choices[] = array(
-					'value' => (int) $page->ID,
-					'text' => sprintf( '%s', $page->post_title ),
-				);
-			}
-		}
-
-		return $choices;
-	}
-
-	/**
 	 * Return whether current user can edit supplied post.
 	 *
 	 * @param WP_Post|int $post Post.
@@ -639,8 +613,7 @@ final class WP_Customize_Posts {
 		$exports = array(
 			'postTypes' => $post_types,
 			'postStatusChoices' => $this->get_post_status_choices(),
-			'authorChoices' => $this->get_author_choices(),
-			'postParentChoices' => $this->get_post_parent_choices(),
+			'authorChoices' => $this->get_author_choices(), // @todo Use Ajax to fetch this data or Customize Object Selector (once it supports users).
 			'dateMonthChoices' => $this->get_date_month_choices(),
 			'initialServerDate' => current_time( 'mysql', false ),
 			'initialServerTimestamp' => floor( microtime( true ) * 1000 ),
@@ -655,12 +628,20 @@ final class WP_Customize_Posts {
 				'fieldExcerptLabel' => __( 'Excerpt', 'customize-posts' ),
 				'fieldDiscussionLabel' => __( 'Discussion', 'customize-posts' ),
 				'fieldAuthorLabel' => __( 'Author', 'customize-posts' ),
-				'postParentLabel' => __( 'Parent', 'customize-posts' ),
+				'fieldParentLabel' => __( 'Parent', 'customize-posts' ),
 				'noTitle' => __( '(no title)', 'customize-posts' ),
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
 				'openEditor' => __( 'Open Editor', 'customize-posts' ), // @todo Move this into editor control?
 				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
 				'invalidDateError' => __( 'Whoops, the provided date is invalid.', 'customize-posts' ),
+				'installCustomizeObjectSelector' => sprintf(
+					__( 'This control depends on having the %s plugin installed and activated.', 'customize-posts' ),
+					sprintf(
+						'<a href="%s" target="_blank">%s</a>',
+						'https://github.com/xwp/wp-customize-object-selector',
+						__( 'Customize Object Selector', 'customize-posts' )
+					)
+				),
 
 				/* translators: %s post type */
 				'jumpToPostPlaceholder' => __( 'Jump to %s', 'customize-posts' ),

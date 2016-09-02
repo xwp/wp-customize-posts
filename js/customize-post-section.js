@@ -492,8 +492,7 @@
 					'default': setting.id
 				},
 				field_type: 'select',
-				setting_property: 'post_parent',
-				choices: api.Posts.data.postParentChoices
+				setting_property: 'post_parent'
 			};
 
 			if ( api.controlConstructor.object_selector ) {
@@ -512,8 +511,8 @@
 			} else {
 				control = new api.controlConstructor.dynamic( controlId, {
 					params: _.extend( params, {
-						field_type: 'select',
-						choices: api.Posts.data.postParentChoices
+						field_type: 'hidden',
+						description: api.Posts.data.l10n.installCustomizeObjectSelector
 					} )
 				} );
 			}
