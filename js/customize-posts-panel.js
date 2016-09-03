@@ -77,7 +77,7 @@
 					return m;
 				},
 				multiple: false,
-				placeholder: api.Posts.data.l10n.jumpToPostPlaceholder.replace( '%s', postTypeObj.labels.singular_name ),
+				placeholder: postTypeObj.labels.search_items,
 				width: '80%' // @todo Flex box?
 			});
 
