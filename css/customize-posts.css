@@ -265,6 +265,7 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 }
 
 .customize-control-post_date .time-info-handle {
+	text-decoration: none;
 	font-size: 14px;
 	line-height: 24px;
 	margin-bottom: 4px;
