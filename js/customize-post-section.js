@@ -501,7 +501,11 @@
 						post_query_vars: {
 							post_type: section.params.post_type,
 							post_status: 'publish',
-							post__not_in: [ section.params.post_id ]
+							post__not_in: [ section.params.post_id ],
+							tree_args: {
+								exclude_tree: section.params.post_id,
+								sort_column: 'menu_order, post_title'
+							}
 						},
 						select2_options: {
 							multiple: false
