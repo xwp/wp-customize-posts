@@ -480,13 +480,14 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addParentControl: function() {
-			var section = this, control, setting = api( section.id ), controlId, params;
+			var section = this, control, setting = api( section.id ), controlId, params, postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 
 			controlId = section.id + '[post_parent]';
 			params = {
 				section: section.id,
 				priority: 20,
-				label: api.Posts.data.l10n.fieldParentLabel,
+				label: postTypeObj.labels.parent_item_colon ? postTypeObj.labels.parent_item_colon.replace( /:$/, '' ) : api.Posts.data.l10n.fieldParentLabel,
 				active: true,
 				settings: {
 					'default': setting.id
@@ -508,7 +509,9 @@
 							}
 						},
 						select2_options: {
-							multiple: false
+							multiple: false,
+							allowClear: true,
+							placeholder: postTypeObj.labels.search_items
 						}
 					} )
 				} );
