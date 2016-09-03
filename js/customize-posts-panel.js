@@ -78,7 +78,7 @@
 				},
 				multiple: false,
 				placeholder: postTypeObj.labels.search_items,
-				width: '80%' // @todo Flex box?
+				width: '80%'
 			});
 
 			panel.postSelectionLookupSelect2.on( 'select2:select', function() {
