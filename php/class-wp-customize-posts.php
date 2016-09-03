@@ -633,9 +633,6 @@ final class WP_Customize_Posts {
 				'openEditor' => __( 'Open Editor', 'customize-posts' ), // @todo Move this into editor control?
 				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
 				'invalidDateError' => __( 'Whoops, the provided date is invalid.', 'customize-posts' ),
-
-				/* translators: %s post type */
-				'jumpToPostPlaceholder' => __( 'Jump to %s', 'customize-posts' ),
 			),
 		);
 
