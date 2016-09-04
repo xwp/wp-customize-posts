@@ -847,7 +847,10 @@ final class WP_Customize_Posts {
 	 * @access public
 	 */
 	public function preview_customize_draft_post_ids() {
-		if ( isset( $_REQUEST['preview'] ) ) { // @todo Why not look at $wp_query->is_preview()?
+
+		// Note that is_preview() cannot be used because this is called at after_setup_theme before WP_Query is initialized.
+		$is_preview = isset( $_GET['preview'] );
+		if ( $is_preview ) {
 			$this->customize_draft_post_ids = array();
 			foreach ( $this->manager->unsanitized_post_values() as $id => $post_data ) {
 				if ( ! preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches ) ) {
