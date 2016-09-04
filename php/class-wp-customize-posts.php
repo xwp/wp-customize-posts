@@ -899,7 +899,8 @@ final class WP_Customize_Posts {
 	 * @return string
 	 */
 	public function post_link_draft( $permalink, $post ) {
-		if ( is_customize_preview() && ! $this->suppress_post_link_filters ) {
+		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $post ) );
+		if ( ( is_customize_preview() && ! $this->suppress_post_link_filters ) || array_key_exists( $post_setting_id, $this->manager->unsanitized_post_values() ) ) {
 			$permalink = Edit_Post_Preview::get_preview_post_link( get_post( $post ) );
 		}
 		return $permalink;
