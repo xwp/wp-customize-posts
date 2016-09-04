@@ -204,6 +204,7 @@ final class WP_Customize_Posts {
 	public function register_post_type_meta( $post_type, $meta_key, $setting_args = array() ) {
 		$setting_args = array_merge(
 			array(
+				'single' => true,
 				'capability' => null,
 				'theme_supports' => null,
 				'default' => null,

@@ -94,11 +94,13 @@ final class WP_Customize_Posts_Preview {
 		if ( $this->has_preview_filters ) {
 			return false;
 		}
+		add_action( 'pre_get_posts', array( $this, 'prepare_query_preview' ) );
+		add_filter( 'get_meta_sql', array( $this, 'filter_get_meta_sql_to_inject_customized_state' ), 10, 6 );
+		add_filter( 'posts_request', array( $this, 'filter_posts_request_to_inject_customized_state' ), 10, 2 );
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_preview_settings' ), 1000, 2 );
 		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
 		add_filter( 'the_title', array( $this, 'filter_the_title' ), 1, 2 );
 		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_preview' ), 1000, 4 );
-		add_filter( 'posts_where', array( $this, 'filter_posts_where_to_include_previewed_posts' ), 10, 2 );
 		add_filter( 'wp_setup_nav_menu_item', array( $this, 'filter_nav_menu_item_to_set_url' ) );
 		add_filter( 'comments_open', array( $this, 'filter_preview_comments_open' ), 10, 2 );
 		add_filter( 'pings_open', array( $this, 'filter_preview_pings_open' ), 10, 2 );
@@ -221,11 +223,10 @@ final class WP_Customize_Posts_Preview {
 	/**
 	 * Override post data for previewed settings.
 	 *
-	 * @param array    $posts Posts.
-	 * @param WP_Query $query Query.
+	 * @param array $posts Posts.
 	 * @return array Previewed posts.
 	 */
-	public function filter_the_posts_to_preview_settings( array $posts, WP_Query $query ) {
+	public function filter_the_posts_to_preview_settings( array $posts ) {
 		foreach ( $posts as &$post ) {
 			$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
 			$setting = $this->component->manager->get_setting( $post_setting_id );
@@ -233,19 +234,6 @@ final class WP_Customize_Posts_Preview {
 				$setting->override_post_data( $post );
 			}
 		}
-
-		// Re-sort the posts in the query.
-		$orderby = $query->get( 'orderby' );
-		if ( empty( $orderby ) ) {
-			$orderby = 'date';
-		}
-		// @todo This is short-sighted because the LIMIT clause can cause the expected post to not be in the result set. This can only be solved in get_previewed_posts_for_query by re-implementing WP_Query.
-		if ( in_array( $orderby, $this->supported_orderby_keys, true ) ) {
-			$this->current_query = $query;
-			usort( $posts, array( $this, 'compare_posts_to_resort_posts_for_query' ) );
-			$this->current_query = null;
-		}
-
 		return $posts;
 	}
 
@@ -266,254 +254,302 @@ final class WP_Customize_Posts_Preview {
 	}
 
 	/**
-	 * Current query.
+	 * Prepare for previewing a query to ensure that filters get applied and that customized query results don't get cached.
 	 *
-	 * @var WP_Query
+	 * @param WP_Query $query The WP_Query instance.
 	 */
-	protected $current_query;
+	public function prepare_query_preview( WP_Query $query ) {
+		if ( ! $query->is_singular() ) {
+			$query->set( 'cache_results', false );
+			$query->set( 'suppress_filters', false );
+			$query->set( 'es_integrate', false ); // Disable offloading to ElasticSearch for <https://github.com/10up/ElasticPress>.
+			$query->set( 'es', false ); // Disable offloading to ElasticSearch for <https://github.com/alleyinteractive/es-wp-query>.
+		}
+	}
 
 	/**
-	 * Supported orderby keys.
+	 * Filter post_fields to inject customized state.
 	 *
-	 * Unsupported orderby keys that need to be implemented include:
-	 *  - 'name',
-	 *  - 'author',
-	 *  - 'meta_value',
-	 *  - 'meta_value_num',
-	 *  - 'post_name__in',
-	 *  - 'post_parent__in'
+	 * This ensures that ordering will respect the customized post data.
 	 *
-	 * @todo Implement more and more of these in compare_posts_to_resort_posts_for_query.
+	 * @param string   $sql_select  The SELECT clause of the query.
+	 * @param WP_Query $query       The WP_Query instance (passed by reference).
+	 * @returns string Select fields.
+	 */
+	public function filter_posts_request_to_inject_customized_state( $sql_select, $query ) {
+		global $wpdb;
+
+		if ( $query->is_singular() ) {
+			return $sql_select;
+		}
+
+		// Strip out SQL_CALC_FOUND_ROWS, ORDER BY, and LIMIT from subselect query.
+		$sql_subselect = preg_replace( '#^SELECT\s+SQL_CALC_FOUND_ROWS\s+#i', 'SELECT ', $sql_select );
+		$sql_subselect = preg_replace( '#\s+LIMIT\s\d+(,\s*\d+)$#i', '', $sql_subselect );
+		$sql_subselect = preg_replace( '#\s+ORDER\s+BY\s+(\w+\.\w+(\s+(ASC|DESC))?)(\s*,\s*\w+\.\w+(\s+(ASC|DESC))?)*$#i', '', $sql_subselect );
+
+		// Warning: The list of fields must match the list of fields in the CREATE TABLE statement or else a MySQL error will occur.
+		$table_fields = array(
+			'ID' => 'UNSIGNED',
+			'post_author' => 'UNSIGNED',
+			'post_date' => 'DATETIME',
+			'post_date_gmt' => 'DATETIME',
+			'post_content' => 'CHAR',
+			'post_title' => 'CHAR',
+			'post_excerpt' => 'CHAR',
+			'post_status' => 'CHAR',
+			'comment_status' => 'CHAR',
+			'ping_status' => 'CHAR',
+			'post_password' => 'CHAR',
+			'post_name' => 'CHAR',
+			'to_ping' => 'CHAR',
+			'pinged' => 'CHAR',
+			'post_modified' => 'DATETIME',
+			'post_modified_gmt' => 'DATETIME',
+			'post_content_filtered' => 'CHAR',
+			'post_parent' => 'UNSIGNED',
+			'guid' => 'CHAR',
+			'menu_order' => 'UNSIGNED',
+			'post_type' => 'CHAR',
+			'post_mime_type' => 'CHAR',
+			'comment_count' => 'UNSIGNED',
+		);
+
+		$sql_literal_selects = array();
+		$required_char_fields = array(
+			'post_type',
+			'post_name',
+		);
+
+		$customized_post_ids = array();
+		$empty_date = '0000-00-00 00:00:00';
+		$post_values = $this->component->manager->unsanitized_post_values();
+		foreach ( $this->component->manager->settings() as $setting ) {
+			if ( ! ( $setting instanceof WP_Customize_Post_Setting ) ) {
+				continue;
+			}
+			if ( ! array_key_exists( $setting->id, $post_values ) ) {
+				continue;
+			}
+
+			$post = get_post( $setting->post_id );
+			if ( empty( $post ) ) {
+				continue;
+			}
+			$customized_post_ids[] = $setting->post_id;
+
+			$post_data = array_merge(
+				$post->to_array(),
+				$setting->augment_gmt_dates( $setting->value() )
+			);
+
+			foreach ( array( 'post_date', 'post_modified' ) as $date_field ) {
+				if ( $empty_date === $post_data[ $date_field ] ) {
+					$post_data[ $date_field ] = current_time( 'mysql', false );
+				}
+			}
+			$post_data = $setting->augment_gmt_dates( $post_data );
+
+			$select_fields = array();
+			foreach ( $table_fields as $field_name => $type ) {
+				if ( 'CHAR' === $type && ! in_array( $field_name, $required_char_fields, true ) && false === strpos( $sql_select, "$wpdb->posts.$field_name" ) ) {
+					// Skip exporting customized value since the field is not mentioned. This saves query size.
+					$select_field = sprintf(
+						'NULL AS %s',
+						$field_name
+					);
+				} else {
+					// Export the full customized value since the field is mentioned.
+					$select_field = sprintf(
+						'CAST( %s AS %s) AS %s',
+						$wpdb->prepare( '%s', $post_data[ $field_name ] ),
+						$type,
+						$field_name
+					);
+				}
+
+				$select_fields[] = $select_field;
+			}
+			$sql_literal_selects[] = sprintf( '( SELECT %s )', join( ', ', $select_fields ) );
+		}
+
+		if ( empty( $customized_post_ids ) ) {
+			return $sql_select;
+		}
+
+		// Exclude the customized posts from the subselect since they will be unioned with select literals.
+		$sql_subselect = preg_replace(
+			'#(?<=WHERE 1=1)#',
+			sprintf( " AND ( $wpdb->posts.ID NOT IN ( %s ) )", join( ',', array_map( 'absint', $customized_post_ids ) ) ),
+			$sql_subselect,
+			1 // Limit.
+		);
+
+		$sql_select = preg_replace(
+			sprintf( '#\sFROM %s\s#', preg_quote( $wpdb->posts, '#' ) ),
+			sprintf(
+				' FROM ( ( %1$s ) UNION ALL %2$s ) AS %3$s ',
+				$sql_subselect,
+				join( ' UNION ALL ', $sql_literal_selects ),
+				$wpdb->posts
+			),
+			$sql_select,
+			1 // Limit.
+		);
+
+		return $sql_select;
+	}
+
+	/**
+	 * Queried meta keys.
 	 *
 	 * @var array
 	 */
-	public $supported_orderby_keys = array( 'title', 'modified', 'menu_order', 'parent', 'date' );
+	protected $queried_meta_keys = array();
 
 	/**
-	 * Compare two posts for re-sorting with previewed changes applied.
+	 * Filters the meta query's generated SQL to inject the customized data into a unioned derived table.
 	 *
-	 * @param WP_Post $post1 Post 1.
-	 * @param WP_Post $post2 Post 2.
-	 * @return int Comparison.
+	 * @param array    $clauses           Array containing the query's JOIN and WHERE clauses.
+	 * @param array    $queries           Array of meta queries.
+	 * @param string   $type              Type of meta.
+	 * @param string   $primary_table     Primary table.
+	 * @param string   $primary_id_column Primary column ID.
+	 * @param WP_Query $main_query     The main query object.
+	 * @return array Clauses.
 	 */
-	public function compare_posts_to_resort_posts_for_query( $post1, $post2 ) {
-		$comparison = 0;
-		$orderby = $this->current_query->get( 'orderby' );
-		if ( empty( $orderby ) ) {
-			$orderby = 'date';
+	public function filter_get_meta_sql_to_inject_customized_state( $clauses, $queries, $type, $primary_table, $primary_id_column, $main_query ) {
+		global $wpdb;
+		unset( $primary_table, $primary_id_column );
+
+		if ( 'post' !== $type ) {
+			return $clauses;
+		}
+		if ( $main_query && $main_query->is_singular() ) {
+			return $clauses;
 		}
 
-		if ( 'date' === $orderby ) {
-			$comparison = strcmp( $post1->post_date, $post2->post_date );
-		} elseif ( 'title' ) {
-			$comparison = strcmp( $post1->post_title, $post2->post_title );
-		} elseif ( 'modified' ) {
-			$comparison = strcmp( $post1->post_modified, $post2->post_modified );
-		} elseif ( 'menu_order' ) {
-			$comparison = $post1->menu_order - $post2->menu_order;
-		} elseif ( 'parent' ) {
-			$comparison = $post1->post_parent - $post2->post_parent;
+		$this->queried_meta_keys = array();
+		foreach ( $queries as $query ) {
+			if ( isset( $query['key'] ) ) {
+				$this->queried_meta_keys[] = $query['key'];
+			} elseif ( isset( $query['relation'] ) && isset( $query[0] ) ) {
+				foreach ( $query as $subquery ) {
+					if ( isset( $subquery['key'] ) ) {
+						$this->queried_meta_keys[] = $subquery['key'];
+					}
+				}
+			}
+		}
+		$this->queried_meta_keys = array_unique( $this->queried_meta_keys );
+		if ( empty( $this->queried_meta_keys ) ) {
+			return $clauses;
 		}
 
-		if ( 'ASC' !== strtoupper( $this->current_query->get( 'order' ) ) ) {
-			$comparison = -$comparison;
-		}
+		$clauses['join'] = preg_replace_callback(
+			'#(?P<join>(INNER|LEFT)\s+JOIN)\s+' . $wpdb->postmeta . '(?:\s+AS\s+(?P<table_alias>\w+))?(?=\s+ON)#',
+			array( $this, '_inject_meta_sql_customized_derived_tables' ),
+			$clauses['join']
+		);
 
-		return $comparison;
+		$this->queried_meta_keys = array();
+		return $clauses;
 	}
 
 	/**
-	 * Get current posts being previewed which should be included in the given query.
+	 * Placeholder meta ID.
 	 *
-	 * @todo The $published flag is likely a vestige of when this was specifically for post_status. Refactoring needed.
-	 *
-	 * @access public
-	 *
-	 * @param \WP_Query $query     The query.
-	 * @param boolean   $published Whether to return the published posts. Default 'true'.
-	 * @return array
+	 * @var int
 	 */
-	public function get_previewed_posts_for_query( WP_Query $query, $published = true ) {
-		$query_vars = $query->query_vars;
+	protected $placeholder_meta_id = -1;
 
-		if ( empty( $query_vars['post_type'] ) ) {
-			$query_vars['post_type'] = array( 'post' );
-		} elseif ( is_string( $query_vars['post_type'] ) ) {
-			$query_vars['post_type'] = explode( ',', $query_vars['post_type'] );
-		}
+	/**
+	 * Inject customized derived tables into meta SQL.
+	 *
+	 * @access private
+	 *
+	 * @param array $matches Matches.
+	 * @returns string SQL JOIN.
+	 */
+	public function _inject_meta_sql_customized_derived_tables( $matches ) {
+		global $wpdb;
+		$table_alias = isset( $matches['table_alias'] ) ? $matches['table_alias'] : $wpdb->postmeta;
 
-		if ( empty( $query_vars['post_status'] ) ) {
-			$query_vars['post_status'] = array( 'publish' );
-		} elseif ( is_string( $query_vars['post_status'] ) ) {
-			$query_vars['post_status'] = explode( ',', $query_vars['post_status'] );
-		}
+		// Warning: The list of fields must match the list of fields in the CREATE TABLE statement or else a MySQL error will occur.
+		$table_fields = array(
+			'meta_id' => 'SIGNED', // Was UNSIGNED, but we're adding negative IDs to ensure no collisions.
+			'post_id' => 'UNSIGNED',
+			'meta_key' => 'CHAR',
+			'meta_value' => 'CHAR',
+		);
 
-		$post_ids = array();
-		$settings = $this->component->manager->unsanitized_post_values();
-		foreach ( $settings as $id => $setting_value ) {
-			$is_match = (
-				preg_match( WP_Customize_Postmeta_Setting::SETTING_ID_PATTERN, $id, $matches )
-				||
-				preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches )
-			);
-			if ( ! $is_match ) {
+		$sql_literal_selects = array();
+		$sql_meta_exclusion_where_clauses = array();
+
+		$post_values = $this->component->manager->unsanitized_post_values();
+		foreach ( $this->component->manager->settings() as $setting ) {
+			if ( ! ( $setting instanceof WP_Customize_Postmeta_Setting ) ) {
 				continue;
 			}
-			$statuses = $query_vars['post_status'];
-			$setting_post_id = intval( $matches['post_id'] );
-			$setting_post_type = $matches['post_type'];
-			$setting_post_meta_key = isset( $matches['meta_key'] ) ? $matches['meta_key'] : null;
-			$setting_type = $setting_post_meta_key ? 'postmeta' : 'post';
+			if ( ! array_key_exists( $setting->id, $post_values ) ) {
+				continue;
+			}
 
-			if ( 'post' === $setting_type ) {
-				// Post type match.
-				$post_type_match = (
-					empty( $query_vars['post_type'] )
-					||
-					in_array( $setting_post_type, $query_vars['post_type'], true )
-					||
-					(
-						in_array( 'any', $query_vars['post_type'], true )
-						&&
-						in_array( $setting_post_type, get_post_types( array( 'exclude_from_search' => false ) ), true )
-					)
+			// Skip joining customized meta that isn't being queried.
+			if ( ! in_array( $setting->meta_key, $this->queried_meta_keys, true ) ) {
+				continue;
+			}
+
+			$postmeta_rows = array();
+
+			if ( $setting->single ) {
+				$postmeta_rows[] = array(
+					'meta_id' => $this->placeholder_meta_id--,
+					'post_id' => $setting->post_id,
+					'meta_key' => $setting->meta_key,
+					'meta_value' => $setting->value(),
 				);
-
-				// Post status match.
-				$post_type_obj = get_post_type_object( $setting_post_type );
-				if ( $post_type_obj && current_user_can( $post_type_obj->cap->read_private_posts, $setting_post_id ) ) {
-					$statuses[] = 'private';
-				}
-				if ( empty( $query_vars['post_status'] ) ) {
-					$post_status_match = true;
-				} elseif ( false === $published ) {
-					$post_status_match = ! in_array( $setting_value['post_status'], array( 'publish', 'private' ), true );
-				} else {
-					$post_status_match = in_array( $setting_value['post_status'], $statuses, true );
-				}
-
-				// Post IN match.
-				$post__in_match = empty( $query_vars['post__in'] ) || in_array( $setting_post_id, $query_vars['post__in'], true );
-				if ( $post_status_match && $post_type_match && $post__in_match ) {
-					$post_ids[] = $setting_post_id;
-				}
-			} elseif ( ! empty( $query->meta_query ) && ! empty( $query->meta_query->queries ) ) { // @todo The $published flag is probably an indication of something awry.
-				$meta_queries = $query->meta_query->queries;
-				$relation = $meta_queries['relation'];
-				unset( $meta_queries['relation'] );
-				$matched_queries = array();
-
-				foreach ( $meta_queries as $meta_query ) {
-					if ( empty( $meta_query['key'] ) || $meta_query['key'] !== $setting_post_meta_key ) {
-						continue;
-					}
-
-					if ( ! isset( $meta_query['value'] ) || '' === $meta_query['value'] ) {
-						$matched_queries[] = true;
-						continue;
-					}
-
-					if ( is_array( $meta_query['value'] ) && ! empty( $meta_query['compare'] ) && 'IN' !== $meta_query['compare'] ) {
-						continue;
-					}
-
-					if ( empty( $meta_query['compare'] ) ) {
-						if ( is_array( $meta_query['value'] ) ) {
-							$meta_query['compare'] = 'IN';
-						} else {
-							$meta_query['compare'] = '=';
-						}
-					}
-					$is_setting_value_array = is_array( $setting_value );
-					if ( '=' === $meta_query['compare'] ) {
-						$values = $is_setting_value_array ? $setting_value : array( $setting_value );
-						$compared_flag = in_array( (string) $meta_query['value'], array_map( 'strval', $values ), true );
-					} elseif ( '>=' === $meta_query['compare'] && ! $is_setting_value_array ) {
-						$compared_flag = ( (string) $setting_value >= (string) $meta_query['value'] );
-					} elseif ( '<=' === $meta_query['compare'] && ! $is_setting_value_array ) {
-						$compared_flag = ( (string) $setting_value <= (string) $meta_query['value'] );
-					} elseif ( '>' === $meta_query['compare'] && ! $is_setting_value_array ) {
-						$compared_flag = ( (string) (string) $setting_value > $meta_query['value'] );
-					} elseif ( '<' === $meta_query['compare'] && ! $is_setting_value_array ) {
-						$compared_flag = ( (string) $setting_value < (string) $meta_query['value'] );
-					} elseif ( 'IN' === $meta_query['compare'] && is_array( $meta_query['value'] ) ) {
-						$values = $is_setting_value_array ? $setting_value : array( $setting_value );
-						$common_values = array_intersect( array_map( 'strval', $values ), array_map( 'strval', $meta_query['value'] ) );
-						$compared_flag = empty( $common_values ) ? false : true;
-					}
-
-					if ( isset( $compared_flag ) ) {
-						// Check should we include this in IN query or NOT IN query.
-						if ( true === $published ) {
-							$matched_queries[] = $compared_flag;
-						} else {
-							$matched_queries[] = ! $compared_flag;
-						}
-					} else {
-						$matched_queries[] = false;
-					}
-				}
-
-				if ( 'AND' === $relation ) {
-					if ( in_array( false, $matched_queries, true ) ) {
-						$matched_queries = array();
-					}
-				} else {
-					$matched_queries = array_filter( $matched_queries );
-				}
-
-				if ( ! empty( $matched_queries ) ) {
-					$post_ids[] = $setting_post_id;
+			} else {
+				foreach ( $setting->value() as $meta_value ) {
+					$postmeta_rows[] = array(
+						'meta_id' => $this->placeholder_meta_id--,
+						'post_id' => $setting->post_id,
+						'meta_key' => $setting->meta_key,
+						'meta_value' => $meta_value,
+					);
 				}
 			}
-		}
-		/**
-		 * Filter customize preview posts.
-		 *
-		 * @param array $post_ids Post ids being filtered.
-		 * @param array array {
-		 *     Args.
-		 *
-		 *     @type \WP_Query $query   WP_Query obj.
-		 *     @type array     $settings Field Values in snapshot.
-		 *     @type bool      $publish IN query or NOT IN query.
-		 * }
-		 */
-		$post_ids = apply_filters( 'customize_previewed_posts_for_query', $post_ids, array(
-			'query' => $query,
-			'settings' => $settings,
-			'publish' => $published,
-		) );
 
-		return $post_ids;
-	}
+			$sql_meta_exclusion_where_clauses[] = $wpdb->prepare( '( ! ( post_id = %d AND meta_key = %s ) )', $setting->post_id, $setting->meta_key );
 
-	/**
-	 * Include stubbed posts that are being previewed.
-	 *
-	 * @filter posts_where
-	 * @access public
-	 *
-	 * @param string   $where The WHERE clause of the query.
-	 * @param WP_Query $query The WP_Query instance (passed by reference).
-	 * @return string
-	 */
-	public function filter_posts_where_to_include_previewed_posts( $where, $query ) {
-		global $wpdb;
-
-		// @todo There are undoubtedly hundreds of possible conditions that are not being accounted for in regards to all of the possible query vars a WP_Query can take.
-		if ( ! $query->is_singular() ) {
-			$post__not_in = implode( ',', array_map( 'absint', $this->get_previewed_posts_for_query( $query, false ) ) );
-			if ( ! empty( $post__not_in ) ) {
-				$where .= " AND {$wpdb->posts}.ID NOT IN ($post__not_in)";
-			}
-			$post__in = implode( ',', array_map( 'absint', $this->get_previewed_posts_for_query( $query, true ) ) );
-			if ( ! empty( $post__in ) ) {
-				$where .= " OR {$wpdb->posts}.ID IN ($post__in)";
+			foreach ( $postmeta_rows as $postmeta_row ) {
+				$select_fields = array();
+				foreach ( $table_fields as $field_name => $type ) {
+					$select_field = sprintf(
+						'CAST( %s AS %s) AS %s',
+						$wpdb->prepare( '%s', $postmeta_row[ $field_name ] ),
+						$type,
+						$field_name
+					);
+					$select_fields[] = $select_field;
+				}
+				$sql_literal_selects[] = sprintf( '( SELECT %s )', join( ', ', $select_fields ) );
 			}
 		}
 
-		return $where;
+		if ( empty( $sql_literal_selects ) ) {
+			return $matches[0];
+		}
+
+		$sql = ' ' . $matches['join'] . ' ';
+		$sql .= sprintf(
+			' ( ( %1$s ) UNION ALL %2$s ) AS %3$s ',
+			"SELECT * FROM $wpdb->postmeta WHERE " . join( ' AND ', $sql_meta_exclusion_where_clauses ),
+			join( ' UNION ALL ', $sql_literal_selects ),
+			$table_alias
+		);
+
+		return $sql;
 	}
 
 	/**
@@ -632,7 +668,11 @@ final class WP_Customize_Posts_Preview {
 				$value = $postmeta_setting->post_value();
 			}
 
-			return $single ? $value : array( $value );
+			if ( $postmeta_setting->single ) {
+				return $single ? $value : array( $value );
+			} else {
+				return $single ? $value[0] : $value;
+			}
 		} else {
 
 			$is_recursing = true;
@@ -643,11 +683,18 @@ final class WP_Customize_Posts_Preview {
 				if ( ! array_key_exists( $postmeta_setting->id, $post_values ) ) {
 					continue;
 				}
-				$meta_value = $postmeta_setting->post_value();
-				$meta_value = maybe_serialize( $meta_value );
 
-				// Note that $single has no effect when $meta_key is ''.
-				$meta_values[ $postmeta_setting->meta_key ] = array( $meta_value );
+				if ( $postmeta_setting->single ) {
+					$meta_value = $postmeta_setting->post_value();
+					$meta_value = maybe_serialize( $meta_value );
+
+					// Note that $single has no effect when $meta_key is ''.
+					$meta_values[ $postmeta_setting->meta_key ] = array( $meta_value );
+				} else {
+					$meta_value = $postmeta_setting->post_value();
+					$meta_value = maybe_serialize( $meta_value );
+					$meta_values[ $postmeta_setting->meta_key ] = $meta_value;
+				}
 			}
 			return $meta_values;
 		}

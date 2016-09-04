@@ -48,6 +48,17 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 	public $meta_key;
 
 	/**
+	 * Whether the value is mapped to a single postmeta row.
+	 *
+	 * If false, the value is expected to be an array and mapped to multiple postmeta rows.
+	 *
+	 * @todo This should be automatically sniffed from get_registered_meta_keys() since register_meta() now includes a 'single' param.  See https://github.com/xwp/wp-customize-posts/pull/232
+	 *
+	 * @var bool
+	 */
+	public $single = true;
+
+	/**
 	 * Posts component.
 	 *
 	 * @access public
@@ -80,6 +91,10 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 			throw new Exception( 'Posts component not instantiated.' );
 		}
 		$this->posts_component = $manager->posts;
+
+		if ( isset( $args['single'] ) && false === $args['single'] ) {
+			$args['default'] = array();
+		}
 
 		// Determine the capability required for editing this.
 		$update = $args['post_id'] > 0;
@@ -124,17 +139,24 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 	public function value() {
 		$meta_key = $this->meta_key;
 		$object_id = $this->post_id;
-		$single = false;
+		$single = false; // For the sake of disambiguating empty values in filtering.
 		$values = get_post_meta( $object_id, $meta_key, $single );
-		$value = array_shift( $values );
-		if ( ! isset( $value ) ) {
-			$value = $this->default;
+
+		if ( $this->single ) {
+			$value = array_shift( $values );
+			if ( ! isset( $value ) ) {
+				$value = $this->default;
+			}
+			return $value;
+		} else {
+			return $values;
 		}
-		return $value;
 	}
 
 	/**
 	 * Sanitize (and validate) an input.
+	 *
+	 * Note for non-single postmeta, the validation and sanitization callbacks will be applied on each item in the array.
 	 *
 	 * @see update_metadata()
 	 * @access public
@@ -148,31 +170,47 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 		$meta_type = 'post';
 		$object_id = $this->post_id;
 		$meta_key = $this->meta_key;
-		$prev_value = ''; // Plural meta is not supported.
+		$prev_value = ''; // Updating plural meta is not supported.
 
-		/**
-		 * Filter a Customize setting value in form.
-		 *
-		 * @param mixed                $meta_value  Value of the setting.
-		 * @param WP_Customize_Setting $this        WP_Customize_Setting instance.
-		 */
-		$meta_value = apply_filters( "customize_sanitize_{$this->id}", $meta_value, $this );
-
-		// Apply sanitization if value didn't fail validation.
-		if ( ! is_wp_error( $meta_value ) && ! is_null( $meta_value ) ) {
-			$meta_value = sanitize_meta( $meta_key, $meta_value, $meta_type );
-		}
-		if ( is_wp_error( $meta_value ) ) {
-			return $has_setting_validation ? $meta_value : null;
+		if ( $this->single ) {
+			$values = array( $meta_value );
+		} else {
+			if ( ! is_array( $meta_value ) ) {
+				return $has_setting_validation ? new WP_Error( 'expected_array', sprintf( __( 'Expected array value for non-single "%s" meta.', 'customize-posts' ), $meta_key ) ) : null;
+			}
+			$values = $meta_value;
 		}
 
-		/** This filter is documented in wp-includes/meta.php */
-		$check = apply_filters( "update_{$meta_type}_metadata", null, $object_id, $meta_key, $meta_value, $prev_value );
-		if ( null !== $check ) {
-			return $has_setting_validation ? new WP_Error( 'not_allowed', sprintf( __( 'Update to post meta "%s" blocked.', 'customize-posts' ), $meta_key ) ) : null;
+		foreach ( $values as &$value ) {
+
+			/**
+			 * Filter a Customize setting value in form.
+			 *
+			 * @param mixed                $value  Value of the setting.
+			 * @param WP_Customize_Setting $this   WP_Customize_Setting instance.
+			 */
+			$value = apply_filters( "customize_sanitize_{$this->id}", $value, $this );
+
+			// Apply sanitization if value didn't fail validation.
+			if ( ! is_wp_error( $value ) && ! is_null( $value ) ) {
+				$value = sanitize_meta( $meta_key, $value, $meta_type );
+			}
+			if ( is_wp_error( $value ) ) {
+				return $has_setting_validation ? $value : null;
+			}
+
+			/** This filter is documented in wp-includes/meta.php */
+			$check = apply_filters( "update_{$meta_type}_metadata", null, $object_id, $meta_key, $value, $prev_value );
+			if ( null !== $check ) {
+				return $has_setting_validation ? new WP_Error( 'not_allowed', sprintf( __( 'Update to post meta "%s" blocked.', 'customize-posts' ), $meta_key ) ) : null;
+			}
 		}
 
-		return $meta_value;
+		if ( $this->single ) {
+			return array_shift( $values );
+		} else {
+			return $values;
+		}
 	}
 
 	/**
@@ -209,12 +247,48 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 	 * @return bool The result of saving the value.
 	 */
 	protected function update( $meta_value ) {
-		// Inserts are not supported yet.
-		if ( $this->post_id < 0 ) {
-			return false;
-		}
 
-		$result = update_post_meta( $this->post_id, $this->meta_key, $meta_value );
-		return ( false !== $result );
+		if ( $this->single ) {
+			$result = update_post_meta( $this->post_id, $this->meta_key, $meta_value );
+			return ( false !== $result );
+		} else {
+			if ( ! is_array( $meta_value ) ) {
+				return false;
+			}
+
+			// Non Serialized $meta_value Sync to reduce SQL overhead.
+			$meta_update = get_post_meta( $this->post_id, $this->meta_key, false );
+
+			$delete = array_diff( $meta_update, $meta_value );
+			if ( ! empty( $delete ) ) {
+				$delete = array_values( $delete );
+			}
+
+			$add = array_diff( $meta_value, $meta_update );
+			if ( ! empty( $add ) ) {
+				$add = array_values( $add );
+			}
+
+			$delete_count = count( $delete );
+			$add_count = count( $add );
+
+			// Update is faster than delete + insert (SQL).
+			for ( $i = 0; $i < $delete_count && $i < $add_count; $i ++ ) {
+				update_post_meta( $this->post_id, $this->meta_key, $add[ $i ], $delete[ $i ] );
+				unset( $add[ $i ], $delete[ $i ] );
+			}
+
+			// Delete if not updated.
+			foreach ( $delete as $id ) {
+				delete_post_meta( $this->post_id, $this->meta_key, $id );
+			}
+
+			// Add if not updated.
+			foreach ( $add as $item ) {
+				add_post_meta( $this->post_id, $this->meta_key, $item, false );
+			}
+
+			return true;
+		}
 	}
 }
