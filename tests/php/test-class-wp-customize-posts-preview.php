@@ -329,6 +329,15 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test amend_first_paged_query_posts_with_customized_posts.
+	 *
+	 * @covers WP_Customize_Posts_Preview::amend_first_paged_query_posts_with_customized_posts()
+	 */
+	public function test_amend_first_paged_query_posts_with_customized_posts() {
+		$this->markTestIncomplete();
+	}
+
+	/**
 	 * Test filter_the_posts_to_tally_orderby_keys().
 	 *
 	 * @covers WP_Customize_Posts_Preview::filter_the_posts_to_tally_orderby_keys()
