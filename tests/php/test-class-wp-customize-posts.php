@@ -290,31 +290,6 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test that the previewed post is returned.
-	 *
-	 * @see WP_Customize_Posts::get_previewed_post()
-	 */
-	public function test_get_previewed_post() {
-		$this->wp_customize->set_preview_url( get_permalink( $this->post_id ) );
-		$posts = new WP_Customize_Posts( $this->wp_customize );
-		$this->do_customize_boot_actions();
-		$post = $posts->get_previewed_post();
-		$this->assertEquals( $this->post_id, $post->ID );
-	}
-
-	/**
-	 * Test that the previewed post is null.
-	 *
-	 * @see WP_Customize_Posts::get_previewed_post()
-	 */
-	public function test_get_previewed_post_is_null() {
-		$posts = new WP_Customize_Posts( $this->wp_customize );
-		$this->do_customize_boot_actions();
-		$post = $posts->get_previewed_post();
-		$this->assertNull( $post );
-	}
-
-	/**
 	 * Tests get_post_status_choices().
 	 *
 	 * @covers WP_Customize_Posts::get_post_status_choices()

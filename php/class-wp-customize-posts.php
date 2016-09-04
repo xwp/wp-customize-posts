@@ -406,20 +406,6 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * When loading the customizer from a post, get the post.
-	 *
-	 * @return WP_Post|null
-	 */
-	public function get_previewed_post() {
-		$post_id = url_to_postid( $this->manager->get_preview_url() );
-		if ( 0 === $post_id ) {
-			return null;
-		}
-		$post = get_post( $post_id );
-		return $post;
-	}
-
-	/**
 	 * Get the post status choices array.
 	 *
 	 * @return array
