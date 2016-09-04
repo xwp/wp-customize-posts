@@ -226,6 +226,9 @@ final class WP_Customize_Posts_Preview {
 	 * @return array Previewed posts.
 	 */
 	public function filter_the_posts_to_preview_settings( array $posts, WP_Query $query ) {
+
+		$posts = $this->amend_first_paged_query_posts_with_customized_posts( $posts, $query );
+
 		foreach ( $posts as &$post ) {
 			$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
 			$setting = $this->component->manager->get_setting( $post_setting_id );
@@ -244,6 +247,105 @@ final class WP_Customize_Posts_Preview {
 			$this->current_query = $query;
 			usort( $posts, array( $this, 'compare_posts_to_resort_posts_for_query' ) );
 			$this->current_query = null;
+		}
+
+		return $posts;
+	}
+
+	/**
+	 * Make sure that customized posts appear on the first page of results (i.e. homepage).
+	 *
+	 * This is particularly useful when there are more than {page_per_posts} of posts on the site,
+	 * If you add a new post in the customizer and then try navigating to the post index in the
+	 * preview, the newly added post will not appear on the first page, even though it may have
+	 * a post_date that would put it there (even 0000-00-00 as current_time(), which is also why
+	 * it won't appear at front of the list since it has the lowest date and so appears on last page).
+	 *
+	 * The post that is amended to the list will get the customized changes applied to it and it will
+	 * get re-sorted among the list in the `filter_the_posts_to_preview_settings` method.
+	 *
+	 * @param array    $posts Posts.
+	 * @param WP_Query $query Query.
+	 * @return array Previewed posts.
+	 */
+	public function amend_first_paged_query_posts_with_customized_posts( array $posts, WP_Query $query ) {
+
+		$is_first_paged = (
+			! $query->get( 'nopaging' )
+			&&
+			1 === max( (int) $query->get( 'paged' ), 1 )
+		);
+		if ( ! $is_first_paged ) {
+			return $posts;
+		}
+
+		$post_values = $this->component->manager->unsanitized_post_values();
+		$queried_post_ids = wp_list_pluck( $posts, 'ID' );
+		$queried_post_type = $query->get( 'post_type' );
+		if ( ! $queried_post_type ) {
+			$queried_post_types = array( 'post' );
+		} else {
+			$queried_post_types = (array) $queried_post_type;
+		}
+		$queried_post_statuses = $query->get( 'post_status' );
+		if ( $queried_post_statuses ) {
+			$queried_post_statuses = (array) $queried_post_statuses;
+		} else {
+			$queried_post_statuses = array();
+		}
+		$public_post_statuses = get_post_stati( array( 'public' => true ) );
+		$private_post_statuses = get_post_stati( array( 'private' => true ) );
+
+		foreach ( $this->component->manager->settings() as $setting ) {
+			if ( ! ( $setting instanceof WP_Customize_Post_Setting ) ) {
+				continue;
+			}
+			if ( ! array_key_exists( $setting->id, $post_values ) || in_array( $setting->post_id, $queried_post_ids, true ) ) {
+				continue;
+			}
+			if ( ! in_array( $setting->post_type, $queried_post_types, true ) ) {
+				continue;
+			}
+			$post = get_post( $setting->post_id );
+			if ( '0000-00-00 00:00:00' !== $post->post_date || ! in_array( $post->post_status, array( 'auto-draft', 'customize-draft' ), true ) ) {
+				continue;
+			}
+
+			$post_value = $post_values[ $setting->id ];
+			$post_type_obj = get_post_type_object( $setting->post_type );
+			if ( ! $post_type_obj ) {
+				continue;
+			}
+
+			// Status check.
+			if ( ! isset( $post_value['post_status'] ) ) {
+				continue;
+			}
+			if ( ! empty( $queried_post_statuses ) ) {
+				if ( ! in_array( $post_value['post_status'], $queried_post_statuses, true ) ) {
+					continue;
+				}
+			} else {
+				$is_viewable_post_status = (
+					in_array( $post_value['post_status'], $public_post_statuses, true )
+					||
+					(
+						in_array( $post_value['post_status'], $private_post_statuses, true )
+						&&
+						(
+							current_user_can( $post_type_obj->cap->read_private_posts )
+							||
+							get_current_user_id() === $post_value['post_author']
+						)
+					)
+				);
+				if ( ! $is_viewable_post_status ) {
+					continue;
+				}
+			}
+
+			// @todo There are other query vars to take into account to determine whether the post should be added to $posts, including author, taxonomy, search, meta, and others.
+			$posts[] = get_post( $setting->post_id );
 		}
 
 		return $posts;
