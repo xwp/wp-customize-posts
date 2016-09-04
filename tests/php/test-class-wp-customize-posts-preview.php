@@ -372,7 +372,9 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 			'post_title' => 'Testing Page Draft',
 			'post_status' => 'publish',
 		);
-		$_POST['customized'] = wp_slash( wp_json_encode( $data ) );
+		foreach ( $data as $id => $value ) {
+			$this->posts_component->manager->set_post_value( $id, $value );
+		}
 
 		$query = new WP_Query( array( 'post_type' => 'post' ) );
 		$this->assertEquals( array( $post->ID ), $this->posts_component->preview->get_previewed_posts_for_query( $query ) );

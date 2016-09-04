@@ -200,6 +200,10 @@ class Customize_Posts_Plugin {
 
 		foreach ( array( 'theme', 'plugin' ) as $type ) {
 			foreach ( glob( dirname( __FILE__ ) . '/' . $type . '-support/class-*.php' ) as $file_path ) {
+				if ( 0 !== validate_file( $file_path ) ) {
+					continue;
+				}
+
 				require_once $file_path;
 
 				$class_name = str_replace( '-', '_', preg_replace( '/^class-(.+)\.php$/', '$1', basename( $file_path ) ) );
