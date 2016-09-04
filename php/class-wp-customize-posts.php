@@ -1176,7 +1176,7 @@ final class WP_Customize_Posts {
 		$query_args['paged'] = max( 1, $query_args['paged'] );
 
 		if ( ! empty( $_POST['s'] ) ) {
-			$query_args['s'] = wp_unslash( $_POST['s'] );
+			$query_args['s'] = sanitize_text_field( wp_unslash( $_POST['s'] ) );
 		}
 
 		$query_args['post_status'] = get_post_stati( array( 'protected' => true ) );
