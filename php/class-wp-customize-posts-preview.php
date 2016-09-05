@@ -362,7 +362,7 @@ final class WP_Customize_Posts_Preview {
 					// Export the full customized value since the field is mentioned.
 					$select_field = sprintf(
 						'CAST( %s AS %s) AS %s',
-						$wpdb->prepare( '%s', $post_data[ $field_name ] ),
+						$wpdb->prepare( '%s', maybe_serialize( $post_data[ $field_name ] ) ),
 						$type,
 						$field_name
 					);
