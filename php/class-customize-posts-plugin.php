@@ -181,7 +181,8 @@ class Customize_Posts_Plugin {
 	 * @param WP_Scripts $wp_scripts Scripts.
 	 */
 	public function register_scripts( WP_Scripts $wp_scripts ) {
-		$suffix = ( SCRIPT_DEBUG ? '' : '.min' ) . '.js';
+		$is_git_repo = file_exists( dirname( dirname( __FILE__ ) ) . '/.git' );
+		$suffix = ( SCRIPT_DEBUG || $is_git_repo ? '' : '.min' ) . '.js';
 
 		$handle = 'select2';
 		if ( ! $wp_scripts->query( $handle, 'registered' ) ) {
@@ -324,7 +325,8 @@ class Customize_Posts_Plugin {
 	 * @param WP_Styles $wp_styles Styles.
 	 */
 	public function register_styles( WP_Styles $wp_styles ) {
-		$suffix = ( SCRIPT_DEBUG ? '' : '.min' ) . '.css';
+		$is_git_repo = file_exists( dirname( dirname( __FILE__ ) ) . '/.git' );
+		$suffix = ( SCRIPT_DEBUG || $is_git_repo ? '' : '.min' ) . '.css';
 
 		$handle = 'select2';
 		if ( ! $wp_styles->query( $handle, 'registered' ) ) {
