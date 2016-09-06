@@ -294,19 +294,19 @@ final class WP_Customize_Posts_Preview {
 			'post_author' => 'UNSIGNED',
 			'post_date' => 'DATETIME',
 			'post_date_gmt' => 'DATETIME',
-			'post_content' => 'CHAR',
-			'post_title' => 'CHAR',
-			'post_excerpt' => 'CHAR',
+			'post_content' => 'TEXT',
+			'post_title' => 'TEXT',
+			'post_excerpt' => 'TEXT',
 			'post_status' => 'CHAR',
 			'comment_status' => 'CHAR',
 			'ping_status' => 'CHAR',
 			'post_password' => 'CHAR',
 			'post_name' => 'CHAR',
-			'to_ping' => 'CHAR',
-			'pinged' => 'CHAR',
+			'to_ping' => 'NULL',
+			'pinged' => 'NULL',
 			'post_modified' => 'DATETIME',
 			'post_modified_gmt' => 'DATETIME',
-			'post_content_filtered' => 'CHAR',
+			'post_content_filtered' => 'TEXT',
 			'post_parent' => 'UNSIGNED',
 			'guid' => 'CHAR',
 			'menu_order' => 'UNSIGNED',
@@ -315,11 +315,15 @@ final class WP_Customize_Posts_Preview {
 			'comment_count' => 'UNSIGNED',
 		);
 
+		$mentioned_fields = array();
+		foreach ( array_keys( $table_fields ) as $field_name ) {
+			$mentioned_fields[ $field_name ] = (bool) preg_match(
+				'/\b' . preg_quote( "$wpdb->posts.$field_name" ) . '\b/',
+				$sql_select
+			);
+		}
+
 		$sql_literal_selects = array();
-		$required_char_fields = array(
-			'post_type',
-			'post_name',
-		);
 
 		$customized_post_ids = array();
 		$empty_date = '0000-00-00 00:00:00';
@@ -352,17 +356,23 @@ final class WP_Customize_Posts_Preview {
 
 			$select_fields = array();
 			foreach ( $table_fields as $field_name => $type ) {
-				if ( 'CHAR' === $type && ! in_array( $field_name, $required_char_fields, true ) && false === strpos( $sql_select, "$wpdb->posts.$field_name" ) ) {
-					// Skip exporting customized value since the field is not mentioned. This saves query size.
+				if ( 'NULL' === $type || ( 'TEXT' === $type && ! $mentioned_fields[ $field_name ] ) ) {
 					$select_field = sprintf(
 						'NULL AS %s',
 						$field_name
 					);
-				} else {
-					// Export the full customized value since the field is mentioned.
+				} elseif ( 'CHAR' === $type || 'TEXT' === $type ) {
 					$select_field = sprintf(
-						'CAST( %s AS %s) AS %s',
-						$wpdb->prepare( '%s', maybe_serialize( $post_data[ $field_name ] ) ),
+						'CAST( %s AS CHAR CHARACTER SET %s ) %s AS %s',
+						$wpdb->prepare( '%s', $post_data[ $field_name ] ), // Note: Not doing maybe_serialize() since not expected.
+						$wpdb->charset,
+						! empty( $wpdb->collate ) ? " COLLATE $wpdb->collate " : '',
+						$field_name
+					);
+				} else {
+					$select_field = sprintf(
+						'CAST( %s AS %s ) AS %s',
+						$wpdb->prepare( '%s', $post_data[ $field_name ] ),
 						$type,
 						$field_name
 					);
@@ -370,7 +380,9 @@ final class WP_Customize_Posts_Preview {
 
 				$select_fields[] = $select_field;
 			}
-			$sql_literal_selects[] = sprintf( '( SELECT %s )', join( ', ', $select_fields ) );
+
+			$sql_literal_select = sprintf( 'SELECT %s', join( ', ', $select_fields ) );
+			$sql_literal_selects[] = sprintf( '( %s )', $sql_literal_select );
 		}
 
 		if ( empty( $customized_post_ids ) ) {
@@ -403,9 +415,20 @@ final class WP_Customize_Posts_Preview {
 	/**
 	 * Queried meta keys.
 	 *
+	 * Used by `WP_Customize_Posts_Preview::_inject_meta_sql_customized_derived_tables()` due to the lack of closures.
+	 *
 	 * @var array
 	 */
-	protected $queried_meta_keys = array();
+	protected $current_queried_meta_keys = array();
+
+	/**
+	 * Current meta clauses.
+	 *
+	 * Used by `WP_Customize_Posts_Preview::_inject_meta_sql_customized_derived_tables()` due to the lack of closures.
+	 *
+	 * @var array
+	 */
+	protected $current_meta_clauses;
 
 	/**
 	 * Filters the meta query's generated SQL to inject the customized data into a unioned derived table.
@@ -429,39 +452,34 @@ final class WP_Customize_Posts_Preview {
 			return $clauses;
 		}
 
-		$this->queried_meta_keys = array();
+		$this->current_queried_meta_keys = array();
 		foreach ( $queries as $query ) {
 			if ( isset( $query['key'] ) ) {
-				$this->queried_meta_keys[] = $query['key'];
+				$this->current_queried_meta_keys[] = $query['key'];
 			} elseif ( isset( $query['relation'] ) && isset( $query[0] ) ) {
 				foreach ( $query as $subquery ) {
 					if ( isset( $subquery['key'] ) ) {
-						$this->queried_meta_keys[] = $subquery['key'];
+						$this->current_queried_meta_keys[] = $subquery['key'];
 					}
 				}
 			}
 		}
-		$this->queried_meta_keys = array_unique( $this->queried_meta_keys );
-		if ( empty( $this->queried_meta_keys ) ) {
+		$this->current_queried_meta_keys = array_unique( $this->current_queried_meta_keys );
+		if ( empty( $this->current_queried_meta_keys ) ) {
 			return $clauses;
 		}
 
+		$this->current_meta_clauses = $clauses;
 		$clauses['join'] = preg_replace_callback(
 			'#(?P<join>(INNER|LEFT)\s+JOIN)\s+' . $wpdb->postmeta . '(?:\s+AS\s+(?P<table_alias>\w+))?(?=\s+ON)#',
 			array( $this, '_inject_meta_sql_customized_derived_tables' ),
 			$clauses['join']
 		);
+		$this->current_meta_clauses = null;
 
-		$this->queried_meta_keys = array();
+		$this->current_queried_meta_keys = array();
 		return $clauses;
 	}
-
-	/**
-	 * Placeholder meta ID.
-	 *
-	 * @var int
-	 */
-	protected $placeholder_meta_id = -1;
 
 	/**
 	 * Inject customized derived tables into meta SQL.
@@ -477,11 +495,19 @@ final class WP_Customize_Posts_Preview {
 
 		// Warning: The list of fields must match the list of fields in the CREATE TABLE statement or else a MySQL error will occur.
 		$table_fields = array(
-			'meta_id' => 'SIGNED', // Was UNSIGNED, but we're adding negative IDs to ensure no collisions.
+			'meta_id' => 'NULL',
 			'post_id' => 'UNSIGNED',
 			'meta_key' => 'CHAR',
-			'meta_value' => 'CHAR',
+			'meta_value' => 'TEXT',
 		);
+
+		$mentioned_fields = array();
+		foreach ( array_keys( $table_fields ) as $field_name ) {
+			$mentioned_fields[ $field_name ] = (bool) preg_match(
+				'/\b' . preg_quote( "$table_alias.$field_name" ) . '\b/',
+				$this->current_meta_clauses['where']
+			);
+		}
 
 		$sql_literal_selects = array();
 		$sql_meta_exclusion_where_clauses = array();
@@ -496,7 +522,7 @@ final class WP_Customize_Posts_Preview {
 			}
 
 			// Skip joining customized meta that isn't being queried.
-			if ( ! in_array( $setting->meta_key, $this->queried_meta_keys, true ) ) {
+			if ( ! in_array( $setting->meta_key, $this->current_queried_meta_keys, true ) ) {
 				continue;
 			}
 
@@ -504,7 +530,7 @@ final class WP_Customize_Posts_Preview {
 
 			if ( $setting->single ) {
 				$postmeta_rows[] = array(
-					'meta_id' => $this->placeholder_meta_id--,
+					'meta_id' => null,
 					'post_id' => $setting->post_id,
 					'meta_key' => $setting->meta_key,
 					'meta_value' => $setting->value(),
@@ -512,7 +538,7 @@ final class WP_Customize_Posts_Preview {
 			} else {
 				foreach ( $setting->value() as $meta_value ) {
 					$postmeta_rows[] = array(
-						'meta_id' => $this->placeholder_meta_id--,
+						'meta_id' => null,
 						'post_id' => $setting->post_id,
 						'meta_key' => $setting->meta_key,
 						'meta_value' => $meta_value,
@@ -525,12 +551,27 @@ final class WP_Customize_Posts_Preview {
 			foreach ( $postmeta_rows as $postmeta_row ) {
 				$select_fields = array();
 				foreach ( $table_fields as $field_name => $type ) {
-					$select_field = sprintf(
-						'CAST( %s AS %s) AS %s',
-						$wpdb->prepare( '%s', $postmeta_row[ $field_name ] ),
-						$type,
-						$field_name
-					);
+					if ( 'NULL' === $type || ( 'TEXT' === $type && ! $mentioned_fields[ $field_name ] ) ) {
+						$select_field = sprintf(
+							'NULL AS %s',
+							$field_name
+						);
+					} elseif ( 'CHAR' === $type || 'TEXT' === $type ) {
+						$select_field = sprintf(
+							'CAST( %s AS CHAR CHARACTER SET %s ) %s AS %s',
+							$wpdb->prepare( '%s', maybe_serialize( $postmeta_row[ $field_name ] ) ),
+							$wpdb->charset,
+							! empty( $wpdb->collate ) ? " COLLATE $wpdb->collate " : '',
+							$field_name
+						);
+					} else {
+						$select_field = sprintf(
+							'CAST( %s AS %s) AS %s',
+							$wpdb->prepare( '%s', $postmeta_row[ $field_name ] ),
+							$type,
+							$field_name
+						);
+					}
 					$select_fields[] = $select_field;
 				}
 				$sql_literal_selects[] = sprintf( '( SELECT %s )', join( ', ', $select_fields ) );

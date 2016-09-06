@@ -367,7 +367,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	 *
 	 * @covers WP_Customize_Posts_Preview::filter_posts_request_to_inject_customized_state()
 	 */
-	public function test_filter_get_meta_sql_to_inject_customized_state() {
+	public function test_filter_posts_request_to_inject_customized_state() {
 		foreach ( get_posts( array( 'post_type' => 'post' ) ) as $foo_post ) {
 			wp_delete_post( $foo_post->ID, true );
 		}
@@ -448,7 +448,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	 * @covers WP_Customize_Posts_Preview::filter_get_meta_sql_to_inject_customized_state()
 	 * @covers WP_Customize_Posts_Preview::_inject_meta_sql_customized_derived_tables()
 	 */
-	public function test_get_previewed_post_for_meta_query() {
+	public function test_filter_get_meta_sql_to_inject_customized_state() {
 		$single_meta_key = 'index';
 		$multi_meta_key = 'multi_index';
 		$post_type = 'post';
