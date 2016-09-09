@@ -276,9 +276,21 @@ class Customize_Posts_Plugin {
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
+		$handle = 'customize-sidebar-shortcuts-control';
+		$src = plugins_url( 'js/customize-sidebar-shortcuts-control' . $suffix, dirname( __FILE__ ) );
+		$deps = array( 'customize-dynamic-control', 'jquery' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
 		$handle = 'customize-post-section';
 		$src = plugins_url( 'js/customize-post-section' . $suffix, dirname( __FILE__ ) );
-		$deps = array( 'customize-controls', 'customize-post-date-control', 'customize-post-status-control', 'customize-post-editor-control' );
+		$deps = array(
+			'customize-controls',
+			'customize-post-date-control',
+			'customize-post-status-control',
+			'customize-post-editor-control',
+			'customize-sidebar-shortcuts-control',
+		);
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 

@@ -131,10 +131,6 @@
 			control._setUpSettingPropertyLinks();
 
 			api.Control.prototype.ready.call( control );
-
-			// @todo build out the controls for the post when Control is expanded.
-			// @todo Let the Control title include the post title.
-			control.deferred.embedded.done(function() {});
 		},
 
 		/**
@@ -180,6 +176,28 @@
 			}
 			control.renderContent();
 			control.deferred.embedded.resolve(); // This triggers control.ready().
+		},
+
+		/**
+		 * Render the control from its JS template, if it exists.
+		 *
+		 * @returns {void}
+		 */
+		renderContent: function renderContent() {
+			var control = this, template;
+
+			if ( control.params.content_template ) {
+				if ( 'function' === typeof control.params.content_template ) {
+					template = control.params.content_template;
+				} else {
+					template = wp.template( control.params.content_template );
+				}
+				if ( control.container ) {
+					control.container.html( template( control.params ) );
+				}
+			} else {
+				api.Control.prototype.renderContent.call( control );
+			}
 		},
 
 		/**

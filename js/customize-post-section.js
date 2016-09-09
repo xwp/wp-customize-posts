@@ -275,6 +275,9 @@
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
 			}
+			if ( 'undefined' === typeof EditPostPreviewCustomize && api.Widgets && api.Posts.data.themeSupportsWidgets ) {
+				section.addPostWidgetAreasControl();
+			}
 			if ( postTypeObj.supports.excerpt ) {
 				section.addExcerptControl();
 			}
@@ -520,6 +523,7 @@
 			control = new api.controlConstructor.post_editor( section.id + '[post_content]', {
 				params: {
 					section: section.id,
+					priority: 25,
 					label: postTypeObj.labels.content_field ? postTypeObj.labels.content_field : api.Posts.data.l10n.fieldContentLabel,
 					setting_property: 'post_content',
 					settings: {
@@ -541,6 +545,35 @@
 				control.notifications.add = section.addPostFieldControlNotification;
 				control.notifications.setting_property = control.params.setting_property;
 			}
+			return control;
+		},
+
+		/**
+		 * Add widget area shortcuts control.
+		 *
+		 * @returns {wp.customize.Control} Control
+		 */
+		addPostWidgetAreasControl: function() {
+			var section = this, control;
+
+			control = new api.controlConstructor.sidebar_shortcuts( section.id + '[sidebar_shortcuts]', {
+				params: {
+					section: section.id,
+					priority: 26, // After content.
+					label: api.Posts.data.l10n.fieldWidgetAreasLabel,
+					settings: []
+				}
+			} );
+
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.sidebar_shortcuts = control;
+			api.control.add( control.id, control );
+
 			return control;
 		},
 
@@ -594,7 +627,7 @@
 				params: {
 					section: section.id,
 					priority: 60,
-					label: postTypeObj.labels.discussion_field ? postTypeObj.labels.discussion_field : api.Posts.data.l10n.fieldDiscusionLabel,
+					label: postTypeObj.labels.discussion_field ? postTypeObj.labels.discussion_field : api.Posts.data.l10n.fieldDiscussionLabel,
 					active: true,
 					settings: {
 						'default': setting.id

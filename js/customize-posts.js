@@ -15,6 +15,7 @@
 
 	component.data = {
 		postTypes: {},
+		themeSupportsWidgets: true,
 		initialServerDate: '',
 		initialServerTimestamp: 0,
 		initialClientTimestamp: ( new Date() ).valueOf(),

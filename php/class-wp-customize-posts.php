@@ -598,6 +598,7 @@ final class WP_Customize_Posts {
 
 		$exports = array(
 			'postTypes' => $post_types,
+			'themeSupportsWidgets' => current_theme_supports( 'widgets' ),
 			'postStatusChoices' => $this->get_post_status_choices(),
 			'authorChoices' => $this->get_author_choices(),
 			'dateMonthChoices' => $this->get_date_month_choices(),
@@ -611,6 +612,7 @@ final class WP_Customize_Posts {
 				'fieldStatusLabel' => __( 'Status', 'customize-posts' ),
 				'fieldDateLabel' => __( 'Date', 'customize-posts' ),
 				'fieldContentLabel' => __( 'Content', 'customize-posts' ),
+				'fieldWidgetAreasLabel' => __( 'Widget Areas', 'customize-posts' ),
 				'fieldExcerptLabel' => __( 'Excerpt', 'customize-posts' ),
 				'fieldDiscussionLabel' => __( 'Discussion', 'customize-posts' ),
 				'fieldAuthorLabel' => __( 'Author', 'customize-posts' ),
@@ -774,6 +776,21 @@ final class WP_Customize_Posts {
 			<button class="customize-posts-navigation dashicons dashicons-visibility" tabindex="0">
 				<span class="screen-reader-text"><?php esc_html_e( 'Preview', 'customize-posts' ); ?> {{ data.label }}</span>
 			</button>
+		</script>
+
+		<script id="tmpl-customize-sidebar-shortcuts-control" type="text/html">
+			<span class="customize-control-title">{{ data.label }}</span>
+			<# if ( data.description ) { #>
+				<span class="description customize-control-description">{{ data.description }}</span>
+			<# } #>
+			<em class="no-sidebars-rendered-notice"><?php esc_html_e( 'There are no widget areas in the preview.', 'customize-posts' ) ?></em>
+			<ul class="active-sidebar-sections"></ul>
+		</script>
+
+		<script id="tmpl-customize-sidebar-shortcuts-control-active-sidebar" type="text/html">
+			<li>
+				<button type="button" class="button button-secondary" data-section-id="{{ data.section_id }}">{{ data.sidebar_name }}</button>
+			</li>
 		</script>
 
 		<script id="tmpl-customize-posts-scheduled-countdown" type="text/html">
