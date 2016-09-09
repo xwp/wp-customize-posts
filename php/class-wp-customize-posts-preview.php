@@ -1068,6 +1068,9 @@ final class WP_Customize_Posts_Preview {
 			'post_status' => array(
 				'fallback_refresh' => true,
 			),
+			'post_parent' => array(
+				'fallback_refresh' => true,
+			),
 			'post_date' => array(
 				'selector' => 'time.entry-date',
 				'fallback_refresh' => false,
