@@ -52,7 +52,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	 * @var array
 	 */
 	public $default = array(
-		'post_author' => 0,
+		'post_author' => '0',
 		'post_name' => '',
 		'post_date' => '0000-00-00 00:00:00',
 		'post_mime_type' => '',
@@ -111,7 +111,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		parent::__construct( $manager, $id, $args );
 
 		if ( empty( $this->default['post_author'] ) ) {
-			$this->default['post_author'] = get_current_user_id();
+			$this->default['post_author'] = (string) get_current_user_id();
 		}
 	}
 
@@ -195,6 +195,9 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			$post_data[ $key ] = intval( $post_data[ $key ] );
 		}
 
+		// See <https://core.trac.wordpress.org/ticket/22324>.
+		$post_data['post_author'] = (string) $post_data['post_author'];
+
 		/*
 		 * For some reason WordPress stores newlines in DB as CRLF when saving via
 		 * the WP Admin, but normally a textarea just represents newlines as LF.
@@ -240,6 +243,17 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 
 		$post_data = $this->normalize_post_data( $post_data );
 		return $post_data;
+	}
+
+	/**
+	 * Sanitize the setting's value for use in JavaScript.
+	 *
+	 * @return array Post data.
+	 */
+	public function js_value() {
+		$value = parent::js_value();
+		$value['post_author'] = intval( $value['post_author'] );
+		return $value;
 	}
 
 	/**
@@ -332,6 +346,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		$post_data = wp_slash( $post_data );
 		$unsanitized_post_data = $post_data;
 		$post_data = sanitize_post( $post_data, 'db' );
+		$post_data['post_author'] = (string) intval( $post_data['post_author'] );
 		$initial_sanitized_post_data = $post_data;
 
 		$maybe_empty = 'attachment' !== $this->post_type
@@ -434,7 +449,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		}
 
 		if ( empty( $post_data['post_author'] ) || ( ! current_user_can( $post_type_obj->cap->edit_others_posts ) && intval( $post_data['post_author'] ) !== get_current_user_id() ) ) {
-			$post_data['post_author'] = get_current_user_id();
+			$post_data['post_author'] = (string) get_current_user_id();
 		}
 		if ( empty( $post_data['menu_order'] ) ) {
 			$post_data['menu_order'] = 0;
