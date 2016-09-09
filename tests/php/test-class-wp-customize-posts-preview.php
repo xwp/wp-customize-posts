@@ -142,7 +142,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
 		$this->assertTrue( $preview->add_preview_filters() );
 		$this->assertEquals( 10, has_action( 'the_post', array( $preview, 'preview_setup_postdata' ) ) );
-		$this->assertEquals( 1000, has_filter( 'the_posts', array( $preview, 'filter_the_posts_to_preview_settings' ) ) );
+		$this->assertEquals( 1, has_filter( 'the_posts', array( $preview, 'filter_the_posts_to_preview_settings' ) ) );
 		$this->assertEquals( 1, has_filter( 'the_title', array( $preview, 'filter_the_title' ) ) );
 		$this->assertEquals( 1000, has_filter( 'get_post_metadata', array( $preview, 'filter_get_post_meta_to_preview' ) ) );
 		$this->assertEquals( 10, has_filter( 'wp_setup_nav_menu_item', array( $preview, 'filter_nav_menu_item_to_set_url' ) ) );

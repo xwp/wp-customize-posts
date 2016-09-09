@@ -97,7 +97,7 @@ final class WP_Customize_Posts_Preview {
 		add_action( 'pre_get_posts', array( $this, 'prepare_query_preview' ) );
 		add_filter( 'get_meta_sql', array( $this, 'filter_get_meta_sql_to_inject_customized_state' ), 10, 6 );
 		add_filter( 'posts_request', array( $this, 'filter_posts_request_to_inject_customized_state' ), 10, 2 );
-		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_preview_settings' ), 1000, 2 );
+		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_preview_settings' ), 1, 2 );
 		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
 		add_filter( 'the_title', array( $this, 'filter_the_title' ), 1, 2 );
 		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_preview' ), 1000, 4 );
