@@ -508,6 +508,7 @@
 								sort_column: 'menu_order, post_title'
 							}
 						},
+						show_add_buttons: false,
 						select2_options: {
 							multiple: false,
 							allowClear: true,
