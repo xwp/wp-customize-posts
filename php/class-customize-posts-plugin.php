@@ -200,6 +200,10 @@ class Customize_Posts_Plugin {
 
 		foreach ( array( 'theme', 'plugin' ) as $type ) {
 			foreach ( glob( dirname( __FILE__ ) . '/' . $type . '-support/class-*.php' ) as $file_path ) {
+				if ( 0 !== validate_file( $file_path ) ) {
+					continue;
+				}
+
 				require_once $file_path;
 
 				$class_name = str_replace( '-', '_', preg_replace( '/^class-(.+)\.php$/', '$1', basename( $file_path ) ) );
@@ -227,7 +231,8 @@ class Customize_Posts_Plugin {
 	 * @param WP_Scripts $wp_scripts Scripts.
 	 */
 	public function register_scripts( WP_Scripts $wp_scripts ) {
-		$suffix = ( SCRIPT_DEBUG ? '' : '.min' ) . '.js';
+		$is_git_repo = file_exists( dirname( dirname( __FILE__ ) ) . '/.git' );
+		$suffix = ( SCRIPT_DEBUG || $is_git_repo ? '' : '.min' ) . '.js';
 
 		$handle = 'select2';
 		if ( ! $wp_scripts->query( $handle, 'registered' ) ) {
@@ -376,7 +381,8 @@ class Customize_Posts_Plugin {
 	 * @param WP_Styles $wp_styles Styles.
 	 */
 	public function register_styles( WP_Styles $wp_styles ) {
-		$suffix = ( SCRIPT_DEBUG ? '' : '.min' ) . '.css';
+		$is_git_repo = file_exists( dirname( dirname( __FILE__ ) ) . '/.git' );
+		$suffix = ( SCRIPT_DEBUG || $is_git_repo ? '' : '.min' ) . '.css';
 
 		$handle = 'select2';
 		if ( ! $wp_styles->query( $handle, 'registered' ) ) {

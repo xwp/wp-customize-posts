@@ -75,7 +75,6 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		unset( $_POST['customized'] );
 		unset( $GLOBALS['wp_customize'] );
 		unset( $GLOBALS['wp_scripts'] );
-		unset( $_REQUEST['preview'] );
 		unset( $_REQUEST['customize_snapshot_uuid'] );
 		parent::tearDown();
 	}
@@ -290,31 +289,6 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test that the previewed post is returned.
-	 *
-	 * @see WP_Customize_Posts::get_previewed_post()
-	 */
-	public function test_get_previewed_post() {
-		$this->wp_customize->set_preview_url( get_permalink( $this->post_id ) );
-		$posts = new WP_Customize_Posts( $this->wp_customize );
-		$this->do_customize_boot_actions();
-		$post = $posts->get_previewed_post();
-		$this->assertEquals( $this->post_id, $post->ID );
-	}
-
-	/**
-	 * Test that the previewed post is null.
-	 *
-	 * @see WP_Customize_Posts::get_previewed_post()
-	 */
-	public function test_get_previewed_post_is_null() {
-		$posts = new WP_Customize_Posts( $this->wp_customize );
-		$this->do_customize_boot_actions();
-		$post = $posts->get_previewed_post();
-		$this->assertNull( $post );
-	}
-
-	/**
 	 * Tests get_post_status_choices().
 	 *
 	 * @covers WP_Customize_Posts::get_post_status_choices()
@@ -526,11 +500,10 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->posts->preview_customize_draft_post_ids();
 		$this->assertEmpty( $this->posts->customize_draft_post_ids );
 
-		$_REQUEST['preview'] = 'true';
-		$this->posts->preview_customize_draft_post_ids();
-		$this->assertEmpty( $this->posts->customize_draft_post_ids );
-
 		$post_id = $this->factory()->post->create();
+		$this->go_to( home_url( sprintf( '/?preview=true&p=%d', $post_id ) ) );
+		$this->assertTrue( isset( $_GET['preview'] ) );
+
 		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $post_id ) );
 		$settings = $this->posts->manager->add_dynamic_settings( array( $setting_id ) );
 		$setting = array_shift( $settings );
@@ -596,13 +569,14 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$GLOBALS['current_user'] = null;
 
 		$this->go_to( home_url( sprintf( '?%s=%d&preview=true', 'page' === $post_type ? 'page_id' : 'p', $post->ID ) ) );
-		$_REQUEST['preview'] = 'true';
+		$this->assertTrue( isset( $_GET['preview'] ) );
 		$this->posts->preview_customize_draft_post_ids();
 		$GLOBALS['wp_query']->query( $GLOBALS['wp']->query_vars );
 
 		$this->assertTrue( $GLOBALS['wp_query']->is_preview );
 		$this->assertEquals( 'true', $GLOBALS['wp_query']->query_vars['preview'] );
 		$this->assertEquals( $post->ID, $GLOBALS['wp_query']->query_vars['p'] );
+		$this->assertArrayHasKey( 'post_status', $GLOBALS['wp_query']->query_vars );
 		$this->assertEquals( 'customize-draft', $GLOBALS['wp_query']->query_vars['post_status'] );
 	}
 

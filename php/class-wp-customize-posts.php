@@ -409,20 +409,6 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * When loading the customizer from a post, get the post.
-	 *
-	 * @return WP_Post|null
-	 */
-	public function get_previewed_post() {
-		$post_id = url_to_postid( $this->manager->get_preview_url() );
-		if ( 0 === $post_id ) {
-			return null;
-		}
-		$post = get_post( $post_id );
-		return $post;
-	}
-
-	/**
 	 * Get the post status choices array.
 	 *
 	 * @return array
@@ -881,7 +867,10 @@ final class WP_Customize_Posts {
 	 * @access public
 	 */
 	public function preview_customize_draft_post_ids() {
-		if ( isset( $_REQUEST['preview'] ) ) { // @todo Why not look at $wp_query->is_preview()?
+
+		// Note that is_preview() cannot be used because this is called at after_setup_theme before WP_Query is initialized.
+		$is_preview = isset( $_GET['preview'] );
+		if ( $is_preview ) {
 			$this->customize_draft_post_ids = array();
 			foreach ( $this->manager->unsanitized_post_values() as $id => $post_data ) {
 				if ( ! preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches ) ) {
@@ -930,7 +919,8 @@ final class WP_Customize_Posts {
 	 * @return string
 	 */
 	public function post_link_draft( $permalink, $post ) {
-		if ( is_customize_preview() && ! $this->suppress_post_link_filters ) {
+		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $post ) );
+		if ( ( is_customize_preview() && ! $this->suppress_post_link_filters ) || array_key_exists( $post_setting_id, $this->manager->unsanitized_post_values() ) ) {
 			$permalink = Edit_Post_Preview::get_preview_post_link( get_post( $post ) );
 		}
 		return $permalink;
@@ -1210,7 +1200,7 @@ final class WP_Customize_Posts {
 		$query_args['paged'] = max( 1, $query_args['paged'] );
 
 		if ( ! empty( $_POST['s'] ) ) {
-			$query_args['s'] = wp_unslash( $_POST['s'] );
+			$query_args['s'] = sanitize_text_field( wp_unslash( $_POST['s'] ) );
 		}
 
 		$query_args['post_status'] = get_post_stati( array( 'protected' => true ) );
