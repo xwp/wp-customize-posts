@@ -462,7 +462,7 @@ final class WP_Customize_Posts {
 			foreach ( (array) $users as $user ) {
 				$choices[] = array(
 					'value' => (int) $user->ID,
-					'text'  => esc_html( sprintf( _x( '%1$s (%2$s)', 'user dropdown', 'customize-posts' ), $user->display_name, $user->user_login ) ),
+					'text'  => sprintf( _x( '%1$s (%2$s)', 'user dropdown', 'customize-posts' ), $user->display_name, $user->user_login ),
 				);
 			}
 		}
@@ -599,7 +599,7 @@ final class WP_Customize_Posts {
 		$exports = array(
 			'postTypes' => $post_types,
 			'postStatusChoices' => $this->get_post_status_choices(),
-			'authorChoices' => $this->get_author_choices(),
+			'authorChoices' => $this->get_author_choices(), // @todo Use Ajax to fetch this data or Customize Object Selector (once it supports users).
 			'dateMonthChoices' => $this->get_date_month_choices(),
 			'initialServerDate' => current_time( 'mysql', false ),
 			'initialServerTimestamp' => floor( microtime( true ) * 1000 ),
@@ -614,11 +614,23 @@ final class WP_Customize_Posts {
 				'fieldExcerptLabel' => __( 'Excerpt', 'customize-posts' ),
 				'fieldDiscussionLabel' => __( 'Discussion', 'customize-posts' ),
 				'fieldAuthorLabel' => __( 'Author', 'customize-posts' ),
+				'fieldParentLabel' => __( 'Parent', 'customize-posts' ),
 				'noTitle' => __( '(no title)', 'customize-posts' ),
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
 				'openEditor' => __( 'Open Editor', 'customize-posts' ), // @todo Move this into editor control?
 				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
 				'invalidDateError' => __( 'Whoops, the provided date is invalid.', 'customize-posts' ),
+				'installCustomizeObjectSelector' => sprintf(
+					__( 'This control depends on having the %s plugin installed and activated.', 'customize-posts' ),
+					sprintf(
+						'<a href="%s" target="_blank">%s</a>',
+						'https://github.com/xwp/wp-customize-object-selector',
+						__( 'Customize Object Selector', 'customize-posts' )
+					)
+				),
+
+				/* translators: %s post type */
+				'jumpToPostPlaceholder' => __( 'Jump to %s', 'customize-posts' ),
 			),
 		);
 

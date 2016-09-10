@@ -450,6 +450,40 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test get_pages() with number args.
+	 *
+	 * @see get_pages()
+	 * @covers WP_Customize_Posts_Preview::filter_get_pages_to_preview_settings()
+	 */
+	public function test_filter_get_pages_to_preview_settings_number() {
+		$page_a = $this->factory()->post->create( array( 'post_title' => 'Page A', 'post_type' => 'page' ) );
+		$page_a1 = $this->factory()->post->create( array( 'post_title' => 'Page A.1', 'post_type' => 'page', 'post_parent' => $page_a ) );
+		$page_a2 = $this->factory()->post->create( array( 'post_title' => 'Page A.2', 'post_type' => 'page', 'post_parent' => $page_a ) );
+
+		$pages = get_pages( array( 'parent' => $page_a, 'number' => 1, 'sort_column' => 'post_title', 'sort_order' => 'ASC' ) );
+		$this->assertEquals( array( $page_a1 ), wp_list_pluck( $pages, 'ID' ) );
+		$pages = get_pages( array( 'parent' => $page_a, 'number' => 1, 'sort_column' => 'post_title', 'sort_order' => 'DESC' ) );
+		$this->assertEquals( array( $page_a2 ), wp_list_pluck( $pages, 'ID' ) );
+
+		// Now try adding a new sibling.
+		$this->posts_component->preview->customize_preview_init();
+		$page_a3_post_obj = $this->posts_component->insert_auto_draft_post( 'page' );
+		$page_a3 = $page_a3_post_obj->ID;
+		$page_a3_setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $page_a3 ) );
+		$page_a3_setting = $this->posts_component->manager->add_setting( new WP_Customize_Post_Setting( $this->posts_component->manager, $page_a3_setting_id ) );
+		$this->posts_component->manager->set_post_value( $page_a3_setting_id, array_merge(
+			$page_a3_setting->value(),
+			array( 'post_parent' => $page_a, 'post_title' => 'Page A.3' )
+		) );
+		$page_a3_setting->preview();
+
+		$pages = get_pages( array( 'parent' => $page_a, 'number' => 1, 'sort_column' => 'post_title', 'sort_order' => 'ASC' ) );
+		$this->assertEquals( array( $page_a1 ), wp_list_pluck( $pages, 'ID' ) );
+		$pages = get_pages( array( 'parent' => $page_a, 'number' => 1, 'sort_column' => 'post_title', 'sort_order' => 'DESC' ) );
+		$this->assertEquals( array( $page_a3 ), wp_list_pluck( $pages, 'ID' ) );
+	}
+
+	/**
 	 * Test filter_the_posts_to_tally_orderby_keys().
 	 *
 	 * @covers WP_Customize_Posts_Preview::filter_the_posts_to_tally_orderby_keys()

@@ -275,11 +275,11 @@ final class WP_Customize_Posts_Preview {
 	 *     @type string $sort_column   Supported.
 	 *     @type string $authors       Supported.
 	 *     @type string $post_status   Supported.
+	 *     @type int    $number        Supported, but there won't be 100% fidelity due to customized posts being amended to the subset results without being aware of underlying placement in full results.
 	 *     @type array  $exclude       No special support needed.
 	 *     @type array  $include       No special support needed.
 	 *     @type string $meta_key      Not supported.
 	 *     @type string $meta_value    Not supported.
-	 *     @type int    $number        Not supported.
 	 *     @type int    $offset        Not supported.
 	 *     @type bool   $hierarchical  Not needing to be examined since this is a property of the registered post type itself.
 	 *     @type string $post_type     Not needing to be examined since post_type is immutable.
@@ -293,7 +293,7 @@ final class WP_Customize_Posts_Preview {
 			return $initial_posts;
 		}
 
-		$unsupported_args = array( 'number', 'offset', 'meta_key', 'meta_value' );
+		$unsupported_args = array( 'offset', 'meta_key', 'meta_value' );
 		foreach ( $unsupported_args as $unsupported_arg ) {
 			if ( ! empty( $args[ $unsupported_arg ] ) ) {
 				_doing_it_wrong( 'get_pages', sprintf( esc_html__( 'The %s argument for get_pages() is not supported by Customize Posts.', 'customize-posts' ), esc_html( $unsupported_arg ) ), '0.8.0' );
@@ -330,6 +330,7 @@ final class WP_Customize_Posts_Preview {
 		$args['include'] = array_filter( wp_parse_id_list( $args['include'] ) );
 		$args['parent'] = intval( $args['parent'] );
 		$args['child_of'] = intval( $args['child_of'] );
+		$args['number'] = intval( $args['number'] );
 
 		if ( ! empty( $args['include'] ) ) {
 			$args['child_of'] = 0; // Ignore child_of, parent, exclude, meta_key, and meta_value params if using include.
@@ -492,6 +493,10 @@ final class WP_Customize_Posts_Preview {
 		$this->current_get_pages_args = $args;
 		usort( $filtered_posts, array( $this, 'compare_posts_for_get_pages' ) );
 		$this->current_get_pages_args = array();
+
+		if ( ! empty( $args['number'] ) ) {
+			$filtered_posts = array_slice( $filtered_posts, 0, $args['number'] );
+		}
 
 		return array_values( $filtered_posts );
 	}
@@ -1061,6 +1066,9 @@ final class WP_Customize_Posts_Preview {
 				'fallback_refresh' => false,
 			),
 			'post_status' => array(
+				'fallback_refresh' => true,
+			),
+			'post_parent' => array(
 				'fallback_refresh' => true,
 			),
 			'post_date' => array(

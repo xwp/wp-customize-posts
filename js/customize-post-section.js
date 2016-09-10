@@ -272,6 +272,9 @@
 				section.addStatusControl();
 				section.addDateControl();
 			}
+			if ( postTypeObj.supports['page-attributes'] || postTypeObj.supports.parent ) {
+				section.addParentControl();
+			}
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
 			}
@@ -462,6 +465,75 @@
 
 			// Register.
 			section.postFieldControls.post_status = control;
+			api.control.add( control.id, control );
+
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
+				control.notifications.setting_property = control.params.setting_property;
+			}
+			return control;
+		},
+
+		/**
+		 * Add parent control.
+		 *
+		 * @returns {wp.customize.Control} Added control.
+		 */
+		addParentControl: function() {
+			var section = this, control, setting = api( section.id ), controlId, params, postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+
+			controlId = section.id + '[post_parent]';
+			params = {
+				section: section.id,
+				priority: 20,
+				label: postTypeObj.labels.parent_item_colon ? postTypeObj.labels.parent_item_colon.replace( /:$/, '' ) : api.Posts.data.l10n.fieldParentLabel,
+				active: true,
+				settings: {
+					'default': setting.id
+				},
+				field_type: 'select',
+				setting_property: 'post_parent'
+			};
+
+			if ( api.controlConstructor.object_selector ) {
+				control = new api.controlConstructor.object_selector( controlId, {
+					params: _.extend( params, {
+						post_query_vars: {
+							post_type: section.params.post_type,
+							post_status: 'publish',
+							post__not_in: [ section.params.post_id ],
+							show_initial_dropdown: true,
+							dropdown_args: {
+								exclude_tree: section.params.post_id,
+								sort_column: 'menu_order, post_title'
+							},
+							apply_dropdown_args_filters_post_id: section.params.post_id // Applies page_attributes_dropdown_pages_args filters.
+						},
+						show_add_buttons: false,
+						select2_options: {
+							multiple: false,
+							allowClear: true,
+							placeholder: postTypeObj.labels.search_items
+						}
+					} )
+				} );
+			} else {
+				control = new api.controlConstructor.dynamic( controlId, {
+					params: _.extend( params, {
+						field_type: 'hidden',
+						description: api.Posts.data.l10n.installCustomizeObjectSelector
+					} )
+				} );
+			}
+
+			// Override preview trying to de-activate control not present in preview context.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.page_parent = control;
 			api.control.add( control.id, control );
 
 			if ( control.notifications ) {
