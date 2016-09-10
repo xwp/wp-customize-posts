@@ -91,6 +91,7 @@ final class WP_Customize_Posts {
 		add_action( 'customize_controls_init', array( $this, 'enqueue_editor' ) );
 
 		add_filter( 'customize_refresh_nonces', array( $this, 'add_customize_nonce' ) );
+		add_action( 'customize_register', array( $this, 'ensure_static_front_page_constructs_registered' ), 11 );
 		add_action( 'customize_register', array( $this, 'register_constructs' ), 20 );
 		add_action( 'init', array( $this, 'register_meta' ), 100 );
 		add_filter( 'customize_dynamic_setting_args', array( $this, 'filter_customize_dynamic_setting_args' ), 10, 2 );
@@ -280,6 +281,118 @@ final class WP_Customize_Posts {
 		 * @param WP_Customize_Posts $this
 		 */
 		do_action( 'customize_posts_register_meta', $this );
+	}
+
+	/**
+	 * Ensure that the static front page section and controls are registered even when there are no pages.
+	 *
+	 * @link https://core.trac.wordpress.org/ticket/38013
+	 *
+	 * @param WP_Customize_Manager $wp_customize Manager.
+	 */
+	public function ensure_static_front_page_constructs_registered( WP_Customize_Manager $wp_customize ) {
+
+		// Section.
+		$section = $wp_customize->get_section( 'static_front_page' );
+		if ( ! $section ) {
+			$section = $wp_customize->add_section( 'static_front_page', array(
+				// @codingStandardsIgnoreStart
+				// @todo WPCS's WordPress.WP.I18n.TextDomainMismatch sniff should allow default. See https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/pull/685
+				'title' => __( 'Static Front Page', 'default' ),
+				'priority' => 120,
+				'description' => __( 'Your theme supports a static front page.', 'default' ),
+				// @codingStandardsIgnoreEnd
+			) );
+		}
+		if ( array( $section, 'active_callback' ) === $section->active_callback ) {
+			$section->active_callback = array( $this, 'has_published_pages' );
+		}
+
+		// Show on Front.
+		if ( ! $wp_customize->get_setting( 'show_on_front' ) ) {
+			$wp_customize->add_setting( 'show_on_front', array(
+				'default' => get_option( 'show_on_front' ),
+				'capability' => 'manage_options',
+				'type' => 'option',
+			) );
+		}
+		$control = $wp_customize->get_control( 'show_on_front' );
+		if ( ! $control ) {
+			$control = $wp_customize->add_control( 'show_on_front', array(
+				// @codingStandardsIgnoreStart
+				'label' => __( 'Front page displays', 'default' ),
+				'section' => 'static_front_page',
+				'type' => 'radio',
+				'choices' => array(
+					// @todo WPCS's WordPress.WP.I18n.TextDomainMismatch sniff should allow default. See https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/pull/685
+					'posts' => __( 'Your latest posts', 'default' ),
+					'page' => __( 'A static page', 'default' ),
+				),
+				// @codingStandardsIgnoreEnd
+			) );
+		}
+		if ( array( $control, 'active_callback' ) === $control->active_callback ) {
+			$control->active_callback = array( $this, 'has_published_pages' );
+		}
+
+		// Page on Front.
+		if ( ! $wp_customize->get_setting( 'page_on_front' ) ) {
+			$wp_customize->add_setting( 'page_on_front', array(
+				'type' => 'option',
+				'capability' => 'manage_options',
+			) );
+		}
+		$control = $wp_customize->get_control( 'page_on_front' );
+		if ( ! $control ) {
+			$control = $wp_customize->add_control( 'page_on_front', array(
+				// @codingStandardsIgnoreStart
+				'label' => __( 'Front page', 'default' ), // @todo WPCS's WordPress.WP.I18n.TextDomainMismatch sniff should allow default. See https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/pull/685
+				// @codingStandardsIgnoreEnd
+				'section' => 'static_front_page',
+				'type' => 'dropdown-pages',
+			) );
+		}
+		if ( array( $control, 'active_callback' ) === $control->active_callback ) {
+			$control->active_callback = array( $this, 'has_published_pages' );
+		}
+
+		// Page for Posts.
+		if ( ! $wp_customize->get_setting( 'page_for_posts' ) ) {
+			$wp_customize->add_setting( 'page_for_posts', array(
+				'type' => 'option',
+				'capability' => 'manage_options',
+			) );
+		}
+		$control = $wp_customize->get_control( 'page_for_posts' );
+		if ( ! $control ) {
+			$control = $wp_customize->add_control( 'page_for_posts', array(
+				// @codingStandardsIgnoreStart
+				'label' => __( 'Posts page', 'default' ), // @todo WPCS's WordPress.WP.I18n.TextDomainMismatch sniff should allow default. See https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/pull/685
+				// @codingStandardsIgnoreEnd
+				'section' => 'static_front_page',
+				'type' => 'dropdown-pages',
+			) );
+		}
+		if ( array( $control, 'active_callback' ) === $control->active_callback ) {
+			$control->active_callback = array( $this, 'has_published_pages' );
+		}
+	}
+
+	/**
+	 * Return whether there are published pages.
+	 *
+	 * Used as active callback for static front page section and controls.
+	 *
+	 * @returns bool Whether there are published (or to be published) pages.
+	 */
+	public function has_published_pages() {
+
+		// @todo Also look to see if there are any pages among in $this->get_setting( 'nav_menus_created_posts' )->value().
+		return 0 !== count( get_pages( array(
+			'post_type' => 'page',
+			'post_status' => 'publish',
+			'number' => 1,
+		) ) );
 	}
 
 	/**

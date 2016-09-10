@@ -259,6 +259,53 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test ensure_static_front_page_constructs_registered.
+	 *
+	 * @covers WP_Customize_Posts::ensure_static_front_page_constructs_registered()
+	 */
+	public function test_ensure_static_front_page_constructs_registered() {
+		foreach ( get_pages() as $page ) {
+			wp_delete_post( $page->ID, true );
+		}
+		$this->do_customize_boot_actions();
+		$section = $this->wp_customize->get_section( 'static_front_page' );
+		$this->assertInstanceOf( 'WP_Customize_Section', $section );
+		$this->assertEquals( array( $this->posts, 'has_published_pages' ), $section->active_callback );
+
+		$section->active_callback = array( $section, 'active_callback' ); // Reset to default.
+		$this->posts->ensure_static_front_page_constructs_registered( $this->wp_customize );
+		$this->assertEquals( array( $this->posts, 'has_published_pages' ), $section->active_callback );
+
+		$section->active_callback = '__return_false'; // Make something custom.
+		$this->posts->ensure_static_front_page_constructs_registered( $this->wp_customize );
+		$this->assertNotEquals( array( $this->posts, 'has_published_pages' ), $section->active_callback );
+
+		$this->assertInstanceOf( 'WP_Customize_Control', $this->wp_customize->get_control( 'show_on_front' ) );
+		$this->assertInstanceOf( 'WP_Customize_Control', $this->wp_customize->get_control( 'page_on_front' ) );
+		$this->assertInstanceOf( 'WP_Customize_Control', $this->wp_customize->get_control( 'page_for_posts' ) );
+	}
+
+	/**
+	 * Return whether there are published pages.
+	 *
+	 * @covers WP_Customize_Posts::has_published_pages()
+	 */
+	public function test_has_published_pages() {
+		$posts_component = $this->posts;
+
+		foreach ( get_pages() as $page ) {
+			wp_delete_post( $page->ID, true );
+		}
+		$this->assertFalse( $posts_component->has_published_pages() );
+
+		$this->factory()->post->create( array( 'post_type' => 'page', 'post_status' => 'private' ) );
+		$this->assertFalse( $posts_component->has_published_pages() );
+
+		$this->factory()->post->create( array( 'post_type' => 'page', 'post_status' => 'publish' ) );
+		$this->assertTrue( $posts_component->has_published_pages() );
+	}
+
+	/**
 	 * Test that section, controls, and settings are registered.
 	 *
 	 * @see WP_Customize_Posts::register_constructs()
