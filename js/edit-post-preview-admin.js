@@ -27,7 +27,8 @@ var EditPostPreviewAdmin = (function( $ ) {
 			settings = {},
 			postSettingValue,
 			editor = tinymce.get( 'content' ),
-			wasMobile;
+			wasMobile,
+			parentId;
 
 		event.preventDefault();
 
@@ -44,10 +45,18 @@ var EditPostPreviewAdmin = (function( $ ) {
 		// Override default close behavior.
 		wp.customize.Loader.close = component.closeLoader;
 
+		parentId = $( '#parent_id' ).val();
+		if ( ! parentId ) {
+			parentId = 0;
+		} else {
+			parentId = parseInt( parentId, 10 );
+		}
+
 		// Send the current input fields from the edit post page to the Customizer via sessionStorage.
 		postSettingValue = {
 			post_title: $( '#title' ).val(),
 			post_name: $( '#post_name' ).val(),
+			post_parent: parentId,
 			post_content: editor && ! editor.isHidden() ? wp.editor.removep( editor.getContent() ) : $( '#content' ).val(),
 			post_excerpt: $( '#excerpt' ).val(),
 			comment_status: $( '#comment_status' ).prop( 'checked' ) ? 'open' : 'closed',
@@ -66,6 +75,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 
 		// Sync changes from the Customizer to the post input fields.
 		wp.customize.Loader.messenger.bind( 'customize-post-settings-data', function( data ) {
+			var settingParentId;
 			if ( data[ postSettingId ] ) {
 				$( '#title' ).val( data[ postSettingId ].post_title ).trigger( 'change' );
 				if ( editor ) {
@@ -79,6 +89,8 @@ var EditPostPreviewAdmin = (function( $ ) {
 				$( '#ping_status' ).prop( 'checked', 'open' === data[ postSettingId ].ping_status ).trigger( 'change' );
 				$( '#post_author_override' ).val( data[ postSettingId ].post_author ).trigger( 'change' );
 				$( '#post_name' ).val( data[ postSettingId ].post_name ).trigger( 'change' );
+				settingParentId = data[ postSettingId ].post_parent;
+				$( '#parent_id' ).val( settingParentId > 0 ? String( settingParentId ) : '' ).trigger( 'change' );
 				$( '#new-post-slug' ).val( data[ postSettingId ].post_name );
 				$( '#editable-post-name, #editable-post-name-full' ).text( data[ postSettingId ].post_name );
 			}
