@@ -96,6 +96,7 @@ final class WP_Customize_Posts_Preview {
 		}
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_preview_settings' ), 1000, 2 );
 		add_filter( 'get_pages', array( $this, 'filter_get_pages_to_preview_settings' ), 1, 2 );
+		add_filter( 'wp_setup_nav_menu_item', array( $this, 'filter_wp_setup_nav_menu_item_to_preview_settings' ), 1 );
 		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
 		add_filter( 'the_title', array( $this, 'filter_the_title' ), 1, 2 );
 		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_preview' ), 1000, 4 );
@@ -532,6 +533,43 @@ final class WP_Customize_Posts_Preview {
 			}
 		}
 		return 0;
+	}
+
+	/**
+	 * Filter wp_setup_nav_menu_item to preview settings.
+	 *
+	 * Note that the post_parent for a nav_menu_item is set to the original object's post_parent.
+	 * However, if the original object's post_parent is changed, core does not currently keep the
+	 * nav menu item's post_parent in sync. As such, the classes on a nav menu item like
+	 * `current_page_ancestor` or `current_page_parent` will only be valid if the post_parent
+	 * for a page was not modified after the nav menu item was created. See
+	 * {@link https://core.trac.wordpress.org/ticket/17077}.
+	 *
+	 * @param object $nav_menu_item Nav menu item object.
+	 * @return object Mutated object.
+	 */
+	public function filter_wp_setup_nav_menu_item_to_preview_settings( $nav_menu_item ) {
+
+		if ( ! ( isset( $nav_menu_item->type ) && 'post_type' === $nav_menu_item->type && ! empty( $nav_menu_item->object_id ) ) ) {
+			return $nav_menu_item;
+		}
+
+		$original_post = get_post( $nav_menu_item->object_id );
+		if ( empty( $original_post ) ) {
+			return $nav_menu_item;
+		}
+
+		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $original_post );
+		$post_setting = $this->component->manager->get_setting( $post_setting_id );
+		if ( ! $post_setting || ! array_key_exists( $post_setting, $this->component->manager->unsanitized_post_values() ) ) {
+			return $nav_menu_item;
+		}
+
+		$previewed_post_data = $post_setting->value();
+
+		// @todo Override menu_order?
+		// @todo Override post_parent?
+		return $nav_menu_item;
 	}
 
 	/**
