@@ -503,6 +503,7 @@
 							post_type: section.params.post_type,
 							post_status: 'publish',
 							post__not_in: [ section.params.post_id ],
+							show_initial_dropdown: true,
 							dropdown_args: {
 								exclude_tree: section.params.post_id,
 								sort_column: 'menu_order, post_title'
