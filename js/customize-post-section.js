@@ -275,6 +275,9 @@
 			if ( postTypeObj.supports['page-attributes'] || postTypeObj.supports.parent ) {
 				section.addParentControl();
 			}
+			if ( postTypeObj.supports['page-attributes'] || postTypeObj.supports.ordering ) {
+				section.addOrderControl();
+			}
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
 			}
@@ -591,7 +594,7 @@
 		 *
 		 * @returns {wp.customize.Control} Added control.
 		 */
-		addParentControl: function() {
+		addParentControl: function addParentControl() {
 			var section = this, control, setting = api( section.id ), controlId, params, postTypeObj;
 			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 
@@ -656,6 +659,44 @@
 		},
 
 		/**
+		 * Add order control.
+		 *
+		 * @returns {wp.customize.Control} Added control.
+		 */
+		addOrderControl: function addOrderControl() {
+			var section = this, control, setting = api( section.id ), postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+			control = new api.controlConstructor.dynamic( section.id + '[menu_order]', {
+				params: {
+					section: section.id,
+					priority: 80,
+					label: postTypeObj.labels.order_field ? postTypeObj.labels.order_field : api.Posts.data.l10n.fieldOrderLabel,
+					active: true,
+					settings: {
+						'default': setting.id
+					},
+					field_type: 'number',
+					setting_property: 'menu_order'
+				}
+			} );
+
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.menu_order = control;
+			api.control.add( control.id, control );
+
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
+				control.notifications.setting_property = control.params.setting_property;
+			}
+			return control;
+		},
+
+		/**
 		 * Add discussion fields (comments and ping status fields) control.
 		 *
 		 * @returns {wp.customize.Control} Added control.
@@ -666,7 +707,7 @@
 			control = new api.controlConstructor.post_discussion_fields( section.id + '[discussion_fields]', {
 				params: {
 					section: section.id,
-					priority: 80,
+					priority: 90,
 					label: postTypeObj.labels.discussion_field ? postTypeObj.labels.discussion_field : api.Posts.data.l10n.fieldDiscusionLabel,
 					active: true,
 					settings: {
@@ -703,7 +744,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_author]', {
 				params: {
 					section: section.id,
-					priority: 90,
+					priority: 100,
 					label: postTypeObj.labels.author_field ? postTypeObj.labels.author_field : api.Posts.data.l10n.fieldAuthorLabel,
 					active: true,
 					settings: {
