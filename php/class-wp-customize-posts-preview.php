@@ -1071,6 +1071,9 @@ final class WP_Customize_Posts_Preview {
 			'post_parent' => array(
 				'fallback_refresh' => true,
 			),
+			'menu_order' => array(
+				'fallback_refresh' => true,
+			),
 			'post_date' => array(
 				'selector' => 'time.entry-date',
 				'fallback_refresh' => false,

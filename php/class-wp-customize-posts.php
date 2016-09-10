@@ -728,6 +728,7 @@ final class WP_Customize_Posts {
 				'fieldDiscussionLabel' => __( 'Discussion', 'customize-posts' ),
 				'fieldAuthorLabel' => __( 'Author', 'customize-posts' ),
 				'fieldParentLabel' => __( 'Parent', 'customize-posts' ),
+				'fieldOrderLabel' => __( 'Order', 'customize-posts' ),
 				'noTitle' => __( '(no title)', 'customize-posts' ),
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
 				'openEditor' => __( 'Open Editor', 'customize-posts' ), // @todo Move this into editor control?

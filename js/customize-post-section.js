@@ -275,6 +275,9 @@
 			if ( postTypeObj.supports['page-attributes'] || postTypeObj.supports.parent ) {
 				section.addParentControl();
 			}
+			if ( postTypeObj.supports['page-attributes'] || postTypeObj.supports.ordering ) {
+				section.addOrderControl();
+			}
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
 			}
@@ -400,7 +403,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_name]', {
 				params: {
 					section: section.id,
-					priority: 15,
+					priority: 20,
 					label: postTypeObj.labels.slug_field ? postTypeObj.labels.slug_field : api.Posts.data.l10n.fieldSlugLabel,
 					active: true,
 					settings: {
@@ -450,7 +453,7 @@
 			control = new api.controlConstructor.post_status( section.id + '[post_status]', {
 				params: {
 					section: section.id,
-					priority: 20,
+					priority: 30,
 					label: postTypeObj.labels.status_field ? postTypeObj.labels.status_field : api.Posts.data.l10n.fieldStatusLabel,
 					settings: {
 						'default': setting.id
@@ -475,18 +478,130 @@
 		},
 
 		/**
+		 * Add post date control.
+		 *
+		 * @returns {wp.customize.Control} Added control.
+		 */
+		addDateControl: function() {
+			var section = this, control, setting = api( section.id ), postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+
+			control = new api.controlConstructor.post_date( section.id + '[post_date]', {
+				params: {
+					section: section.id,
+					priority: 40,
+					label: postTypeObj.labels.date_field ? postTypeObj.labels.date_field : api.Posts.data.l10n.fieldDateLabel,
+					description: api.Posts.data.l10n.fieldDateDescription,
+					settings: {
+						'default': setting.id
+					}
+				}
+			} );
+
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.post_date = control;
+			api.control.add( control.id, control );
+
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
+				control.notifications.setting_property = control.params.setting_property;
+			}
+			return control;
+		},
+
+		/**
+		 * Add post content control.
+		 *
+		 * @returns {wp.customize.Control} Added control.
+		 */
+		addContentControl: function() {
+			var section = this, control, setting = api( section.id ), postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+
+			control = new api.controlConstructor.post_editor( section.id + '[post_content]', {
+				params: {
+					section: section.id,
+					priority: 50,
+					label: postTypeObj.labels.content_field ? postTypeObj.labels.content_field : api.Posts.data.l10n.fieldContentLabel,
+					setting_property: 'post_content',
+					settings: {
+						'default': setting.id
+					}
+				}
+			} );
+
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.post_content = control;
+			api.control.add( control.id, control );
+
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
+				control.notifications.setting_property = control.params.setting_property;
+			}
+			return control;
+		},
+
+		/**
+		 * Add post excerpt control.
+		 *
+		 * @returns {wp.customize.Control} Added control.
+		 */
+		addExcerptControl: function() {
+			var section = this, control, setting = api( section.id ), postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+			control = new api.controlConstructor.dynamic( section.id + '[post_excerpt]', {
+				params: {
+					section: section.id,
+					priority: 60,
+					label: postTypeObj.labels.excerpt_field ? postTypeObj.labels.excerpt_field : api.Posts.data.l10n.fieldExcerptLabel,
+					active: true,
+					settings: {
+						'default': setting.id
+					},
+					field_type: 'textarea',
+					setting_property: 'post_excerpt'
+				}
+			} );
+
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.post_excerpt = control;
+			api.control.add( control.id, control );
+
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
+				control.notifications.setting_property = control.params.setting_property;
+			}
+			return control;
+		},
+
+		/**
 		 * Add parent control.
 		 *
 		 * @returns {wp.customize.Control} Added control.
 		 */
-		addParentControl: function() {
+		addParentControl: function addParentControl() {
 			var section = this, control, setting = api( section.id ), controlId, params, postTypeObj;
 			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 
 			controlId = section.id + '[post_parent]';
 			params = {
 				section: section.id,
-				priority: 20,
+				priority: 70,
 				label: postTypeObj.labels.parent_item_colon ? postTypeObj.labels.parent_item_colon.replace( /:$/, '' ) : api.Posts.data.l10n.fieldParentLabel,
 				active: true,
 				settings: {
@@ -544,97 +659,24 @@
 		},
 
 		/**
-		 * Add post date control.
+		 * Add order control.
 		 *
 		 * @returns {wp.customize.Control} Added control.
 		 */
-		addDateControl: function() {
+		addOrderControl: function addOrderControl() {
 			var section = this, control, setting = api( section.id ), postTypeObj;
 			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
-
-			control = new api.controlConstructor.post_date( section.id + '[post_date]', {
+			control = new api.controlConstructor.dynamic( section.id + '[menu_order]', {
 				params: {
 					section: section.id,
-					priority: 21,
-					label: postTypeObj.labels.date_field ? postTypeObj.labels.date_field : api.Posts.data.l10n.fieldDateLabel,
-					description: api.Posts.data.l10n.fieldDateDescription,
-					settings: {
-						'default': setting.id
-					}
-				}
-			} );
-
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
-
-			// Register.
-			section.postFieldControls.post_date = control;
-			api.control.add( control.id, control );
-
-			if ( control.notifications ) {
-				control.notifications.add = section.addPostFieldControlNotification;
-				control.notifications.setting_property = control.params.setting_property;
-			}
-			return control;
-		},
-
-		/**
-		 * Add post content control.
-		 *
-		 * @returns {wp.customize.Control} Added control.
-		 */
-		addContentControl: function() {
-			var section = this, control, setting = api( section.id ), postTypeObj;
-			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
-
-			control = new api.controlConstructor.post_editor( section.id + '[post_content]', {
-				params: {
-					section: section.id,
-					label: postTypeObj.labels.content_field ? postTypeObj.labels.content_field : api.Posts.data.l10n.fieldContentLabel,
-					setting_property: 'post_content',
-					settings: {
-						'default': setting.id
-					}
-				}
-			} );
-
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
-
-			// Register.
-			section.postFieldControls.post_content = control;
-			api.control.add( control.id, control );
-
-			if ( control.notifications ) {
-				control.notifications.add = section.addPostFieldControlNotification;
-				control.notifications.setting_property = control.params.setting_property;
-			}
-			return control;
-		},
-
-		/**
-		 * Add post excerpt control.
-		 *
-		 * @returns {wp.customize.Control} Added control.
-		 */
-		addExcerptControl: function() {
-			var section = this, control, setting = api( section.id ), postTypeObj;
-			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
-			control = new api.controlConstructor.dynamic( section.id + '[post_excerpt]', {
-				params: {
-					section: section.id,
-					priority: 30,
-					label: postTypeObj.labels.excerpt_field ? postTypeObj.labels.excerpt_field : api.Posts.data.l10n.fieldExcerptLabel,
+					priority: 80,
+					label: postTypeObj.labels.order_field ? postTypeObj.labels.order_field : api.Posts.data.l10n.fieldOrderLabel,
 					active: true,
 					settings: {
 						'default': setting.id
 					},
-					field_type: 'textarea',
-					setting_property: 'post_excerpt'
+					field_type: 'number',
+					setting_property: 'menu_order'
 				}
 			} );
 
@@ -644,7 +686,7 @@
 			};
 
 			// Register.
-			section.postFieldControls.post_excerpt = control;
+			section.postFieldControls.menu_order = control;
 			api.control.add( control.id, control );
 
 			if ( control.notifications ) {
@@ -665,7 +707,7 @@
 			control = new api.controlConstructor.post_discussion_fields( section.id + '[discussion_fields]', {
 				params: {
 					section: section.id,
-					priority: 60,
+					priority: 90,
 					label: postTypeObj.labels.discussion_field ? postTypeObj.labels.discussion_field : api.Posts.data.l10n.fieldDiscusionLabel,
 					active: true,
 					settings: {
@@ -702,7 +744,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_author]', {
 				params: {
 					section: section.id,
-					priority: 70,
+					priority: 100,
 					label: postTypeObj.labels.author_field ? postTypeObj.labels.author_field : api.Posts.data.l10n.fieldAuthorLabel,
 					active: true,
 					settings: {
