@@ -52,7 +52,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 			post_excerpt: $( '#excerpt' ).val(),
 			comment_status: $( '#comment_status' ).prop( 'checked' ) ? 'open' : 'closed',
 			ping_status: $( '#ping_status' ).prop( 'checked' ) ? 'open' : 'closed',
-			post_author: $( '#post_author_override' ).val()
+			post_author: parseInt( $( '#post_author_override' ).val(), 10 )
 		};
 		postSettingId = 'post[' + postType + '][' + postId + ']';
 		settings[ postSettingId ] = postSettingValue;
