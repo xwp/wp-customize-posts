@@ -28,7 +28,8 @@ var EditPostPreviewAdmin = (function( $ ) {
 			postSettingValue,
 			editor = tinymce.get( 'content' ),
 			wasMobile,
-			parentId;
+			parentId,
+			menuOrder;
 
 		event.preventDefault();
 
@@ -45,11 +46,13 @@ var EditPostPreviewAdmin = (function( $ ) {
 		// Override default close behavior.
 		wp.customize.Loader.close = component.closeLoader;
 
-		parentId = $( '#parent_id' ).val();
+		parentId = parseInt( $( '#parent_id' ).val(), 10 );
 		if ( ! parentId ) {
 			parentId = 0;
-		} else {
-			parentId = parseInt( parentId, 10 );
+		}
+		menuOrder = parseInt( $( '#menu_order' ).val(), 10 );
+		if ( ! menuOrder ) {
+			menuOrder = 0;
 		}
 
 		// Send the current input fields from the edit post page to the Customizer via sessionStorage.
@@ -57,6 +60,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 			post_title: $( '#title' ).val(),
 			post_name: $( '#post_name' ).val(),
 			post_parent: parentId,
+			menu_order: menuOrder,
 			post_content: editor && ! editor.isHidden() ? wp.editor.removep( editor.getContent() ) : $( '#content' ).val(),
 			post_excerpt: $( '#excerpt' ).val(),
 			comment_status: $( '#comment_status' ).prop( 'checked' ) ? 'open' : 'closed',
@@ -91,6 +95,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 				$( '#post_name' ).val( data[ postSettingId ].post_name ).trigger( 'change' );
 				settingParentId = data[ postSettingId ].post_parent;
 				$( '#parent_id' ).val( settingParentId > 0 ? String( settingParentId ) : '' ).trigger( 'change' );
+				$( '#menu_order' ).val( String( data[ postSettingId ].menu_order ) ).trigger( 'change' );
 				$( '#new-post-slug' ).val( data[ postSettingId ].post_name );
 				$( '#editable-post-name, #editable-post-name-full' ).text( data[ postSettingId ].post_name );
 			}
