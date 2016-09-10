@@ -33,6 +33,8 @@
 			return [];
 		}
 
+		// @todo Add partials for wp_list_pages()
+
 		// Add the partials.
 		_.each( api.previewPosts.partialSchema( setting.id ), function( schema ) {
 			var partial, addPartial, matches, baseSelector;
