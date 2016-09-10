@@ -503,10 +503,11 @@
 							post_type: section.params.post_type,
 							post_status: 'publish',
 							post__not_in: [ section.params.post_id ],
-							tree_args: {
+							dropdown_args: {
 								exclude_tree: section.params.post_id,
 								sort_column: 'menu_order, post_title'
-							}
+							},
+							apply_dropdown_args_filters_post_id: section.params.post_id // Applies page_attributes_dropdown_pages_args filters.
 						},
 						show_add_buttons: false,
 						select2_options: {
