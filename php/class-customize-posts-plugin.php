@@ -70,12 +70,6 @@ class Customize_Posts_Plugin {
 		add_filter( 'customize_loaded_components', array( $this, 'add_posts_to_customize_loaded_components' ), 0, 1 );
 		add_filter( 'customize_loaded_components', array( $this, 'filter_customize_loaded_components' ), 100, 2 );
 		add_action( 'customize_register', array( $this, 'load_support_classes' ) );
-
-		require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-controller.php';
-		require_once dirname( __FILE__ ) . '/class-wp-customize-page-template-controller.php';
-		require_once dirname( __FILE__ ) . '/class-wp-customize-featured-image-controller.php';
-		$this->page_template_controller = new WP_Customize_Page_Template_Controller();
-		$this->featured_image_controller = new WP_Customize_Featured_Image_Controller();
 	}
 
 	/**
@@ -175,6 +169,12 @@ class Customize_Posts_Plugin {
 		require_once dirname( __FILE__ ) . '/class-wp-customize-posts.php';
 		if ( in_array( 'posts', $components, true ) ) {
 			$wp_customize->posts = new WP_Customize_Posts( $wp_customize );
+
+			require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-controller.php';
+			require_once dirname( __FILE__ ) . '/class-wp-customize-page-template-controller.php';
+			require_once dirname( __FILE__ ) . '/class-wp-customize-featured-image-controller.php';
+			$this->page_template_controller = new WP_Customize_Page_Template_Controller();
+			$this->featured_image_controller = new WP_Customize_Featured_Image_Controller();
 		}
 
 		return $components;
