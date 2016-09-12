@@ -296,12 +296,9 @@ final class WP_Customize_Posts {
 		$section = $wp_customize->get_section( 'static_front_page' );
 		if ( ! $section ) {
 			$section = $wp_customize->add_section( 'static_front_page', array(
-				// @codingStandardsIgnoreStart
-				// @todo WPCS's WordPress.WP.I18n.TextDomainMismatch sniff should allow default. See https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/pull/685
 				'title' => __( 'Static Front Page', 'default' ),
 				'priority' => 120,
 				'description' => __( 'Your theme supports a static front page.', 'default' ),
-				// @codingStandardsIgnoreEnd
 			) );
 		}
 		if ( array( $section, 'active_callback' ) === $section->active_callback ) {
@@ -319,16 +316,13 @@ final class WP_Customize_Posts {
 		$control = $wp_customize->get_control( 'show_on_front' );
 		if ( ! $control ) {
 			$control = $wp_customize->add_control( 'show_on_front', array(
-				// @codingStandardsIgnoreStart
 				'label' => __( 'Front page displays', 'default' ),
 				'section' => 'static_front_page',
 				'type' => 'radio',
 				'choices' => array(
-					// @todo WPCS's WordPress.WP.I18n.TextDomainMismatch sniff should allow default. See https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/pull/685
 					'posts' => __( 'Your latest posts', 'default' ),
 					'page' => __( 'A static page', 'default' ),
 				),
-				// @codingStandardsIgnoreEnd
 			) );
 		}
 		if ( array( $control, 'active_callback' ) === $control->active_callback ) {
@@ -345,9 +339,7 @@ final class WP_Customize_Posts {
 		$control = $wp_customize->get_control( 'page_on_front' );
 		if ( ! $control ) {
 			$control = $wp_customize->add_control( 'page_on_front', array(
-				// @codingStandardsIgnoreStart
-				'label' => __( 'Front page', 'default' ), // @todo WPCS's WordPress.WP.I18n.TextDomainMismatch sniff should allow default. See https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/pull/685
-				// @codingStandardsIgnoreEnd
+				'label' => __( 'Front page', 'default' ),
 				'section' => 'static_front_page',
 				'type' => 'dropdown-pages',
 			) );
@@ -366,9 +358,7 @@ final class WP_Customize_Posts {
 		$control = $wp_customize->get_control( 'page_for_posts' );
 		if ( ! $control ) {
 			$control = $wp_customize->add_control( 'page_for_posts', array(
-				// @codingStandardsIgnoreStart
-				'label' => __( 'Posts page', 'default' ), // @todo WPCS's WordPress.WP.I18n.TextDomainMismatch sniff should allow default. See https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/pull/685
-				// @codingStandardsIgnoreEnd
+				'label' => __( 'Posts page', 'default' ),
 				'section' => 'static_front_page',
 				'type' => 'dropdown-pages',
 			) );

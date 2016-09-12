@@ -5,7 +5,7 @@
 	<rule ref="WordPress.WP.I18n">
 		<exclude-pattern>*/php/theme-support/*</exclude-pattern>
 		<properties>
-			<property name="text_domain" value="customize-posts" />
+			<property name="text_domain" value="customize-posts,default" />
 		</properties>
 	</rule>
 	<rule ref="WordPress-Docs" />
