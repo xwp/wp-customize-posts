@@ -544,6 +544,16 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Pass through a value with out modification.
+	 *
+	 * @param mixed $x Value
+	 * @return mixed Value.
+	 */
+	public function pass_through( $x ) {
+		return $x;
+	}
+
+	/**
 	 * Test querying posts based on meta queries.
 	 *
 	 * @see WP_Customize_Posts_Preview::get_previewed_posts_for_query()
@@ -552,6 +562,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	public function test_get_previewed_post_for_meta_query() {
 		$meta_key = 'index';
 		$post_type = 'post';
+		register_meta( 'post', $meta_key, array( $this, 'pass_through' ) );
 		$this->posts_component->register_post_type_meta( $post_type, $meta_key );
 
 		$post_data = array();
@@ -735,12 +746,14 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	public function test_register_post_type_meta_settings() {
 		$post = get_post( $this->post_id );
 
+		register_meta( 'post', 'foo', array( $this, 'pass_through' ) );
 		$this->posts_component->register_post_type_meta( 'post', 'foo' );
 		$foo_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, 'foo' );
 		$this->assertEmpty( $this->posts_component->manager->get_setting( $foo_setting_id ) );
 		$this->posts_component->register_post_type_meta_settings( $post );
 		$this->assertNotEmpty( $this->posts_component->manager->get_setting( $foo_setting_id ) );
 
+		register_meta( 'post', 'bar', array( $this, 'pass_through' ) );
 		$this->posts_component->register_post_type_meta( 'post', 'bar' );
 		$bar_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, 'bar' );
 		$this->assertEmpty( $this->posts_component->manager->get_setting( $bar_setting_id ) );
@@ -756,6 +769,8 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	public function test_filter_get_post_meta_to_preview() {
 		$preview = $this->posts_component->preview;
 		$meta_key = 'foo_key';
+		register_meta( 'post', $meta_key, array( $this, 'pass_through' ) );
+		register_meta( 'post', 'other', array( $this, 'pass_through' ) );
 		$this->posts_component->register_post_type_meta( 'post', $meta_key );
 		$this->posts_component->register_post_type_meta( 'post', 'other' );
 		$this->posts_component->register_post_type_meta_settings( get_post( $this->post_id ) );
@@ -830,6 +845,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$meta_key = 'foo_ids';
 		$initial_value = array( 1, 2, 3 );
 		update_post_meta( $this->post_id, $meta_key, $initial_value );
+		register_meta( 'post', $meta_key, array( $this, 'pass_through' ) );
 		$this->posts_component->register_post_type_meta( 'post', $meta_key );
 		$this->posts_component->register_post_type_meta_settings( get_post( $this->post_id ) );
 
@@ -1013,6 +1029,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertEquals( $this->post_id, $data['queriedPostId'] );
 
 		update_post_meta( $this->post_id, 'foo', 'bar' );
+		register_meta( 'post', 'foo', array( $this, 'pass_through' ) );
 		$this->posts_component->register_post_type_meta( 'post', 'foo' );
 		$this->do_customize_boot_actions();
 		query_posts( array( 'p' => $this->post_id, 'preview' => true ) );
@@ -1035,6 +1052,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	public function test_amend_with_queried_post_ids() {
 		$preview = $this->posts_component->preview;
 		$preview->customize_preview_init();
+		register_meta( 'post', 'foo', array( $this, 'pass_through' ) );
 		$this->posts_component->register_post_type_meta( 'post', 'foo' );
 		query_posts( 'p=' . $this->post_id );
 		update_post_meta( $this->post_id, 'foo', 'bar' );

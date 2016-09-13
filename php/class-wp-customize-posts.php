@@ -93,6 +93,7 @@ final class WP_Customize_Posts {
 		add_filter( 'customize_refresh_nonces', array( $this, 'add_customize_nonce' ) );
 		add_action( 'customize_register', array( $this, 'ensure_static_front_page_constructs_registered' ), 11 );
 		add_action( 'customize_register', array( $this, 'register_constructs' ), 20 );
+		remove_filter( 'register_meta_args', '_wp_register_meta_args_whitelist' ); // Break warranty seal so additional args can be used in register_meta().
 		add_action( 'init', array( $this, 'register_meta' ), 100 );
 		add_filter( 'customize_dynamic_setting_args', array( $this, 'filter_customize_dynamic_setting_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_setting_class', array( $this, 'filter_customize_dynamic_setting_class' ), 5, 3 );
@@ -192,9 +193,12 @@ final class WP_Customize_Posts {
 	/**
 	 * Register post meta for a given post type.
 	 *
-	 * Please note that a sanitize_callback is intentionally excluded because the
-	 * meta sanitization logic should be re-used with the global register_meta()
-	 * function, which includes a `$sanitize_callback` param.
+	 * Note that the `sanitize_callback` here is for the customizer setting and
+	 * it is normally redundant to supply because `register_meta()` should have
+	 * been already called with its own `sanitize_callback` supplied. A warning
+	 * will be raised if this was not done. Similarly the `capability` parameter
+	 * is not required here because when `register_meta()` was called, an
+	 * `auth_callback` could (and should) be supplied at that point.
 	 *
 	 * @see register_meta()
 	 *
@@ -203,22 +207,31 @@ final class WP_Customize_Posts {
 	 * @param array  $setting_args Args.
 	 */
 	public function register_post_type_meta( $post_type, $meta_key, $setting_args = array() ) {
-		$setting_args = array_merge(
-			array(
-				'capability' => null,
-				'theme_supports' => null,
-				'default' => null,
-				'transport' => null,
-				'sanitize_callback' => null,
-				'sanitize_js_callback' => null,
-				'validate_callback' => null,
-				'setting_class' => 'WP_Customize_Postmeta_Setting',
-			),
-			$setting_args
+		$defaults = array(
+			'theme_supports' => null,
+			'post_type_supports' => null,
+
+			// Setting args.
+			'capability' => null,
+			'default' => null,
+			'transport' => null,
+			'sanitize_callback' => null,
+			'sanitize_js_callback' => null,
+			'validate_callback' => null,
+
+			'setting_class' => 'WP_Customize_Postmeta_Setting',
 		);
+		$setting_args = array_merge( $defaults, $setting_args );
+		if ( isset( $setting_args['auth_callback'] ) ) {
+			_doing_it_wrong( __METHOD__, esc_html__( 'Only pass auth_callback to register_meta() function. Consider the capability param instead.', 'customize-posts' ), '0.7.0' );
+		}
+		$setting_args = wp_array_slice_assoc( $setting_args, array_keys( $defaults ) );
 
 		if ( ! has_filter( "auth_post_meta_{$meta_key}", array( $this, 'auth_post_meta_callback' ) ) ) {
 			add_filter( "auth_post_meta_{$meta_key}", array( $this, 'auth_post_meta_callback' ), 10, 4 );
+		}
+		if ( ! has_filter( "sanitize_post_meta_{$meta_key}" ) ) {
+			_doing_it_wrong( __METHOD__, sprintf( __( 'Expected previous call to register_meta( "post", "%s" ) with a sanitize_callback.', 'customize-posts' ), $meta_key ), '0.7.0' ); // WPCS: xss ok.
 		}
 
 		// Filter out null values, aka array_filter with ! is_null.
@@ -235,7 +248,9 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Allow editing post meta in Customizer if user can edit_post for registered post meta.
+	 * Filter auth_post_meta_{$meta_key} according to the capability for the registered meta.
+	 *
+	 * Note that this filter will only apply when the customizer is bootstrapped.
 	 *
 	 * @param bool   $allowed  Whether the user can add the post meta. Default false.
 	 * @param string $meta_key The meta key.
@@ -244,8 +259,7 @@ final class WP_Customize_Posts {
 	 * @return bool Allowed.
 	 */
 	public function auth_post_meta_callback( $allowed, $meta_key, $post_id, $user_id ) {
-		global $wp_customize;
-		if ( $allowed || empty( $wp_customize ) ) {
+		if ( $allowed ) {
 			return $allowed;
 		}
 		$post = get_post( $post_id );
@@ -274,6 +288,37 @@ final class WP_Customize_Posts {
 	 * Note that this has to be after all post types are registered.
 	 */
 	public function register_meta() {
+
+		// Recognize meta registered for customizer via register_meta().
+		if ( function_exists( 'get_registered_meta_keys' ) ) {
+			foreach ( get_registered_meta_keys( 'post' ) as $meta => $args ) {
+				if ( empty( $args['show_in_customizer'] ) ) {
+					continue;
+				}
+
+				if ( ! empty( $args['post_types'] ) && ! empty( $args['post_type_supports'] ) ) {
+					$post_types = array_intersect( $args['post_types'], get_post_types_by_support( $args['post_type_supports'] ) );
+				} elseif ( ! empty( $args['post_type_supports'] ) ) {
+					$post_types = get_post_types_by_support( $args['post_type_supports'] );
+				} elseif ( ! empty( $args['post_types'] ) ) {
+					$post_types = $args['post_types'];
+				} else {
+					$post_types = array();
+				}
+
+				foreach ( $post_types as $post_type ) {
+					$register_args = array();
+					if ( isset( $args['customize_setting_args'] ) ) {
+						$register_args = array_merge( $register_args, $args['customize_setting_args'] );
+					}
+					if ( isset( $args['customize_setting_class'] ) ) {
+						$register_args['setting_class'] = $args['customize_setting_class'];
+					}
+					$register_args = array_merge( $register_args, wp_array_slice_assoc( $args, array( 'theme_supports', 'post_type_supports' ) ) );
+					$this->register_post_type_meta( $post_type, $meta, $register_args );
+				}
+			}
+		}
 
 		/**
 		 * Allow plugins to register meta.
@@ -453,7 +498,9 @@ final class WP_Customize_Posts {
 			}
 			$registered = $this->registered_post_meta[ $matches['post_type'] ][ $matches['meta_key'] ];
 			if ( isset( $registered['theme_supports'] ) && ! current_theme_supports( $registered['theme_supports'] ) ) {
-				// We don't really need this because theme_supports will already filter it out of being exported.
+				return $args;
+			}
+			if ( isset( $registered['post_type_supports'] ) && ! post_type_supports( $matches['post_type'], $registered['post_type_supports'] ) ) {
 				return $args;
 			}
 			if ( false === $args ) {

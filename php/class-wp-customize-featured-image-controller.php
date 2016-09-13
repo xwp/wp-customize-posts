@@ -376,13 +376,16 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 	}
 
 	/**
-	 * Sanitize (and validate) an input for a specific setting instance.
+	 * Validate the value that has been sanitized by the `sanitize_value` method.
+	 *
+	 * Since the `sanitize_callback` used by `sanitize_meta()` cannot return
+	 * any `WP_Error` to represent invalidity, a secondary
 	 *
 	 * @see update_metadata()
 	 *
 	 * @param string                        $attachment_id The value to sanitize.
 	 * @param WP_Customize_Postmeta_Setting $setting       Setting.
-	 * @return mixed|WP_Error Sanitized value or `WP_Error` if invalid.
+	 * @return mixed|WP_Error|null Sanitized value or `WP_Error` if invalid (or `null` if before WP 4.6).
 	 */
 	public function sanitize_setting( $attachment_id, WP_Customize_Postmeta_Setting $setting ) {
 		unset( $setting );
@@ -398,7 +401,7 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 
 		/*
 		 * Note that at this point, sanitize_meta() has already been called in WP_Customize_Postmeta_Setting::sanitize(),
-		 * and the meta is registered wit WP_Customize_Featured_Image_Controller::sanitize_value() as the sanitize_callback().
+		 * and the meta is registered with WP_Customize_Featured_Image_Controller::sanitize_value() as the sanitize_callback().
 		 * So $attachment_id is either a valid attachment ID, -1, or false.
 		 */
 		if ( ! $is_valid  ) {
