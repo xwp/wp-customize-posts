@@ -521,16 +521,9 @@ final class WP_Customize_Posts_Preview {
 				continue;
 			}
 
-			// Skip joining customized meta that isn't being queried.
-			if ( ! in_array( $setting->meta_key, $this->current_queried_meta_keys, true ) ) {
-				continue;
-			}
-
 			$postmeta_rows = array();
-
 			if ( $setting->single ) {
 				$postmeta_rows[] = array(
-					'meta_id' => null,
 					'post_id' => $setting->post_id,
 					'meta_key' => $setting->meta_key,
 					'meta_value' => $setting->value(),
@@ -538,7 +531,6 @@ final class WP_Customize_Posts_Preview {
 			} else {
 				foreach ( $setting->value() as $meta_value ) {
 					$postmeta_rows[] = array(
-						'meta_id' => null,
 						'post_id' => $setting->post_id,
 						'meta_key' => $setting->meta_key,
 						'meta_value' => $meta_value,
@@ -546,9 +538,24 @@ final class WP_Customize_Posts_Preview {
 				}
 			}
 
+			/**
+			 * Filter the postmeta rows that are being previewed.
+			 *
+			 * @param array $postmeta_rows Postmeta rows, associative arrays with keys for post_id, meta_key, and meta_value.
+			 */
+			$postmeta_rows = apply_filters( 'customize_previewed_postmeta_rows', $postmeta_rows );
+
+			$previewed_meta_keys = wp_list_pluck( $postmeta_rows, 'meta_key' );
+
+			// Skip joining customized meta that isn't being queried.
+			if ( 0 === count( array_intersect( $previewed_meta_keys, $this->current_queried_meta_keys ) ) ) {
+				continue;
+			}
+
 			$sql_meta_exclusion_where_clauses[] = $wpdb->prepare( '( ! ( post_id = %d AND meta_key = %s ) )', $setting->post_id, $setting->meta_key );
 
 			foreach ( $postmeta_rows as $postmeta_row ) {
+				$postmeta_row['meta_id'] = null;
 				$select_fields = array();
 				foreach ( $table_fields as $field_name => $type ) {
 					if ( 'NULL' === $type || ( 'TEXT' === $type && ! $mentioned_fields[ $field_name ] ) ) {

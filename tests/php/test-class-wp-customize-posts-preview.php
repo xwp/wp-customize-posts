@@ -581,6 +581,119 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test querying by postmeta that is filtered by customize_previewed_postmeta_rows.
+	 *
+	 * @covers WP_Customize_Posts_Preview::filter_get_meta_sql_to_inject_customized_state()
+	 * @covers WP_Customize_Posts_Preview::_inject_meta_sql_customized_derived_tables()
+	 */
+	public function test_filter_get_meta_sql_to_inject_customized_state_with_customize_previewed_postmeta_rows_filter() {
+		$meta_key = 'member';
+		$post_type = 'post';
+		$this->posts_component->register_post_type_meta( $post_type, $meta_key, array(
+			'single' => false,
+		) );
+
+		add_action( 'added_post_meta', array( $this, 'add_postmeta_query_index' ), 10, 4 );
+
+		$club1 = $this->factory()->post->create();
+		add_post_meta( $club1, $meta_key, wp_slash( array(
+			'name' => 'John Smith',
+			'age' => 30,
+			'hair' => 'brown',
+		) ) );
+
+		$club2 = $this->factory()->post->create();
+		add_post_meta( $club2, $meta_key, wp_slash( array(
+			'name' => 'Jane Smith',
+			'age' => 25,
+			'hair' => 'black',
+		) ) );
+
+		$club3 = $this->factory()->post->create();
+
+		$query = new WP_Query( array(
+			'meta_key' => 'member_hair',
+			'meta_value' => 'brown',
+		) );
+		$this->assertEquals( array( $club1 ), wp_list_pluck( $query->posts, 'ID' ) );
+
+		$query = new WP_Query( array(
+			'meta_key' => 'member_age',
+			'meta_value' => 20,
+			'meta_compare' => '>',
+		) );
+		$this->assertEqualSets( array( $club1, $club2 ), wp_list_pluck( $query->posts, 'ID' ) );
+
+
+		$postmeta_setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $club3 ), $meta_key );
+		$this->wp_customize->set_post_value( $postmeta_setting_id, array(
+			array(
+				'name' => 'Bob Smith',
+				'age' => 35,
+				'hair' => 'red',
+			)
+		) );
+		$this->wp_customize->add_dynamic_settings( array( $postmeta_setting_id ) );
+		$postmeta_setting = $this->wp_customize->get_setting( $postmeta_setting_id );
+		$postmeta_setting->preview();
+
+		add_filter( 'customize_previewed_postmeta_rows', array( $this, 'filter_customize_previewed_postmeta_rows' ) );
+
+		$query = new WP_Query( array(
+			'meta_key' => 'member_age',
+			'meta_value' => 35,
+			'meta_compare' => '=',
+		) );
+		$this->assertEqualSets( array( $club3 ), wp_list_pluck( $query->posts, 'ID' ) );
+
+		$query = new WP_Query( array(
+			'meta_key' => 'member_age',
+			'meta_value' => 30,
+			'meta_compare' => '>=',
+		) );
+		$this->assertEqualSets( array( $club1, $club3 ), wp_list_pluck( $query->posts, 'ID' ) );
+	}
+
+	/**
+	 * Add postmeta query index when serialized postmeta is added.
+	 *
+	 * @param int    $meta_id    Meta ID.
+	 * @param int    $post_id    Post ID.
+	 * @param string $meta_key   Meta key.
+	 * @param mixed  $meta_value Meta value.
+	 */
+	public function add_postmeta_query_index( $meta_id, $post_id, $meta_key, $meta_value ) {
+		if ( 'member' === $meta_key && is_array( $meta_value ) ) {
+			foreach ( $meta_value as $key => $value ) {
+				add_post_meta( $post_id, "member_{$key}", $value );
+			}
+		}
+	}
+
+	/**
+	 * Filter previewed postmeta rows to inject query index postmeta for serialized values.
+	 *
+	 * @param array $postmeta_rows Postmeta rows.
+	 * @return array Amended postmeta rows.
+	 */
+	public function filter_customize_previewed_postmeta_rows( $postmeta_rows ) {
+		$meta_key = 'member';
+		$index_postmeta_rows = array();
+		foreach ( $postmeta_rows as $postmeta_row ) {
+			if ( $meta_key === $postmeta_row['meta_key'] ) {
+				foreach ( $postmeta_row['meta_value'] as $property_name => $value ) {
+					$index_postmeta_rows[] = array(
+						'meta_key' => "{$meta_key}_{$property_name}",
+						'meta_value' => $value,
+						'post_id' => $postmeta_row['post_id'],
+					);
+				}
+			}
+		}
+		return array_merge( $postmeta_rows, $index_postmeta_rows );
+	}
+
+	/**
 	 * Test filter_nav_menu_item_to_set_url().
 	 *
 	 * See WP_Customize_Posts_Preview::filter_nav_menu_item_to_set_url()
