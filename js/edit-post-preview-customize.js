@@ -14,9 +14,7 @@ var EditPostPreviewCustomize = (function( $, api ) {
 	}
 
 	component.init = function() {
-		component.populateSettings();
-
-		wp.customize.bind( 'ready', function() {
+		api.bind( 'ready', function() {
 			component.ready();
 		} );
 	};
@@ -28,6 +26,14 @@ var EditPostPreviewCustomize = (function( $, api ) {
 	 */
 	component.populateSettings = function() {
 		var itemId, settings;
+
+		// Only run once.
+		if ( component.settingsPopulated ) {
+			return;
+		}
+		component.settingsPopulated = true;
+		api.previewer.unbind( 'customized-posts', component.populateSettings );
+
 		itemId = 'previewedCustomizePostSettings[' + String( component.data.previewed_post.ID ) + ']';
 		settings = sessionStorage.getItem( itemId );
 		if ( ! settings ) {
@@ -58,8 +64,11 @@ var EditPostPreviewCustomize = (function( $, api ) {
 	 */
 	component.ready = function() {
 
+		// Wait to populate the settings until the customized-posts message is received so we know the preview is ready to receive mesages.
+		api.previewer.bind( 'customized-posts', component.populateSettings );
+
 		// Prevent 'saved' state from becoming false, since we only want to save from the admin page.
-		wp.customize.state( 'saved' ).set( true ).validate = function() {
+		api.state( 'saved' ).set( true ).validate = function() {
 			return true;
 		};
 
@@ -74,15 +83,15 @@ var EditPostPreviewCustomize = (function( $, api ) {
 		 *
 		 * @see wp.customize.Loader
 		 */
-		component.parentFrame = new wp.customize.Messenger( {
-			url: wp.customize.settings.url.parent,
+		component.parentFrame = new api.Messenger( {
+			url: api.settings.url.parent,
 			channel: 'loader'
 		} );
 
 		// @todo Include nonce?
 		component.parentFrame.bind( 'populate-setting', function( setting ) {
-			if ( wp.customize.has( setting.id ) ) {
-				wp.customize( setting.id ).set( setting.value );
+			if ( api.has( setting.id ) ) {
+				api( setting.id ).set( setting.value );
 			}
 		} );
 

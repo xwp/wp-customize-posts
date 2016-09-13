@@ -259,6 +259,53 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test ensure_static_front_page_constructs_registered.
+	 *
+	 * @covers WP_Customize_Posts::ensure_static_front_page_constructs_registered()
+	 */
+	public function test_ensure_static_front_page_constructs_registered() {
+		foreach ( get_pages() as $page ) {
+			wp_delete_post( $page->ID, true );
+		}
+		$this->do_customize_boot_actions();
+		$section = $this->wp_customize->get_section( 'static_front_page' );
+		$this->assertInstanceOf( 'WP_Customize_Section', $section );
+		$this->assertEquals( array( $this->posts, 'has_published_pages' ), $section->active_callback );
+
+		$section->active_callback = array( $section, 'active_callback' ); // Reset to default.
+		$this->posts->ensure_static_front_page_constructs_registered( $this->wp_customize );
+		$this->assertEquals( array( $this->posts, 'has_published_pages' ), $section->active_callback );
+
+		$section->active_callback = '__return_false'; // Make something custom.
+		$this->posts->ensure_static_front_page_constructs_registered( $this->wp_customize );
+		$this->assertNotEquals( array( $this->posts, 'has_published_pages' ), $section->active_callback );
+
+		$this->assertInstanceOf( 'WP_Customize_Control', $this->wp_customize->get_control( 'show_on_front' ) );
+		$this->assertInstanceOf( 'WP_Customize_Control', $this->wp_customize->get_control( 'page_on_front' ) );
+		$this->assertInstanceOf( 'WP_Customize_Control', $this->wp_customize->get_control( 'page_for_posts' ) );
+	}
+
+	/**
+	 * Return whether there are published pages.
+	 *
+	 * @covers WP_Customize_Posts::has_published_pages()
+	 */
+	public function test_has_published_pages() {
+		$posts_component = $this->posts;
+
+		foreach ( get_pages() as $page ) {
+			wp_delete_post( $page->ID, true );
+		}
+		$this->assertFalse( $posts_component->has_published_pages() );
+
+		$this->factory()->post->create( array( 'post_type' => 'page', 'post_status' => 'private' ) );
+		$this->assertFalse( $posts_component->has_published_pages() );
+
+		$this->factory()->post->create( array( 'post_type' => 'page', 'post_status' => 'publish' ) );
+		$this->assertTrue( $posts_component->has_published_pages() );
+	}
+
+	/**
 	 * Test that section, controls, and settings are registered.
 	 *
 	 * @see WP_Customize_Posts::register_constructs()
@@ -302,23 +349,6 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 			$this->assertArrayHasKey( 'text', $choice );
 			$this->assertArrayHasKey( 'value', $choice );
 			$this->assertTrue( (bool) get_post_status_object( $choice['value'] ) );
-		}
-	}
-
-	/**
-	 * Tests get_author_choices().
-	 *
-	 * @covers WP_Customize_Posts::get_author_choices()
-	 */
-	public function test_get_author_choices() {
-		$posts = new WP_Customize_Posts( $this->wp_customize );
-		$choices = $posts->get_author_choices();
-		$this->assertTrue( count( $choices ) > 0 );
-		foreach ( $choices as $choice ) {
-			$this->assertInternalType( 'array', $choice );
-			$this->assertArrayHasKey( 'text', $choice );
-			$this->assertArrayHasKey( 'value', $choice );
-			$this->assertTrue( (bool) get_user_by( 'ID', $choice['value'] ) );
 		}
 	}
 
@@ -385,7 +415,6 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'post', $exports['postTypes'] );
 		$this->assertArrayHasKey( 'postStatusChoices', $exports );
 		$this->assertArrayHasKey( 'dateMonthChoices', $exports );
-		$this->assertArrayHasKey( 'authorChoices', $exports );
 		$this->assertArrayHasKey( 'initialServerDate', $exports );
 		$this->assertInternalType( 'int', strtotime( $exports['initialServerDate'] ) );
 		$this->assertArrayHasKey( 'initialServerTimestamp', $exports );

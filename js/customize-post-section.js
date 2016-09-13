@@ -272,6 +272,12 @@
 				section.addStatusControl();
 				section.addDateControl();
 			}
+			if ( postTypeObj.supports['page-attributes'] || postTypeObj.supports.parent ) {
+				section.addParentControl();
+			}
+			if ( postTypeObj.supports['page-attributes'] || postTypeObj.supports.ordering ) {
+				section.addOrderControl();
+			}
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
 			}
@@ -397,7 +403,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_name]', {
 				params: {
 					section: section.id,
-					priority: 15,
+					priority: 20,
 					label: postTypeObj.labels.slug_field ? postTypeObj.labels.slug_field : api.Posts.data.l10n.fieldSlugLabel,
 					active: true,
 					settings: {
@@ -447,7 +453,7 @@
 			control = new api.controlConstructor.post_status( section.id + '[post_status]', {
 				params: {
 					section: section.id,
-					priority: 20,
+					priority: 30,
 					label: postTypeObj.labels.status_field ? postTypeObj.labels.status_field : api.Posts.data.l10n.fieldStatusLabel,
 					settings: {
 						'default': setting.id
@@ -483,7 +489,7 @@
 			control = new api.controlConstructor.post_date( section.id + '[post_date]', {
 				params: {
 					section: section.id,
-					priority: 21,
+					priority: 40,
 					label: postTypeObj.labels.date_field ? postTypeObj.labels.date_field : api.Posts.data.l10n.fieldDateLabel,
 					description: api.Posts.data.l10n.fieldDateDescription,
 					settings: {
@@ -520,6 +526,7 @@
 			control = new api.controlConstructor.post_editor( section.id + '[post_content]', {
 				params: {
 					section: section.id,
+					priority: 50,
 					label: postTypeObj.labels.content_field ? postTypeObj.labels.content_field : api.Posts.data.l10n.fieldContentLabel,
 					setting_property: 'post_content',
 					settings: {
@@ -555,7 +562,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_excerpt]', {
 				params: {
 					section: section.id,
-					priority: 30,
+					priority: 60,
 					label: postTypeObj.labels.excerpt_field ? postTypeObj.labels.excerpt_field : api.Posts.data.l10n.fieldExcerptLabel,
 					active: true,
 					settings: {
@@ -583,6 +590,113 @@
 		},
 
 		/**
+		 * Add parent control.
+		 *
+		 * @returns {wp.customize.Control} Added control.
+		 */
+		addParentControl: function addParentControl() {
+			var section = this, control, setting = api( section.id ), controlId, params, postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+
+			controlId = section.id + '[post_parent]';
+			params = {
+				section: section.id,
+				priority: 70,
+				label: postTypeObj.labels.parent_item_colon ? postTypeObj.labels.parent_item_colon.replace( /:$/, '' ) : api.Posts.data.l10n.fieldParentLabel,
+				active: true,
+				settings: {
+					'default': setting.id
+				},
+				field_type: 'select',
+				setting_property: 'post_parent'
+			};
+
+			if ( api.controlConstructor.object_selector ) {
+				control = new api.controlConstructor.object_selector( controlId, {
+					params: _.extend( params, {
+						post_query_vars: {
+							post_type: section.params.post_type,
+							post_status: 'publish',
+							post__not_in: [ section.params.post_id ],
+							show_initial_dropdown: true,
+							dropdown_args: {
+								exclude_tree: section.params.post_id,
+								sort_column: 'menu_order, post_title'
+							},
+							apply_dropdown_args_filters_post_id: section.params.post_id // Applies page_attributes_dropdown_pages_args filters.
+						},
+						show_add_buttons: false,
+						select2_options: {
+							multiple: false,
+							allowClear: true,
+							placeholder: postTypeObj.labels.search_items
+						}
+					} )
+				} );
+			} else {
+				control = new api.controlConstructor.dynamic( controlId, {
+					params: _.extend( params, {
+						field_type: 'hidden',
+						description: api.Posts.data.l10n.installCustomizeObjectSelector
+					} )
+				} );
+			}
+
+			// Override preview trying to de-activate control not present in preview context.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.page_parent = control;
+			api.control.add( control.id, control );
+
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
+				control.notifications.setting_property = control.params.setting_property;
+			}
+			return control;
+		},
+
+		/**
+		 * Add order control.
+		 *
+		 * @returns {wp.customize.Control} Added control.
+		 */
+		addOrderControl: function addOrderControl() {
+			var section = this, control, setting = api( section.id ), postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+			control = new api.controlConstructor.dynamic( section.id + '[menu_order]', {
+				params: {
+					section: section.id,
+					priority: 80,
+					label: postTypeObj.labels.order_field ? postTypeObj.labels.order_field : api.Posts.data.l10n.fieldOrderLabel,
+					active: true,
+					settings: {
+						'default': setting.id
+					},
+					field_type: 'number',
+					setting_property: 'menu_order'
+				}
+			} );
+
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.menu_order = control;
+			api.control.add( control.id, control );
+
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
+				control.notifications.setting_property = control.params.setting_property;
+			}
+			return control;
+		},
+
+		/**
 		 * Add discussion fields (comments and ping status fields) control.
 		 *
 		 * @returns {wp.customize.Control} Added control.
@@ -593,7 +707,7 @@
 			control = new api.controlConstructor.post_discussion_fields( section.id + '[discussion_fields]', {
 				params: {
 					section: section.id,
-					priority: 60,
+					priority: 90,
 					label: postTypeObj.labels.discussion_field ? postTypeObj.labels.discussion_field : api.Posts.data.l10n.fieldDiscusionLabel,
 					active: true,
 					settings: {
@@ -630,7 +744,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_author]', {
 				params: {
 					section: section.id,
-					priority: 70,
+					priority: 100,
 					label: postTypeObj.labels.author_field ? postTypeObj.labels.author_field : api.Posts.data.l10n.fieldAuthorLabel,
 					active: true,
 					settings: {

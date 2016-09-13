@@ -60,7 +60,7 @@ class Edit_Post_Preview {
 	public function filter_customize_loaded_component( $components ) {
 		if ( $this->can_load_customize_post_preview() ) {
 			foreach ( array( 'widgets', 'nav_menus' ) as $component ) {
-				$i = array_search( $component, $components );
+				$i = array_search( $component, $components, true );
 				if ( false !== $i ) {
 					unset( $components[ $i ] );
 				}

@@ -143,6 +143,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertTrue( $preview->add_preview_filters() );
 		$this->assertEquals( 10, has_action( 'the_post', array( $preview, 'preview_setup_postdata' ) ) );
 		$this->assertEquals( 1, has_filter( 'the_posts', array( $preview, 'filter_the_posts_to_preview_settings' ) ) );
+		$this->assertEquals( 1, has_filter( 'get_pages', array( $preview, 'filter_get_pages_to_preview_settings' ) ) );
 		$this->assertEquals( 1, has_filter( 'the_title', array( $preview, 'filter_the_title' ) ) );
 		$this->assertEquals( 1000, has_filter( 'get_post_metadata', array( $preview, 'filter_get_post_meta_to_preview' ) ) );
 		$this->assertEquals( 10, has_filter( 'wp_setup_nav_menu_item', array( $preview, 'filter_nav_menu_item_to_set_url' ) ) );
@@ -328,6 +329,160 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertCount( 3, $query->posts );
 		$this->assertEquals( $data['foo']['post_id'], $query->posts[0]->ID ); // Now it is "Bad".
 		$this->assertEquals( $data['baz']['post_id'], $query->posts[2]->ID );
+	}
+
+
+	/**
+	 * Test get_pages() with args authors and post_status.
+	 *
+	 * @see get_pages()
+	 * @covers WP_Customize_Posts_Preview::filter_get_pages_to_preview_settings()
+	 */
+	public function test_filter_get_pages_to_preview_settings_post_status_and_authors() {
+		$user_foo = $this->factory()->user->create( array( 'user_login' => 'foo' ) );
+		$user_bar = $this->factory()->user->create( array( 'user_login' => 'bar' ) );
+		$user_baz = $this->factory()->user->create( array( 'user_login' => 'baz' ) );
+
+		$page_a = $this->factory()->post->create( array( 'post_title' => 'Page A', 'post_type' => 'page', 'post_author' => $user_foo, 'post_status' => 'publish' ) );
+		$page_b = $this->factory()->post->create( array( 'post_title' => 'Page B', 'post_type' => 'page', 'post_author' => $user_bar, 'post_status' => 'private' ) );
+		$page_c = $this->factory()->post->create( array( 'post_title' => 'Page C', 'post_type' => 'page', 'post_author' => $user_baz, 'post_status' => 'draft' ) );
+
+		// Baseline.
+		$this->assertEqualSets( array( $page_a ), wp_list_pluck( get_pages( array( 'post_status' => 'publish' ) ), 'ID' ) );
+		$this->assertEqualSets( array( $page_a, $page_b ), wp_list_pluck( get_pages( array( 'post_status' => 'publish,private' ) ), 'ID' ) );
+		$this->assertEqualSets( array( $page_c ), wp_list_pluck( get_pages( array( 'authors' => $user_baz, 'post_status' => 'publish,private,draft' ) ), 'ID' ) );
+
+		$this->posts_component->preview->customize_preview_init();
+		$page_b_setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $page_b ) );
+		$page_b_setting = $this->posts_component->manager->add_setting( new WP_Customize_Post_Setting( $this->posts_component->manager, $page_b_setting_id ) );
+		$this->posts_component->manager->set_post_value( $page_b_setting_id, array_merge(
+			$page_b_setting->value(),
+			array(
+				'post_status' => 'publish',
+				'post_author' => $user_baz,
+			)
+		) );
+		$page_b_setting->preview();
+
+		$baz_user_pages = get_pages( array( 'authors' => $user_baz, 'post_status' => 'publish,private,draft' ) );
+		$this->assertEqualSets( array( $page_b, $page_c ), wp_list_pluck( $baz_user_pages, 'ID' ) );
+	}
+
+	/**
+	 * Test get_pages() with sorting.
+	 *
+	 * @see get_pages()
+	 * @covers WP_Customize_Posts_Preview::filter_get_pages_to_preview_settings()
+	 */
+	public function test_filter_get_pages_to_preview_settings_sorting() {
+		$page_a = $this->factory()->post->create( array( 'post_title' => 'Page A', 'post_type' => 'page', 'menu_order' => 2 ) );
+		$page_b = $this->factory()->post->create( array( 'post_title' => 'Page B', 'post_type' => 'page', 'menu_order' => 3 ) );
+		$page_c = $this->factory()->post->create( array( 'post_title' => 'Page C', 'post_type' => 'page', 'menu_order' => 4 ) );
+
+		$pages = get_pages();
+		$this->assertEquals( array( $page_a, $page_b, $page_c ), wp_list_pluck( $pages, 'ID' ) );
+
+		$this->posts_component->preview->customize_preview_init();
+		$page_b_setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $page_b ) );
+		$page_b_setting = $this->posts_component->manager->add_setting( new WP_Customize_Post_Setting( $this->posts_component->manager, $page_b_setting_id ) );
+		$this->posts_component->manager->set_post_value( $page_b_setting_id, array_merge(
+			$page_b_setting->value(),
+			array(
+				'menu_order' => 1,
+				'post_title' => 'Page D',
+			)
+		) );
+		$page_b_setting->preview();
+		$pages = get_pages( array( 'sort_column' => 'post_title' ) );
+		$this->assertEquals( array( $page_a, $page_c, $page_b ), wp_list_pluck( $pages, 'ID' ) );
+
+		$pages = get_pages( array( 'sort_column' => 'menu_order' ) );
+		$this->assertEquals( array( $page_b, $page_a, $page_c ), wp_list_pluck( $pages, 'ID' ) );
+
+		$pages = get_pages( array( 'sort_column' => 'menu_order', 'sort_order' => 'DESC' ) );
+		$this->assertEquals( array( $page_c, $page_a, $page_b ), wp_list_pluck( $pages, 'ID' ) );
+	}
+
+	/**
+	 * Test get_pages() with args parent, exclude_tree, and child_of.
+	 *
+	 * @see get_pages()
+	 * @covers WP_Customize_Posts_Preview::filter_get_pages_to_preview_settings()
+	 */
+	public function test_filter_get_pages_to_preview_settings_parent_and_exclude_tree_and_child_of() {
+		$page_a = $this->factory()->post->create( array( 'post_title' => 'Page A', 'post_type' => 'page' ) );
+		$page_b = $this->factory()->post->create( array( 'post_title' => 'Page B', 'post_type' => 'page', 'post_parent' => $page_a ) );
+		$page_c = $this->factory()->post->create( array( 'post_title' => 'Page C', 'post_type' => 'page', 'post_parent' => $page_b ) );
+		$page_d = $this->factory()->post->create( array( 'post_title' => 'Page D', 'post_type' => 'page', 'post_parent' => $page_c ) );
+		$page_e = $this->factory()->post->create( array( 'post_title' => 'Page E', 'post_type' => 'page', 'post_parent' => $page_d ) );
+		$page_f = $this->factory()->post->create( array( 'post_title' => 'Page F', 'post_type' => 'page', 'post_parent' => $page_e ) );
+
+		// Baseline tests without customizations.
+		$pages = get_pages();
+		$this->assertCount( 6, $pages );
+		$pages_exclude_tree_d = get_pages( array( 'exclude_tree' => $page_d ) );
+		$this->assertEqualSets( array( $page_a, $page_b, $page_c ), wp_list_pluck( $pages_exclude_tree_d, 'ID' ) );
+		$pages_child_of_d = get_pages( array( 'child_of' => $page_d ) );
+		$this->assertEqualSets( array( $page_e, $page_f ), wp_list_pluck( $pages_child_of_d, 'ID' ) );
+		$this->assertEquals( array( $page_e ), wp_list_pluck( get_pages( array( 'parent' => $page_d ) ), 'ID' ) );
+
+		// Now try moving E to be a sibling of D.
+		$this->posts_component->preview->customize_preview_init();
+		$page_e_setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $page_e ) );
+		$page_e_setting = $this->posts_component->manager->add_setting( new WP_Customize_Post_Setting( $this->posts_component->manager, $page_e_setting_id ) );
+		$this->posts_component->manager->set_post_value( $page_e_setting_id, array_merge(
+			$page_e_setting->value(),
+			array( 'post_parent' => $page_b )
+		) );
+		$page_e_setting->preview();
+
+		$pages = get_pages();
+		$this->assertCount( 6, $pages );
+
+		$pages_exclude_tree_d = get_pages( array( 'exclude_tree' => $page_d ) );
+		$this->assertEqualSets( array( $page_a, $page_b, $page_c, $page_e, $page_f ), wp_list_pluck( $pages_exclude_tree_d, 'ID' ) );
+
+		$pages_exclude_tree_d_and_e = get_pages( array( 'exclude_tree' => array( $page_d, $page_e ) ) );
+		$this->assertEqualSets( array( $page_a, $page_b, $page_c ), wp_list_pluck( $pages_exclude_tree_d_and_e, 'ID' ) );
+
+		$pages_child_of_d = get_pages( array( 'child_of' => $page_d ) );
+		$this->assertEmpty( $pages_child_of_d );
+
+		$this->assertEquals( array( $page_c, $page_e ), wp_list_pluck( get_pages( array( 'parent' => $page_b ) ), 'ID' ) );
+	}
+
+	/**
+	 * Test get_pages() with number args.
+	 *
+	 * @see get_pages()
+	 * @covers WP_Customize_Posts_Preview::filter_get_pages_to_preview_settings()
+	 */
+	public function test_filter_get_pages_to_preview_settings_number() {
+		$page_a = $this->factory()->post->create( array( 'post_title' => 'Page A', 'post_type' => 'page' ) );
+		$page_a1 = $this->factory()->post->create( array( 'post_title' => 'Page A.1', 'post_type' => 'page', 'post_parent' => $page_a ) );
+		$page_a2 = $this->factory()->post->create( array( 'post_title' => 'Page A.2', 'post_type' => 'page', 'post_parent' => $page_a ) );
+
+		$pages = get_pages( array( 'parent' => $page_a, 'number' => 1, 'sort_column' => 'post_title', 'sort_order' => 'ASC' ) );
+		$this->assertEquals( array( $page_a1 ), wp_list_pluck( $pages, 'ID' ) );
+		$pages = get_pages( array( 'parent' => $page_a, 'number' => 1, 'sort_column' => 'post_title', 'sort_order' => 'DESC' ) );
+		$this->assertEquals( array( $page_a2 ), wp_list_pluck( $pages, 'ID' ) );
+
+		// Now try adding a new sibling.
+		$this->posts_component->preview->customize_preview_init();
+		$page_a3_post_obj = $this->posts_component->insert_auto_draft_post( 'page' );
+		$page_a3 = $page_a3_post_obj->ID;
+		$page_a3_setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $page_a3 ) );
+		$page_a3_setting = $this->posts_component->manager->add_setting( new WP_Customize_Post_Setting( $this->posts_component->manager, $page_a3_setting_id ) );
+		$this->posts_component->manager->set_post_value( $page_a3_setting_id, array_merge(
+			$page_a3_setting->value(),
+			array( 'post_parent' => $page_a, 'post_title' => 'Page A.3' )
+		) );
+		$page_a3_setting->preview();
+
+		$pages = get_pages( array( 'parent' => $page_a, 'number' => 1, 'sort_column' => 'post_title', 'sort_order' => 'ASC' ) );
+		$this->assertEquals( array( $page_a1 ), wp_list_pluck( $pages, 'ID' ) );
+		$pages = get_pages( array( 'parent' => $page_a, 'number' => 1, 'sort_column' => 'post_title', 'sort_order' => 'DESC' ) );
+		$this->assertEquals( array( $page_a3 ), wp_list_pluck( $pages, 'ID' ) );
 	}
 
 	/**

@@ -98,6 +98,7 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'get_meta_sql', array( $this, 'filter_get_meta_sql_to_inject_customized_state' ), 10, 6 );
 		add_filter( 'posts_request', array( $this, 'filter_posts_request_to_inject_customized_state' ), 10, 2 );
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_preview_settings' ), 1, 2 );
+		add_filter( 'get_pages', array( $this, 'filter_get_pages_to_preview_settings' ), 1, 2 );
 		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
 		add_filter( 'the_title', array( $this, 'filter_the_title' ), 1, 2 );
 		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_preview' ), 1000, 4 );
@@ -235,6 +236,290 @@ final class WP_Customize_Posts_Preview {
 			}
 		}
 		return $posts;
+	}
+
+	/**
+	 * Prevent recursion in filter_get_pages_to_preview_settings().
+	 *
+	 * @var bool
+	 */
+	protected $disable_filter_get_pages_to_preview_settings = false;
+
+	/**
+	 * Filter get_pages() to preview settings.
+	 *
+	 * Eventually this should become irrelevant once `get_pages()` uses `WP_Query`. See {@link https://core.trac.wordpress.org/ticket/12821}.
+	 *
+	 * @see get_pages()
+	 *
+	 * @param array $initial_posts List of pages to retrieve.
+	 * @param array $args {
+	 *     Array of get_pages() arguments.
+	 *
+	 *     @type array  $exclude_tree  Supported. This must be supported because it is used by wp_dropdown_pages().
+	 *     @type int    $child_of      Supported. This needs to be supported as it can be used by wp_list_pages().
+	 *     @type int    $parent        Supported.
+	 *     @type string $sort_order    Supported.
+	 *     @type string $sort_column   Supported.
+	 *     @type string $authors       Supported.
+	 *     @type string $post_status   Supported.
+	 *     @type int    $number        Supported, but there won't be 100% fidelity due to customized posts being amended to the subset results without being aware of underlying placement in full results.
+	 *     @type array  $exclude       No special support needed.
+	 *     @type array  $include       No special support needed.
+	 *     @type string $meta_key      Not supported.
+	 *     @type string $meta_value    Not supported.
+	 *     @type int    $offset        Not supported.
+	 *     @type bool   $hierarchical  Not needing to be examined since this is a property of the registered post type itself.
+	 *     @type string $post_type     Not needing to be examined since post_type is immutable.
+	 * }
+	 * @return array|false Pages or false on error.
+	 */
+	public function filter_get_pages_to_preview_settings( $initial_posts, $args ) {
+
+		// Abort if we're making a recursive call due to exclude_tree.
+		if ( $this->disable_filter_get_pages_to_preview_settings ) {
+			return $initial_posts;
+		}
+
+		$unsupported_args = array( 'offset', 'meta_key', 'meta_value' );
+		foreach ( $unsupported_args as $unsupported_arg ) {
+			if ( ! empty( $args[ $unsupported_arg ] ) ) {
+				_doing_it_wrong( 'get_pages', sprintf( esc_html__( 'The %s argument for get_pages() is not supported by Customize Posts.', 'customize-posts' ), esc_html( $unsupported_arg ) ), '0.8.0' );
+				return false;
+			}
+		}
+
+		if ( ! is_array( $args['post_status'] ) ) {
+			$args['post_status'] = array_filter( explode( ',', $args['post_status'] ) );
+		}
+
+		$author_ids = array();
+		$authors = $args['authors'];
+		if ( ! is_array( $authors ) ) {
+			$authors = array_filter( explode( ',', $authors ) );
+		}
+		foreach ( $authors as $author ) {
+			if ( 0 === intval( $author ) ) {
+				$post_author = get_user_by( 'login', $author );
+				if ( empty( $post_author ) ) {
+					continue;
+				}
+				if ( empty( $post_author->ID ) ) {
+					continue;
+				}
+				$author_ids[] = $post_author->ID;
+			} else {
+				$author_ids[] = intval( $author );
+			}
+		}
+
+		$args['exclude_tree'] = array_filter( wp_parse_id_list( $args['exclude_tree'] ) );
+		$args['exclude'] = array_filter( wp_parse_id_list( $args['exclude'] ) );
+		$args['include'] = array_filter( wp_parse_id_list( $args['include'] ) );
+		$args['parent'] = intval( $args['parent'] );
+		$args['child_of'] = intval( $args['child_of'] );
+		$args['number'] = intval( $args['number'] );
+
+		if ( ! empty( $args['include'] ) ) {
+			$args['child_of'] = 0; // Ignore child_of, parent, exclude, meta_key, and meta_value params if using include.
+			$args['parent'] = -1;
+			$args['exclude'] = '';
+			$args['meta_key'] = '';
+			$args['meta_value'] = '';
+			$args['hierarchical'] = false;
+		}
+
+		$customized_posts = array();
+		$filtered_posts = array();
+		foreach ( $initial_posts as $post ) {
+			$filtered_posts[ $post->ID ] = $post;
+		}
+
+		$post_values = $this->component->manager->unsanitized_post_values();
+		foreach ( $this->component->manager->settings() as $setting ) {
+
+			// Skip any settings that aren't customized.
+			if ( ! isset( $post_values[ $setting->id ] ) ) {
+				continue;
+			}
+
+			// Gather up post settings that have customizations to amend/augment the initial posts.
+			if ( ! ( $setting instanceof WP_Customize_Post_Setting ) ) {
+				continue;
+			}
+			if ( $args['post_type'] !== $setting->post_type ) {
+				continue;
+			}
+			if ( in_array( $setting->post_id, $args['exclude'], true ) ) {
+				continue;
+			}
+			if ( ! empty( $args['include'] ) && ! in_array( $setting->post_id, $args['include'], true ) ) {
+				continue;
+			}
+
+			if ( isset( $filtered_posts[ $setting->post_id ] ) ) {
+				$post = $filtered_posts[ $setting->post_id ];
+			} else {
+				$post = get_post( $setting->post_id );
+				$filtered_posts[ $setting->post_id ] = $post;
+			}
+			$setting->override_post_data( $post );
+			$customized_posts[ $setting->post_id ] = $post;
+		}
+
+		if ( ! empty( $args['exclude_tree'] ) || ! empty( $args['child_of'] ) ) {
+
+			// Include posts that are no longer in the exclude_tree.
+			$excluded_posts_to_remove = array();
+			foreach ( $args['exclude_tree'] as $exclude_tree ) {
+
+				// Re-add the all posts that were excluded but may no longer should be.
+				$this->disable_filter_get_pages_to_preview_settings = true;
+				$excluded_tree_posts = get_pages( array_merge(
+					$args,
+					array(
+						'child_of' => $exclude_tree,
+						'exclude_tree' => '',
+					)
+				) );
+				$this->disable_filter_get_pages_to_preview_settings = false;
+				foreach ( $excluded_tree_posts as $excluded_tree_post ) {
+					if ( ! isset( $filtered_posts[ $excluded_tree_post->ID ] ) ) {
+						$filtered_posts[ $excluded_tree_post->ID ] = $excluded_tree_post;
+					}
+				}
+
+				// Re-remove all excluded posts.
+				$excluded_posts_to_remove = array_merge(
+					$excluded_posts_to_remove,
+					array( $exclude_tree ),
+					wp_list_pluck( get_page_children( $exclude_tree, $filtered_posts ), 'ID' )
+				);
+			}
+			foreach ( $excluded_posts_to_remove as $post_id ) {
+				unset( $filtered_posts[ $post_id ] );
+			}
+
+			// Remove any posts that are no longer descendants of child_of.
+			if ( ! empty( $args['child_of'] ) ) {
+
+				// Re-add the all posts that were excluded but may no longer should be.
+				$this->disable_filter_get_pages_to_preview_settings = true;
+				$child_of_posts = get_pages( array_merge(
+					$args,
+					array(
+						'child_of' => '',
+						'exclude_tree' => $args['child_of'],
+					)
+				) );
+				$this->disable_filter_get_pages_to_preview_settings = false;
+
+				foreach ( $child_of_posts as $child_of_post ) {
+					if ( ! isset( $filtered_posts[ $child_of_post->ID ] ) ) {
+						$filtered_posts[ $child_of_post->ID ] = $child_of_post;
+					}
+				}
+
+				// Re-remove posts that are not child_of.
+				$child_of_post_ids = array();
+				foreach ( get_page_children( $args['child_of'], $filtered_posts ) as $child_of_post ) {
+					$child_of_post_ids[] = $child_of_post->ID;
+				}
+				foreach ( array_keys( $filtered_posts ) as $post_id ) {
+					if ( ! in_array( $post_id, $child_of_post_ids, true ) ) {
+						unset( $filtered_posts[ $post_id ] );
+					}
+				}
+			}
+		}
+
+		// Remove filtered posts that no longer match.
+		foreach ( array_keys( $filtered_posts ) as $post_id ) {
+			$post = $filtered_posts[ $post_id ];
+			$should_remove = (
+				! empty( $args['post_status'] ) && ! in_array( $post->post_status, $args['post_status'], true )
+				||
+				! empty( $author_ids ) && ! in_array( (int) $post->post_author, $author_ids, true )
+				||
+				$args['parent'] > 0 && $args['parent'] !== $post->post_parent
+			);
+			if ( $should_remove ) {
+				unset( $filtered_posts[ $post->ID ], $customized_posts[ $post->ID ] );
+			}
+		}
+
+		// Normalize sort_column and sort_order according to logic in get_pages().
+		$sort_columns = array_filter( explode( ',', $args['sort_column'] ) );
+		$allowed_keys = array( 'author', 'post_author', 'date', 'post_date', 'title', 'post_title', 'name', 'post_name', 'modified', 'post_modified', 'modified_gmt', 'post_modified_gmt', 'menu_order', 'parent', 'post_parent', 'ID', 'comment_count' );
+		foreach ( $sort_columns as $sort_column ) {
+			$sort_column = trim( $sort_column );
+			if ( ! in_array( $sort_column, $allowed_keys, true ) ) {
+				continue;
+			}
+			switch ( $sort_column ) {
+				case 'menu_order':
+				case 'ID':
+				case 'comment_count':
+					break;
+				default:
+					if ( 0 !== strpos( $sort_column, 'post_' ) ) {
+						$sort_column = "post_{$sort_column}";
+					}
+			}
+			$sort_columns[] = $sort_column;
+		}
+		$args['sort_column'] = $sort_columns;
+		if ( empty( $args['sort_column'] ) ) {
+			$args['sort_column'] = array( 'post_title' );
+		}
+		$args['sort_order'] = strtoupper( $args['sort_order'] );
+		if ( ! in_array( $args['sort_order'], array( 'ASC', 'DESC' ), true ) ) {
+			$args['sort_order'] = 'ASC';
+		}
+
+		// Re-sort posts according to args.
+		$this->current_get_pages_args = $args;
+		usort( $filtered_posts, array( $this, 'compare_posts_for_get_pages' ) );
+		$this->current_get_pages_args = array();
+
+		if ( ! empty( $args['number'] ) ) {
+			$filtered_posts = array_slice( $filtered_posts, 0, $args['number'] );
+		}
+
+		return array_values( $filtered_posts );
+	}
+
+	/**
+	 * Current $args passed to get_pages().
+	 *
+	 * @var array
+	 */
+	protected $current_get_pages_args;
+
+	/**
+	 * Sort two customized posts in get_pages().
+	 *
+	 * @access private
+	 *
+	 * @param WP_Post $post1 Post.
+	 * @param WP_Post $post2 Post.
+	 * @return int Comparison.
+	 */
+	protected function compare_posts_for_get_pages( $post1, $post2 ) {
+		foreach ( $this->current_get_pages_args['sort_column'] as $sort_column ) {
+			if ( is_string( $post1->$sort_column ) ) {
+				$comparison = strcmp( $post1->$sort_column, $post2->$sort_column );
+			} else {
+				$comparison = $post1->$sort_column - $post2->$sort_column;
+			}
+			if ( 'DESC' === $this->current_get_pages_args['sort_order'] ) {
+				$comparison = -$comparison;
+			}
+			if ( 0 !== $comparison ) {
+				return $comparison;
+			}
+		}
+		return 0;
 	}
 
 	/**
@@ -876,6 +1161,12 @@ final class WP_Customize_Posts_Preview {
 				'fallback_refresh' => false,
 			),
 			'post_status' => array(
+				'fallback_refresh' => true,
+			),
+			'post_parent' => array(
+				'fallback_refresh' => true,
+			),
+			'menu_order' => array(
 				'fallback_refresh' => true,
 			),
 			'post_date' => array(

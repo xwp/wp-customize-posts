@@ -10,7 +10,7 @@
 			featuredImageId = parseInt( $( inputSelector ).val(), 10 );
 
 		if ( featuredImageId <= 0 ) {
-			featuredImageId = '';
+			featuredImageId = 0;
 		}
 
 		settings[ settingId ] = featuredImageId;
