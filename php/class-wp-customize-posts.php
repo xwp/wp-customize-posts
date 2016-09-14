@@ -148,9 +148,9 @@ final class WP_Customize_Posts {
 	/**
 	 * Get post type objects that can be managed in Customizer.
 	 *
-	 * By default only post types which have show_ui and publicly_queryable as true
-	 * will be included. This can be overridden if an explicit show_in_customizer
-	 * arg is provided when registering the post type.
+	 * By default only post types which are public will be included. This can be
+	 * overridden if an explicit show_in_customizer arg is provided when
+	 * registering the post type.
 	 *
 	 * @return array
 	 */
@@ -160,7 +160,7 @@ final class WP_Customize_Posts {
 		foreach ( $post_type_objects as $post_type_object ) {
 			$post_type_object = clone $post_type_object;
 			if ( ! isset( $post_type_object->show_in_customizer ) ) {
-				$post_type_object->show_in_customizer = $post_type_object->show_ui;
+				$post_type_object->show_in_customizer = $post_type_object->public;
 			}
 			$post_type_object->supports = get_all_post_type_supports( $post_type_object->name );
 
@@ -944,7 +944,7 @@ final class WP_Customize_Posts {
 	 * @access public
 	 *
 	 * @param array $data Customizer settings and values.
-	 * @return array
+	 * @return array The unchanged settings and values, as the behavior is added to a filter.
 	 */
 	public function transition_customize_draft( $data ) {
 		global $wpdb;
@@ -954,12 +954,16 @@ final class WP_Customize_Posts {
 			}
 			$post = get_post( $matches['post_id'] );
 			if ( 'auto-draft' === $post->post_status ) {
+				$new_status = 'customize-draft';
 				$wpdb->update(
 					$wpdb->posts,
-					array( 'post_status' => 'customize-draft' ),
+					array( 'post_status' => $new_status ),
 					array( 'ID' => $matches['post_id'] )
 				);
 				clean_post_cache( $matches['post_id'] );
+
+				// Fires actions related to the transitioning of a post's status.
+				wp_transition_post_status( $new_status, $post->post_status, $post );
 			}
 		}
 		return $data;

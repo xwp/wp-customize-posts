@@ -143,15 +143,15 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		require_once dirname( __FILE__ ) . '/../../php/class-customize-posts-support.php';
 		require_once dirname( __FILE__ ) . '/../../php/class-customize-posts-theme-support.php';
 		require_once dirname( __FILE__ ) . '/../../php/class-customize-posts-plugin-support.php';
-		require_once dirname( __FILE__ ) . '/../../php/plugin-support/class-customize-posts-jetpack-support.php';
+		require_once dirname( __FILE__ ) . '/../../php/theme-support/class-customize-posts-twenty-sixteen-support.php';
 
 		$this->assertEmpty( $posts->supports );
-		$posts->add_support( 'Customize_Posts_Jetpack_Support' );
-		$this->assertArrayHasKey( 'Customize_Posts_Jetpack_Support', $posts->supports );
+		$posts->add_support( 'Customize_Posts_Twenty_Sixteen_Support' );
+		$this->assertArrayHasKey( 'Customize_Posts_Twenty_Sixteen_Support', $posts->supports );
 
 		$posts = new WP_Customize_Posts( $this->wp_customize );
-		$posts->add_support( new Customize_Posts_Jetpack_Support( $posts ) );
-		$this->assertArrayHasKey( 'Customize_Posts_Jetpack_Support', $posts->supports );
+		$posts->add_support( new Customize_Posts_Twenty_Sixteen_Support( $posts ) );
+		$this->assertArrayHasKey( 'Customize_Posts_Twenty_Sixteen_Support', $posts->supports );
 	}
 
 	/**
@@ -528,7 +528,18 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertEquals( 'auto-draft', get_post_status( $post_setting->ID ) );
 		$this->assertEquals( 'auto-draft', get_post_status( $page_setting->ID ) );
 
+		$old_status = 'auto-draft';
+		$new_status = 'customize-draft';
+		$count = did_action( 'transition_post_status' );
+		$count_status_change = did_action( "{$old_status}_to_{$new_status}" );
+		$count_post_status = did_action( "{$new_status}_post" );
+		$count_page_status = did_action( "{$new_status}_page" );
 		$expected = $this->posts->transition_customize_draft( $data );
+		$this->assertEquals( $count + 2, did_action( 'transition_post_status' ) );
+		$this->assertEquals( $count_status_change + 2, did_action( "{$old_status}_to_{$new_status}" ) );
+		$this->assertEquals( $count_post_status + 1, did_action( "{$new_status}_post" ) );
+		$this->assertEquals( $count_page_status + 1, did_action( "{$new_status}_page" ) );
+
 		$this->assertEquals( 'Testing Post Publish', $expected[ $post_setting_id ]['value']['post_title'] );
 		$this->assertEquals( 'publish', $expected[ $post_setting_id ]['value']['post_status'] );
 		$this->assertEquals( 'draft', $expected[ $page_setting_id ]['value']['post_status'] );
