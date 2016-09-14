@@ -148,9 +148,9 @@ final class WP_Customize_Posts {
 	/**
 	 * Get post type objects that can be managed in Customizer.
 	 *
-	 * By default only post types which have show_ui and publicly_queryable as true
-	 * will be included. This can be overridden if an explicit show_in_customizer
-	 * arg is provided when registering the post type.
+	 * By default only post types which are public will be included. This can be
+	 * overridden if an explicit show_in_customizer arg is provided when
+	 * registering the post type.
 	 *
 	 * @return array
 	 */
@@ -160,7 +160,7 @@ final class WP_Customize_Posts {
 		foreach ( $post_type_objects as $post_type_object ) {
 			$post_type_object = clone $post_type_object;
 			if ( ! isset( $post_type_object->show_in_customizer ) ) {
-				$post_type_object->show_in_customizer = $post_type_object->show_ui;
+				$post_type_object->show_in_customizer = $post_type_object->public;
 			}
 			$post_type_object->supports = get_all_post_type_supports( $post_type_object->name );
 
