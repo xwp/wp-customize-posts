@@ -943,7 +943,7 @@ final class WP_Customize_Posts {
 	 * @access public
 	 *
 	 * @param array $data Customizer settings and values.
-	 * @return array
+	 * @return array The unchanged settings and values, as the behavior is added to a filter.
 	 */
 	public function transition_customize_draft( $data ) {
 		global $wpdb;
@@ -953,12 +953,16 @@ final class WP_Customize_Posts {
 			}
 			$post = get_post( $matches['post_id'] );
 			if ( 'auto-draft' === $post->post_status ) {
+				$new_status = 'customize-draft';
 				$wpdb->update(
 					$wpdb->posts,
-					array( 'post_status' => 'customize-draft' ),
+					array( 'post_status' => $new_status ),
 					array( 'ID' => $matches['post_id'] )
 				);
 				clean_post_cache( $matches['post_id'] );
+
+				// Fires actions related to the transitioning of a post's status.
+				wp_transition_post_status( $new_status, $post->post_status, $post );
 			}
 		}
 		return $data;
