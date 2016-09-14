@@ -143,15 +143,15 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		require_once dirname( __FILE__ ) . '/../../php/class-customize-posts-support.php';
 		require_once dirname( __FILE__ ) . '/../../php/class-customize-posts-theme-support.php';
 		require_once dirname( __FILE__ ) . '/../../php/class-customize-posts-plugin-support.php';
-		require_once dirname( __FILE__ ) . '/../../php/plugin-support/class-customize-posts-jetpack-support.php';
+		require_once dirname( __FILE__ ) . '/../../php/theme-support/class-customize-posts-twenty-sixteen-support.php';
 
 		$this->assertEmpty( $posts->supports );
-		$posts->add_support( 'Customize_Posts_Jetpack_Support' );
-		$this->assertArrayHasKey( 'Customize_Posts_Jetpack_Support', $posts->supports );
+		$posts->add_support( 'Customize_Posts_Twenty_Sixteen_Support' );
+		$this->assertArrayHasKey( 'Customize_Posts_Twenty_Sixteen_Support', $posts->supports );
 
 		$posts = new WP_Customize_Posts( $this->wp_customize );
-		$posts->add_support( new Customize_Posts_Jetpack_Support( $posts ) );
-		$this->assertArrayHasKey( 'Customize_Posts_Jetpack_Support', $posts->supports );
+		$posts->add_support( new Customize_Posts_Twenty_Sixteen_Support( $posts ) );
+		$this->assertArrayHasKey( 'Customize_Posts_Twenty_Sixteen_Support', $posts->supports );
 	}
 
 	/**
