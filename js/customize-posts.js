@@ -218,9 +218,18 @@
 	component.gatherFetchedPostsData = function gatherFetchedPostsData( postIds ) {
 		var postsData = {};
 		_.each( postIds, function( postId ) {
-			var postType, postData, id;
+			var postType, postData, id, setting;
 			postType = component.fetchedPosts[ postId ];
-			if ( postType ) {
+			if ( 'nav_menu_item' === postType ) {
+				id = 'nav_menu_item[' + String( postId ) + ']';
+				setting = api( id );
+				postData = {
+					postType: postType,
+					customizeId: id,
+					section: setting ? api.section( 'nav_menu[' + String( setting.get().nav_menu_term_id ) + ']' ) : null,
+					setting: setting
+				};
+			} else if ( postType ) {
 				id = 'post[' + postType + '][' + String( postId ) + ']';
 				postData = {
 					postType: postType,
@@ -286,8 +295,14 @@
 	component.addPostSettings = function addPostSettings( settings ) {
 		var postIds = [];
 		_.each( settings, function( settingArgs, id ) {
-			var setting, parsedSettingId = component.parseSettingId( id );
+			var setting, matches, parsedSettingId = component.parseSettingId( id );
 			if ( ! parsedSettingId ) {
+
+				// Special case: make sure the fetch of a nav menu item is recorded so that it is not re-fetched later.
+				matches = id.match( /^nav_menu_item\[(-?\d+)]$/ );
+				if ( matches ) {
+					component.fetchedPosts[ parseInt( matches[1], 10 ) ] = 'nav_menu_item';
+				}
 				return;
 			}
 			postIds.push( parsedSettingId.postId );
@@ -326,7 +341,7 @@
 	component.addPostSection = function( settingId ) {
 		var section, parsedSettingId, sectionId, panelId, sectionType, Constructor, htmlParser, postTypeObj;
 		parsedSettingId = component.parseSettingId( settingId );
-		if ( ! parsedSettingId ) {
+		if ( ! parsedSettingId || 'post' !== parsedSettingId.settingType ) {
 			throw new Error( 'Bad setting ID' );
 		}
 		postTypeObj = component.data.postTypes[ parsedSettingId.postType ];

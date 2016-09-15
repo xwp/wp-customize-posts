@@ -498,7 +498,7 @@ final class WP_Customize_Posts {
 	/**
 	 * Add all postmeta settings for all registered postmeta for a given post type instance.
 	 *
-	 * @param WP_Post $post Post ID.
+	 * @param WP_Post $post Post.
 	 * @return array
 	 */
 	public function register_post_type_meta_settings( $post ) {
@@ -1106,19 +1106,32 @@ final class WP_Customize_Posts {
 		$query = new WP_Query( array(
 			'post__in' => $post_ids,
 			'ignore_sticky_posts' => true,
-			'post_type' => get_post_types( array(), 'names' ), // @todo Not ideal.
-			'post_status' => get_post_stati( array(), 'names' ), // @todo Not ideal.
+			'post_type' => get_post_types( array(), 'names' ),
+			'post_status' => get_post_stati( array(), 'names' ),
+			'posts_per_page' => count( $post_ids ),
 		) );
-		$post_setting_ids = array_map( array( 'WP_Customize_Post_Setting', 'get_post_setting_id' ), $query->posts );
-		if ( ! empty( $post_setting_ids ) ) {
-			$this->manager->add_dynamic_settings( $post_setting_ids );
+		$post_setting_ids = array();
+		foreach ( $query->posts as $post ) {
+			if ( 'nav_menu_item' === $post->post_type ) {
+				$post_setting_ids[] = sprintf( 'nav_menu_item[%d]', $post->ID );
+			} else {
+				$post_setting_ids[] = WP_Customize_Post_Setting::get_post_setting_id( $post );
+			}
 		}
+		$this->manager->add_dynamic_settings( $post_setting_ids );
 		foreach ( $query->posts as $post ) {
 			$this->register_post_type_meta_settings( $post );
 		}
 		$settings = array();
 		foreach ( $this->manager->settings() as $setting ) {
-			if ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting ) {
+			$is_requested_setting_type = (
+				$setting instanceof WP_Customize_Post_Setting
+				||
+				$setting instanceof WP_Customize_Postmeta_Setting
+				||
+				$setting instanceof WP_Customize_Nav_Menu_Item_Setting
+			);
+			if ( $is_requested_setting_type && in_array( $setting->post_id, $post_ids, true ) ) {
 				$settings[ $setting->id ] = $setting;
 			}
 		}
