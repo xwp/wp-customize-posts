@@ -568,12 +568,16 @@ final class WP_Customize_Posts_Preview {
 			return $sql_select;
 		}
 
-		// Strip out SQL_CALC_FOUND_ROWS, ORDER BY, and LIMIT from subselect query.
+		/*
+		 * Strip out SQL_CALC_FOUND_ROWS, ORDER BY, and LIMIT from subselect query since only relevant to outer query.
+		 * The original SQL is constructed in WP_Query::get_posts() via:
+		 * SELECT $found_rows $distinct $fields FROM {$this->db->posts} $join WHERE 1=1 $where $groupby $orderby $limits
+		 */
 		$sql_subselect = preg_replace( '#^SELECT\s+SQL_CALC_FOUND_ROWS\s+#i', 'SELECT ', $sql_select );
 		$sql_subselect = preg_replace( '#\s+LIMIT\s\d+(,\s*\d+)$#i', '', $sql_subselect );
 		$sql_subselect = preg_replace( '#\s+ORDER\s+BY\s+(\w+\.\w+(\s+(ASC|DESC))?)(\s*,\s*\w+\.\w+(\s+(ASC|DESC))?)*$#i', '', $sql_subselect );
 
-		// Warning: The list of fields must match the list of fields in the CREATE TABLE statement or else a MySQL error will occur.
+		// Notice: The list of fields must match the list of fields in the CREATE TABLE statement or else a MySQL error will occur.
 		$table_fields = array(
 			'ID' => 'UNSIGNED',
 			'post_author' => 'UNSIGNED',
@@ -598,6 +602,21 @@ final class WP_Customize_Posts_Preview {
 			'post_type' => 'CHAR',
 			'post_mime_type' => 'CHAR',
 			'comment_count' => 'UNSIGNED',
+		);
+
+		/*
+		 * Make sure subselect fields are the same as the unioned literal field selects.
+		 * This is is important when requesting fields 'ids' or 'id=>parent' to prevent a MySQL error:
+		 * > The used SELECT statements have a different number of columns for query
+		 */
+		$subselect_fields = array();
+		foreach ( array_keys( $table_fields ) as $field_name ) {
+			$subselect_fields[] = "$wpdb->posts.$field_name";
+		}
+		$sql_subselect = preg_replace(
+			'#^(SELECT\s+(DISTINCT\s+)?).+?(?=\s+FROM\s+)#i',
+			sprintf( '$1 %s', join( ',', $subselect_fields ) ),
+			$sql_subselect
 		);
 
 		$mentioned_fields = array();

@@ -595,6 +595,19 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$query = new WP_Query( array( 'post_type' => 'post', 'post_status' => 'publish', 'paged' => 3, 'orderby' => 'date', 'order' => 'ASC' ) );
 		$this->assertContains( $foo_post->ID, wp_list_pluck( $query->posts, 'ID' ) );
 		$this->assertContains( $bar_post->ID, wp_list_pluck( $query->posts, 'ID' ) );
+
+		// Note that this also demonstrates overriding suppress_filters => true with false.
+		$post_ids = get_posts( array(
+			'fields' => 'ids',
+			'suppress_filters' => true,
+			'post_type' => 'post',
+			'post_status' => 'publish',
+			'paged' => 3,
+			'orderby' => 'date',
+			'order' => 'ASC',
+		) );
+		$this->assertContains( $foo_post->ID, $post_ids );
+		$this->assertContains( $bar_post->ID, $post_ids );
 	}
 
 	/**
