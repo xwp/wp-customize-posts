@@ -1107,6 +1107,7 @@ final class WP_Customize_Posts {
 			'ignore_sticky_posts' => true,
 			'post_type' => get_post_types( array(), 'names' ),
 			'post_status' => get_post_stati( array(), 'names' ),
+			'posts_per_page' => count( $post_ids ),
 		) );
 		$post_setting_ids = array();
 		foreach ( $query->posts as $post ) {
