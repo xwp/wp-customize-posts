@@ -90,6 +90,16 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 		$this->assertInstanceOf( 'Exception', $exception );
 		$this->assertContains( 'Illegal setting id', $exception->getMessage() );
 
+		// Test illegal setting id.
+		$exception = null;
+		try {
+			new WP_Customize_Postmeta_Setting( $this->manager, sprintf( 'postmeta[post][%d][food]', -123 ) );
+		} catch ( Exception $e ) {
+			$exception = $e;
+		}
+		$this->assertInstanceOf( 'Exception', $exception );
+		$this->assertContains( 'Illegal setting id', $exception->getMessage() );
+
 		// Test unrecognized post type.
 		$bad_post_id = $this->factory()->post->create( array( 'post_type' => 'unknown' ) );
 		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $bad_post_id ), 'bad' );
@@ -113,16 +123,6 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 		$this->manager->posts = $this->posts;
 		$this->assertInstanceOf( 'Exception', $exception );
 		$this->assertContains( 'Posts component not instantiated', $exception->getMessage() );
-	}
-
-	/**
-	 * @see WP_Customize_Postmeta_Setting::__construct()
-	 */
-	function test_construct_insert() {
-		$post_id = -123;
-		$setting_id = sprintf( 'postmeta[post][%d][food]', $post_id );
-		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id );
-		$this->assertTrue( current_user_can( $setting->capability ) );
 	}
 
 	/**
@@ -366,15 +366,5 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 		$this->assertEquals( $override_meta_value, $setting->value() );
 		$meta_value = get_post_meta( $post_id, $meta_key, true );
 		$this->assertEquals( $override_meta_value, $meta_value );
-	}
-
-	/**
-	 * @see WP_Customize_Postmeta_Setting::update()
-	 */
-	function test_update_for_insert() {
-		$setting_id = sprintf( 'postmeta[post][%d][food]', -123 );
-		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id );
-		$this->manager->set_post_value( $setting_id, 'bard' );
-		$setting->save();
 	}
 }

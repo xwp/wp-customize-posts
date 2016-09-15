@@ -11,7 +11,7 @@
  */
 class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 
-	const SETTING_ID_PATTERN = '/^postmeta\[(?P<post_type>[^\]]+)\]\[(?P<post_id>-?\d+)\]\[(?P<meta_key>.+)\]$/';
+	const SETTING_ID_PATTERN = '/^postmeta\[(?P<post_type>[^\]]+)\]\[(?P<post_id>\d+)\]\[(?P<meta_key>.+)\]$/';
 
 	const TYPE = 'postmeta';
 
@@ -97,15 +97,9 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 		}
 
 		// Determine the capability required for editing this.
-		$update = $args['post_id'] > 0;
 		$post_type_obj = get_post_type_object( $args['post_type'] );
-		$can_edit = false;
-		if ( $update ) {
-			$can_edit = $this->posts_component->current_user_can_edit_post( $args['post_id'] );
-		} elseif ( $post_type_obj ) {
-			$can_edit = current_user_can( $post_type_obj->cap->edit_posts );
-		}
-		if ( $can_edit && $update ) {
+		$can_edit = $this->posts_component->current_user_can_edit_post( $args['post_id'] );
+		if ( $can_edit ) {
 			$can_edit = current_user_can( 'edit_post_meta', $args['post_id'], $args['meta_key'] );
 		}
 		if ( ! $can_edit ) {
