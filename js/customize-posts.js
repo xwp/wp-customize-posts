@@ -218,9 +218,18 @@
 	component.gatherFetchedPostsData = function gatherFetchedPostsData( postIds ) {
 		var postsData = {};
 		_.each( postIds, function( postId ) {
-			var postType, postData, id;
+			var postType, postData, id, setting;
 			postType = component.fetchedPosts[ postId ];
-			if ( postType && 'nav_menu_item' !== postType ) {
+			if ( 'nav_menu_item' === postType ) {
+				id = 'nav_menu_item[' + String( postId ) + ']';
+				setting = api( id );
+				postData = {
+					postType: postType,
+					customizeId: id,
+					section: setting ? api.section( 'nav_menu[' + String( setting.get().nav_menu_term_id ) + ']' ) : null,
+					setting: setting
+				};
+			} else if ( postType ) {
 				id = 'post[' + postType + '][' + String( postId ) + ']';
 				postData = {
 					postType: postType,
