@@ -92,7 +92,13 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 		}
 		$this->posts_component = $manager->posts;
 
-		if ( isset( $args['single'] ) && false === $args['single'] ) {
+		if ( ! $this->single || ( isset( $args['single'] ) && false === $args['single'] ) ) {
+			if ( '' === $this->default ) {
+				$this->default = array();
+			}
+			if ( array() !== $this->default || ( isset( $args['default'] ) && array() !== $args['default'] ) ) {
+				_doing_it_wrong( __METHOD__, 'Plural postmeta may only have an empty array as the default', '0.8.0' );
+			}
 			$args['default'] = array();
 		}
 
