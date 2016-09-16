@@ -421,6 +421,10 @@
 				// @todo Also remove all postmeta settings for this post?
 				api.remove( section.id );
 				delete component.fetchedPosts[ section.params.post_id ];
+
+				if ( 'page' === section.params.post_type ) {
+					section.purgeStaticPageDropDown( section.params.post_id );
+				}
 			}
 		} );
 	};
