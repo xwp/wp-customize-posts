@@ -65,11 +65,12 @@
 				args.params.title = api.Posts.data.l10n.noTitle;
 			}
 
-			setting.bind( function( newPostValue ) {
-				if ( 'page' === args.params.post_type ) {
-					section.syncPageToStaticPageControls( args.params.post_id, newPostValue );
-				}
-			} );
+			// Sync the page data to any dropdown-pages controls.
+			if ( 'page' === args.params.post_type ) {
+				setting.bind( function( newData, oldData ) {
+					section.syncPageData( newData, oldData );
+				} );
+			}
 
 			section.postFieldControls = {};
 
@@ -912,91 +913,82 @@
 		},
 
 		/**
-		 * Sync page changes to Static Front Page section controls.
+		 * Sync page changes to all dropdown-pages controls and to the page_on_front/page_for_posts settings.
 		 *
-		 * @param {number} pageId       Updated page ID.
+		 * @this {wp.customize.Section}
 		 * @param {Object} newPostData  Updated page data.
-		 * @returns {boolean}           Return true or false based.
+		 * @returns {void}
 		 */
-		syncPageToStaticPageControls: function( pageId, newPostData ) {
+		syncPageData: function( newPostData ) {
 			var section = this;
-			_.each( [ wp.customize.control( 'page_on_front' ), wp.customize.control( 'page_for_posts' ) ], function( controlObject ) {
-				var	pageOnFrontOptions = section.getSelectOptions( controlObject ),
-					newPage = true;
 
-				if ( 'undefined' === typeof controlObject ) {
-					return false;
-				}
-
-				_.each( pageOnFrontOptions, function( el ) {
-					var elObject = $( el );
-					if ( pageId === parseInt( elObject.val(), 10 ) ) {
-						newPage = false;
-						if ( 'trash' === newPostData.post_status ) {
-							elObject.prop( 'selected', false );
-							elObject.prop( 'disabled', true );
-						} else {
-							elObject.text( newPostData.post_title );
-							elObject.prop( 'disabled', false );
-						}
-						return false;
+			// Make sure the page_for_posts and page_on_front settings get unset if the selected page is trashed.
+			if ( 'trash' === newPostData.post_status ) {
+				_.each( [ api( 'page_for_posts' ), api( 'page_on_front' ) ], function( setting ) {
+					if ( setting && parseInt( setting.get(), 10 ) === section.params.post_id ) {
+						setting.set( 0 );
 					}
-					return true;
-				});
-
-				if ( newPage ) {
-					controlObject
-						.container
-						.find( 'select' )
-						.append(
-							$( '<option></option>' )
-								.attr( 'value', pageId )
-								.text( newPostData.post_title )
-						);
-				}
-
-				return true;
-			});
-
-			return true;
-		},
-
-		/**
-		 * Remove trashed pages from static page section dropdowns.
-		 *
-		 * @param {number} pageId - Page ID which was trashed.
-		 * @returns {boolean}     - Return boolean to pass ESLint check.
-		 */
-		purgeStaticPageDropDown: function( pageId ) {
-			var section = this;
-			_.each( [ wp.customize.control( 'page_on_front' ), wp.customize.control( 'page_for_posts' ) ], function( selector ) {
-				var pageOnFrontOptions = section.getSelectOptions( selector );
-				_.each( pageOnFrontOptions, function( el ) {
-					var elObject = $( el );
-					if ( pageId === parseInt( elObject.val(), 10 ) ) {
-						elObject.remove();
-						return false;
-					}
-					return true;
-				});
-				return true;
-			});
-
-			return true;
-		},
-
-		/**
-		 * Extract options from jQuery object
-		 *
-		 * @param {Object} selectObject - jQuery object of Static Page select boxes
-		 * @returns {boolean|object}    - Returns options of select box if `selectObject` is defined.
-		 */
-		getSelectOptions: function( selectObject ) {
-			if ( 'undefined' === typeof selectObject ) {
-				return false;
+				} );
 			}
 
-			return selectObject.container.find( 'select' ).find( 'option' );
+			// Update the dropdown-pages controls.
+			api.control.each( function( control ) {
+				var pageOption, select, isTrashed, optionText;
+
+				// Skip anything but the dropdown-pages control, including the Customize Object Selector control..
+				if ( 'dropdown-pages' !== control.params.type ) {
+					return;
+				}
+
+				// Remove a trashed post from being selected.
+				isTrashed = 'trash' === newPostData.post_status;
+				if ( isTrashed && parseInt( control.setting.get(), 10 ) === section.params.post_id ) {
+					control.setting.set( 0 );
+				}
+
+				// Sync the page option into the select options.
+				optionText = newPostData.post_title || api.Posts.data.l10n.noTitle;
+				if ( isTrashed ) {
+					optionText = api.Posts.data.l10n.dropdownPagesOptionTrashed.replace( '%s', optionText );
+				}
+				select = control.container.find( 'select' );
+				pageOption = select.find( 'option[value="' + String( section.params.post_id ) + '"]' );
+				if ( 0 === pageOption.length ) {
+					pageOption = $( new Option(
+						optionText,
+						section.params.post_id
+					) );
+					select.append( pageOption );
+				} else {
+					pageOption.text( optionText );
+				}
+
+				// @todo In the case of page_on_front and page_for_posts, this should only be done if it wouldn't mean that they can be set to the same. See https://github.com/xwp/wp-customize-object-selector/pull/22
+				pageOption.prop( 'disabled', isTrashed );
+			});
+		},
+
+		/**
+		 * Remove pages from dropdown-pages controls.
+		 *
+		 * @returns {void}
+		 */
+		removeFromDropdownPagesControls: function() {
+			var section = this;
+
+			api.control.each( function( control ) {
+
+				// Skip anything but the dropdown-pages control, including the Customize Object Selector control..
+				if ( 'dropdown-pages' !== control.params.type ) {
+					return;
+				}
+
+				// Remove the option for the page.
+				control.container
+					.find( 'select' )
+					.find( 'option[value="' + String( section.params.post_id ) + '"]' )
+					.remove();
+			});
 		}
 	});
 

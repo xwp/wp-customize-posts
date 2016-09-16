@@ -423,7 +423,7 @@
 				delete component.fetchedPosts[ section.params.post_id ];
 
 				if ( 'page' === section.params.post_type ) {
-					section.purgeStaticPageDropDown( section.params.post_id );
+					section.removeFromDropdownPagesControls();
 				}
 			}
 		} );

@@ -723,6 +723,8 @@ final class WP_Customize_Posts {
 				'openEditor' => __( 'Open Editor', 'customize-posts' ), // @todo Move this into editor control?
 				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
 				'invalidDateError' => __( 'Whoops, the provided date is invalid.', 'customize-posts' ),
+				/* translators: %s is the trashed page name */
+				'dropdownPagesOptionTrashed' => __( '%s (Trashed)', 'customize-posts' ),
 				'installCustomizeObjectSelector' => sprintf(
 					__( 'This control depends on having the %s plugin installed and activated.', 'customize-posts' ),
 					sprintf(
