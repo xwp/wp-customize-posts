@@ -50,7 +50,7 @@ var CustomizePageTemplate = (function( api ) {
 	 * @returns {wp.customize.Control|null} The control.
 	 */
 	component.addControl = function( section ) {
-		var supports, control, controlId, settingId, isActiveCallback;
+		var supports, control, controlId, settingId;
 		supports = api.Posts.data.postTypes[ section.params.post_type ].supports;
 
 		if ( ! supports['page-attributes'] || 'page' !== section.params.post_type ) {
@@ -100,12 +100,11 @@ var CustomizePageTemplate = (function( api ) {
 		 *
 		 * @returns {boolean} Is active.
 		 */
-		isActiveCallback = function() {
+		control.active.setter( function activeSetter( active ) {
 			var defaultSize = 1;
-			return _.size( control.params.choices ) > defaultSize;
-		};
-		control.active.set( isActiveCallback() );
-		control.active.validate = isActiveCallback;
+			return active && _.size( control.params.choices ) > defaultSize;
+		} );
+		control.active.set( true );
 
 		// Register.
 		api.control.add( control.id, control );
