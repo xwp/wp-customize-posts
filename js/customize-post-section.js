@@ -915,11 +915,13 @@
 		/**
 		 * Sync page changes to all dropdown-pages controls and to the page_on_front/page_for_posts settings.
 		 *
+		 * @see wp.customize.Posts.preventStaticFrontPageCollision()
+		 * @see wp.customize.Posts.PostSection.removeFromDropdownPagesControls()
 		 * @this {wp.customize.Section}
 		 * @param {Object} newPostData  Updated page data.
 		 * @returns {void}
 		 */
-		syncPageData: function( newPostData ) {
+		syncPageData: function syncPageData( newPostData ) {
 			var section = this;
 
 			// Make sure the page_for_posts and page_on_front settings get unset if the selected page is trashed.
@@ -963,7 +965,7 @@
 					pageOption.text( optionText );
 				}
 
-				// @todo In the case of page_on_front and page_for_posts, this should only be done if it wouldn't mean that they can be set to the same. See https://github.com/xwp/wp-customize-object-selector/pull/22
+				// Note that the option may or may not also be hidden. The visibility is tied a collision-prevention state.
 				pageOption.prop( 'disabled', isTrashed );
 			});
 		},
