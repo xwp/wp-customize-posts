@@ -387,12 +387,12 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	display: flex;
 }
 .customize-posts-dropdown-pages-inputs > select {
-	-webkit-box-flex: 10;
-	-webkit-flex-grow: 10;
-	-moz-box-flex: 10;
-	-ms-flex-positive: 10;
-	-ms-flex: 10;
-	flex-grow: 10;
+	-webkit-box-flex: 1000;
+	-webkit-flex-grow: 1000;
+	-moz-box-flex: 1000;
+	-ms-flex-positive: 1000;
+	-ms-flex: 1000;
+	flex-grow: 1000;
 }
 .customize-posts-dropdown-pages-inputs > select,
 .customize-posts-dropdown-pages-inputs > .button-secondary.edit-page {
