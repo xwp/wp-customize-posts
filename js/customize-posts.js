@@ -421,6 +421,10 @@
 				// @todo Also remove all postmeta settings for this post?
 				api.remove( section.id );
 				delete component.fetchedPosts[ section.params.post_id ];
+
+				if ( 'page' === section.params.post_type ) {
+					section.removeFromDropdownPagesControls();
+				}
 			}
 		} );
 	};
@@ -535,6 +539,83 @@
 	};
 
 	/**
+	 * Prevent the page on front and the page for posts from being set to be the same.
+	 *
+	 * Note that when the static front page is set to a given page, this same page will
+	 * be hidden from the page on front dropdown, and vice versa. In contrast, when
+	 * a page is trashed it will be *disabled* in the dropdowns. So there are two states
+	 * that effect whether or not an option should be selected. So it is taking advantage
+	 * of the `disabled` and `hidden` to correspond to these two separate states so that
+	 * they don't overwrite each other and accidentally allow an option to be selected.
+	 *
+	 * @see wp.customize.Posts.PostSection.syncPageData()
+	 * @see wp.customize.Posts.PostSection.removeFromDropdownPagesControls()
+	 *
+	 * See also https://github.com/xwp/wp-customize-object-selector/blob/develop/js/customize-object-selector-static-front-page.js
+	 *
+	 * @returns {void}
+	 */
+	component.preventStaticFrontPageCollision = function preventStaticFrontPageCollision() {
+
+		api( 'page_for_posts', 'page_on_front', function( pageForPostsSetting, pageOnFrontSetting ) {
+
+			// Prevent the settings from being set to be the same.
+			pageForPostsSetting.bind( function onChangePageForPosts( pageId ) {
+				if ( parseInt( pageId, 10 ) === parseInt( pageOnFrontSetting.get(), 10 ) ) {
+					pageOnFrontSetting.set( 0 );
+				}
+			} );
+			pageOnFrontSetting.bind( function onChangePageOnFront( pageId ) {
+				if ( parseInt( pageId, 10 ) === parseInt( pageForPostsSetting.get(), 10 ) ) {
+					pageForPostsSetting.set( 0 );
+				}
+			} );
+
+			// Hide the page options to prevent selecting the same. Note that trashed posts get disabled
+			api.control( 'page_for_posts', 'page_on_front', function( pageForPostsControl, pageOnFrontControl ) {
+				var onChangePageForPostsControl, onChangePageOnFrontControl;
+
+				if ( 'dropdown-pages' !== pageForPostsControl.params.type || 'dropdown-pages' !== pageOnFrontControl.params.type ) {
+					return;
+				}
+
+				// Note that the options below may or may not also be disabled. The disabled is tied a the trashed state of the pages.
+				onChangePageForPostsControl = function( newPageForPosts, oldPageForPosts ) {
+					var oldPageForPostsId, newPageForPostsId;
+					oldPageForPostsId = parseInt( oldPageForPosts, 10 );
+					newPageForPostsId = parseInt( newPageForPosts, 10 );
+					if ( 0 !== oldPageForPostsId ) {
+						pageOnFrontControl.container.find( 'option[value="' + String( oldPageForPostsId ) + '"]' ).show();
+					}
+					if ( 0 !== newPageForPostsId ) {
+						pageOnFrontControl.container.find( 'option[value="' + String( newPageForPostsId ) + '"]' ).hide();
+					}
+				};
+
+				onChangePageOnFrontControl = function( newPageOnFront, oldPageOnFront ) {
+					var oldPageOnFrontId, newPageOnFrontId;
+					oldPageOnFrontId = parseInt( oldPageOnFront, 10 );
+					newPageOnFrontId = parseInt( newPageOnFront, 10 );
+					if ( 0 !== oldPageOnFrontId ) {
+						pageForPostsControl.container.find( 'option[value="' + String( oldPageOnFrontId ) + '"]' ).show();
+					}
+					if ( 0 !== newPageOnFrontId ) {
+						pageForPostsControl.container.find( 'option[value="' + String( newPageOnFrontId ) + '"]' ).hide();
+					}
+				};
+
+				$.when( pageForPostsControl.deferred.embedded, pageOnFrontControl.deferred.embedded ).done( function() {
+					pageForPostsSetting.bind( onChangePageForPostsControl );
+					onChangePageForPostsControl( pageForPostsSetting.get() );
+					pageOnFrontSetting.bind( onChangePageOnFrontControl );
+					onChangePageOnFrontControl( pageOnFrontSetting.get() );
+				} );
+			} );
+		} );
+
+	};
+
+	/**
 	 * Ensure that the post associated with an autofocused section or control is loaded.
 	 *
 	 * @returns {int[]} Post IDs autofocused.
@@ -583,13 +664,10 @@
 			if ( data.saved_post_setting_values ) {
 				component.updateSettingsQuietly( data.saved_post_setting_values );
 			}
-
 			component.purgeTrash();
 		} );
 
-		/**
-		 * Ensure a post is added to the Customizer and focus on its section when an edit post link is clicked in preview.
-		 */
+		// Ensure a post is added to the Customizer and focus on its section when an edit post link is clicked in preview.
 		api.previewer.bind( 'edit-post', function( postId ) {
 			var ensuredPromise = api.Posts.ensurePosts( [ postId ] );
 			ensuredPromise.done( function( postsData ) {
@@ -599,6 +677,9 @@
 				}
 			} );
 		} );
+
+		// Prevent page_on_front and page_for_posts from being set to be the same.
+		component.preventStaticFrontPageCollision();
 
 		api.previewer.bind( 'focus-control', component.focusControl );
 

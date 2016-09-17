@@ -65,6 +65,13 @@
 				args.params.title = api.Posts.data.l10n.noTitle;
 			}
 
+			// Sync the page data to any dropdown-pages controls.
+			if ( 'page' === args.params.post_type ) {
+				setting.bind( function( newData, oldData ) {
+					section.syncPageData( newData, oldData );
+				} );
+			}
+
 			section.postFieldControls = {};
 
 			section.contentsEmbedded = $.Deferred();
@@ -903,6 +910,87 @@
 		isContextuallyActive: function() {
 			var section = this;
 			return section.active();
+		},
+
+		/**
+		 * Sync page changes to all dropdown-pages controls and to the page_on_front/page_for_posts settings.
+		 *
+		 * @see wp.customize.Posts.preventStaticFrontPageCollision()
+		 * @see wp.customize.Posts.PostSection.removeFromDropdownPagesControls()
+		 * @this {wp.customize.Section}
+		 * @param {Object} newPostData  Updated page data.
+		 * @returns {void}
+		 */
+		syncPageData: function syncPageData( newPostData ) {
+			var section = this;
+
+			// Make sure the page_for_posts and page_on_front settings get unset if the selected page is trashed.
+			if ( 'trash' === newPostData.post_status ) {
+				_.each( [ api( 'page_for_posts' ), api( 'page_on_front' ) ], function( setting ) {
+					if ( setting && parseInt( setting.get(), 10 ) === section.params.post_id ) {
+						setting.set( 0 );
+					}
+				} );
+			}
+
+			// Update the dropdown-pages controls.
+			api.control.each( function( control ) {
+				var pageOption, select, isTrashed, optionText;
+
+				// Skip anything but the dropdown-pages control, including the Customize Object Selector control..
+				if ( 'dropdown-pages' !== control.params.type ) {
+					return;
+				}
+
+				// Remove a trashed post from being selected.
+				isTrashed = 'trash' === newPostData.post_status;
+				if ( isTrashed && parseInt( control.setting.get(), 10 ) === section.params.post_id ) {
+					control.setting.set( 0 );
+				}
+
+				// Sync the page option into the select options.
+				optionText = newPostData.post_title || api.Posts.data.l10n.noTitle;
+				if ( isTrashed ) {
+					optionText = api.Posts.data.l10n.dropdownPagesOptionTrashed.replace( '%s', optionText );
+				}
+				select = control.container.find( 'select' );
+				pageOption = select.find( 'option[value="' + String( section.params.post_id ) + '"]' );
+				if ( 0 === pageOption.length ) {
+					pageOption = $( new Option(
+						optionText,
+						section.params.post_id
+					) );
+					select.append( pageOption );
+				} else {
+					pageOption.text( optionText );
+				}
+
+				// Note that the option may or may not also be hidden. The visibility is tied a collision-prevention state.
+				pageOption.prop( 'disabled', isTrashed );
+			});
+		},
+
+		/**
+		 * Remove pages from dropdown-pages controls.
+		 *
+		 * @returns {void}
+		 */
+		removeFromDropdownPagesControls: function() {
+			var section = this;
+
+			api.control.each( function( control ) {
+
+				// Skip anything but the dropdown-pages control, including the Customize Object Selector control..
+				if ( 'dropdown-pages' !== control.params.type ) {
+					return;
+				}
+
+				// Remove the option for the page.
+				control.container
+					.find( 'select' )
+					.find( 'option[value="' + String( section.params.post_id ) + '"]' )
+					.remove();
+			});
 		}
 	});
 

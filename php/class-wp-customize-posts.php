@@ -377,10 +377,10 @@ final class WP_Customize_Posts {
 	public function has_published_pages() {
 
 		// @todo Also look to see if there are any pages among in $this->get_setting( 'nav_menus_created_posts' )->value().
+		// Note we cannot use number=>1 since the first-returned page may be previewed to not be published.
 		return 0 !== count( get_pages( array(
 			'post_type' => 'page',
 			'post_status' => 'publish',
-			'number' => 1,
 		) ) );
 	}
 
@@ -723,6 +723,8 @@ final class WP_Customize_Posts {
 				'openEditor' => __( 'Open Editor', 'customize-posts' ), // @todo Move this into editor control?
 				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
 				'invalidDateError' => __( 'Whoops, the provided date is invalid.', 'customize-posts' ),
+				/* translators: %s is the trashed page name */
+				'dropdownPagesOptionTrashed' => __( '%s (Trashed)', 'customize-posts' ),
 				'installCustomizeObjectSelector' => sprintf(
 					__( 'This control depends on having the %s plugin installed and activated.', 'customize-posts' ),
 					sprintf(
