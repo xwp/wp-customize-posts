@@ -312,9 +312,8 @@ final class WP_Customize_Posts {
 				'type' => 'option',
 			) );
 		}
-		$control = $wp_customize->get_control( 'show_on_front' );
-		if ( ! $control ) {
-			$control = $wp_customize->add_control( 'show_on_front', array(
+		if ( ! $wp_customize->get_control( 'show_on_front' ) ) {
+			$wp_customize->add_control( 'show_on_front', array(
 				'label' => __( 'Front page displays', 'default' ),
 				'section' => 'static_front_page',
 				'type' => 'radio',
@@ -324,9 +323,6 @@ final class WP_Customize_Posts {
 				),
 			) );
 		}
-		if ( array( $control, 'active_callback' ) === $control->active_callback ) {
-			$control->active_callback = array( $this, 'has_published_pages' );
-		}
 
 		// Page on Front.
 		if ( ! $wp_customize->get_setting( 'page_on_front' ) ) {
@@ -335,16 +331,12 @@ final class WP_Customize_Posts {
 				'capability' => 'manage_options',
 			) );
 		}
-		$control = $wp_customize->get_control( 'page_on_front' );
-		if ( ! $control ) {
-			$control = $wp_customize->add_control( 'page_on_front', array(
+		if ( ! $wp_customize->get_control( 'page_on_front' ) ) {
+			$wp_customize->add_control( 'page_on_front', array(
 				'label' => __( 'Front page', 'default' ),
 				'section' => 'static_front_page',
 				'type' => 'dropdown-pages',
 			) );
-		}
-		if ( array( $control, 'active_callback' ) === $control->active_callback ) {
-			$control->active_callback = array( $this, 'has_published_pages' );
 		}
 
 		// Page for Posts.
@@ -354,16 +346,12 @@ final class WP_Customize_Posts {
 				'capability' => 'manage_options',
 			) );
 		}
-		$control = $wp_customize->get_control( 'page_for_posts' );
-		if ( ! $control ) {
-			$control = $wp_customize->add_control( 'page_for_posts', array(
+		if ( ! $wp_customize->get_control( 'page_for_posts' ) ) {
+			$wp_customize->add_control( 'page_for_posts', array(
 				'label' => __( 'Posts page', 'default' ),
 				'section' => 'static_front_page',
 				'type' => 'dropdown-pages',
 			) );
-		}
-		if ( array( $control, 'active_callback' ) === $control->active_callback ) {
-			$control->active_callback = array( $this, 'has_published_pages' );
 		}
 	}
 

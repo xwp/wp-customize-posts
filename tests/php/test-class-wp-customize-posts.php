@@ -270,7 +270,9 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->do_customize_boot_actions();
 		$section = $this->wp_customize->get_section( 'static_front_page' );
 		$this->assertInstanceOf( 'WP_Customize_Section', $section );
-		$this->assertEquals( array( $this->posts, 'has_published_pages' ), $section->active_callback );
+		if ( $section->active_callback !== array( $this->wp_customize, 'has_published_pages' ) ) { // Forward-compat, see WP Core Trac #38013.
+			$this->assertEquals( array( $this->posts, 'has_published_pages' ), $section->active_callback );
+		}
 
 		$section->active_callback = array( $section, 'active_callback' ); // Reset to default.
 		$this->posts->ensure_static_front_page_constructs_registered( $this->wp_customize );
