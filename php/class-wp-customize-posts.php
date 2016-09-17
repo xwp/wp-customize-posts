@@ -725,6 +725,8 @@ final class WP_Customize_Posts {
 				'invalidDateError' => __( 'Whoops, the provided date is invalid.', 'customize-posts' ),
 				/* translators: %s is the trashed page name */
 				'dropdownPagesOptionTrashed' => __( '%s (Trashed)', 'customize-posts' ),
+				'editPostFailure' => __( 'Failed to open for editing.', 'customize-posts' ),
+				'createPostFailure' => __( 'Failed to create for editing.', 'customize-posts' ),
 				'installCustomizeObjectSelector' => sprintf(
 					__( 'This control depends on having the %s plugin installed and activated.', 'customize-posts' ),
 					sprintf(
