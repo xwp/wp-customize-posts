@@ -377,10 +377,10 @@ final class WP_Customize_Posts {
 	public function has_published_pages() {
 
 		// @todo Also look to see if there are any pages among in $this->get_setting( 'nav_menus_created_posts' )->value().
+		// Note we cannot use number=>1 since the first-returned page may be previewed to not be published.
 		return 0 !== count( get_pages( array(
 			'post_type' => 'page',
 			'post_status' => 'publish',
-			'number' => 1,
 		) ) );
 	}
 
