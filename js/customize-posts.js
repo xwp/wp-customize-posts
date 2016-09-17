@@ -896,7 +896,7 @@
 				section.active.unbind( onChangeActive );
 
 				// @todo Determine why a delay is required.
-				delay = 100;
+				delay = 100; // eslint-disable-line no-magic-numbers
 				_.delay( function focusControlAfterDelay() {
 					firstControl.focus( {
 						completeCallback: function() {
