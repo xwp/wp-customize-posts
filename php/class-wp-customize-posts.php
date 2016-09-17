@@ -1302,9 +1302,18 @@ final class WP_Customize_Posts {
 		// Return with a failure if any of the requested posts.
 		foreach ( $post_ids as $post_id ) {
 			$post = get_post( $post_id );
-			if ( empty( $post ) || ! isset( $setting_params[ WP_Customize_Post_Setting::get_post_setting_id( $post ) ] ) ) {
+			if ( empty( $post ) ) {
 				status_header( 404 );
 				wp_send_json_error( 'requested_post_absent' );
+			}
+			if ( 'nav_menu_item' === $post->post_type ) {
+				$setting_id = sprintf( 'nav_menu_item[%d]', $post->ID );
+			} else {
+				$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+			}
+			if ( ! isset( $setting_params[ $setting_id ] ) ) {
+				status_header( 404 );
+				wp_send_json_error( 'requested_post_setting_absent' );
 			}
 		}
 
