@@ -539,6 +539,381 @@
 	};
 
 	/**
+	 * Ensure that "edit" and "add" buttons to are added dropdown-pages controls.
+	 *
+	 * @returns {void}
+	 */
+	component.ensureButtonsOnDropdownPagesControls = function ensureButtonsOnDropdownPagesControls() {
+		api.control.each( component.addActionButtonsToDropdownPagesControl );
+		api.control.bind( 'add', component.addActionButtonsToDropdownPagesControl );
+	};
+
+	/**
+	 * Add "edit" and "add" buttons to are added dropdown-pages controls.
+	 *
+	 * @param {wp.customize.Control} control Control.
+	 * @returns {void}
+	 */
+	component.addActionButtonsToDropdownPagesControl = function addActionButtonsToDropdownPagesControl( control ) {
+		if ( 'dropdown-pages' !== control.params.type ) {
+			return;
+		}
+		control.deferred.embedded.done( function onceDropdownPagesControlEmbedded() {
+			var inputsTemplate, inputsContainer, select, editButton, createButton, onSelect;
+			inputsTemplate = wp.template( 'customize-posts-dropdown-pages-inputs' );
+			inputsContainer = $( inputsTemplate() );
+			select = control.container.find( 'select' );
+			select.after( inputsContainer );
+			inputsContainer.prepend( select );
+			editButton = inputsContainer.find( '.edit-page' );
+			createButton = inputsContainer.find( '.create-page' );
+
+			onSelect = function( pageId ) {
+				editButton.toggle( 0 !== parseInt( pageId, 10 ) );
+			};
+			onSelect( control.setting.get() );
+			control.setting.bind( onSelect );
+
+			editButton.on( 'click', function( e ) {
+				e.preventDefault();
+				component.editPost( {
+					postId: parseInt( control.setting.get(), 10 ),
+					initiatingButton: $( this ),
+					originatingConstruct: control,
+					restorePreviousUrl: true,
+					returnToOriginatingConstruct: true
+				} );
+			} );
+			createButton.on( 'click', function( e ) {
+				e.preventDefault();
+
+				component.createPost( {
+					postType: 'page',
+					initiatingButton: $( this ),
+					originatingConstruct: control,
+					restorePreviousUrl: true,
+					returnToOriginatingConstruct: true,
+					breadcrumbReturnCallback: function( data ) {
+						if ( 'publish' === data.setting.get().post_status ) {
+							control.setting.set( data.postId );
+						}
+					}
+				} );
+			} );
+		} );
+	};
+
+	/**
+	 * Handle creating a new page.
+	 *
+	 * This is adapted from the Customize Object Selector plugin.
+	 *
+	 * @todo Customize Object Selector can eliminate its copies.
+	 *
+	 * @link https://github.com/xwp/wp-customize-object-selector/blob/d1ce38f7b14eff4f2ce9c59c93b6e356e7c0912f/js/customize-object-selector-component.js#L337-L425
+	 *
+	 * @param {object} args Args.
+	 * @param {String} args.postType - Post type.
+	 * @param {jQuery} [args.initiatingButton] - Clicked button which will be disabled during the request, and re-focused if returnToOriginatingConstruct is true.
+	 * @param {wp.customize.Control} [args.originatingConstruct] - Control containing button.
+	 * @param {Boolean} [args.restorePreviousUrl] - Whether the URL prior to navigating to the created page should be returned to.
+	 * @param {Boolean} [args.returnToOriginatingConstruct] - Whether the originating control should be returned to.
+	 * @param {Function} [args.breadcrumbReturnCallback] - Function that is called when breadcrumbs are followed back. The post setting is passed as its argument.
+	 * @returns {jQuery.promise} Promise from wp.customize.Posts.insertAutoDraftPost().
+	 */
+	component.createPost = function createPost( args ) {
+		var promise, options, postTypeObj, errorCode = 'create_post_failure';
+
+		options = _.extend(
+			{
+				postType: null,
+				initiatingButton: null,
+				originatingConstruct: null,
+				restorePreviousUrl: true,
+				returnToOriginatingConstruct: Boolean( args.originatingConstruct ),
+				breadcrumbReturnCallback: null
+			},
+			args
+		);
+
+		if ( ! options.postType ) {
+			throw new Error( 'Missing postType' );
+		}
+
+		if ( options.initiatingButton ) {
+			options.initiatingButton.prop( 'disabled', true );
+		}
+		postTypeObj = api.Posts.data.postTypes[ options.postType ];
+		promise = api.Posts.insertAutoDraftPost( options.postType );
+
+		if ( options.originatingConstruct && options.originatingConstruct.notifications ) {
+			options.originatingConstruct.notifications.remove( errorCode );
+		}
+
+		promise.done( function( data ) {
+			var section = data.section, returnPromise, postData, returnUrl = null, watchPreviewUrlChange;
+			section.focus();
+
+			// Navigate to the newly-created post.
+			if ( postTypeObj['public'] ) {
+				returnUrl = api.previewer.previewUrl.get();
+				api.previewer.previewUrl( api.Posts.getPreviewUrl( {
+					post_type: options.postType,
+					post_id: data.postId
+				} ) );
+			} else {
+				api.previewer.refresh();
+			}
+
+			// Set initial post data.
+			postData = {};
+			if ( postTypeObj.supports.title ) {
+				postData.post_title = api.Posts.data.l10n.noTitle;
+			}
+			data.setting.set( _.extend(
+				{},
+				data.setting.get(),
+				postData
+			) );
+
+			if ( ! options.returnToOriginatingConstruct || ! options.originatingConstruct ) {
+				component.focusFirstSectionControlOnceFocusable( section );
+			} else {
+
+				// Clear out the return URL if the preview URL was changed when editing the newly-created post.
+				if ( options.restorePreviousUrl ) {
+					watchPreviewUrlChange = function() {
+						returnUrl = null;
+					};
+					api.previewer.previewUrl.bind( watchPreviewUrlChange );
+				}
+
+				returnPromise = component.focusConstructWithBreadcrumb( section, options.originatingConstruct );
+				returnPromise.done( function() {
+
+					// @todo Promise?
+					if ( options.breadcrumbReturnCallback ) {
+						options.breadcrumbReturnCallback( data );
+					}
+
+					if ( options.initiatingButton ) {
+						options.initiatingButton.focus();
+					}
+
+					// Return to the previewed URL.
+					if ( returnUrl && options.restorePreviousUrl ) {
+						api.previewer.previewUrl.unbind( watchPreviewUrlChange );
+						api.previewer.previewUrl( returnUrl );
+					}
+				} );
+			}
+		} );
+
+		promise.fail( function() {
+			if ( options.originatingConstruct && options.originatingConstruct.notifications ) {
+				options.originatingConstruct.notifications.add( errorCode, new api.Notification( errorCode, {
+					message: api.Posts.data.l10n.createPostFailure
+				} ) );
+			}
+		} );
+
+		promise.always( function() {
+			if ( options.initiatingButton ) {
+				options.initiatingButton.prop( 'disabled', false );
+			}
+		} );
+
+		return promise;
+	};
+
+	/**
+	 * Handle editing an existing page.
+	 *
+	 * This is adapted from the Customize Object Selector plugin.
+	 *
+	 * @link https://github.com/xwp/wp-customize-object-selector/blob/d1ce38f7b14eff4f2ce9c59c93b6e356e7c0912f/js/customize-object-selector-component.js#L337-L425
+	 * @param {object} args Args.
+	 * @param {Number} args.postId - Post type.
+	 * @param {jQuery} [args.initiatingButton] - Clicked button which will be disabled during the request, and re-focused if returnToOriginatingConstruct is true.
+	 * @param {wp.customize.Control} [args.originatingConstruct] - Control containing button.
+	 * @param {Boolean} [args.restorePreviousUrl] - Whether the URL prior to navigating to the created page should be returned to.
+	 * @param {Boolean} [args.returnToOriginatingConstruct] - Whether the originating control should be returned to.
+	 * @param {Function} [args.breadcrumbReturnCallback] - Function that is called when breadcrumbs are followed back. The post setting is passed as its argument.
+	 * @returns {jQuery.promise} Promise from wp.customize.Posts.ensurePosts().
+	 */
+	component.editPost = function editPost( args ) {
+		var options, promise, errorCode = 'edit_post_failure';
+
+		options = _.extend(
+			{
+				postId: null,
+				initiatingButton: null,
+				originatingConstruct: null,
+				restorePreviousUrl: true,
+				returnToOriginatingConstruct: Boolean( args.originatingConstruct ),
+				breadcrumbReturnCallback: null
+			},
+			args
+		);
+
+		if ( ! options.postId ) {
+			throw new Error( 'Missing postId' );
+		}
+
+		if ( options.initiatingButton ) {
+			options.initiatingButton.prop( 'disabled', true );
+		}
+		promise = api.Posts.ensurePosts( [ options.postId ] );
+
+		if ( options.originatingConstruct && options.originatingConstruct.notifications ) {
+			options.originatingConstruct.notifications.remove( errorCode );
+		}
+
+		promise.done( function( data ) {
+			var section, returnPromise, returnUrl = null, watchPreviewUrlChange;
+			section = data[ options.postId ].section;
+			section.focus();
+
+			if ( ! options.returnToOriginatingConstruct || ! options.originatingConstruct ) {
+				component.focusFirstSectionControlOnceFocusable( section );
+			} else {
+
+				// Navigate to the newly-created page.
+				returnUrl = api.previewer.previewUrl.get();
+				api.previewer.previewUrl( api.Posts.getPreviewUrl( {
+					post_type: data[ options.postId ].postType,
+					post_id: options.postId
+				} ) );
+
+				// Clear out the return URL if the preview URL was changed when editing the newly-created post.
+				if ( options.restorePreviousUrl ) {
+					watchPreviewUrlChange = function() {
+						returnUrl = null;
+					};
+					api.previewer.previewUrl.bind( watchPreviewUrlChange );
+				}
+
+				returnPromise = component.focusConstructWithBreadcrumb( section, options.originatingConstruct );
+				returnPromise.done( function() {
+
+					if ( options.breadcrumbReturnCallback ) {
+						options.breadcrumbReturnCallback( data[ options.postId ] );
+					}
+
+					if ( options.initiatingButton ) {
+						options.initiatingButton.focus();
+					}
+
+					// Return to the previewed URL.
+					if ( options.restorePreviousUrl && returnUrl ) {
+						api.previewer.previewUrl.unbind( watchPreviewUrlChange );
+						api.previewer.previewUrl( returnUrl );
+					}
+				} );
+			}
+		} );
+
+		promise.fail( function() {
+			if ( options.originatingConstruct && options.originatingConstruct.notifications ) {
+				options.originatingConstruct.notifications.add( errorCode, new api.Notification( errorCode, {
+					message: api.Posts.data.l10n.editPostFailure
+				} ) );
+			}
+		} );
+		promise.always( function() {
+			if ( options.initiatingButton ) {
+				options.initiatingButton.prop( 'disabled', false );
+			}
+		} );
+
+		return promise;
+	};
+
+	/**
+	 * Focus (expand) one construct and then focus on another construct after the first is collapsed.
+	 *
+	 * This overrides the back button to serve the purpose of breadcrumb navigation.
+	 * This is modified from WP Core.
+	 *
+	 * This is copied from the Customize Object Selector plugin.
+	 *
+	 * @link https://github.com/xwp/wp-customize-object-selector/blob/d1ce38f7b14eff4f2ce9c59c93b6e356e7c0912f/js/customize-object-selector-component.js#L427-L466
+	 * @link https://github.com/xwp/wordpress-develop/blob/e7bbb482d6069d9c2d0e33789c7d290ac231f056/src/wp-admin/js/customize-widgets.js#L2143-L2193
+	 * @param {wp.customize.Section|wp.customize.Panel|wp.customize.Control} focusConstruct - The object to initially focus.
+	 * @param {wp.customize.Section|wp.customize.Panel|wp.customize.Control} returnConstruct - The object to return focus.
+	 * @returns {void}
+	 */
+	component.focusConstructWithBreadcrumb = function focusConstructWithBreadcrumb( focusConstruct, returnConstruct ) {
+		var deferred = $.Deferred(), onceCollapsed;
+		focusConstruct.focus( {
+			completeCallback: function() {
+				if ( focusConstruct.extended( api.Section ) ) {
+					/*
+					 * Note the defer is because the controls get embedded
+					 * once the section is expanded and also because it seems
+					 * that focus fails when the input is not visible yet.
+					 */
+					_.defer( function() {
+						component.focusFirstSectionControlOnceFocusable( focusConstruct );
+					} );
+				}
+			}
+		} );
+		onceCollapsed = function( isExpanded ) {
+			if ( ! isExpanded ) {
+				focusConstruct.expanded.unbind( onceCollapsed );
+				returnConstruct.focus( {
+					completeCallback: function() {
+						deferred.resolve();
+					}
+				} );
+			}
+		};
+		focusConstruct.expanded.bind( onceCollapsed );
+		return deferred;
+	};
+
+	/**
+	 * Perform a dance to focus on the first control in the section.
+	 *
+	 * There is a race condition where focusing on a control too
+	 * early can result in the focus logic not being able to see
+	 * any visible inputs to focus on.
+	 *
+	 * This is copied from the Customize Object Selector plugin.
+	 *
+	 * @link https://github.com/xwp/wp-customize-object-selector/blob/d1ce38f7b14eff4f2ce9c59c93b6e356e7c0912f/js/customize-object-selector-component.js#L468-L502
+	 * @param {wp.customize.Section} section Section.
+	 * @returns {void}
+	 */
+	component.focusFirstSectionControlOnceFocusable = function focusFirstSectionControlOnceFocusable( section ) {
+		var firstControl = section.controls()[0], onChangeActive, delay;
+		if ( ! firstControl ) {
+			return;
+		}
+		onChangeActive = function _onChangeActive( isActive ) {
+			if ( isActive ) {
+				section.active.unbind( onChangeActive );
+
+				// @todo Determine why a delay is required.
+				delay = 100; // eslint-disable-line no-magic-numbers
+				_.delay( function focusControlAfterDelay() {
+					firstControl.focus( {
+						completeCallback: function() {
+							firstControl.container.find( 'input:first' ).select();
+						}
+					} );
+				}, delay );
+			}
+		};
+		if ( section.active.get() ) {
+			onChangeActive( true );
+		} else {
+			section.active.bind( onChangeActive );
+		}
+	};
+
+	/**
 	 * Prevent the page on front and the page for posts from being set to be the same.
 	 *
 	 * Note that when the static front page is set to a given page, this same page will
@@ -612,7 +987,6 @@
 				} );
 			} );
 		} );
-
 	};
 
 	/**
@@ -678,7 +1052,7 @@
 			} );
 		} );
 
-		// Prevent page_on_front and page_for_posts from being set to be the same.
+		component.ensureButtonsOnDropdownPagesControls();
 		component.preventStaticFrontPageCollision();
 
 		api.previewer.bind( 'focus-control', component.focusControl );
