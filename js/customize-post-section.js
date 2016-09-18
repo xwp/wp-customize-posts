@@ -935,7 +935,7 @@
 
 			// Update the dropdown-pages controls.
 			api.control.each( function( control ) {
-				var pageOption, select, isTrashed, optionText;
+				var pageOption, select, isTrashed, isPublished, optionText;
 
 				// Skip anything but the dropdown-pages control, including the Customize Object Selector control..
 				if ( 'dropdown-pages' !== control.params.type ) {
@@ -944,7 +944,8 @@
 
 				// Remove a trashed post from being selected.
 				isTrashed = 'trash' === newPostData.post_status;
-				if ( isTrashed && parseInt( control.setting.get(), 10 ) === section.params.post_id ) {
+				isPublished = 'publish' === newPostData.post_status;
+				if ( ! isPublished && parseInt( control.setting.get(), 10 ) === section.params.post_id ) {
 					control.setting.set( 0 );
 				}
 
@@ -952,6 +953,8 @@
 				optionText = newPostData.post_title || api.Posts.data.l10n.noTitle;
 				if ( isTrashed ) {
 					optionText = api.Posts.data.l10n.dropdownPagesOptionTrashed.replace( '%s', optionText );
+				} else if ( ! isPublished ) {
+					optionText = api.Posts.data.l10n.dropdownPagesOptionUnpublished.replace( '%s', optionText );
 				}
 				select = control.container.find( 'select' );
 				pageOption = select.find( 'option[value="' + String( section.params.post_id ) + '"]' );
@@ -966,7 +969,7 @@
 				}
 
 				// Note that the option may or may not also be hidden. The visibility is tied a collision-prevention state.
-				pageOption.prop( 'disabled', isTrashed );
+				pageOption.prop( 'disabled', ! isPublished );
 			});
 		},
 
