@@ -195,7 +195,7 @@
 		 */
 		embedSectionContents: function embedSectionContents() {
 			var section = this;
-			section.setupSettingValidation();
+			section.setupSectionNotifications();
 			section.setupPostNavigation();
 			section.setupControls();
 		},
@@ -823,12 +823,12 @@
 		},
 
 		/**
-		 * Set up setting validation.
+		 * Set up section notifications.
 		 *
 		 * @returns {void}
 		 */
-		setupSettingValidation: function() {
-			var section = this, setting = api( section.id ), debouncedRenderNotifications;
+		setupSectionNotifications: function() {
+			var section = this, setting = api( section.id ), debouncedRenderNotifications, setPageForPostsNotice;
 			if ( ! setting.notifications ) {
 				return;
 			}
@@ -915,6 +915,29 @@
 
 			api.bind( 'save', function() {
 				section.resetPostFieldControlErrorNotifications();
+			} );
+
+			/**
+			 * Add notice when editing the page for posts.
+			 *
+			 * @see _wp_posts_page_notice() in PHP
+			 * @returns {void}
+			 */
+			setPageForPostsNotice = function() {
+				var code = 'editing_page_for_posts';
+				if ( section.isPageForPosts() ) {
+					section.notifications.add( code, new api.Notification( code, {
+						message: api.Posts.data.l10n.editingPageForPostsNotice,
+						type: 'warning'
+					} ) );
+				} else {
+					section.notifications.remove( code );
+				}
+			};
+
+			api( 'page_for_posts', function( pageForPostsSetting ) {
+				setPageForPostsNotice();
+				pageForPostsSetting.bind( setPageForPostsNotice );
 			} );
 		},
 
