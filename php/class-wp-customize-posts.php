@@ -715,6 +715,7 @@ final class WP_Customize_Posts {
 				'dropdownPagesOptionTrashed' => __( '%s (Trashed)', 'customize-posts' ),
 				/* translators: %s is the trashed page name */
 				'dropdownPagesOptionUnpublished' => __( '%s (Unpublished)', 'customize-posts' ),
+				'editingPageForPostsNotice' => __( 'You are currently editing the page that shows your latest posts.', 'default' ),
 				'editPostFailure' => __( 'Failed to open for editing.', 'customize-posts' ),
 				'createPostFailure' => __( 'Failed to create for editing.', 'customize-posts' ),
 				'installCustomizeObjectSelector' => sprintf(
