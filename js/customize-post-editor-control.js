@@ -101,7 +101,15 @@
 		 * @param {Object} [params]
 		 * @returns {Boolean} false if state already applied
 		 */
-		_toggleExpanded: api.Section.prototype._toggleExpanded,
+		_toggleExpanded: function( expanded, params ) {
+			var control = this;
+
+			if ( expanded && control.section() && api.section.has( control.section() ) ) {
+				api.section( control.section() ).expand();
+			}
+
+			return api.Section.prototype._toggleExpanded.call( control, expanded, params );
+		},
 
 		/**
 		 * Expand the control.
