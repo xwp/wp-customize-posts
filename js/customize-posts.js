@@ -167,6 +167,18 @@
 				return;
 			}
 
+			// Add new page to dropdown-pages controls.
+			api.control.each( function( control ) {
+				var select;
+				if ( 'dropdown-pages' === control.params.type ) {
+					select = control.container.find( 'select[name^="_customize-dropdown-pages-"]' );
+					select.append( new Option( api.Posts.data.l10n.noTitle, data.postId ) );
+				}
+			} );
+			if ( api.section.has( 'static_front_page' ) ) {
+				api.section( 'static_front_page' ).activate();
+			}
+
 			deferred.resolve( {
 				postId: data.postId,
 				section: section,
