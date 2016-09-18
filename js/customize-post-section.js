@@ -353,6 +353,22 @@
 		},
 
 		/**
+		 * Is this post section the page for posts.
+		 *
+		 * @returns {Boolean} Whether is page for posts.
+		 */
+		isPageForPosts: function() {
+			var section = this;
+			if ( 'page' !== section.params.post_type ) {
+				return false;
+			}
+			if ( ! api.has( 'page_for_posts' ) ) {
+				return false;
+			}
+			return parseInt( api( 'page_for_posts' ).get(), 10 ) === section.params.post_id;
+		},
+
+		/**
 		 * Add post title control.
 		 *
 		 * @returns {wp.customize.Control} Added control.
@@ -527,8 +543,23 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addContentControl: function() {
-			var section = this, control, setting = api( section.id ), postTypeObj;
+			var section = this, control, setting = api( section.id ), postTypeObj, shouldShowEditor;
 			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+
+			/**
+			 * Hide the control when the page is assigned as the page_for_posts.
+			 *
+			 * Also override preview trying to de-activate control not present in preview context. See WP Trac #37270.
+			 *
+			 * @link https://github.com/xwp/wordpress-develop/blob/4.6.1/src/wp-admin/edit-form-advanced.php#L53-L56
+			 * @returns {boolean} Whether the editor should be shown.
+			 */
+			shouldShowEditor = function() {
+				if ( section.isPageForPosts() && '' === $.trim( setting.get().post_content ) ) {
+					return false;
+				}
+				return true;
+			};
 
 			control = new api.controlConstructor.post_editor( section.id + '[post_content]', {
 				params: {
@@ -536,16 +567,19 @@
 					priority: 50,
 					label: postTypeObj.labels.content_field ? postTypeObj.labels.content_field : api.Posts.data.l10n.fieldContentLabel,
 					setting_property: 'post_content',
+					active: shouldShowEditor(),
 					settings: {
 						'default': setting.id
 					}
 				}
 			} );
 
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
+			api( 'page_for_posts', function( pageForPostsSetting ) {
+				pageForPostsSetting.bind( function() {
+					control.active.set( shouldShowEditor() );
+				} );
+			} );
+			control.active.validate = shouldShowEditor;
 
 			// Register.
 			section.postFieldControls.post_content = control;
