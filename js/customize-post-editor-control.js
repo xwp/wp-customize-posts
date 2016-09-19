@@ -4,6 +4,9 @@
 (function( api, $ ) {
 	'use strict';
 
+	// This is true because wp_editor() is forcibly called with 'default_editor' => 'tinymce'.
+	var visualModeEnabled = true;
+
 	/**
 	 * An post editor control.
 	 *
@@ -154,7 +157,10 @@
 				control.collapseOtherControls();
 				control.updateEditorHeading();
 
-				if ( editor && ! editor.isHidden() ) {
+				if ( visualModeEnabled ) {
+					editor.show();
+				}
+				if ( editor && visualModeEnabled ) {
 					editor.setContent( wp.editor.autop( settingValue ) );
 				} else {
 					control.contentTextarea.val( settingValue );
@@ -172,8 +178,9 @@
 				$( document.body ).removeClass( 'customize-posts-content-editor-pane-open' );
 
 				// Cancel link and force a click event to exit fullscreen & kitchen sink mode.
-				editor.execCommand( 'wp_link_cancel' );
-				$( '.mce-active' ).click();
+				$( '.mce-active' ).click(); // Remove active status from each item. @todo This is a hack.
+				visualModeEnabled = ! editor.isHidden();
+				editor.hide(); // Make sure all toolbars are hidden.
 				control.customizePreview.css( 'bottom', '' );
 				control.collapseSidebar.css( 'bottom', '' );
 			}

@@ -239,12 +239,6 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	z-index: 500100 !important; /* originally 100100, but z-index of .wp-full-overlay is 500000 */
 }
 
-body:not( .customize-posts-content-editor-pane-open ) > .mce-toolbar-grp,
-body:not( .customize-posts-content-editor-pane-open ) > .mce-widget,
-body:not( .customize-posts-content-editor-pane-open ) > .wplink-autocomplete {
-	display: none;
-}
-
 .customize-posts-content-editor-pane-open .wp-full-overlay.collapsed .wp-full-overlay-sidebar {
 	z-index: 30;
 }
