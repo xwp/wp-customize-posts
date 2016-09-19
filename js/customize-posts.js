@@ -1023,6 +1023,21 @@
 		return autofocusPostIds;
 	};
 
+	/*
+	 * Abort if the event target is not the body (the default) and not inside of #customize-controls.
+	 * This ensures that ESC meant to collapse a modal dialog or a TinyMCE toolbar won't collapse something else.
+	 *
+	 * See https://core.trac.wordpress.org/ticket/38091
+	 *
+	 * @todo As as the fix lands in core, this logic should be conditionally run only if version if 4.6.0 or 4.6.1, assuming it makes it into 4.6.2
+	 */
+	$( 'body' ).on( 'keydown', function( event ) {
+		var escKey = 27;
+		if ( escKey === event.which && ! $( event.target ).is( 'body' ) && ! $.contains( $( '#customize-controls' )[0], event.target ) ) {
+			event.stopImmediatePropagation();
+		}
+	} );
+
 	api.bind( 'ready', function() {
 
 		// Add a post_ID input for editor integrations (like Shortcake) to be able to know the post being edited.
