@@ -161,12 +161,14 @@
 				}
 				editor.on( 'input change keyup', control.onVisualEditorChange );
 				control.contentTextarea.on( 'input', control.onTextEditorChange );
+				$( '#wp-customize-posts-content-wrap' ).on( 'keydown', control.stopEscKeypressEventPropagation );
 				$( document.body ).addClass( 'customize-posts-content-editor-pane-open' );
 				control.resizeEditor( window.innerHeight - control.editorPane.height() );
 			} else {
 				control.editorHeading.text( '' );
 				editor.off( 'input change keyup', control.onVisualEditorChange );
 				control.contentTextarea.off( 'input', control.onTextEditorChange );
+				$( '#wp-customize-posts-content-wrap' ).off( 'keydown', control.stopEscKeypressEventPropagation );
 				$( document.body ).removeClass( 'customize-posts-content-editor-pane-open' );
 
 				// Cancel link and force a click event to exit fullscreen & kitchen sink mode.
@@ -521,6 +523,22 @@
 					}
 				}
 			});
+		},
+
+		/**
+		 * Stop propagation of escape key to prevent the editor control from being collapsed.
+		 *
+		 * This stops the following code from running in core:
+		 * https://github.com/xwp/wordpress-develop/blob/4.6.1/src/wp-admin/js/customize-controls.js#L3971-L4007
+		 *
+		 * @param {jQuery.Event} event Event.
+		 * @returns {void}
+		 */
+		stopEscKeypressEventPropagation: function( event ) {
+			var escKeyCode = 27;
+			if ( escKeyCode === event.which ) {
+				event.stopPropagation();
+			}
 		}
 	});
 
