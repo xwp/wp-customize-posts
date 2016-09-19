@@ -588,7 +588,7 @@
 
 			editButton.on( 'click', function( e ) {
 				e.preventDefault();
-				component.editPost( {
+				component.startEditPostFlow( {
 					postId: parseInt( control.setting.get(), 10 ),
 					initiatingButton: $( this ),
 					originatingConstruct: control,
@@ -598,8 +598,7 @@
 			} );
 			createButton.on( 'click', function( e ) {
 				e.preventDefault();
-
-				component.createPost( {
+				component.startCreatePostFlow( {
 					postType: 'page',
 					initiatingButton: $( this ),
 					originatingConstruct: control,
@@ -633,7 +632,7 @@
 	 * @param {Function} [args.breadcrumbReturnCallback] - Function that is called when breadcrumbs are followed back. The post setting is passed as its argument.
 	 * @returns {jQuery.promise} Promise from wp.customize.Posts.insertAutoDraftPost().
 	 */
-	component.createPost = function createPost( args ) {
+	component.startCreatePostFlow = function startCreatePostFlow( args ) {
 		var promise, options, postTypeObj, errorCode = 'create_post_failure';
 
 		options = _.extend(
@@ -753,7 +752,7 @@
 	 * @param {Function} [args.breadcrumbReturnCallback] - Function that is called when breadcrumbs are followed back. The post setting is passed as its argument.
 	 * @returns {jQuery.promise} Promise from wp.customize.Posts.ensurePosts().
 	 */
-	component.editPost = function editPost( args ) {
+	component.startEditPostFlow = function startEditPostFlow( args ) {
 		var options, promise, errorCode = 'edit_post_failure';
 
 		options = _.extend(
