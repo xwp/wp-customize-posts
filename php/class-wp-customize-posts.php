@@ -83,7 +83,6 @@ final class WP_Customize_Posts {
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-date-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-status-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-editor-control.php';
-		require_once dirname( __FILE__ ) . '/class-wp-customize-editor-control.php';
 		require_once ABSPATH . WPINC . '/customize/class-wp-customize-partial.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-field-partial.php';
 
@@ -314,9 +313,8 @@ final class WP_Customize_Posts {
 				'type' => 'option',
 			) );
 		}
-		$control = $wp_customize->get_control( 'show_on_front' );
-		if ( ! $control ) {
-			$control = $wp_customize->add_control( 'show_on_front', array(
+		if ( ! $wp_customize->get_control( 'show_on_front' ) ) {
+			$wp_customize->add_control( 'show_on_front', array(
 				'label' => __( 'Front page displays', 'default' ),
 				'section' => 'static_front_page',
 				'type' => 'radio',
@@ -326,9 +324,6 @@ final class WP_Customize_Posts {
 				),
 			) );
 		}
-		if ( array( $control, 'active_callback' ) === $control->active_callback ) {
-			$control->active_callback = array( $this, 'has_published_pages' );
-		}
 
 		// Page on Front.
 		if ( ! $wp_customize->get_setting( 'page_on_front' ) ) {
@@ -337,16 +332,12 @@ final class WP_Customize_Posts {
 				'capability' => 'manage_options',
 			) );
 		}
-		$control = $wp_customize->get_control( 'page_on_front' );
-		if ( ! $control ) {
-			$control = $wp_customize->add_control( 'page_on_front', array(
+		if ( ! $wp_customize->get_control( 'page_on_front' ) ) {
+			$wp_customize->add_control( 'page_on_front', array(
 				'label' => __( 'Front page', 'default' ),
 				'section' => 'static_front_page',
 				'type' => 'dropdown-pages',
 			) );
-		}
-		if ( array( $control, 'active_callback' ) === $control->active_callback ) {
-			$control->active_callback = array( $this, 'has_published_pages' );
 		}
 
 		// Page for Posts.
@@ -356,16 +347,12 @@ final class WP_Customize_Posts {
 				'capability' => 'manage_options',
 			) );
 		}
-		$control = $wp_customize->get_control( 'page_for_posts' );
-		if ( ! $control ) {
-			$control = $wp_customize->add_control( 'page_for_posts', array(
+		if ( ! $wp_customize->get_control( 'page_for_posts' ) ) {
+			$wp_customize->add_control( 'page_for_posts', array(
 				'label' => __( 'Posts page', 'default' ),
 				'section' => 'static_front_page',
 				'type' => 'dropdown-pages',
 			) );
-		}
-		if ( array( $control, 'active_callback' ) === $control->active_callback ) {
-			$control->active_callback = array( $this, 'has_published_pages' );
 		}
 	}
 
@@ -379,10 +366,10 @@ final class WP_Customize_Posts {
 	public function has_published_pages() {
 
 		// @todo Also look to see if there are any pages among in $this->get_setting( 'nav_menus_created_posts' )->value().
+		// Note we cannot use number=>1 since the first-returned page may be previewed to not be published.
 		return 0 !== count( get_pages( array(
 			'post_type' => 'page',
 			'post_status' => 'publish',
-			'number' => 1,
 		) ) );
 	}
 
@@ -670,6 +657,11 @@ final class WP_Customize_Posts {
 	public function enqueue_scripts() {
 		wp_enqueue_script( 'customize-posts' );
 		wp_enqueue_style( 'customize-posts' );
+
+		if ( isset( $this->manager->nav_menus ) ) {
+			wp_enqueue_script( 'customize-nav-menus-posts-extensions' );
+		}
+
 		$this->enqueue_select2_locale_script();
 
 		$post_types = array();
@@ -725,6 +717,13 @@ final class WP_Customize_Posts {
 				'openEditor' => __( 'Open Editor', 'customize-posts' ), // @todo Move this into editor control?
 				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
 				'invalidDateError' => __( 'Whoops, the provided date is invalid.', 'customize-posts' ),
+				/* translators: %s is the trashed page name */
+				'dropdownPagesOptionTrashed' => __( '%s (Trashed)', 'customize-posts' ),
+				/* translators: %s is the trashed page name */
+				'dropdownPagesOptionUnpublished' => __( '%s (Unpublished)', 'customize-posts' ),
+				'editingPageForPostsNotice' => __( 'You are currently editing the page that shows your latest posts.', 'default' ),
+				'editPostFailure' => __( 'Failed to open for editing.', 'customize-posts' ),
+				'createPostFailure' => __( 'Failed to create for editing.', 'customize-posts' ),
 				'installCustomizeObjectSelector' => sprintf(
 					__( 'This control depends on having the %s plugin installed and activated.', 'customize-posts' ),
 					sprintf(
@@ -889,8 +888,20 @@ final class WP_Customize_Posts {
 		?>
 		<script id="tmpl-customize-posts-navigation" type="text/html">
 			<button class="customize-posts-navigation dashicons dashicons-visibility" tabindex="0">
-				<span class="screen-reader-text"><?php esc_html_e( 'Preview', 'customize-posts' ); ?> {{ data.label }}</span>
+				<span class="screen-reader-text"><?php esc_html_e( 'Preview', 'customize-posts' ); ?> {{ data.label }}</span><?php // @todo This translates poorly ?>
 			</button>
+		</script>
+
+		<script id="tmpl-customize-posts-dropdown-pages-inputs" type="text/html">
+			<span class="customize-posts-dropdown-pages-inputs">
+				<!-- The select will go here. -->
+				<button type="button" class="button button-secondary edit-page">
+					<span class="screen-reader-text"><?php esc_html_e( 'Edit Selected Page', 'customize-posts' ); ?></span>
+				</button>
+				<button type="button" class="button button-secondary create-page">
+					<span class="screen-reader-text"><?php esc_html_e( 'Create New Page', 'customize-posts' ); ?></span>
+				</button>
+			</span>
 		</script>
 
 		<script id="tmpl-customize-posts-scheduled-countdown" type="text/html">
@@ -1282,6 +1293,24 @@ final class WP_Customize_Posts {
 		foreach ( $settings as $setting ) {
 			if ( $setting->check_capabilities() ) {
 				$setting_params[ $setting->id ] = $this->get_setting_params( $setting );
+			}
+		}
+
+		// Return with a failure if any of the requested posts.
+		foreach ( $post_ids as $post_id ) {
+			$post = get_post( $post_id );
+			if ( empty( $post ) ) {
+				status_header( 404 );
+				wp_send_json_error( 'requested_post_absent' );
+			}
+			if ( 'nav_menu_item' === $post->post_type ) {
+				$setting_id = sprintf( 'nav_menu_item[%d]', $post->ID );
+			} else {
+				$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+			}
+			if ( ! isset( $setting_params[ $setting_id ] ) ) {
+				status_header( 404 );
+				wp_send_json_error( 'requested_post_setting_absent' );
 			}
 		}
 
