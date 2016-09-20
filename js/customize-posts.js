@@ -307,7 +307,7 @@
 	component.addPostSettings = function addPostSettings( settings ) {
 		var postIds = [];
 		_.each( settings, function( settingArgs, id ) {
-			var setting, matches, parsedSettingId = component.parseSettingId( id );
+			var setting, matches, parsedSettingId = component.parseSettingId( id ), SettingConstructor, settingParams;
 			if ( ! parsedSettingId ) {
 
 				// Special case: make sure the fetch of a nav menu item is recorded so that it is not re-fetched later.
@@ -322,10 +322,18 @@
 
 			setting = api( id );
 			if ( ! setting ) {
-				setting = api.create( id, id, settingArgs.value, {
-					transport: settingArgs.transport,
-					previewer: api.previewer
-				} );
+				SettingConstructor = api.settingConstructor[ settingArgs.type ] || api.Setting;
+				settingParams = _.extend(
+					{},
+					settingArgs,
+					{
+						previewer: api.previewer,
+						dirty: false
+					}
+				);
+				delete settingParams.value;
+				setting = new SettingConstructor( id, settingArgs.value, settingParams );
+				api.add( id, setting );
 
 				// Mark as dirty and trigger change if setting is pre-dirty; see code in wp.customize.Value.prototype.set().
 				if ( settingArgs.dirty ) {
