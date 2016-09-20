@@ -145,7 +145,7 @@
 		onClickAddPostButton: function onClickAddPostButton( event ) {
 			var panel = this, button = $( event.target );
 			event.preventDefault();
-			api.Posts.createPost( {
+			api.Posts.startCreatePostFlow( {
 				postType: panel.postType,
 				initiatingButton: button,
 				restorePreviousUrl: false
