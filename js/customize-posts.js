@@ -101,6 +101,38 @@
 	};
 
 	/**
+	 * Get post URL.
+	 *
+	 * @param {object} params - Query vars.
+	 * @param {number} params.post_id - Post ID.
+	 * @param {string} [params.post_type] - Post type.
+	 * @param {boolean} [params.preview] - .
+	 * @return {string} Preview URL.
+	 */
+	component.getPostUrl = function getPostUrl( params ) {
+		var queryVars, postId;
+
+		queryVars = _.clone( params );
+		postId = parseInt( queryVars.post_id, 10 );
+
+		if ( ! postId ) {
+			throw new Error( 'Missing post_id param.' );
+		}
+		delete queryVars.post_id;
+
+		if ( queryVars.post_type && 'page' === queryVars.post_type ) {
+			queryVars.page_id = postId;
+		} else {
+			queryVars.p = postId;
+		}
+		if ( 'post' === params.post_type || 'page' === params.post_type ) {
+			delete queryVars.post_type;
+		}
+
+		return api.settings.url.home + '?' + $.param( queryVars );
+	};
+
+	/**
 	 * Get the post preview URL.
 	 *
 	 * @param {object} params - Parameters to configure the preview URL.
@@ -108,24 +140,8 @@
 	 * @param {string} [params.post_type] - Post type to preview.
 	 * @return {string} Preview URL.
 	 */
-	component.getPreviewUrl = function( params ) {
-		var url = api.settings.url.home, args = {};
-
-		if ( ! params || ! params.post_id ) {
-			throw new Error( 'Missing params' );
-		}
-
-		args.preview = true;
-		if ( 'page' === params.post_type ) {
-			args.page_id = params.post_id;
-		} else {
-			args.p = params.post_id;
-			if ( params.post_type && 'post' !== params.post_type ) {
-				args.post_type = params.post_type;
-			}
-		}
-
-		return url + '?' + $.param( args );
+	component.getPreviewUrl = function getPreviewUrl( params ) {
+		return component.getPostUrl( _.extend( {}, params, { preview: true } ) );
 	};
 
 	/**
