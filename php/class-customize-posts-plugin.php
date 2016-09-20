@@ -305,6 +305,12 @@ class Customize_Posts_Plugin {
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
+		$handle = 'customize-nav-menus-posts-extensions';
+		$src = plugins_url( 'js/customize-nav-menus-posts-extensions' . $suffix, dirname( __FILE__ ) );
+		$deps = array( 'customize-posts', 'customize-nav-menus' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
 		// This can be incorporated into customize-preview.js during 4.7.
 		$handle = 'customize-preview-setting-validities';
 		$src = plugins_url( 'js/customize-preview-setting-validities' . $suffix, dirname( __FILE__ ) );

@@ -656,6 +656,11 @@ final class WP_Customize_Posts {
 	public function enqueue_scripts() {
 		wp_enqueue_script( 'customize-posts' );
 		wp_enqueue_style( 'customize-posts' );
+
+		if ( isset( $this->manager->nav_menus ) ) {
+			wp_enqueue_script( 'customize-nav-menus-posts-extensions' );
+		}
+
 		$this->enqueue_select2_locale_script();
 
 		$post_types = array();
