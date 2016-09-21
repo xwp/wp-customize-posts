@@ -108,8 +108,35 @@ final class WP_Customize_Posts {
 		add_action( 'wp_ajax_customize-posts-insert-auto-draft', array( $this, 'ajax_insert_auto_draft_post' ) );
 		add_action( 'wp_ajax_customize-posts-fetch-settings', array( $this, 'ajax_fetch_settings' ) );
 		add_action( 'wp_ajax_customize-posts-select2-query', array( $this, 'ajax_posts_select2_query' ) );
+		add_action( 'customize_register', array( $this, 'replace_nav_menus_ajax_handlers' ) );
 
 		$this->preview = new WP_Customize_Posts_Preview( $this );
+	}
+
+	/**
+	 * Replace core's load and search ajax handlers with forked versions that apply customized state.
+	 *
+	 * @see WP_Customize_Nav_Menus::ajax_load_available_items()
+	 * @see WP_Customize_Nav_Menus::ajax_search_available_items()
+	 * @param WP_Customize_Manager $wp_customize Manager.
+	 */
+	public function replace_nav_menus_ajax_handlers( $wp_customize ) {
+		if ( ! isset( $wp_customize->nav_menus ) ) {
+			return;
+		}
+
+		$handlers = array(
+			'wp_ajax_load-available-menu-items-customizer' => 'ajax_load_available_items',
+			'wp_ajax_search-available-menu-items-customizer' => 'ajax_search_available_items',
+		);
+
+		foreach ( $handlers as $action => $method_name ) {
+			$priority = has_action( $action, array( $wp_customize->nav_menus, $method_name ) );
+			if ( false !== $priority ) {
+				remove_action( $action, array( $wp_customize->nav_menus, $method_name ), $priority );
+				add_action( $action, array( $this, $method_name ), $priority );
+			}
+		}
 	}
 
 	/**
@@ -1433,5 +1460,88 @@ final class WP_Customize_Posts {
 			}
 		}
 		return $result;
+	}
+
+	/**
+	 * Ajax handler for loading available menu items.
+	 *
+	 * Forked from https://github.com/xwp/wordpress-develop/blob/2515aab6739ea0d2f065eea08ae429889a018fb3/src/wp-includes/class-wp-customize-nav-menus.php#L88-L115
+	 *
+	 * @codeCoverageIgnore
+	 */
+	public function ajax_load_available_items() {
+		check_ajax_referer( 'customize-menus', 'customize-menus-nonce' );
+
+		if ( ! current_user_can( 'edit_theme_options' ) ) {
+			wp_die( -1 );
+		}
+
+		if ( empty( $_POST['type'] ) || empty( $_POST['object'] ) ) {
+			wp_send_json_error( 'nav_menus_missing_type_or_object_parameter' );
+		}
+
+		// Added logic in forked method.
+		foreach ( $this->manager->settings() as $setting ) {
+			/**
+			 * Setting.
+			 *
+			 * @var WP_Customize_Setting $setting
+			 */
+			$setting->preview();
+		}
+
+		$type = sanitize_key( $_POST['type'] );
+		$object = sanitize_key( $_POST['object'] );
+		$page = empty( $_POST['page'] ) ? 0 : absint( $_POST['page'] );
+		$items = $this->manager->nav_menus->load_available_items_query( $type, $object, $page );
+
+		if ( is_wp_error( $items ) ) {
+			wp_send_json_error( $items->get_error_code() );
+		} else {
+			wp_send_json_success( array( 'items' => $items ) );
+		}
+	}
+
+	/**
+	 * Ajax handler for searching available menu items.
+	 *
+	 * Forked from https://github.com/xwp/wordpress-develop/blob/2515aab6739ea0d2f065eea08ae429889a018fb3/src/wp-includes/class-wp-customize-nav-menus.php#L228-L258
+	 *
+	 * @codeCoverageIgnore
+	 */
+	public function ajax_search_available_items() {
+		check_ajax_referer( 'customize-menus', 'customize-menus-nonce' );
+
+		if ( ! current_user_can( 'edit_theme_options' ) ) {
+			wp_die( -1 );
+		}
+
+		if ( empty( $_POST['search'] ) ) {
+			wp_send_json_error( 'nav_menus_missing_search_parameter' );
+		}
+
+		$p = isset( $_POST['page'] ) ? absint( $_POST['page'] ) : 0;
+		if ( $p < 1 ) {
+			$p = 1;
+		}
+
+		// Added logic in forked method.
+		foreach ( $this->manager->settings() as $setting ) {
+			/**
+			 * Setting.
+			 *
+			 * @var WP_Customize_Setting $setting
+			 */
+			$setting->preview();
+		}
+
+		$s = sanitize_text_field( wp_unslash( $_POST['search'] ) );
+		$items = $this->manager->nav_menus->search_available_items_query( array( 'pagenum' => $p, 's' => $s ) );
+
+		if ( empty( $items ) ) {
+			wp_send_json_error( array( 'message' => __( 'No results found.', 'default' ) ) );
+		} else {
+			wp_send_json_success( array( 'items' => $items ) );
+		}
 	}
 }

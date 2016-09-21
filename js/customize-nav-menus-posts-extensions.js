@@ -1,4 +1,6 @@
-(function( api, $ ) {
+/* global wp, jQuery */
+
+wp.customize.Posts.NavMenusExtensions = (function( api, $ ) {
 	'use strict';
 
 	var component = {};
@@ -182,9 +184,43 @@
 		}
 	};
 
+	/**
+	 * Rewrite Ajax requests to inject Customizer state.
+	 *
+	 * @param {object} options Options.
+	 * @param {string} options.type Type.
+	 * @param {string} options.url URL.
+	 * @returns {void}
+	 */
+	component.ajaxPrefilterAvailableNavMenuItemRequests = function ajaxPrefilterAvailableNavMenuItemRequests( options ) {
+		var urlParser;
+
+		if ( 'POST' !== options.type.toUpperCase() ) {
+			return;
+		}
+
+		urlParser = document.createElement( 'a' );
+		urlParser.href = options.url;
+
+		// Ensure an admin ajax request.
+		if ( ! /wp-admin\/admin-ajax\.php$/.test( urlParser.pathname ) ) {
+			return;
+		}
+
+		// Ensure a request to search or load available nav menu items.
+		if ( ! /(^|&)action=(search-available-menu-items-customizer|load-available-menu-items-customizer)(&|$)/.test( options.data ) ) {
+			return;
+		}
+
+		// Add Customizer state.
+		options.data += '&';
+		options.data += $.param( { customized: api.previewer.query().customized } );
+	};
+
 	api.control.each( component.extendNavMenuItemOriginalObjectReference );
 	api.control.bind( 'add', component.extendNavMenuItemOriginalObjectReference );
 	api.bind( 'change', component.watchPostSettingChanges );
+	$.ajaxPrefilter( component.ajaxPrefilterAvailableNavMenuItemRequests );
 
 	return component;
 })( wp.customize, jQuery );
