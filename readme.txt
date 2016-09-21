@@ -2,8 +2,8 @@
 Contributors:      xwp, westonruter, valendesigns
 Tags:              customizer, customize, posts, preview, featured-image, page-template
 Requires at least: 4.5
-Tested up to:      4.6
-Stable tag:        0.7.0
+Tested up to:      4.7-alpha
+Stable tag:        0.8.0
 License:           GPLv2 or later
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,6 +63,12 @@ The following are listed in reverse chronological order. The first, more recent 
 4. [0.7.0] Clicking the date reset link causes the setting's date to be emptied, with the control's inputs then receiving the current date/time as placeholders which update each minute to correspond to the current date/time.
 
 == Changelog ==
+
+= [0.8.0] - 2016-09-?? (Unreleased) =
+
+See full commit log: [`0.7.0...develop`](https://github.com/xwp/wp-customize-posts/compare/0.7.0...develop)
+
+Issues in milestone: [`milestone:0.8.0`](https://github.com/xwp/wp-customize-posts/issues?q=milestone%3A0.8.0)
 
 = [0.7.0] - 2016-08-06 =
 

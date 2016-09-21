@@ -7,8 +7,8 @@ Edit posts and postmeta in the Customizer. Stop editing your posts/postmeta blin
 **Contributors:** [xwp](https://profiles.wordpress.org/xwp), [westonruter](https://profiles.wordpress.org/westonruter), [valendesigns](https://profiles.wordpress.org/valendesigns)  
 **Tags:** [customizer](https://wordpress.org/plugins/tags/customizer), [customize](https://wordpress.org/plugins/tags/customize), [posts](https://wordpress.org/plugins/tags/posts), [preview](https://wordpress.org/plugins/tags/preview), [featured-image](https://wordpress.org/plugins/tags/featured-image), [page-template](https://wordpress.org/plugins/tags/page-template)  
 **Requires at least:** 4.5  
-**Tested up to:** 4.6  
-**Stable tag:** 0.7.0  
+**Tested up to:** 4.7-alpha  
+**Stable tag:** 0.8.0  
 **License:** [GPLv2 or later](http://www.gnu.org/licenses/gpl-2.0.html)  
 
 [![Build Status](https://travis-ci.org/xwp/wp-customize-posts.svg?branch=master)](https://travis-ci.org/xwp/wp-customize-posts) [![Coverage Status](https://coveralls.io/repos/xwp/wp-customize-posts/badge.svg?branch=master)](https://coveralls.io/github/xwp/wp-customize-posts) [![Built with Grunt](https://cdn.gruntjs.com/builtwith.svg)](http://gruntjs.com) [![devDependency Status](https://david-dm.org/xwp/wp-customize-posts/dev-status.svg)](https://david-dm.org/xwp/wp-customize-posts#info=devDependencies) 
@@ -77,6 +77,11 @@ The following are listed in reverse chronological order. The first, more recent 
 ![[0.7.0] Clicking the date reset link causes the setting's date to be emptied, with the control's inputs then receiving the current date/time as placeholders which update each minute to correspond to the current date/time.](wp-assets/screenshot-4.png)
 
 ## Changelog ##
+
+### [0.8.0] - 2016-09-?? (Unreleased) ###
+See full commit log: [`0.7.0...develop`](https://github.com/xwp/wp-customize-posts/compare/0.7.0...develop)
+
+Issues in milestone: [`milestone:0.8.0`](https://github.com/xwp/wp-customize-posts/issues?q=milestone%3A0.8.0)
 
 ### [0.7.0] - 2016-08-06 ###
 Added:
