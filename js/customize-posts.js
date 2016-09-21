@@ -935,7 +935,12 @@
 				_.delay( function focusControlAfterDelay() {
 					firstControl.focus( {
 						completeCallback: function() {
-							firstControl.container.find( 'input:first' ).select();
+							var input = firstControl.container.find( 'input:first' );
+							if ( input.val() === api.Posts.data.l10n.noTitle ) {
+								input.select();
+							} else {
+								input.focus();
+							}
 						}
 					} );
 				}, delay );
