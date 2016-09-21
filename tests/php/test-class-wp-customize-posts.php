@@ -117,7 +117,28 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertEquals( 10, has_action( 'customize_dynamic_setting_args', array( $posts, 'filter_customize_dynamic_setting_args' ) ) );
 		$this->assertEquals( 5, has_action( 'customize_dynamic_setting_class', array( $posts, 'filter_customize_dynamic_setting_class' ) ) );
 		$this->assertEquals( 10, has_action( 'customize_save_response', array( $posts, 'filter_customize_save_response_for_conflicts' ) ) );
+		$this->assertEquals( 10, has_action( 'customize_register', array( $posts, 'replace_nav_menus_ajax_handlers' ) ) );
 		$this->assertInstanceOf( 'WP_Customize_Posts_Preview', $posts->preview );
+	}
+
+	/**
+	 * Test replace_nav_menus_ajax_handlers.
+	 *
+	 * @covers WP_Customize_Posts::replace_nav_menus_ajax_handlers()
+	 */
+	public function test_replace_nav_menus_ajax_handlers() {
+		$handlers = array(
+			'wp_ajax_load-available-menu-items-customizer' => 'ajax_load_available_items',
+			'wp_ajax_search-available-menu-items-customizer' => 'ajax_search_available_items',
+		);
+		foreach ( $handlers as $action => $method_name ) {
+			$this->assertEquals( 10, has_action( $action, array( $this->wp_customize->nav_menus, $method_name ) ) );
+		}
+		$this->posts->replace_nav_menus_ajax_handlers( $this->wp_customize );
+		foreach ( $handlers as $action => $method_name ) {
+			$this->assertFalse( has_action( $action, array( $this->wp_customize->nav_menus, $method_name ) ) );
+			$this->assertEquals( 10, has_action( $action, array( $this->posts, $method_name ) ) );
+		}
 	}
 
 	/**
