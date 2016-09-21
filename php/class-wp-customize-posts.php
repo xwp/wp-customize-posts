@@ -929,6 +929,12 @@ final class WP_Customize_Posts {
 			<span class="customize-posts-trashed">(<?php esc_html_e( 'Trashed', 'customize-posts' ); ?>)</span>
 		</script>
 
+		<script id="tmpl-customize-posts-edit-nav-menu-item-original-object" type="text/html">
+			<button class="customize-posts-edit-nav-menu-item-original-object button button-secondary" type="button">
+				{{ data.editItemLabel }}
+			</button>
+		</script>
+
 		<script type="text/html" id="tmpl-customize-post-section-notifications">
 			<ul>
 				<# _.each( data.notifications, function( notification ) { #>

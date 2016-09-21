@@ -423,3 +423,19 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	content: "\f464";
 	top: -2px;
 }
+
+.wp-core-ui .customize-posts-edit-nav-menu-item-original-object {
+	float: right;
+	margin-left: 5px;
+	margin-top: 5px;
+}
+.wp-core-ui .customize-posts-edit-nav-menu-item-original-object:before {
+	display: inline-block;
+	position: relative;
+	font: normal 20px/1 dashicons;
+	vertical-align: middle;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	content: "\f464";
+	top: -2px;
+}
