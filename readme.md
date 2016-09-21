@@ -76,6 +76,18 @@ The following are listed in reverse chronological order. The first, more recent 
 
 ![[0.7.0] Clicking the date reset link causes the setting's date to be emptied, with the control's inputs then receiving the current date/time as placeholders which update each minute to correspond to the current date/time.](wp-assets/screenshot-4.png)
 
+### [0.8.0] Integration with dropdown-pages controls. Buttons to add and edit posts appear next to the page on front and page for posts controls.
+
+![[0.8.0] Integration with dropdown-pages controls. Buttons to add and edit posts appear next to the page on front and page for posts controls.](wp-assets/screenshot-5.png)
+
+### [0.8.0] Edit post button appears in nav menu items that link to a post or page.
+
+![[0.8.0] Edit post button appears in nav menu items that link to a post or page.](wp-assets/screenshot-6.png)
+
+### [0.8.0] Post parent and basic menu order control.
+
+![[0.8.0] Post parent and basic menu order control.](wp-assets/screenshot-7.png)
+
 ## Changelog ##
 
 ### [0.8.0] - 2016-09-22 ###

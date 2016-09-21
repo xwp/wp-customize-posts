@@ -61,6 +61,9 @@ The following are listed in reverse chronological order. The first, more recent 
 2. [0.7.0] Post status control is now accompanied by a post date control. A Move to Trash link also appears with the status control.
 3. [0.7.0] Selecting a future date switches status form published to scheduled, and a countdown for when the post will be scheduled is available along with the timezone information.
 4. [0.7.0] Clicking the date reset link causes the setting's date to be emptied, with the control's inputs then receiving the current date/time as placeholders which update each minute to correspond to the current date/time.
+5. [0.8.0] Integration with dropdown-pages controls. Buttons to add and edit posts appear next to the page on front and page for posts controls.
+6. [0.8.0] Edit post button appears in nav menu items that link to a post or page.
+7. [0.8.0] Post parent and basic menu order control.
 
 == Changelog ==
 
