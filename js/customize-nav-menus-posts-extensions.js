@@ -139,8 +139,42 @@
 		}
 	};
 
+	/**
+	 * Update available menu items to match a changing post title.
+	 *
+	 * @todo The ajax requests for search-available-menu-items-customizer and load-available-menu-items-customizer need to include the customized state.
+	 *
+	 * @param {wp.customize.Setting} setting Changed setting.
+	 * @returns {void}
+	 */
+	component.watchPostSettingChanges = function watchPostSettingChanges( setting ) {
+		var idParts, postId, menuItemTitle, newTitle, availableItem, availableItemId, idPrefix;
+		idPrefix = 'post[';
+		if ( idPrefix !== setting.id.substr( 0, idPrefix.length ) ) {
+			return;
+		}
+		idParts = setting.id.substr( idPrefix.length ).replace( /]/g, '' ).split( '[' );
+		postId = parseInt( idParts[1], 10 );
+		if ( ! postId ) {
+			return;
+		}
+
+		newTitle = setting.get().post_title || api.Posts.data.l10n.noTitle;
+		availableItemId = 'post-' + String( postId );
+		menuItemTitle = $( '#menu-item-tpl-' + availableItemId ).find( '.menu-item-title:first' );
+		if ( menuItemTitle.length && $.trim( newTitle ) !== $.trim( menuItemTitle.text() ) ) {
+			menuItemTitle.text( newTitle );
+		}
+
+		availableItem = api.Menus.availableMenuItemsPanel.collection.get( availableItemId );
+		if ( availableItem ) {
+			availableItem.set( 'title', newTitle );
+		}
+	};
+
 	api.control.each( component.extendNavMenuItemOriginalObjectReference );
 	api.control.bind( 'add', component.extendNavMenuItemOriginalObjectReference );
+	api.bind( 'change', component.watchPostSettingChanges );
 
 	return component;
 })( wp.customize, jQuery );
