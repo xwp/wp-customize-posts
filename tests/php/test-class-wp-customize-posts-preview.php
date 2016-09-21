@@ -121,6 +121,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
 		$this->do_customize_boot_actions();
 		$this->assertEquals( 10, has_action( 'wp_enqueue_scripts', array( $preview, 'enqueue_scripts' ) ) );
+		$this->assertEquals( 5, has_action( 'parse_query', array( $preview, 'ensure_page_for_posts_preview' ) ) );
 		$this->assertEquals( 10, has_filter( 'customize_dynamic_partial_args', array( $preview, 'filter_customize_dynamic_partial_args' ) ) );
 		$this->assertEquals( 10, has_filter( 'customize_dynamic_partial_class', array( $preview, 'filter_customize_dynamic_partial_class' ) ) );
 		$this->assertEquals( 1000, has_filter( 'the_posts', array( $preview, 'filter_the_posts_to_tally_previewed_posts' ) ) );
@@ -165,6 +166,31 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$preview->enqueue_scripts();
 		wp_script_is( 'customize-post-field-partial', 'enqueued' );
 		wp_script_is( 'customize-preview-posts', 'enqueued' );
+	}
+
+	/**
+	 * Test ensure_page_for_posts_preview().
+	 *
+	 * @covers WP_Customize_Posts_Preview::ensure_page_for_posts_preview()
+	 */
+	public function test_ensure_page_for_posts_preview() {
+		do_action( 'customize_register', $this->wp_customize );
+
+		$page_id = $this->factory()->post->create( array( 'post_type' => 'page' ) );
+		update_option( 'show_on_front', 'posts' );
+		update_option( 'page_for_posts', '0' );
+		$query = new WP_Query( array( 'page_id' => $page_id, 'preview' => true ) );
+		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
+		$this->assertTrue( $query->is_preview );
+		$preview->ensure_page_for_posts_preview( $query );
+		$this->assertTrue( $query->is_preview );
+
+		$this->wp_customize->set_post_value( 'show_on_front', 'page' );
+		$this->wp_customize->set_post_value( 'page_for_posts', $page_id );
+		$this->wp_customize->get_setting( 'show_on_front' )->preview();
+		$this->wp_customize->get_setting( 'page_for_posts' )->preview();
+		$preview->ensure_page_for_posts_preview( $query );
+		$this->assertFalse( $query->is_preview );
 	}
 
 	/**
