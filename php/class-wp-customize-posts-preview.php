@@ -75,6 +75,7 @@ final class WP_Customize_Posts_Preview {
 	 */
 	public function customize_preview_init() {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+		add_action( 'parse_query', array( $this, 'ensure_page_for_posts_preview' ), 5 );
 		add_filter( 'customize_dynamic_partial_args', array( $this, 'filter_customize_dynamic_partial_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_partial_class', array( $this, 'filter_customize_dynamic_partial_class' ), 10, 3 );
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_tally_previewed_posts' ), 1000 );
@@ -116,6 +117,20 @@ final class WP_Customize_Posts_Preview {
 	public function enqueue_scripts() {
 		wp_enqueue_script( 'customize-post-field-partial' );
 		wp_enqueue_script( 'customize-preview-posts' );
+	}
+
+	/**
+	 * Ensure the page_for_posts can be previewed as the page for posts.
+	 *
+	 * Prevents the page for posts from being previewed as a standard page.
+	 *
+	 * @param WP_Query $query Query.
+	 */
+	public function ensure_page_for_posts_preview( WP_Query $query ) {
+		if ( ! empty( $query->query_vars['page_id'] ) && 'page' === get_option( 'show_on_front' ) && intval( $query->query_vars['page_id'] ) === intval( get_option( 'page_for_posts' ) ) ) {
+			$query->is_preview = false;
+			unset( $query->query_vars['preview'] );
+		}
 	}
 
 	/**
