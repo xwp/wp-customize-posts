@@ -377,3 +377,65 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 		top: 9px;
 	}
 }
+
+/* Dropdown Pages */
+.customize-posts-dropdown-pages-inputs {
+	display: -webkit-box;
+	display: -moz-box;
+	display: -ms-flexbox;
+	display: -webkit-flex;
+	display: flex;
+}
+.customize-posts-dropdown-pages-inputs > select {
+	-webkit-box-flex: 1000;
+	-webkit-flex-grow: 1000;
+	-moz-box-flex: 1000;
+	-ms-flex-positive: 1000;
+	-ms-flex: 1000;
+	flex-grow: 1000;
+}
+.customize-posts-dropdown-pages-inputs > select,
+.customize-posts-dropdown-pages-inputs > .button-secondary.edit-page {
+	margin-right: 5px;
+}
+.customize-posts-dropdown-pages-inputs > button.button-secondary {
+	-webkit-box-flex: 1;
+	-webkit-flex-grow: 1;
+	-moz-box-flex: 1;
+	-ms-flex-positive: 1;
+	-ms-flex: 1;
+	flex-grow: 1;
+	padding-left: 5px;
+	padding-right: 5px;
+}
+.customize-posts-dropdown-pages-inputs > button:before {
+	display: inline-block;
+	position: relative;
+	font: normal 20px/1 dashicons;
+	vertical-align: middle;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+.customize-posts-dropdown-pages-inputs > button.create-page:before {
+	content: "\f132";
+}
+.customize-posts-dropdown-pages-inputs > button.edit-page:before {
+	content: "\f464";
+	top: -2px;
+}
+
+.wp-core-ui .customize-posts-edit-nav-menu-item-original-object {
+	float: right;
+	margin-left: 5px;
+	margin-top: 5px;
+}
+.wp-core-ui .customize-posts-edit-nav-menu-item-original-object:before {
+	display: inline-block;
+	position: relative;
+	font: normal 20px/1 dashicons;
+	vertical-align: middle;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	content: "\f464";
+	top: -2px;
+}

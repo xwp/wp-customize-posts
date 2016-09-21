@@ -90,6 +90,16 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 		$this->assertInstanceOf( 'Exception', $exception );
 		$this->assertContains( 'Illegal setting id', $exception->getMessage() );
 
+		// Test illegal setting id.
+		$exception = null;
+		try {
+			new WP_Customize_Postmeta_Setting( $this->manager, sprintf( 'postmeta[post][%d][food]', -123 ) );
+		} catch ( Exception $e ) {
+			$exception = $e;
+		}
+		$this->assertInstanceOf( 'Exception', $exception );
+		$this->assertContains( 'Illegal setting id', $exception->getMessage() );
+
 		// Test unrecognized post type.
 		$bad_post_id = $this->factory()->post->create( array( 'post_type' => 'unknown' ) );
 		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $bad_post_id ), 'bad' );
@@ -113,16 +123,6 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 		$this->manager->posts = $this->posts;
 		$this->assertInstanceOf( 'Exception', $exception );
 		$this->assertContains( 'Posts component not instantiated', $exception->getMessage() );
-	}
-
-	/**
-	 * @see WP_Customize_Postmeta_Setting::__construct()
-	 */
-	function test_construct_insert() {
-		$post_id = -123;
-		$setting_id = sprintf( 'postmeta[post][%d][food]', $post_id );
-		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id );
-		$this->assertTrue( current_user_can( $setting->capability ) );
 	}
 
 	/**
@@ -190,14 +190,19 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 		$this->assertEquals( $post_id, $setting->post_id );
 		$this->assertEquals( $post->post_type, $setting->post_type );
 		$this->assertEquals( $meta_key, $setting->meta_key );
+		$this->assertEquals( '', $setting->default );
+		$this->assertTrue( $setting->single );
 		$this->assertEquals( 'edit_posts', $setting->capability );
 		$this->assertInstanceOf( 'WP_Customize_Posts', $setting->posts_component );
 		$this->assertEquals( 'edit_posts', $setting->capability );
 
 		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id, array(
 			'capability' => 'create_awesome',
+			'single' => false,
 		) );
 		$this->assertEquals( 'create_awesome', $setting->capability );
+		$this->assertEquals( array(), $setting->default );
+		$this->assertFalse( $setting->single );
 
 		add_filter( 'user_has_cap', '__return_empty_array' );
 		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id, array(
@@ -237,6 +242,30 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 			$this->assertInstanceOf( 'WP_Error', $error );
 			$this->assertEquals( 'not_allowed', $error->get_error_code() );
 		}
+	}
+
+	/**
+	 * Test sanitizing a plural value.
+	 *
+	 * @covers WP_Customize_Postmeta_Setting::sanitize()
+	 */
+	function test_sanitize_plural_setting_bad_value() {
+		$post_id = $this->factory()->post->create( array( 'post_type' => 'post') );
+		$meta_key = 'abbreviation';
+		register_meta( 'post', $meta_key, array( $this, 'sanitize_abbreviation' ) );
+		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $post_id ), $meta_key );
+		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id, array(
+			'single' => false,
+		) );
+		$error = $setting->sanitize( 'nasa' );
+		if ( ! method_exists( 'WP_Customize_Setting', 'validate' ) ) {
+			$this->assertNull( $error );
+		} else {
+			$this->assertInstanceOf( 'WP_Error', $error );
+			$this->assertEquals( 'expected_array', $error->get_error_code() );
+		}
+
+		$this->assertEquals( array( 'NASA' ), $setting->sanitize( array( 'nasa' ) ) );
 	}
 
 	/**
@@ -299,20 +328,106 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 		$this->assertEquals( $meta_value2, $setting->value() );
 	}
 
-
 	/**
-	 * @see WP_Customize_Postmeta_Setting::value()
+	 * Test single default value.
+	 *
+	 * @covers WP_Customize_Postmeta_Setting::value()
 	 */
-	function test_default_value() {
+	function test_default_value_single() {
 		$post_id = $this->factory()->post->create( array( 'post_type' => 'post') );
 		$meta_key = 'email_address';
 		$setting_id =  WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $post_id ), $meta_key );
 		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id, array(
 			'default' => 'the_default',
+			'single' => true,
 		) );
 		$this->assertEquals( $setting->default, $setting->value() );
 		update_post_meta( $post_id, $meta_key, 'the_non_default' );
 		$this->assertNotEquals( $setting->default, $setting->value() );
+	}
+
+	/**
+	 * Test plural default value.
+	 *
+	 * @covers WP_Customize_Postmeta_Setting::value()
+	 * @expectedIncorrectUsage WP_Customize_Postmeta_Setting::__construct
+	 */
+	function test_default_value_plural() {
+		$post_id = $this->factory()->post->create( array( 'post_type' => 'post') );
+		$meta_key = 'email_address';
+		$setting_id =  WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $post_id ), $meta_key );
+		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id, array(
+			'default' => array( 'totally-ignored' ),
+			'single' => false,
+		) );
+		$this->assertEquals( array(), $setting->value() );
+		$this->assertEquals( array(), $setting->default );
+		update_post_meta( $post_id, $meta_key, 'test@example.com' );
+		$this->assertEquals( array( 'test@example.com' ), $setting->value() );
+	}
+
+	/**
+	 * Single value.
+	 *
+	 * @covers WP_Customize_Postmeta_Setting::value()
+	 * @covers WP_Customize_Postmeta_Setting::preview()
+	 */
+	function test_single_value() {
+		$post_id = $this->factory()->post->create( array( 'post_type' => 'post') );
+		$meta_key = 'email_address';
+		register_meta( 'post', $meta_key, 'sanitize_email' );
+		$value = 'wordtrump+make-wordpress-great-again@example.com';
+		add_post_meta( $post_id, $meta_key, $value );
+		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $post_id ), $meta_key );
+		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id, array(
+			'single' => true,
+		) );
+		$this->assertEquals( $value, $setting->value() );
+
+		$this->manager->add_setting( $setting );
+		$previewed_value = 'derppress@example.com';
+		$this->manager->set_post_value( $setting->id, $previewed_value );
+		$setting->preview();
+		$this->assertEquals( $previewed_value, $setting->value() );
+		$this->assertEquals( $previewed_value, get_post_meta( $post_id, $meta_key, true ) );
+		$this->assertEquals( array( $previewed_value ), get_post_meta( $post_id, $meta_key, false ) );
+	}
+
+	/**
+	 * Plural value.
+	 *
+	 * @covers WP_Customize_Postmeta_Setting::value()
+	 * @covers WP_Customize_Postmeta_Setting::preview()
+	 */
+	function test_plural_value() {
+		$post_id = $this->factory()->post->create( array( 'post_type' => 'post') );
+		$meta_key = 'email_address';
+		register_meta( 'post', $meta_key, 'sanitize_email' );
+		$values = array(
+			'wordtrump+make-wordpress-great-again@example.com',
+			'derppress@example.com',
+			'parody-accounts@example.com',
+		);
+		foreach ( $values as $value ) {
+			add_post_meta( $post_id, $meta_key, $value );
+		}
+		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $post_id ), $meta_key );
+		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id, array(
+			'single' => false,
+		) );
+		$this->assertEqualSets( $values, $setting->value() );
+		$this->assertEqualSets( $values, get_post_meta( $post_id, $meta_key, false ) );
+
+		$this->manager->add_setting( $setting );
+		$previewed_values = array(
+			'customize-all-the-things@example.com',
+			'code-is-poetry@example.com',
+		);
+		$this->manager->set_post_value( $setting->id, $previewed_values );
+		$setting->preview();
+		$this->assertEqualSets( $previewed_values, $setting->value() );
+		$this->assertEqualSets( $previewed_values, get_post_meta( $post_id, $meta_key, false ) );
+		$this->assertContains( get_post_meta( $post_id, $meta_key, true ), $previewed_values );
 	}
 
 	/**
@@ -344,37 +459,79 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 	}
 
 	/**
-	 * @see WP_Customize_Postmeta_Setting::update()
+	 * Test single save.
+	 *
+	 * @covers WP_Customize_Postmeta_Setting::update()
 	 */
-	function test_save() {
+	function test_save_single() {
 		$post_id = $this->factory()->post->create( array( 'post_type' => 'post') );
 		$meta_key = 'email_address';
 		register_meta( 'post', $meta_key, 'sanitize_email' );
 		$initial_meta_value = 'helloworld@example.com';
 		update_post_meta( $post_id, $meta_key, wp_slash( $initial_meta_value ) );
 		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $post_id ), $meta_key );
-		$override_meta_value = 'goodnightmoon@example.com';
-		$_POST['customized'] = wp_slash( wp_json_encode( array( $setting_id => $override_meta_value ) ) );
+		$override_meta_value = 'GOODNIGHTOON@example.com';
 		$this->manager->set_post_value( $setting_id, $override_meta_value );
 		$this->do_customize_boot_actions();
 
-		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id );
+		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id, array(
+			'sanitize_callback' => array( $this, 'sanitize_email' ),
+		) );
 		$this->assertEquals( $initial_meta_value, $setting->value() );
 		$action_count = did_action( 'customize_save_postmeta' );
 		$this->assertTrue( false !== $setting->save() );
 		$this->assertEquals( $action_count + 1, did_action( 'customize_save_postmeta' ) );
-		$this->assertEquals( $override_meta_value, $setting->value() );
+		$this->assertEquals( $this->sanitize_email( $override_meta_value ), $setting->value() );
 		$meta_value = get_post_meta( $post_id, $meta_key, true );
-		$this->assertEquals( $override_meta_value, $meta_value );
+		$this->assertEquals( $this->sanitize_email( $override_meta_value ), $meta_value );
 	}
 
 	/**
-	 * @see WP_Customize_Postmeta_Setting::update()
+	 * Test plural save.
+	 *
+	 * @covers WP_Customize_Postmeta_Setting::update()
 	 */
-	function test_update_for_insert() {
-		$setting_id = sprintf( 'postmeta[post][%d][food]', -123 );
-		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id );
-		$this->manager->set_post_value( $setting_id, 'bard' );
-		$setting->save();
+	function test_save_plural() {
+		$post_id = $this->factory()->post->create( array( 'post_type' => 'post') );
+		$meta_key = 'email_address';
+		register_meta( 'post', $meta_key, 'sanitize_email' );
+		$initial_meta_values = array(
+			'wordtrump+make-wordpress-great-again@example.com',
+			'derppress@example.com',
+			'parody-accounts@example.com',
+		);
+		foreach ( $initial_meta_values as $value ) {
+			add_post_meta( $post_id, $meta_key, wp_slash( $value ) );
+		}
+		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $post_id ), $meta_key );
+		$override_meta_values = array(
+			'goodnightmoon@example.com',
+			'derppress@example.com',
+			'HELLOMORNING@example.com',
+		);
+		$this->manager->set_post_value( $setting_id, $override_meta_values );
+		$this->do_customize_boot_actions();
+
+		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id, array(
+			'single' => false,
+			'sanitize_callback' => array( $this, 'sanitize_email' ),
+		) );
+		$this->assertEqualSets( $initial_meta_values, $setting->value() );
+		$action_count = did_action( 'customize_save_postmeta' );
+		$this->assertTrue( false !== $setting->save() );
+		$this->assertEquals( $action_count + 1, did_action( 'customize_save_postmeta' ) );
+		$this->assertEqualSets( array_map( array( $this, 'sanitize_email' ), $override_meta_values ), $setting->value() );
+		$meta_values = get_post_meta( $post_id, $meta_key, false );
+		$this->assertEqualSets( array_map( array( $this, 'sanitize_email' ), $override_meta_values ), $meta_values );
+	}
+
+	/**
+	 * Sanitize callback for email.
+	 *
+	 * @param string $value Value.
+	 * @return string Value.
+	 */
+	function sanitize_email( $value ) {
+		return sanitize_email( strtolower( $value ) );
 	}
 }

@@ -117,7 +117,28 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertEquals( 10, has_action( 'customize_dynamic_setting_args', array( $posts, 'filter_customize_dynamic_setting_args' ) ) );
 		$this->assertEquals( 5, has_action( 'customize_dynamic_setting_class', array( $posts, 'filter_customize_dynamic_setting_class' ) ) );
 		$this->assertEquals( 10, has_action( 'customize_save_response', array( $posts, 'filter_customize_save_response_for_conflicts' ) ) );
+		$this->assertEquals( 10, has_action( 'customize_register', array( $posts, 'replace_nav_menus_ajax_handlers' ) ) );
 		$this->assertInstanceOf( 'WP_Customize_Posts_Preview', $posts->preview );
+	}
+
+	/**
+	 * Test replace_nav_menus_ajax_handlers.
+	 *
+	 * @covers WP_Customize_Posts::replace_nav_menus_ajax_handlers()
+	 */
+	public function test_replace_nav_menus_ajax_handlers() {
+		$handlers = array(
+			'wp_ajax_load-available-menu-items-customizer' => 'ajax_load_available_items',
+			'wp_ajax_search-available-menu-items-customizer' => 'ajax_search_available_items',
+		);
+		foreach ( $handlers as $action => $method_name ) {
+			$this->assertEquals( 10, has_action( $action, array( $this->wp_customize->nav_menus, $method_name ) ) );
+		}
+		$this->posts->replace_nav_menus_ajax_handlers( $this->wp_customize );
+		foreach ( $handlers as $action => $method_name ) {
+			$this->assertFalse( has_action( $action, array( $this->wp_customize->nav_menus, $method_name ) ) );
+			$this->assertEquals( 10, has_action( $action, array( $this->posts, $method_name ) ) );
+		}
 	}
 
 	/**
@@ -143,15 +164,15 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		require_once dirname( __FILE__ ) . '/../../php/class-customize-posts-support.php';
 		require_once dirname( __FILE__ ) . '/../../php/class-customize-posts-theme-support.php';
 		require_once dirname( __FILE__ ) . '/../../php/class-customize-posts-plugin-support.php';
-		require_once dirname( __FILE__ ) . '/../../php/plugin-support/class-customize-posts-jetpack-support.php';
+		require_once dirname( __FILE__ ) . '/../../php/theme-support/class-customize-posts-twenty-sixteen-support.php';
 
 		$this->assertEmpty( $posts->supports );
-		$posts->add_support( 'Customize_Posts_Jetpack_Support' );
-		$this->assertArrayHasKey( 'Customize_Posts_Jetpack_Support', $posts->supports );
+		$posts->add_support( 'Customize_Posts_Twenty_Sixteen_Support' );
+		$this->assertArrayHasKey( 'Customize_Posts_Twenty_Sixteen_Support', $posts->supports );
 
 		$posts = new WP_Customize_Posts( $this->wp_customize );
-		$posts->add_support( new Customize_Posts_Jetpack_Support( $posts ) );
-		$this->assertArrayHasKey( 'Customize_Posts_Jetpack_Support', $posts->supports );
+		$posts->add_support( new Customize_Posts_Twenty_Sixteen_Support( $posts ) );
+		$this->assertArrayHasKey( 'Customize_Posts_Twenty_Sixteen_Support', $posts->supports );
 	}
 
 	/**
@@ -270,7 +291,9 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->do_customize_boot_actions();
 		$section = $this->wp_customize->get_section( 'static_front_page' );
 		$this->assertInstanceOf( 'WP_Customize_Section', $section );
-		$this->assertEquals( array( $this->posts, 'has_published_pages' ), $section->active_callback );
+		if ( $section->active_callback !== array( $this->wp_customize, 'has_published_pages' ) ) { // Forward-compat, see WP Core Trac #38013.
+			$this->assertEquals( array( $this->posts, 'has_published_pages' ), $section->active_callback );
+		}
 
 		$section->active_callback = array( $section, 'active_callback' ); // Reset to default.
 		$this->posts->ensure_static_front_page_constructs_registered( $this->wp_customize );
@@ -528,7 +551,18 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertEquals( 'auto-draft', get_post_status( $post_setting->ID ) );
 		$this->assertEquals( 'auto-draft', get_post_status( $page_setting->ID ) );
 
+		$old_status = 'auto-draft';
+		$new_status = 'customize-draft';
+		$count = did_action( 'transition_post_status' );
+		$count_status_change = did_action( "{$old_status}_to_{$new_status}" );
+		$count_post_status = did_action( "{$new_status}_post" );
+		$count_page_status = did_action( "{$new_status}_page" );
 		$expected = $this->posts->transition_customize_draft( $data );
+		$this->assertEquals( $count + 2, did_action( 'transition_post_status' ) );
+		$this->assertEquals( $count_status_change + 2, did_action( "{$old_status}_to_{$new_status}" ) );
+		$this->assertEquals( $count_post_status + 1, did_action( "{$new_status}_post" ) );
+		$this->assertEquals( $count_page_status + 1, did_action( "{$new_status}_page" ) );
+
 		$this->assertEquals( 'Testing Post Publish', $expected[ $post_setting_id ]['value']['post_title'] );
 		$this->assertEquals( 'publish', $expected[ $post_setting_id ]['value']['post_status'] );
 		$this->assertEquals( 'draft', $expected[ $page_setting_id ]['value']['post_status'] );
@@ -694,16 +728,22 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$published_post_id = $this->factory()->post->create( array( 'post_status' => 'publish', 'post_name' => 'foo' ) );
 		$trashed_post_id = $this->factory()->post->create( array( 'post_status' => 'private', 'post_name' => 'bar' ) );
 		$draft_page_id = $this->factory()->post->create( array( 'post_status' => 'draft', 'post_name' => 'quux', 'post_type' => 'page' ) );
+		$nav_menu_id = wp_create_nav_menu( 'Test' );
+		$nav_menu_item_id = wp_update_nav_menu_item( $nav_menu_id, 0, array(
+			'menu-item-type' => 'custom',
+			'menu-item-title' => 'Example',
+			'menu-item-url' => 'http://example.com/',
+		) );
 		$this->posts->register_post_type_meta( 'post', 'baz' );
 		wp_trash_post( $trashed_post_id );
 
-		$settings_params = $this->posts->get_settings( array( $published_post_id, $trashed_post_id, $draft_page_id ) );
-		$this->assertCount( 5, $settings_params );
+		$settings_params = $this->posts->get_settings( array( $published_post_id, $trashed_post_id, $draft_page_id, $nav_menu_item_id ) );
 		$this->assertEqualSets(
 			array(
 				WP_Customize_Post_Setting::get_post_setting_id( get_post( $published_post_id ) ),
 				WP_Customize_Post_Setting::get_post_setting_id( get_post( $trashed_post_id ) ),
 				WP_Customize_Post_Setting::get_post_setting_id( get_post( $draft_page_id ) ),
+				sprintf( 'nav_menu_item[%s]', $nav_menu_item_id ),
 				WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $published_post_id ), 'baz' ),
 				WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $trashed_post_id ), 'baz' )
 			),

@@ -65,6 +65,13 @@
 				args.params.title = api.Posts.data.l10n.noTitle;
 			}
 
+			// Sync the page data to any dropdown-pages controls.
+			if ( 'page' === args.params.post_type ) {
+				setting.bind( function( newData, oldData ) {
+					section.syncPageData( newData, oldData );
+				} );
+			}
+
 			section.postFieldControls = {};
 
 			section.contentsEmbedded = $.Deferred();
@@ -188,7 +195,7 @@
 		 */
 		embedSectionContents: function embedSectionContents() {
 			var section = this;
-			section.setupSettingValidation();
+			section.setupSectionNotifications();
 			section.setupPostNavigation();
 			section.setupControls();
 		},
@@ -343,6 +350,22 @@
 			}
 
 			return controls;
+		},
+
+		/**
+		 * Is this post section the page for posts.
+		 *
+		 * @returns {Boolean} Whether is page for posts.
+		 */
+		isPageForPosts: function() {
+			var section = this;
+			if ( 'page' !== section.params.post_type ) {
+				return false;
+			}
+			if ( ! api.has( 'page_for_posts' ) ) {
+				return false;
+			}
+			return parseInt( api( 'page_for_posts' ).get(), 10 ) === section.params.post_id;
 		},
 
 		/**
@@ -520,8 +543,23 @@
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addContentControl: function() {
-			var section = this, control, setting = api( section.id ), postTypeObj;
+			var section = this, control, setting = api( section.id ), postTypeObj, shouldShowEditor;
 			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+
+			/**
+			 * Hide the control when the page is assigned as the page_for_posts.
+			 *
+			 * Also override preview trying to de-activate control not present in preview context. See WP Trac #37270.
+			 *
+			 * @link https://github.com/xwp/wordpress-develop/blob/4.6.1/src/wp-admin/edit-form-advanced.php#L53-L56
+			 * @returns {boolean} Whether the editor should be shown.
+			 */
+			shouldShowEditor = function() {
+				if ( section.isPageForPosts() && '' === $.trim( setting.get().post_content ) ) {
+					return false;
+				}
+				return true;
+			};
 
 			control = new api.controlConstructor.post_editor( section.id + '[post_content]', {
 				params: {
@@ -529,16 +567,19 @@
 					priority: 50,
 					label: postTypeObj.labels.content_field ? postTypeObj.labels.content_field : api.Posts.data.l10n.fieldContentLabel,
 					setting_property: 'post_content',
+					active: shouldShowEditor(),
 					settings: {
 						'default': setting.id
 					}
 				}
 			} );
 
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
+			api( 'page_for_posts', function( pageForPostsSetting ) {
+				pageForPostsSetting.bind( function() {
+					control.active.set( shouldShowEditor() );
+				} );
+			} );
+			control.active.validate = shouldShowEditor;
 
 			// Register.
 			section.postFieldControls.post_content = control;
@@ -782,12 +823,12 @@
 		},
 
 		/**
-		 * Set up setting validation.
+		 * Set up section notifications.
 		 *
 		 * @returns {void}
 		 */
-		setupSettingValidation: function() {
-			var section = this, setting = api( section.id ), debouncedRenderNotifications;
+		setupSectionNotifications: function() {
+			var section = this, setting = api( section.id ), debouncedRenderNotifications, setPageForPostsNotice;
 			if ( ! setting.notifications ) {
 				return;
 			}
@@ -875,6 +916,29 @@
 			api.bind( 'save', function() {
 				section.resetPostFieldControlErrorNotifications();
 			} );
+
+			/**
+			 * Add notice when editing the page for posts.
+			 *
+			 * @see _wp_posts_page_notice() in PHP
+			 * @returns {void}
+			 */
+			setPageForPostsNotice = function() {
+				var code = 'editing_page_for_posts';
+				if ( section.isPageForPosts() ) {
+					section.notifications.add( code, new api.Notification( code, {
+						message: api.Posts.data.l10n.editingPageForPostsNotice,
+						type: 'warning'
+					} ) );
+				} else {
+					section.notifications.remove( code );
+				}
+			};
+
+			api( 'page_for_posts', function( pageForPostsSetting ) {
+				setPageForPostsNotice();
+				pageForPostsSetting.bind( setPageForPostsNotice );
+			} );
 		},
 
 		/**
@@ -903,6 +967,90 @@
 		isContextuallyActive: function() {
 			var section = this;
 			return section.active();
+		},
+
+		/**
+		 * Sync page changes to all dropdown-pages controls and to the page_on_front/page_for_posts settings.
+		 *
+		 * @see wp.customize.Posts.preventStaticFrontPageCollision()
+		 * @see wp.customize.Posts.PostSection.removeFromDropdownPagesControls()
+		 * @this {wp.customize.Section}
+		 * @param {Object} newPostData  Updated page data.
+		 * @returns {void}
+		 */
+		syncPageData: function syncPageData( newPostData ) {
+			var section = this;
+
+			// Make sure the page_for_posts and page_on_front settings get unset if the selected page is trashed.
+			if ( 'trash' === newPostData.post_status ) {
+				_.each( [ api( 'page_for_posts' ), api( 'page_on_front' ) ], function( setting ) {
+					if ( setting && parseInt( setting.get(), 10 ) === section.params.post_id ) {
+						setting.set( 0 );
+					}
+				} );
+			}
+
+			// Update the dropdown-pages controls.
+			api.control.each( function( control ) {
+				var pageOption, select, isTrashed, isPublished, optionText;
+
+				// Skip anything but the dropdown-pages control, including the Customize Object Selector control..
+				if ( 'dropdown-pages' !== control.params.type ) {
+					return;
+				}
+
+				// Remove a trashed post from being selected.
+				isTrashed = 'trash' === newPostData.post_status;
+				isPublished = 'publish' === newPostData.post_status;
+				if ( ! isPublished && parseInt( control.setting.get(), 10 ) === section.params.post_id ) {
+					control.setting.set( 0 );
+				}
+
+				// Sync the page option into the select options.
+				optionText = newPostData.post_title || api.Posts.data.l10n.noTitle;
+				if ( isTrashed ) {
+					optionText = api.Posts.data.l10n.dropdownPagesOptionTrashed.replace( '%s', optionText );
+				} else if ( ! isPublished ) {
+					optionText = api.Posts.data.l10n.dropdownPagesOptionUnpublished.replace( '%s', optionText );
+				}
+				select = control.container.find( 'select' );
+				pageOption = select.find( 'option[value="' + String( section.params.post_id ) + '"]' );
+				if ( 0 === pageOption.length ) {
+					pageOption = $( new Option(
+						optionText,
+						section.params.post_id
+					) );
+					select.append( pageOption );
+				} else {
+					pageOption.text( optionText );
+				}
+
+				// Note that the option may or may not also be hidden. The visibility is tied a collision-prevention state.
+				pageOption.prop( 'disabled', ! isPublished );
+			});
+		},
+
+		/**
+		 * Remove pages from dropdown-pages controls.
+		 *
+		 * @returns {void}
+		 */
+		removeFromDropdownPagesControls: function() {
+			var section = this;
+
+			api.control.each( function( control ) {
+
+				// Skip anything but the dropdown-pages control, including the Customize Object Selector control..
+				if ( 'dropdown-pages' !== control.params.type ) {
+					return;
+				}
+
+				// Remove the option for the page.
+				control.container
+					.find( 'select' )
+					.find( 'option[value="' + String( section.params.post_id ) + '"]' )
+					.remove();
+			});
 		}
 	});
 

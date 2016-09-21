@@ -83,7 +83,6 @@ final class WP_Customize_Posts {
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-date-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-status-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-editor-control.php';
-		require_once dirname( __FILE__ ) . '/class-wp-customize-editor-control.php';
 		require_once ABSPATH . WPINC . '/customize/class-wp-customize-partial.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-field-partial.php';
 
@@ -109,8 +108,35 @@ final class WP_Customize_Posts {
 		add_action( 'wp_ajax_customize-posts-insert-auto-draft', array( $this, 'ajax_insert_auto_draft_post' ) );
 		add_action( 'wp_ajax_customize-posts-fetch-settings', array( $this, 'ajax_fetch_settings' ) );
 		add_action( 'wp_ajax_customize-posts-select2-query', array( $this, 'ajax_posts_select2_query' ) );
+		add_action( 'customize_register', array( $this, 'replace_nav_menus_ajax_handlers' ) );
 
 		$this->preview = new WP_Customize_Posts_Preview( $this );
+	}
+
+	/**
+	 * Replace core's load and search ajax handlers with forked versions that apply customized state.
+	 *
+	 * @see WP_Customize_Nav_Menus::ajax_load_available_items()
+	 * @see WP_Customize_Nav_Menus::ajax_search_available_items()
+	 * @param WP_Customize_Manager $wp_customize Manager.
+	 */
+	public function replace_nav_menus_ajax_handlers( $wp_customize ) {
+		if ( ! isset( $wp_customize->nav_menus ) ) {
+			return;
+		}
+
+		$handlers = array(
+			'wp_ajax_load-available-menu-items-customizer' => 'ajax_load_available_items',
+			'wp_ajax_search-available-menu-items-customizer' => 'ajax_search_available_items',
+		);
+
+		foreach ( $handlers as $action => $method_name ) {
+			$priority = has_action( $action, array( $wp_customize->nav_menus, $method_name ) );
+			if ( false !== $priority ) {
+				remove_action( $action, array( $wp_customize->nav_menus, $method_name ), $priority );
+				add_action( $action, array( $this, $method_name ), $priority );
+			}
+		}
 	}
 
 	/**
@@ -148,9 +174,9 @@ final class WP_Customize_Posts {
 	/**
 	 * Get post type objects that can be managed in Customizer.
 	 *
-	 * By default only post types which have show_ui and publicly_queryable as true
-	 * will be included. This can be overridden if an explicit show_in_customizer
-	 * arg is provided when registering the post type.
+	 * By default only post types which are public will be included. This can be
+	 * overridden if an explicit show_in_customizer arg is provided when
+	 * registering the post type.
 	 *
 	 * @return array
 	 */
@@ -160,7 +186,7 @@ final class WP_Customize_Posts {
 		foreach ( $post_type_objects as $post_type_object ) {
 			$post_type_object = clone $post_type_object;
 			if ( ! isset( $post_type_object->show_in_customizer ) ) {
-				$post_type_object->show_in_customizer = $post_type_object->show_ui;
+				$post_type_object->show_in_customizer = $post_type_object->public;
 			}
 			$post_type_object->supports = get_all_post_type_supports( $post_type_object->name );
 
@@ -205,6 +231,7 @@ final class WP_Customize_Posts {
 	public function register_post_type_meta( $post_type, $meta_key, $setting_args = array() ) {
 		$setting_args = array_merge(
 			array(
+				'single' => true,
 				'capability' => null,
 				'theme_supports' => null,
 				'default' => null,
@@ -296,12 +323,9 @@ final class WP_Customize_Posts {
 		$section = $wp_customize->get_section( 'static_front_page' );
 		if ( ! $section ) {
 			$section = $wp_customize->add_section( 'static_front_page', array(
-				// @codingStandardsIgnoreStart
-				// @todo WPCS's WordPress.WP.I18n.TextDomainMismatch sniff should allow default. See https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/pull/685
 				'title' => __( 'Static Front Page', 'default' ),
 				'priority' => 120,
 				'description' => __( 'Your theme supports a static front page.', 'default' ),
-				// @codingStandardsIgnoreEnd
 			) );
 		}
 		if ( array( $section, 'active_callback' ) === $section->active_callback ) {
@@ -316,23 +340,16 @@ final class WP_Customize_Posts {
 				'type' => 'option',
 			) );
 		}
-		$control = $wp_customize->get_control( 'show_on_front' );
-		if ( ! $control ) {
-			$control = $wp_customize->add_control( 'show_on_front', array(
-				// @codingStandardsIgnoreStart
+		if ( ! $wp_customize->get_control( 'show_on_front' ) ) {
+			$wp_customize->add_control( 'show_on_front', array(
 				'label' => __( 'Front page displays', 'default' ),
 				'section' => 'static_front_page',
 				'type' => 'radio',
 				'choices' => array(
-					// @todo WPCS's WordPress.WP.I18n.TextDomainMismatch sniff should allow default. See https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/pull/685
 					'posts' => __( 'Your latest posts', 'default' ),
 					'page' => __( 'A static page', 'default' ),
 				),
-				// @codingStandardsIgnoreEnd
 			) );
-		}
-		if ( array( $control, 'active_callback' ) === $control->active_callback ) {
-			$control->active_callback = array( $this, 'has_published_pages' );
 		}
 
 		// Page on Front.
@@ -342,18 +359,12 @@ final class WP_Customize_Posts {
 				'capability' => 'manage_options',
 			) );
 		}
-		$control = $wp_customize->get_control( 'page_on_front' );
-		if ( ! $control ) {
-			$control = $wp_customize->add_control( 'page_on_front', array(
-				// @codingStandardsIgnoreStart
-				'label' => __( 'Front page', 'default' ), // @todo WPCS's WordPress.WP.I18n.TextDomainMismatch sniff should allow default. See https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/pull/685
-				// @codingStandardsIgnoreEnd
+		if ( ! $wp_customize->get_control( 'page_on_front' ) ) {
+			$wp_customize->add_control( 'page_on_front', array(
+				'label' => __( 'Front page', 'default' ),
 				'section' => 'static_front_page',
 				'type' => 'dropdown-pages',
 			) );
-		}
-		if ( array( $control, 'active_callback' ) === $control->active_callback ) {
-			$control->active_callback = array( $this, 'has_published_pages' );
 		}
 
 		// Page for Posts.
@@ -363,18 +374,12 @@ final class WP_Customize_Posts {
 				'capability' => 'manage_options',
 			) );
 		}
-		$control = $wp_customize->get_control( 'page_for_posts' );
-		if ( ! $control ) {
-			$control = $wp_customize->add_control( 'page_for_posts', array(
-				// @codingStandardsIgnoreStart
-				'label' => __( 'Posts page', 'default' ), // @todo WPCS's WordPress.WP.I18n.TextDomainMismatch sniff should allow default. See https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/pull/685
-				// @codingStandardsIgnoreEnd
+		if ( ! $wp_customize->get_control( 'page_for_posts' ) ) {
+			$wp_customize->add_control( 'page_for_posts', array(
+				'label' => __( 'Posts page', 'default' ),
 				'section' => 'static_front_page',
 				'type' => 'dropdown-pages',
 			) );
-		}
-		if ( array( $control, 'active_callback' ) === $control->active_callback ) {
-			$control->active_callback = array( $this, 'has_published_pages' );
 		}
 	}
 
@@ -388,10 +393,10 @@ final class WP_Customize_Posts {
 	public function has_published_pages() {
 
 		// @todo Also look to see if there are any pages among in $this->get_setting( 'nav_menus_created_posts' )->value().
+		// Note we cannot use number=>1 since the first-returned page may be previewed to not be published.
 		return 0 !== count( get_pages( array(
 			'post_type' => 'page',
 			'post_status' => 'publish',
-			'number' => 1,
 		) ) );
 	}
 
@@ -507,7 +512,7 @@ final class WP_Customize_Posts {
 	/**
 	 * Add all postmeta settings for all registered postmeta for a given post type instance.
 	 *
-	 * @param WP_Post $post Post ID.
+	 * @param WP_Post $post Post.
 	 * @return array
 	 */
 	public function register_post_type_meta_settings( $post ) {
@@ -679,6 +684,11 @@ final class WP_Customize_Posts {
 	public function enqueue_scripts() {
 		wp_enqueue_script( 'customize-posts' );
 		wp_enqueue_style( 'customize-posts' );
+
+		if ( isset( $this->manager->nav_menus ) ) {
+			wp_enqueue_script( 'customize-nav-menus-posts-extensions' );
+		}
+
 		$this->enqueue_select2_locale_script();
 
 		$post_types = array();
@@ -703,6 +713,7 @@ final class WP_Customize_Posts {
 				array(
 					'current_user_can' => array(
 						'create_posts' => isset( $post_type_obj->cap->create_posts ) && current_user_can( $post_type_obj->cap->create_posts ),
+						'edit_published_posts' => isset( $post_type_obj->cap->edit_published_posts ) && current_user_can( $post_type_obj->cap->edit_published_posts ),
 						'delete_posts' => isset( $post_type_obj->cap->delete_posts ) && current_user_can( $post_type_obj->cap->delete_posts ),
 					),
 				)
@@ -734,6 +745,13 @@ final class WP_Customize_Posts {
 				'openEditor' => __( 'Open Editor', 'customize-posts' ), // @todo Move this into editor control?
 				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
 				'invalidDateError' => __( 'Whoops, the provided date is invalid.', 'customize-posts' ),
+				/* translators: %s is the trashed page name */
+				'dropdownPagesOptionTrashed' => __( '%s (Trashed)', 'customize-posts' ),
+				/* translators: %s is the trashed page name */
+				'dropdownPagesOptionUnpublished' => __( '%s (Unpublished)', 'customize-posts' ),
+				'editingPageForPostsNotice' => __( 'You are currently editing the page that shows your latest posts.', 'default' ),
+				'editPostFailure' => __( 'Failed to open for editing.', 'customize-posts' ),
+				'createPostFailure' => __( 'Failed to create for editing.', 'customize-posts' ),
 				'installCustomizeObjectSelector' => sprintf(
 					__( 'This control depends on having the %s plugin installed and activated.', 'customize-posts' ),
 					sprintf(
@@ -898,8 +916,20 @@ final class WP_Customize_Posts {
 		?>
 		<script id="tmpl-customize-posts-navigation" type="text/html">
 			<button class="customize-posts-navigation dashicons dashicons-visibility" tabindex="0">
-				<span class="screen-reader-text"><?php esc_html_e( 'Preview', 'customize-posts' ); ?> {{ data.label }}</span>
+				<span class="screen-reader-text"><?php esc_html_e( 'Preview', 'customize-posts' ); ?> {{ data.label }}</span><?php // @todo This translates poorly ?>
 			</button>
+		</script>
+
+		<script id="tmpl-customize-posts-dropdown-pages-inputs" type="text/html">
+			<span class="customize-posts-dropdown-pages-inputs">
+				<!-- The select will go here. -->
+				<button type="button" class="button button-secondary edit-page">
+					<span class="screen-reader-text"><?php esc_html_e( 'Edit Selected Page', 'customize-posts' ); ?></span>
+				</button>
+				<button type="button" class="button button-secondary create-page">
+					<span class="screen-reader-text"><?php esc_html_e( 'Create New Page', 'customize-posts' ); ?></span>
+				</button>
+			</span>
 		</script>
 
 		<script id="tmpl-customize-posts-scheduled-countdown" type="text/html">
@@ -925,6 +955,12 @@ final class WP_Customize_Posts {
 
 		<script id="tmpl-customize-posts-trashed" type="text/html">
 			<span class="customize-posts-trashed">(<?php esc_html_e( 'Trashed', 'customize-posts' ); ?>)</span>
+		</script>
+
+		<script id="tmpl-customize-posts-edit-nav-menu-item-original-object" type="text/html">
+			<button class="customize-posts-edit-nav-menu-item-original-object button button-secondary" type="button">
+				{{ data.editItemLabel }}
+			</button>
 		</script>
 
 		<script type="text/html" id="tmpl-customize-post-section-notifications">
@@ -953,7 +989,7 @@ final class WP_Customize_Posts {
 	 * @access public
 	 *
 	 * @param array $data Customizer settings and values.
-	 * @return array
+	 * @return array The unchanged settings and values, as the behavior is added to a filter.
 	 */
 	public function transition_customize_draft( $data ) {
 		global $wpdb;
@@ -963,12 +999,16 @@ final class WP_Customize_Posts {
 			}
 			$post = get_post( $matches['post_id'] );
 			if ( 'auto-draft' === $post->post_status ) {
+				$new_status = 'customize-draft';
 				$wpdb->update(
 					$wpdb->posts,
-					array( 'post_status' => 'customize-draft' ),
+					array( 'post_status' => $new_status ),
 					array( 'ID' => $matches['post_id'] )
 				);
 				clean_post_cache( $matches['post_id'] );
+
+				// Fires actions related to the transitioning of a post's status.
+				wp_transition_post_status( $new_status, $post->post_status, $post );
 			}
 		}
 		return $data;
@@ -1111,19 +1151,32 @@ final class WP_Customize_Posts {
 		$query = new WP_Query( array(
 			'post__in' => $post_ids,
 			'ignore_sticky_posts' => true,
-			'post_type' => get_post_types( array(), 'names' ), // @todo Not ideal.
-			'post_status' => get_post_stati( array(), 'names' ), // @todo Not ideal.
+			'post_type' => get_post_types( array(), 'names' ),
+			'post_status' => get_post_stati( array(), 'names' ),
+			'posts_per_page' => count( $post_ids ),
 		) );
-		$post_setting_ids = array_map( array( 'WP_Customize_Post_Setting', 'get_post_setting_id' ), $query->posts );
-		if ( ! empty( $post_setting_ids ) ) {
-			$this->manager->add_dynamic_settings( $post_setting_ids );
+		$post_setting_ids = array();
+		foreach ( $query->posts as $post ) {
+			if ( 'nav_menu_item' === $post->post_type ) {
+				$post_setting_ids[] = sprintf( 'nav_menu_item[%d]', $post->ID );
+			} else {
+				$post_setting_ids[] = WP_Customize_Post_Setting::get_post_setting_id( $post );
+			}
 		}
+		$this->manager->add_dynamic_settings( $post_setting_ids );
 		foreach ( $query->posts as $post ) {
 			$this->register_post_type_meta_settings( $post );
 		}
 		$settings = array();
 		foreach ( $this->manager->settings() as $setting ) {
-			if ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting ) {
+			$is_requested_setting_type = (
+				$setting instanceof WP_Customize_Post_Setting
+				||
+				$setting instanceof WP_Customize_Postmeta_Setting
+				||
+				$setting instanceof WP_Customize_Nav_Menu_Item_Setting
+			);
+			if ( $is_requested_setting_type && in_array( $setting->post_id, $post_ids, true ) ) {
 				$settings[ $setting->id ] = $setting;
 			}
 		}
@@ -1277,6 +1330,24 @@ final class WP_Customize_Posts {
 			}
 		}
 
+		// Return with a failure if any of the requested posts.
+		foreach ( $post_ids as $post_id ) {
+			$post = get_post( $post_id );
+			if ( empty( $post ) ) {
+				status_header( 404 );
+				wp_send_json_error( 'requested_post_absent' );
+			}
+			if ( 'nav_menu_item' === $post->post_type ) {
+				$setting_id = sprintf( 'nav_menu_item[%d]', $post->ID );
+			} else {
+				$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+			}
+			if ( ! isset( $setting_params[ $setting_id ] ) ) {
+				status_header( 404 );
+				wp_send_json_error( 'requested_post_setting_absent' );
+			}
+		}
+
 		wp_send_json_success( $setting_params );
 	}
 
@@ -1389,5 +1460,88 @@ final class WP_Customize_Posts {
 			}
 		}
 		return $result;
+	}
+
+	/**
+	 * Ajax handler for loading available menu items.
+	 *
+	 * Forked from https://github.com/xwp/wordpress-develop/blob/2515aab6739ea0d2f065eea08ae429889a018fb3/src/wp-includes/class-wp-customize-nav-menus.php#L88-L115
+	 *
+	 * @codeCoverageIgnore
+	 */
+	public function ajax_load_available_items() {
+		check_ajax_referer( 'customize-menus', 'customize-menus-nonce' );
+
+		if ( ! current_user_can( 'edit_theme_options' ) ) {
+			wp_die( -1 );
+		}
+
+		if ( empty( $_POST['type'] ) || empty( $_POST['object'] ) ) {
+			wp_send_json_error( 'nav_menus_missing_type_or_object_parameter' );
+		}
+
+		// Added logic in forked method.
+		foreach ( $this->manager->settings() as $setting ) {
+			/**
+			 * Setting.
+			 *
+			 * @var WP_Customize_Setting $setting
+			 */
+			$setting->preview();
+		}
+
+		$type = sanitize_key( $_POST['type'] );
+		$object = sanitize_key( $_POST['object'] );
+		$page = empty( $_POST['page'] ) ? 0 : absint( $_POST['page'] );
+		$items = $this->manager->nav_menus->load_available_items_query( $type, $object, $page );
+
+		if ( is_wp_error( $items ) ) {
+			wp_send_json_error( $items->get_error_code() );
+		} else {
+			wp_send_json_success( array( 'items' => $items ) );
+		}
+	}
+
+	/**
+	 * Ajax handler for searching available menu items.
+	 *
+	 * Forked from https://github.com/xwp/wordpress-develop/blob/2515aab6739ea0d2f065eea08ae429889a018fb3/src/wp-includes/class-wp-customize-nav-menus.php#L228-L258
+	 *
+	 * @codeCoverageIgnore
+	 */
+	public function ajax_search_available_items() {
+		check_ajax_referer( 'customize-menus', 'customize-menus-nonce' );
+
+		if ( ! current_user_can( 'edit_theme_options' ) ) {
+			wp_die( -1 );
+		}
+
+		if ( empty( $_POST['search'] ) ) {
+			wp_send_json_error( 'nav_menus_missing_search_parameter' );
+		}
+
+		$p = isset( $_POST['page'] ) ? absint( $_POST['page'] ) : 0;
+		if ( $p < 1 ) {
+			$p = 1;
+		}
+
+		// Added logic in forked method.
+		foreach ( $this->manager->settings() as $setting ) {
+			/**
+			 * Setting.
+			 *
+			 * @var WP_Customize_Setting $setting
+			 */
+			$setting->preview();
+		}
+
+		$s = sanitize_text_field( wp_unslash( $_POST['search'] ) );
+		$items = $this->manager->nav_menus->search_available_items_query( array( 'pagenum' => $p, 's' => $s ) );
+
+		if ( empty( $items ) ) {
+			wp_send_json_error( array( 'message' => __( 'No results found.', 'default' ) ) );
+		} else {
+			wp_send_json_success( array( 'items' => $items ) );
+		}
 	}
 }

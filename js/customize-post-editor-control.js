@@ -4,6 +4,9 @@
 (function( api, $ ) {
 	'use strict';
 
+	// This is true because wp_editor() is forcibly called with 'default_editor' => 'tinymce'.
+	var visualModeEnabled = true;
+
 	/**
 	 * An post editor control.
 	 *
@@ -101,7 +104,15 @@
 		 * @param {Object} [params]
 		 * @returns {Boolean} false if state already applied
 		 */
-		_toggleExpanded: api.Section.prototype._toggleExpanded,
+		_toggleExpanded: function( expanded, params ) {
+			var control = this;
+
+			if ( expanded && control.section() && api.section.has( control.section() ) ) {
+				api.section( control.section() ).expand();
+			}
+
+			return api.Section.prototype._toggleExpanded.call( control, expanded, params );
+		},
 
 		/**
 		 * Expand the control.
@@ -146,24 +157,30 @@
 				control.collapseOtherControls();
 				control.updateEditorHeading();
 
-				if ( editor && ! editor.isHidden() ) {
+				if ( visualModeEnabled ) {
+					editor.show();
+				}
+				if ( editor && visualModeEnabled ) {
 					editor.setContent( wp.editor.autop( settingValue ) );
 				} else {
 					control.contentTextarea.val( settingValue );
 				}
 				editor.on( 'input change keyup', control.onVisualEditorChange );
 				control.contentTextarea.on( 'input', control.onTextEditorChange );
+				$( '#wp-customize-posts-content-wrap' ).on( 'keydown', control.stopEscKeypressEventPropagation );
 				$( document.body ).addClass( 'customize-posts-content-editor-pane-open' );
 				control.resizeEditor( window.innerHeight - control.editorPane.height() );
 			} else {
 				control.editorHeading.text( '' );
 				editor.off( 'input change keyup', control.onVisualEditorChange );
 				control.contentTextarea.off( 'input', control.onTextEditorChange );
+				$( '#wp-customize-posts-content-wrap' ).off( 'keydown', control.stopEscKeypressEventPropagation );
 				$( document.body ).removeClass( 'customize-posts-content-editor-pane-open' );
 
 				// Cancel link and force a click event to exit fullscreen & kitchen sink mode.
-				editor.execCommand( 'wp_link_cancel' );
-				$( '.mce-active' ).click();
+				$( '.mce-active' ).click(); // Remove active status from each item. @todo This is a hack.
+				visualModeEnabled = ! editor.isHidden();
+				editor.hide(); // Make sure all toolbars are hidden.
 				control.customizePreview.css( 'bottom', '' );
 				control.collapseSidebar.css( 'bottom', '' );
 			}
@@ -513,6 +530,22 @@
 					}
 				}
 			});
+		},
+
+		/**
+		 * Stop propagation of escape key to prevent the editor control from being collapsed.
+		 *
+		 * This stops the following code from running in core:
+		 * https://github.com/xwp/wordpress-develop/blob/4.6.1/src/wp-admin/js/customize-controls.js#L3971-L4007
+		 *
+		 * @param {jQuery.Event} event Event.
+		 * @returns {void}
+		 */
+		stopEscKeypressEventPropagation: function( event ) {
+			var escKeyCode = 27;
+			if ( escKeyCode === event.which ) {
+				event.stopPropagation();
+			}
 		}
 	});
 

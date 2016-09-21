@@ -95,17 +95,28 @@ var CustomizePageTemplate = (function( api ) {
 		/**
 		 * Make sure that control only appears if there are page templates (other than 'default').
 		 *
-		 * @todo The control needs to be deactivated when the page is the same as wp.customize( 'page_on_front' ).get().
+		 * Also only show page template if the page is not the page_for_posts.
+		 *
+		 * @link https://github.com/xwp/wordpress-develop/blob/4.6.0/src/wp-admin/includes/meta-boxes.php#L820
+		 *
 		 * @todo Page-specific templates also need to be accounted for here (the 'theme_page_templates' filter in PHP).
 		 *
 		 * @returns {boolean} Is active.
 		 */
 		isActiveCallback = function() {
 			var defaultSize = 1;
+			if ( api.has( 'page_for_posts' ) && parseInt( api( 'page_for_posts' ).get(), 10 ) === section.params.post_id ) {
+				return false;
+			}
 			return _.size( control.params.choices ) > defaultSize;
 		};
 		control.active.set( isActiveCallback() );
 		control.active.validate = isActiveCallback;
+		api( 'page_for_posts', function( pageOnFrontSetting ) {
+			pageOnFrontSetting.bind( function() {
+				control.active.set( isActiveCallback() );
+			} );
+		} );
 
 		// Register.
 		api.control.add( control.id, control );
