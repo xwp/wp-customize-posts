@@ -169,7 +169,7 @@
 		 * @returns {void}
 		 */
 		done = function doneInsertAutoDraftPost( data ) {
-			var section;
+			var section, availableItem, availableMenuItemsList, itemTemplate;
 			component.addPostSettings( data.settings );
 
 			if ( ! data.postSettingId || ! api.has( data.postSettingId ) ) {
@@ -194,6 +194,21 @@
 			if ( api.section.has( 'static_front_page' ) ) {
 				api.section( 'static_front_page' ).activate();
 			}
+
+			// Add the new item to the list of available items.
+			availableItem = new api.Menus.AvailableItemModel( {
+				'id': 'post-' + data.postId, // Used for available menu item Backbone models.
+				'title': api.Posts.data.l10n.noTitle,
+				'type': 'post_type',
+				'type_label': api.Posts.data.postTypes[ postType ].labels.singular_name,
+				'object': postType,
+				'object_id': data.postId,
+				'url': api.Posts.getPostUrl( { post_id: data.postId, post_type: postType } )
+			} );
+			api.Menus.availableMenuItemsPanel.collection.add( availableItem );
+			availableMenuItemsList = $( '#available-menu-items-post_type-' + postType ).find( '.available-menu-items-list' );
+			itemTemplate = wp.template( 'available-menu-item' );
+			availableMenuItemsList.prepend( itemTemplate( availableItem.attributes ) );
 
 			deferred.resolve( {
 				postId: data.postId,
