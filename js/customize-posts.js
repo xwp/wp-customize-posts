@@ -656,12 +656,6 @@
 	/**
 	 * Handle creating a new page.
 	 *
-	 * This is adapted from the Customize Object Selector plugin.
-	 *
-	 * @todo Customize Object Selector can eliminate its copies.
-	 *
-	 * @link https://github.com/xwp/wp-customize-object-selector/blob/d1ce38f7b14eff4f2ce9c59c93b6e356e7c0912f/js/customize-object-selector-component.js#L337-L425
-	 *
 	 * @param {object} args Args.
 	 * @param {String} args.postType - Post type.
 	 * @param {jQuery} [args.initiatingButton] - Clicked button which will be disabled during the request, and re-focused if returnToOriginatingConstruct is true.
@@ -779,9 +773,6 @@
 	/**
 	 * Handle editing an existing page.
 	 *
-	 * This is adapted from the Customize Object Selector plugin.
-	 *
-	 * @link https://github.com/xwp/wp-customize-object-selector/blob/d1ce38f7b14eff4f2ce9c59c93b6e356e7c0912f/js/customize-object-selector-component.js#L337-L425
 	 * @param {object} args Args.
 	 * @param {Number} args.postId - Post type.
 	 * @param {jQuery} [args.initiatingButton] - Clicked button which will be disabled during the request, and re-focused if returnToOriginatingConstruct is true.
@@ -885,9 +876,6 @@
 	 * This overrides the back button to serve the purpose of breadcrumb navigation.
 	 * This is modified from WP Core.
 	 *
-	 * This is copied from the Customize Object Selector plugin.
-	 *
-	 * @link https://github.com/xwp/wp-customize-object-selector/blob/d1ce38f7b14eff4f2ce9c59c93b6e356e7c0912f/js/customize-object-selector-component.js#L427-L466
 	 * @link https://github.com/xwp/wordpress-develop/blob/e7bbb482d6069d9c2d0e33789c7d290ac231f056/src/wp-admin/js/customize-widgets.js#L2143-L2193
 	 * @param {wp.customize.Section|wp.customize.Panel|wp.customize.Control} focusConstruct - The object to initially focus.
 	 * @param {wp.customize.Section|wp.customize.Panel|wp.customize.Control} returnConstruct - The object to return focus.
@@ -930,9 +918,6 @@
 	 * early can result in the focus logic not being able to see
 	 * any visible inputs to focus on.
 	 *
-	 * This is copied from the Customize Object Selector plugin.
-	 *
-	 * @link https://github.com/xwp/wp-customize-object-selector/blob/d1ce38f7b14eff4f2ce9c59c93b6e356e7c0912f/js/customize-object-selector-component.js#L468-L502
 	 * @param {wp.customize.Section} section Section.
 	 * @returns {void}
 	 */
