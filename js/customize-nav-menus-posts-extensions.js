@@ -148,7 +148,7 @@
 	 * @returns {void}
 	 */
 	component.watchPostSettingChanges = function watchPostSettingChanges( setting ) {
-		var idParts, postId, menuItemTitle, newTitle, availableItem, availableItemId, idPrefix;
+		var idParts, postId, menuItemTitle, newTitle, availableItem, availableItemId, idPrefix, menuItemTpl;
 		idPrefix = 'post[';
 		if ( idPrefix !== setting.id.substr( 0, idPrefix.length ) ) {
 			return;
@@ -161,9 +161,19 @@
 
 		newTitle = setting.get().post_title || api.Posts.data.l10n.noTitle;
 		availableItemId = 'post-' + String( postId );
-		menuItemTitle = $( '#menu-item-tpl-' + availableItemId ).find( '.menu-item-title:first' );
-		if ( menuItemTitle.length && $.trim( newTitle ) !== $.trim( menuItemTitle.text() ) ) {
-			menuItemTitle.text( newTitle );
+		menuItemTpl = $( '#menu-item-tpl-' + availableItemId );
+		if ( menuItemTpl.length ) {
+			menuItemTitle = menuItemTpl.find( '.menu-item-title:first' );
+			if ( $.trim( newTitle ) !== $.trim( menuItemTitle.text() ) ) {
+				menuItemTitle.text( newTitle );
+			}
+
+			// Ensure the available nav menu item is shown/hidden based on whether
+			if ( 'publish' !== setting.get().post_status && menuItemTpl.is( ':visible' ) ) {
+				menuItemTpl.hide();
+			} else if ( 'publish' === setting.get().post_status && ! menuItemTpl.is( ':visible' ) ) {
+				menuItemTpl.show();
+			}
 		}
 
 		availableItem = api.Menus.availableMenuItemsPanel.collection.get( availableItemId );
