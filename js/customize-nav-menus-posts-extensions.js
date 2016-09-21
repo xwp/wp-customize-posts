@@ -94,13 +94,20 @@ wp.customize.Posts.NavMenusExtensions = (function( api, $ ) {
 				if ( ! oldPostData || newPostData.post_title !== oldPostData.post_title ) {
 					title = $.trim( newPostData.post_title ) || api.Posts.data.l10n.noTitle;
 				}
-				control.container.find( '.menu-item-actions > .link-to-original > .original-link' ).text( title );
-				control.container.find( '.edit-menu-item-title:first' ).attr( 'placeholder', title );
 
-				// Change original_title without triggering setting change since it's a readonly value.
+				if ( 'resolved' === control.deferred.embedded.state() ) {
+					control.container.find( '.menu-item-actions > .link-to-original > .original-link' ).text( title );
+					control.container.find( '.edit-menu-item-title:first' ).attr( 'placeholder', title );
+				}
+
+				// Update original_title.
 				settingValue = _.clone( control.setting.get() );
 				settingValue.original_title = newPostData.post_title;
-				control.setting.set( settingValue );
+				if ( settingValue.title ) {
+					control.setting._value = settingValue; // Set quietly since the original_value will be unused here.
+				} else {
+					control.setting.set( settingValue );
+				}
 			};
 			postSetting.bind( setOriginalLinkTitle );
 			setOriginalLinkTitle( postSetting.get(), null );
@@ -117,6 +124,8 @@ wp.customize.Posts.NavMenusExtensions = (function( api, $ ) {
 		var onceExpanded;
 		if ( control.extended( api.Menus.MenuItemControl ) ) {
 
+			component.syncOriginalItemTitle( control );
+
 			/**
 			 * Trigger once expanded.
 			 *
@@ -127,7 +136,6 @@ wp.customize.Posts.NavMenusExtensions = (function( api, $ ) {
 				if ( expanded ) {
 					control.expanded.unbind( onceExpanded );
 					component.addEditPostButton( control );
-					component.syncOriginalItemTitle( control );
 				}
 			};
 
@@ -143,8 +151,6 @@ wp.customize.Posts.NavMenusExtensions = (function( api, $ ) {
 
 	/**
 	 * Update available menu items to match a changing post title.
-	 *
-	 * @todo The ajax requests for search-available-menu-items-customizer and load-available-menu-items-customizer need to include the customized state.
 	 *
 	 * @param {wp.customize.Setting} setting Changed setting.
 	 * @returns {void}
