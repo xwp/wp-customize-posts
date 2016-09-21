@@ -143,17 +143,16 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 
 			// Make sure that empty dates are not used in case of setting invalidity.
 			$empty_date = '0000-00-00 00:00:00';
-			if ( $empty_date === $post->post_date ) {
-				$post->post_date = current_time( 'mysql', false );
-			}
-			if ( $empty_date === $post->post_date_gmt ) {
-				$post->post_date_gmt = current_time( 'mysql', true );
-			}
-			if ( $empty_date === $post->post_modified ) {
-				$post->post_modified = current_time( 'mysql', false );
-			}
-			if ( $empty_date === $post->post_modified_gmt ) {
-				$post->post_modified_gmt = current_time( 'mysql', true );
+			$date_fields = array(
+				'post_date' => false,
+				'post_date_gmt' => true,
+				'post_modified' => false,
+				'post_modified_gmt' => true,
+			);
+			foreach ( $date_fields as $date_field => $gmt ) {
+				if ( $empty_date === $post->$date_field ) {
+					$post->$date_field = current_time( 'mysql', $gmt );
+				}
 			}
 
 			return false;
