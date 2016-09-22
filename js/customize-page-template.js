@@ -52,7 +52,8 @@ var CustomizePageTemplate = (function( api ) {
 	component.addControl = function( section ) {
 		var supports, control, controlId, settingId, isActiveCallback;
 		supports = api.Posts.data.postTypes[ section.params.post_type ].supports;
-		if ( ! supports['page-attributes'] ) {
+
+		if ( ! supports['page-attributes'] || 'page' !== section.params.post_type ) {
 			return null;
 		}
 
@@ -94,19 +95,33 @@ var CustomizePageTemplate = (function( api ) {
 		/**
 		 * Make sure that control only appears if there are page templates (other than 'default').
 		 *
+		 * Also only show page template if the page is not the page_for_posts.
+		 *
+		 * @link https://github.com/xwp/wordpress-develop/blob/4.6.0/src/wp-admin/includes/meta-boxes.php#L820
+		 *
+		 * @todo Page-specific templates also need to be accounted for here (the 'theme_page_templates' filter in PHP).
+		 *
 		 * @returns {boolean} Is active.
 		 */
 		isActiveCallback = function() {
 			var defaultSize = 1;
+			if ( api.has( 'page_for_posts' ) && parseInt( api( 'page_for_posts' ).get(), 10 ) === section.params.post_id ) {
+				return false;
+			}
 			return _.size( control.params.choices ) > defaultSize;
 		};
 		control.active.set( isActiveCallback() );
 		control.active.validate = isActiveCallback;
+		api( 'page_for_posts', function( pageOnFrontSetting ) {
+			pageOnFrontSetting.bind( function() {
+				control.active.set( isActiveCallback() );
+			} );
+		} );
 
 		// Register.
 		api.control.add( control.id, control );
 
-		// @todo Fetch the page templates related to control.params.post_id to override the default choices
+		// @todo Fetch the page templates related to control.params.post_id to override the default choices (the 'theme_page_templates' filter in PHP).
 
 		return control;
 	};

@@ -91,13 +91,13 @@ class WP_Customize_Dynamic_Control extends WP_Customize_Control {
 				/>
 				{{{ data.label }}}
 				<# if ( data.description ) { #>
-					<span class="description customize-control-description">{{ data.description }}</span>
+					<span class="description customize-control-description">{{{ data.description }}}</span>
 				<# } #>
 			</label>
 		<# } else { #>
 			<span class="customize-control-title"><label for="{{ data.input_id }}">{{ data.label }}</label></span>
 			<# if ( data.description ) { #>
-				<span class="description customize-control-description">{{ data.description }}</span>
+				<span class="description customize-control-description">{{{ data.description }}}</span>
 			<# } #>
 			<# if ( 'textarea' === data.field_type ) { #>
 				<textarea

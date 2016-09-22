@@ -71,6 +71,12 @@
 							}
 							target.text( newPostData.post_title );
 						} );
+
+						// Add initial support for previewing title changes in wp_list_pages().
+						// @todo Add selective refresh for these.
+						if ( 'page' === partial.params.post_type ) {
+							$( '.page_item.page-item-' + partial.params.post_id + ':not(.menu-item) > a' ).text( newPostData.post_title );
+						}
 					} );
 				} );
 			}

@@ -60,12 +60,13 @@ module.exports = function( grunt ) {
 			build: {
 				src: [
 					'*.php',
-					'css/*',
-					'js/*',
-					'php/**',
+					'css/*.css',
+					'js/*.js',
+					'php/**/*.php',
 					'readme.txt',
 					'bower_components/select2/dist/js/select2.full*',
-					'bower_components/select2/dist/css/*'
+					'bower_components/select2/dist/css/*',
+					'bower_components/select2/dist/js/i18n/*'
 				],
 				dest: 'build',
 				expand: true,

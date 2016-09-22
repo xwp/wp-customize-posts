@@ -1,4 +1,4 @@
-/* global wp, tinyMCE */
+/* global wp */
 /* eslint consistent-this: [ "error", "section" ], no-magic-numbers: [ "error", { "ignore": [-1,0,1] } ] */
 
 (function( api, $ ) {
@@ -63,6 +63,13 @@
 			}
 			if ( ! args.params.title ) {
 				args.params.title = api.Posts.data.l10n.noTitle;
+			}
+
+			// Sync the page data to any dropdown-pages controls.
+			if ( 'page' === args.params.post_type ) {
+				setting.bind( function( newData, oldData ) {
+					section.syncPageData( newData, oldData );
+				} );
 			}
 
 			section.postFieldControls = {};
@@ -188,7 +195,7 @@
 		 */
 		embedSectionContents: function embedSectionContents() {
 			var section = this;
-			section.setupSettingValidation();
+			section.setupSectionNotifications();
 			section.setupPostNavigation();
 			section.setupControls();
 		},
@@ -272,6 +279,12 @@
 				section.addStatusControl();
 				section.addDateControl();
 			}
+			if ( postTypeObj.supports['page-attributes'] || postTypeObj.supports.parent ) {
+				section.addParentControl();
+			}
+			if ( postTypeObj.supports['page-attributes'] || postTypeObj.supports.ordering ) {
+				section.addOrderControl();
+			}
 			if ( postTypeObj.supports.editor ) {
 				section.addContentControl();
 			}
@@ -297,7 +310,7 @@
 		 */
 		addPostFieldControlNotification: function addPostFieldControlNotification( code, notification ) {
 			var isSettingNotification, isSettingPropertyNotification;
-			isSettingNotification = -1 !== code.indexOf( ':' ) || notification.data && notification.data.setting; // Note that sniffing for ':' is deprecated as of #36944.
+			isSettingNotification = -1 !== code.indexOf( ':' ) || notification.setting; // Note that sniffing for ':' is deprecated as of #36944 & #37890.
 			isSettingPropertyNotification = notification.data && notification.data.setting_property === this.setting_property;
 			if ( isSettingPropertyNotification || ! isSettingNotification ) {
 				return api.Values.prototype.add.call( this, code, notification );
@@ -337,6 +350,22 @@
 			}
 
 			return controls;
+		},
+
+		/**
+		 * Is this post section the page for posts.
+		 *
+		 * @returns {Boolean} Whether is page for posts.
+		 */
+		isPageForPosts: function() {
+			var section = this;
+			if ( 'page' !== section.params.post_type ) {
+				return false;
+			}
+			if ( ! api.has( 'page_for_posts' ) ) {
+				return false;
+			}
+			return parseInt( api( 'page_for_posts' ).get(), 10 ) === section.params.post_id;
 		},
 
 		/**
@@ -397,7 +426,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_name]', {
 				params: {
 					section: section.id,
-					priority: 15,
+					priority: 20,
 					label: postTypeObj.labels.slug_field ? postTypeObj.labels.slug_field : api.Posts.data.l10n.fieldSlugLabel,
 					active: true,
 					settings: {
@@ -447,7 +476,7 @@
 			control = new api.controlConstructor.post_status( section.id + '[post_status]', {
 				params: {
 					section: section.id,
-					priority: 20,
+					priority: 30,
 					label: postTypeObj.labels.status_field ? postTypeObj.labels.status_field : api.Posts.data.l10n.fieldStatusLabel,
 					settings: {
 						'default': setting.id
@@ -483,7 +512,7 @@
 			control = new api.controlConstructor.post_date( section.id + '[post_date]', {
 				params: {
 					section: section.id,
-					priority: 21,
+					priority: 40,
 					label: postTypeObj.labels.date_field ? postTypeObj.labels.date_field : api.Posts.data.l10n.fieldDateLabel,
 					description: api.Posts.data.l10n.fieldDateDescription,
 					settings: {
@@ -511,271 +540,50 @@
 		/**
 		 * Add post content control.
 		 *
-		 * @todo It is hacky how the dynamic control is overloaded to connect to the shared TinyMCE editor.
-		 *
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addContentControl: function() {
-			var section = this,
-				control,
-				setting = api( section.id ),
-				preview = $( '#customize-preview' ),
-				editorPane = $( '#customize-posts-content-editor-pane' ),
-				editorFrame = $( '#customize-posts-content_ifr' ),
-				mceTools = $( '#wp-customize-posts-content-editor-tools' ),
-				mceToolbar = $( '.mce-toolbar-grp' ),
-				mceStatusbar = $( '.mce-statusbar' ),
-				dragbar = $( '#customize-posts-content-editor-dragbar' ),
-				collapse = $( '.collapse-sidebar' ),
-				resizeHeight,
-				postTypeObj;
-
+			var section = this, control, setting = api( section.id ), postTypeObj, shouldShowEditor;
 			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
 
-			control = new api.controlConstructor.dynamic( section.id + '[post_content]', {
-				params: {
-					section: section.id,
-					priority: 25,
-					label: postTypeObj.labels.content_field ? postTypeObj.labels.content_field : api.Posts.data.l10n.fieldContentLabel,
-					active: true,
-					settings: {
-						'default': setting.id
-					},
-					field_type: 'textarea',
-					setting_property: 'post_content'
-				}
-			} );
-			control.editorExpanded = new api.Value( false );
-			control.editorToggleExpandButton = $( '<button type="button" class="button"></button>' );
-			control.updateEditorToggleExpandButtonLabel = function( expanded ) {
-				control.editorToggleExpandButton.text( expanded ? api.Posts.data.l10n.closeEditor : api.Posts.data.l10n.openEditor );
-			};
-			control.updateEditorToggleExpandButtonLabel( control.editorExpanded.get() );
-
 			/**
-			 * Update the setting value when the editor changes its state.
+			 * Hide the control when the page is assigned as the page_for_posts.
 			 *
-			 * @returns {void}
-			 */
-			control.onVisualEditorChange = function() {
-				var value, editor;
-				if ( control.editorSyncSuspended ) {
-					return;
-				}
-				editor = tinyMCE.get( 'customize-posts-content' );
-				value = wp.editor.removep( editor.getContent() );
-				control.editorSyncSuspended = true;
-				control.propertyElements[0].set( value );
-				control.editorSyncSuspended = false;
-			};
-
-			/**
-			 * Update the setting value when the editor changes its state.
+			 * Also override preview trying to de-activate control not present in preview context. See WP Trac #37270.
 			 *
-			 * @returns {void}
+			 * @link https://github.com/xwp/wordpress-develop/blob/4.6.1/src/wp-admin/edit-form-advanced.php#L53-L56
+			 * @returns {boolean} Whether the editor should be shown.
 			 */
-			control.onTextEditorChange = function() {
-				if ( control.editorSyncSuspended ) {
-					return;
+			shouldShowEditor = function() {
+				if ( section.isPageForPosts() && '' === $.trim( setting.get().post_content ) ) {
+					return false;
 				}
-				control.editorSyncSuspended = true;
-				control.propertyElements[0].set( $( this ).val() );
-				control.editorSyncSuspended = false;
-			};
-
-			/**
-			 * Update the editor when the setting changes its state.
-			 */
-			setting.bind( function( newPostData, oldPostData ) {
-				var editor, textarea = $( '#customize-posts-content' );
-				if ( control.editorExpanded.get() && ! control.editorSyncSuspended && newPostData.post_content !== oldPostData.post_content ) {
-					control.editorSyncSuspended = true;
-					editor = tinyMCE.get( 'customize-posts-content' );
-					if ( editor && ! editor.isHidden() ) {
-						editor.setContent( wp.editor.autop( newPostData.post_content ) );
-					} else {
-						textarea.val( newPostData.post_content );
-					}
-					control.editorSyncSuspended = false;
-				}
-			} );
-
-			/**
-			 * Update the button text when the expanded state changes;
-			 * toggle editor visibility, and the binding of the editor
-			 * to the post setting.
-			 */
-			control.editorExpanded.bind( function( expanded ) {
-				var editor, textarea = $( '#customize-posts-content' );
-				editor = tinyMCE.get( 'customize-posts-content' );
-				control.updateEditorToggleExpandButtonLabel( expanded );
-				$( document.body ).toggleClass( 'customize-posts-content-editor-pane-open', expanded );
-
-				if ( expanded ) {
-					if ( editor && ! editor.isHidden() ) {
-						editor.setContent( wp.editor.autop( setting().post_content ) );
-					} else {
-						textarea.val( setting().post_content );
-					}
-					editor.on( 'input change keyup', control.onVisualEditorChange );
-					textarea.on( 'input', control.onTextEditorChange );
-					control.resizeEditor( window.innerHeight - editorPane.height() );
-				} else {
-					editor.off( 'input change keyup', control.onVisualEditorChange );
-					textarea.off( 'input', control.onTextEditorChange );
-
-					// Cancel link and force a click event to exit fullscreen & kitchen sink mode.
-					editor.execCommand( 'wp_link_cancel' );
-					$( '.mce-active' ).click();
-					preview.css( 'bottom', '' );
-					collapse.css( 'bottom', '' );
-				}
-			} );
-
-			/**
-			 * Unlink the editor from this post and collapse the editor when the section is collapsed.
-			 */
-			section.expanded.bind( function( expanded ) {
-				if ( expanded ) {
-					api.Posts.postIdInput.val( section.params.post_id );
-				} else {
-					api.Posts.postIdInput.val( '' );
-					control.editorExpanded.set( false );
-				}
-			} );
-
-			/**
-			 * Toggle the editor when clicking the button, focusing on it if it is expanded.
-			 */
-			control.editorToggleExpandButton.on( 'click', function() {
-				var editor = tinyMCE.get( 'customize-posts-content' );
-				control.editorExpanded.set( ! control.editorExpanded() );
-				if ( control.editorExpanded() ) {
-					editor.focus();
-				}
-			} );
-
-			/**
-			 * Expand the editor and focus on it when the post content control is focused.
-			 *
-			 * @param {object} args Focus args.
-			 * @returns {void}
-			 */
-			control.focus = function( args ) {
-				var editor = tinyMCE.get( 'customize-posts-content' );
-				api.controlConstructor.dynamic.prototype.focus.call( control, args );
-				control.editorExpanded.set( true );
-				editor.focus();
-			};
-
-			/**
-			 * Vertically Resize Expanded Post Editor.
-			 *
-			 * @param {int} position - The position of the post editor from the top of the browser window.
-			 * @returns {void}
-			 */
-			control.resizeEditor = function( position ) {
-				var windowHeight = window.innerHeight,
-					windowWidth = window.innerWidth,
-					sectionContent = $( '[id^=accordion-panel-posts] ul.accordion-section-content' ),
-					minScroll = 40,
-					maxScroll = 1,
-					mobileWidth = 782,
-					collapseMinSpacing = 56,
-					collapseBottomOutsideEditor = 8,
-					collapseBottomInsideEditor = 4,
-					args = {};
-
-				if ( ! $( document.body ).hasClass( 'customize-posts-content-editor-pane-open' ) ) {
-					return;
-				}
-
-				if ( ! _.isNaN( position ) ) {
-					resizeHeight = windowHeight - position;
-				}
-
-				args.height = resizeHeight;
-				args.components = mceTools.outerHeight() + mceToolbar.outerHeight() + mceStatusbar.outerHeight();
-
-				if ( resizeHeight < minScroll ) {
-					args.height = minScroll;
-				}
-
-				if ( resizeHeight > windowHeight - maxScroll ) {
-					args.height = windowHeight - maxScroll;
-				}
-
-				if ( windowHeight < editorPane.outerHeight() ) {
-					args.height = windowHeight;
-				}
-
-				preview.css( 'bottom', args.height );
-				editorPane.css( 'height', args.height );
-				editorFrame.css( 'height', args.height - args.components );
-				collapse.css( 'bottom', args.height + collapseBottomOutsideEditor );
-
-				if ( collapseMinSpacing > windowHeight - args.height ) {
-					collapse.css( 'bottom', mceStatusbar.outerHeight() + collapseBottomInsideEditor );
-				}
-
-				if ( windowWidth <= mobileWidth ) {
-					sectionContent.css( 'padding-bottom', args.height );
-				} else {
-					sectionContent.css( 'padding-bottom', '' );
-				}
-			};
-
-			// Resize the editor.
-			dragbar.on( 'mousedown', function() {
-				if ( ! section.expanded() ) {
-					return;
-				}
-				$( document ).on( 'mousemove.customize-posts-editor', function( event ) {
-					event.preventDefault();
-					$( document.body ).addClass( 'customize-posts-content-editor-pane-resize' );
-					editorFrame.css( 'pointer-events', 'none' );
-					control.resizeEditor( event.pageY );
-				} );
-			} );
-
-			// Remove editor resize.
-			dragbar.on( 'mouseup', function() {
-				if ( ! section.expanded() ) {
-					return;
-				}
-				$( document ).off( 'mousemove.customize-posts-editor' );
-				$( document.body ).removeClass( 'customize-posts-content-editor-pane-resize' );
-				editorFrame.css( 'pointer-events', '' );
-			} );
-
-			// Resize the editor when the viewport changes.
-			$( window ).on( 'resize', function() {
-				var resizeDelay = 50;
-				if ( ! section.expanded() ) {
-					return;
-				}
-				_.delay( function() {
-					control.resizeEditor( window.innerHeight - editorPane.height() );
-				}, resizeDelay );
-			} );
-
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
 				return true;
 			};
+
+			control = new api.controlConstructor.post_editor( section.id + '[post_content]', {
+				params: {
+					section: section.id,
+					priority: 50,
+					label: postTypeObj.labels.content_field ? postTypeObj.labels.content_field : api.Posts.data.l10n.fieldContentLabel,
+					setting_property: 'post_content',
+					active: shouldShowEditor(),
+					settings: {
+						'default': setting.id
+					}
+				}
+			} );
+
+			api( 'page_for_posts', function( pageForPostsSetting ) {
+				pageForPostsSetting.bind( function() {
+					control.active.set( shouldShowEditor() );
+				} );
+			} );
+			control.active.validate = shouldShowEditor;
 
 			// Register.
 			section.postFieldControls.post_content = control;
 			api.control.add( control.id, control );
-
-			// Inject button in place of textarea.
-			control.deferred.embedded.done( function() {
-				var textarea = control.container.find( 'textarea:first' );
-				textarea.hide();
-				control.editorToggleExpandButton.attr( 'id', textarea.attr( 'id' ) );
-				textarea.attr( 'id', '' );
-				control.container.append( control.editorToggleExpandButton );
-			} );
 
 			if ( control.notifications ) {
 				control.notifications.add = section.addPostFieldControlNotification;
@@ -795,7 +603,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_excerpt]', {
 				params: {
 					section: section.id,
-					priority: 30,
+					priority: 60,
 					label: postTypeObj.labels.excerpt_field ? postTypeObj.labels.excerpt_field : api.Posts.data.l10n.fieldExcerptLabel,
 					active: true,
 					settings: {
@@ -823,6 +631,113 @@
 		},
 
 		/**
+		 * Add parent control.
+		 *
+		 * @returns {wp.customize.Control} Added control.
+		 */
+		addParentControl: function addParentControl() {
+			var section = this, control, setting = api( section.id ), controlId, params, postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+
+			controlId = section.id + '[post_parent]';
+			params = {
+				section: section.id,
+				priority: 70,
+				label: postTypeObj.labels.parent_item_colon ? postTypeObj.labels.parent_item_colon.replace( /:$/, '' ) : api.Posts.data.l10n.fieldParentLabel,
+				active: true,
+				settings: {
+					'default': setting.id
+				},
+				field_type: 'select',
+				setting_property: 'post_parent'
+			};
+
+			if ( api.controlConstructor.object_selector ) {
+				control = new api.controlConstructor.object_selector( controlId, {
+					params: _.extend( params, {
+						post_query_vars: {
+							post_type: section.params.post_type,
+							post_status: 'publish',
+							post__not_in: [ section.params.post_id ],
+							show_initial_dropdown: true,
+							dropdown_args: {
+								exclude_tree: section.params.post_id,
+								sort_column: 'menu_order, post_title'
+							},
+							apply_dropdown_args_filters_post_id: section.params.post_id // Applies page_attributes_dropdown_pages_args filters.
+						},
+						show_add_buttons: false,
+						select2_options: {
+							multiple: false,
+							allowClear: true,
+							placeholder: postTypeObj.labels.search_items
+						}
+					} )
+				} );
+			} else {
+				control = new api.controlConstructor.dynamic( controlId, {
+					params: _.extend( params, {
+						field_type: 'hidden',
+						description: api.Posts.data.l10n.installCustomizeObjectSelector
+					} )
+				} );
+			}
+
+			// Override preview trying to de-activate control not present in preview context.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.page_parent = control;
+			api.control.add( control.id, control );
+
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
+				control.notifications.setting_property = control.params.setting_property;
+			}
+			return control;
+		},
+
+		/**
+		 * Add order control.
+		 *
+		 * @returns {wp.customize.Control} Added control.
+		 */
+		addOrderControl: function addOrderControl() {
+			var section = this, control, setting = api( section.id ), postTypeObj;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+			control = new api.controlConstructor.dynamic( section.id + '[menu_order]', {
+				params: {
+					section: section.id,
+					priority: 80,
+					label: postTypeObj.labels.order_field ? postTypeObj.labels.order_field : api.Posts.data.l10n.fieldOrderLabel,
+					active: true,
+					settings: {
+						'default': setting.id
+					},
+					field_type: 'number',
+					setting_property: 'menu_order'
+				}
+			} );
+
+			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.menu_order = control;
+			api.control.add( control.id, control );
+
+			if ( control.notifications ) {
+				control.notifications.add = section.addPostFieldControlNotification;
+				control.notifications.setting_property = control.params.setting_property;
+			}
+			return control;
+		},
+
+		/**
 		 * Add discussion fields (comments and ping status fields) control.
 		 *
 		 * @returns {wp.customize.Control} Added control.
@@ -833,7 +748,7 @@
 			control = new api.controlConstructor.post_discussion_fields( section.id + '[discussion_fields]', {
 				params: {
 					section: section.id,
-					priority: 60,
+					priority: 90,
 					label: postTypeObj.labels.discussion_field ? postTypeObj.labels.discussion_field : api.Posts.data.l10n.fieldDiscusionLabel,
 					active: true,
 					settings: {
@@ -870,7 +785,7 @@
 			control = new api.controlConstructor.dynamic( section.id + '[post_author]', {
 				params: {
 					section: section.id,
-					priority: 70,
+					priority: 100,
 					label: postTypeObj.labels.author_field ? postTypeObj.labels.author_field : api.Posts.data.l10n.fieldAuthorLabel,
 					active: true,
 					settings: {
@@ -908,12 +823,12 @@
 		},
 
 		/**
-		 * Set up setting validation.
+		 * Set up section notifications.
 		 *
 		 * @returns {void}
 		 */
-		setupSettingValidation: function() {
-			var section = this, setting = api( section.id ), debouncedRenderNotifications;
+		setupSectionNotifications: function() {
+			var section = this, setting = api( section.id ), debouncedRenderNotifications, setPageForPostsNotice;
 			if ( ! setting.notifications ) {
 				return;
 			}
@@ -1001,6 +916,29 @@
 			api.bind( 'save', function() {
 				section.resetPostFieldControlErrorNotifications();
 			} );
+
+			/**
+			 * Add notice when editing the page for posts.
+			 *
+			 * @see _wp_posts_page_notice() in PHP
+			 * @returns {void}
+			 */
+			setPageForPostsNotice = function() {
+				var code = 'editing_page_for_posts';
+				if ( section.isPageForPosts() ) {
+					section.notifications.add( code, new api.Notification( code, {
+						message: api.Posts.data.l10n.editingPageForPostsNotice,
+						type: 'warning'
+					} ) );
+				} else {
+					section.notifications.remove( code );
+				}
+			};
+
+			api( 'page_for_posts', function( pageForPostsSetting ) {
+				setPageForPostsNotice();
+				pageForPostsSetting.bind( setPageForPostsNotice );
+			} );
 		},
 
 		/**
@@ -1029,6 +967,90 @@
 		isContextuallyActive: function() {
 			var section = this;
 			return section.active();
+		},
+
+		/**
+		 * Sync page changes to all dropdown-pages controls and to the page_on_front/page_for_posts settings.
+		 *
+		 * @see wp.customize.Posts.preventStaticFrontPageCollision()
+		 * @see wp.customize.Posts.PostSection.removeFromDropdownPagesControls()
+		 * @this {wp.customize.Section}
+		 * @param {Object} newPostData  Updated page data.
+		 * @returns {void}
+		 */
+		syncPageData: function syncPageData( newPostData ) {
+			var section = this;
+
+			// Make sure the page_for_posts and page_on_front settings get unset if the selected page is trashed.
+			if ( 'trash' === newPostData.post_status ) {
+				_.each( [ api( 'page_for_posts' ), api( 'page_on_front' ) ], function( setting ) {
+					if ( setting && parseInt( setting.get(), 10 ) === section.params.post_id ) {
+						setting.set( 0 );
+					}
+				} );
+			}
+
+			// Update the dropdown-pages controls.
+			api.control.each( function( control ) {
+				var pageOption, select, isTrashed, isPublished, optionText;
+
+				// Skip anything but the dropdown-pages control, including the Customize Object Selector control..
+				if ( 'dropdown-pages' !== control.params.type ) {
+					return;
+				}
+
+				// Remove a trashed post from being selected.
+				isTrashed = 'trash' === newPostData.post_status;
+				isPublished = 'publish' === newPostData.post_status;
+				if ( ! isPublished && parseInt( control.setting.get(), 10 ) === section.params.post_id ) {
+					control.setting.set( 0 );
+				}
+
+				// Sync the page option into the select options.
+				optionText = newPostData.post_title || api.Posts.data.l10n.noTitle;
+				if ( isTrashed ) {
+					optionText = api.Posts.data.l10n.dropdownPagesOptionTrashed.replace( '%s', optionText );
+				} else if ( ! isPublished ) {
+					optionText = api.Posts.data.l10n.dropdownPagesOptionUnpublished.replace( '%s', optionText );
+				}
+				select = control.container.find( 'select' );
+				pageOption = select.find( 'option[value="' + String( section.params.post_id ) + '"]' );
+				if ( 0 === pageOption.length ) {
+					pageOption = $( new Option(
+						optionText,
+						section.params.post_id
+					) );
+					select.append( pageOption );
+				} else {
+					pageOption.text( optionText );
+				}
+
+				// Note that the option may or may not also be hidden. The visibility is tied a collision-prevention state.
+				pageOption.prop( 'disabled', ! isPublished );
+			});
+		},
+
+		/**
+		 * Remove pages from dropdown-pages controls.
+		 *
+		 * @returns {void}
+		 */
+		removeFromDropdownPagesControls: function() {
+			var section = this;
+
+			api.control.each( function( control ) {
+
+				// Skip anything but the dropdown-pages control, including the Customize Object Selector control..
+				if ( 'dropdown-pages' !== control.params.type ) {
+					return;
+				}
+
+				// Remove the option for the page.
+				control.container
+					.find( 'select' )
+					.find( 'option[value="' + String( section.params.post_id ) + '"]' )
+					.remove();
+			});
 		}
 	});
 

@@ -177,7 +177,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$this->assertEquals( $post->ID, $setting->post_id );
 		$this->assertEquals( $post->post_type, $setting->post_type );
 		$this->assertEquals( $this->wp_customize->posts, $setting->posts_component );
-		$this->assertEquals( get_current_user_id(), $setting->default['post_author'] );
+		$this->assertSame( (string) get_current_user_id(), $setting->default['post_author'] );
 		$this->assertEquals( '0000-00-00 00:00:00', $setting->default['post_date'] );
 		$this->assertEquals( '0000-00-00 00:00:00', $setting->default['post_modified'] );
 	}
@@ -252,6 +252,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	 * Test value().
 	 *
 	 * @see WP_Customize_Post_Setting::value()
+	 * @see WP_Customize_Post_Setting::js_value()
 	 */
 	public function test_value_existing() {
 		$post_arr = array(
@@ -282,7 +283,12 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 
 		$this->assertEquals( $post_arr['post_title'], $value['post_title'] );
 		$this->assertEquals( $post_arr['post_content'], $value['post_content'] );
-		$this->assertEquals( $post_arr['post_author'], $value['post_author'] );
+		$this->assertSame( (string) $post_arr['post_author'], $value['post_author'] );
+
+		$js_value = $setting->js_value();
+		$expected_js_value = $value;
+		$expected_js_value['post_author'] = (int) $value['post_author'];
+		$this->assertSame( $expected_js_value, $js_value );
 
 		$previewed_data = array_merge(
 			$post_arr,
@@ -298,7 +304,7 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$value = $setting->value();
 		$this->assertEquals( $previewed_data['post_title'], $value['post_title'] );
 		$this->assertEquals( $previewed_data['post_content'], $value['post_content'] );
-		$this->assertEquals( $previewed_data['post_author'], $value['post_author'] );
+		$this->assertSame( (string) $previewed_data['post_author'], $value['post_author'] );
 	}
 
 	/**
@@ -326,9 +332,9 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 		$setting = $this->create_post_setting( $post_arr );
 		$post_data = $setting->get_post_data( get_post( $setting->post_id ) );
 		$this->assertEqualSets( array_keys( $post_data ), array_keys( $setting->default ) );
-		$this->assertEquals( $post_arr['post_author'], $post_data['post_author'] );
-		$this->assertEquals( $post_arr['post_content'], $post_data['post_content'] );
-		$this->assertEquals( $post_arr['post_title'], $post_data['post_title'] );
+		$this->assertSame( (string) $post_arr['post_author'], $post_data['post_author'] );
+		$this->assertSame( $post_arr['post_content'], $post_data['post_content'] );
+		$this->assertSame( $post_arr['post_title'], $post_data['post_title'] );
 	}
 
 	/**
@@ -502,6 +508,32 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 			'post_name' => '',
 		) );
 		$this->assertEquals( '', $sanitized['post_name'] );
+	}
+
+	/**
+	 * Test sanitize().
+	 *
+	 * @see WP_Customize_Post_Setting::sanitize()
+	 */
+	public function test_sanitize_default_post_author() {
+		$setting = $this->create_post_setting( array(
+			'post_author' => $this->user_id,
+		) );
+
+		$setting->default['post_author'] = '0';
+		$sanitized = $setting->sanitize( array_merge(
+			$setting->value(),
+			array(
+				'post_author' => 'Hello World',
+			)
+		) );
+		$this->assertSame( (string) $this->user_id, $sanitized['post_author'] );
+
+		$sanitized = $setting->sanitize( array_merge(
+			$setting->value(),
+			array( 'post_author' => 30 )
+		) );
+		$this->assertSame( '30', $sanitized['post_author'] );
 	}
 
 	/**

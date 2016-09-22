@@ -52,6 +52,8 @@ class Customize_Posts_Plugin {
 			return;
 		}
 
+		load_plugin_textdomain( 'customize-posts' );
+
 		// Parse plugin version.
 		if ( preg_match( '/Version:\s*(\S+)/', file_get_contents( dirname( __FILE__ ) . '/../customize-posts.php' ), $matches ) ) {
 			$this->version = $matches[1];
@@ -63,15 +65,11 @@ class Customize_Posts_Plugin {
 		add_action( 'wp_default_scripts', array( $this, 'register_scripts' ), 11 );
 		add_action( 'wp_default_styles', array( $this, 'register_styles' ), 11 );
 		add_action( 'init', array( $this, 'register_customize_draft' ) );
+		add_action( 'admin_bar_menu', array( $this, 'add_admin_bar_customize_link_queried_object_autofocus' ), 41 );
 		add_filter( 'user_has_cap', array( $this, 'grant_customize_capability' ), 10, 3 );
+		add_filter( 'customize_loaded_components', array( $this, 'add_posts_to_customize_loaded_components' ), 0, 1 );
 		add_filter( 'customize_loaded_components', array( $this, 'filter_customize_loaded_components' ), 100, 2 );
 		add_action( 'customize_register', array( $this, 'load_support_classes' ) );
-
-		require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-controller.php';
-		require_once dirname( __FILE__ ) . '/class-wp-customize-page-template-controller.php';
-		require_once dirname( __FILE__ ) . '/class-wp-customize-featured-image-controller.php';
-		$this->page_template_controller = new WP_Customize_Page_Template_Controller();
-		$this->featured_image_controller = new WP_Customize_Featured_Image_Controller();
 	}
 
 	/**
@@ -103,6 +101,30 @@ class Customize_Posts_Plugin {
 	}
 
 	/**
+	 * Add autofocus[section] query param to the Customize link in the admin bar when there is a post queried object.
+	 *
+	 * @param \WP_Admin_Bar $wp_admin_bar WP_Admin_Bar instance.
+	 * @returns bool Whether the param was added.
+	 */
+	public function add_admin_bar_customize_link_queried_object_autofocus( $wp_admin_bar ) {
+
+		$customize_node = $wp_admin_bar->get_node( 'customize' );
+		$queried_object = get_queried_object();
+		if ( empty( $customize_node ) || ! ( $queried_object instanceof WP_Post ) ) {
+			return false;
+		}
+
+		$section_id = sprintf( 'post[%s][%d]', $queried_object->post_type, $queried_object->ID );
+		$customize_node->href = add_query_arg(
+			array( 'autofocus[section]' => $section_id ),
+			$customize_node->href
+		);
+
+		$wp_admin_bar->add_menu( (array) $customize_node );
+		return true;
+	}
+
+	/**
 	 * Let users who can edit posts also access the Customizer because there is something for them there.
 	 *
 	 * @see https://core.trac.wordpress.org/ticket/28605
@@ -119,9 +141,25 @@ class Customize_Posts_Plugin {
 	}
 
 	/**
+	 * Add 'posts' to array of components that Customizer loads.
+	 *
+	 * A later filter may remove this, to avoid loading this component.
+	 *
+	 * @param array $components Components.
+	 * @return array Components.
+	 */
+	function add_posts_to_customize_loaded_components( $components ) {
+		array_push( $components, 'posts' );
+
+		return $components;
+	}
+
+	/**
 	 * Bootstrap.
 	 *
 	 * This will be part of the WP_Customize_Manager::__construct() or another such class constructor in #coremerge.
+	 * Only instantiate WP_Customize_Posts if 'posts' is present in $components.
+	 * This will allow disabling 'posts' through filtering.
 	 *
 	 * @param array                $components   Components.
 	 * @param WP_Customize_Manager $wp_customize Manager.
@@ -129,7 +167,15 @@ class Customize_Posts_Plugin {
 	 */
 	function filter_customize_loaded_components( $components, $wp_customize ) {
 		require_once dirname( __FILE__ ) . '/class-wp-customize-posts.php';
-		$wp_customize->posts = new WP_Customize_Posts( $wp_customize );
+		if ( in_array( 'posts', $components, true ) ) {
+			$wp_customize->posts = new WP_Customize_Posts( $wp_customize );
+
+			require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-controller.php';
+			require_once dirname( __FILE__ ) . '/class-wp-customize-page-template-controller.php';
+			require_once dirname( __FILE__ ) . '/class-wp-customize-featured-image-controller.php';
+			$this->page_template_controller = new WP_Customize_Page_Template_Controller();
+			$this->featured_image_controller = new WP_Customize_Featured_Image_Controller();
+		}
 
 		return $components;
 	}
@@ -143,6 +189,10 @@ class Customize_Posts_Plugin {
 	 */
 	function load_support_classes( $wp_customize ) {
 
+		if ( ! isset( $wp_customize->posts ) ) {
+			return;
+		}
+
 		// Theme & Plugin Support.
 		require_once dirname( __FILE__ ) . '/class-customize-posts-support.php';
 		require_once dirname( __FILE__ ) . '/class-customize-posts-plugin-support.php';
@@ -150,6 +200,10 @@ class Customize_Posts_Plugin {
 
 		foreach ( array( 'theme', 'plugin' ) as $type ) {
 			foreach ( glob( dirname( __FILE__ ) . '/' . $type . '-support/class-*.php' ) as $file_path ) {
+				if ( 0 !== validate_file( $file_path ) ) {
+					continue;
+				}
+
 				require_once $file_path;
 
 				$class_name = str_replace( '-', '_', preg_replace( '/^class-(.+)\.php$/', '$1', basename( $file_path ) ) );
@@ -177,7 +231,8 @@ class Customize_Posts_Plugin {
 	 * @param WP_Scripts $wp_scripts Scripts.
 	 */
 	public function register_scripts( WP_Scripts $wp_scripts ) {
-		$suffix = ( SCRIPT_DEBUG ? '' : '.min' ) . '.js';
+		$is_git_repo = file_exists( dirname( dirname( __FILE__ ) ) . '/.git' );
+		$suffix = ( SCRIPT_DEBUG || $is_git_repo ? '' : '.min' ) . '.js';
 
 		$handle = 'select2';
 		if ( ! $wp_scripts->query( $handle, 'registered' ) ) {
@@ -209,6 +264,12 @@ class Customize_Posts_Plugin {
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
+		$handle = 'customize-post-editor-control';
+		$src = plugins_url( 'js/customize-post-editor-control' . $suffix, dirname( __FILE__ ) );
+		$deps = array( 'customize-dynamic-control' );
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
 		$handle = 'customize-post-status-control';
 		$src = plugins_url( 'js/customize-post-status-control' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'customize-dynamic-control', 'jquery' );
@@ -217,7 +278,7 @@ class Customize_Posts_Plugin {
 
 		$handle = 'customize-post-section';
 		$src = plugins_url( 'js/customize-post-section' . $suffix, dirname( __FILE__ ) );
-		$deps = array( 'customize-controls', 'customize-post-date-control', 'customize-post-status-control' );
+		$deps = array( 'customize-controls', 'customize-post-date-control', 'customize-post-status-control', 'customize-post-editor-control' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
@@ -241,6 +302,12 @@ class Customize_Posts_Plugin {
 		if ( ! $is_gte_wp46_beta ) {
 			$deps[] = 'customize-controls-patched-36521';
 		}
+		$in_footer = 1;
+		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
+
+		$handle = 'customize-nav-menus-posts-extensions';
+		$src = plugins_url( 'js/customize-nav-menus-posts-extensions' . $suffix, dirname( __FILE__ ) );
+		$deps = array( 'customize-posts', 'customize-nav-menus' );
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
@@ -320,7 +387,8 @@ class Customize_Posts_Plugin {
 	 * @param WP_Styles $wp_styles Styles.
 	 */
 	public function register_styles( WP_Styles $wp_styles ) {
-		$suffix = ( SCRIPT_DEBUG ? '' : '.min' ) . '.css';
+		$is_git_repo = file_exists( dirname( dirname( __FILE__ ) ) . '/.git' );
+		$suffix = ( SCRIPT_DEBUG || $is_git_repo ? '' : '.min' ) . '.css';
 
 		$handle = 'select2';
 		if ( ! $wp_styles->query( $handle, 'registered' ) ) {

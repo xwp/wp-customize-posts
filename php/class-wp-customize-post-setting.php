@@ -52,7 +52,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 	 * @var array
 	 */
 	public $default = array(
-		'post_author' => 0,
+		'post_author' => '0',
 		'post_name' => '',
 		'post_date' => '0000-00-00 00:00:00',
 		'post_mime_type' => '',
@@ -111,7 +111,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		parent::__construct( $manager, $id, $args );
 
 		if ( empty( $this->default['post_author'] ) ) {
-			$this->default['post_author'] = get_current_user_id();
+			$this->default['post_author'] = (string) get_current_user_id();
 		}
 	}
 
@@ -143,17 +143,16 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 
 			// Make sure that empty dates are not used in case of setting invalidity.
 			$empty_date = '0000-00-00 00:00:00';
-			if ( $empty_date === $post->post_date ) {
-				$post->post_date = current_time( 'mysql', false );
-			}
-			if ( $empty_date === $post->post_date_gmt ) {
-				$post->post_date_gmt = current_time( 'mysql', true );
-			}
-			if ( $empty_date === $post->post_modified ) {
-				$post->post_modified = current_time( 'mysql', false );
-			}
-			if ( $empty_date === $post->post_modified_gmt ) {
-				$post->post_modified_gmt = current_time( 'mysql', true );
+			$date_fields = array(
+				'post_date' => false,
+				'post_date_gmt' => true,
+				'post_modified' => false,
+				'post_modified_gmt' => true,
+			);
+			foreach ( $date_fields as $date_field => $gmt ) {
+				if ( $empty_date === $post->$date_field ) {
+					$post->$date_field = current_time( 'mysql', $gmt );
+				}
 			}
 
 			return false;
@@ -194,6 +193,9 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		foreach ( $int_properties as $key ) {
 			$post_data[ $key ] = intval( $post_data[ $key ] );
 		}
+
+		// See <https://core.trac.wordpress.org/ticket/22324>.
+		$post_data['post_author'] = (string) $post_data['post_author'];
 
 		/*
 		 * For some reason WordPress stores newlines in DB as CRLF when saving via
@@ -240,6 +242,17 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 
 		$post_data = $this->normalize_post_data( $post_data );
 		return $post_data;
+	}
+
+	/**
+	 * Sanitize the setting's value for use in JavaScript.
+	 *
+	 * @return array Post data.
+	 */
+	public function js_value() {
+		$value = parent::js_value();
+		$value['post_author'] = intval( $value['post_author'] );
+		return $value;
 	}
 
 	/**
@@ -332,6 +345,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		$post_data = wp_slash( $post_data );
 		$unsanitized_post_data = $post_data;
 		$post_data = sanitize_post( $post_data, 'db' );
+		$post_data['post_author'] = (string) intval( $post_data['post_author'] );
 		$initial_sanitized_post_data = $post_data;
 
 		$maybe_empty = 'attachment' !== $this->post_type
@@ -434,7 +448,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 		}
 
 		if ( empty( $post_data['post_author'] ) || ( ! current_user_can( $post_type_obj->cap->edit_others_posts ) && intval( $post_data['post_author'] ) !== get_current_user_id() ) ) {
-			$post_data['post_author'] = get_current_user_id();
+			$post_data['post_author'] = (string) get_current_user_id();
 		}
 		if ( empty( $post_data['menu_order'] ) ) {
 			$post_data['menu_order'] = 0;
@@ -598,6 +612,9 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 
 		if ( $transition_to_trash ) {
 			$result = wp_trash_post( $this->post_id );
+		}
+
+		if ( $is_trashed ) {
 			remove_filter( 'wp_insert_post_empty_content', '__return_false', 100 );
 		}
 
