@@ -3,7 +3,7 @@ Contributors:      xwp, westonruter, valendesigns
 Tags:              customizer, customize, posts, postmeta, editor, preview, featured-image, page-template
 Requires at least: 4.5
 Tested up to:      4.7-alpha
-Stable tag:        0.8.0
+Stable tag:        0.8.1
 License:           GPLv2 or later
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,6 +66,10 @@ The following are listed in reverse chronological order. The first, more recent 
 7. [0.8.0] Post parent and basic menu order control.
 
 == Changelog ==
+
+= [0.8.1] - 2016-09-23 =
+
+Fixed compatibility with Safari in the <code>wp.customize.Posts.getCurrentTime()</code> method. See <a href="https://github.com/xwp/wp-customize-posts/pull/293" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/293" data-id="178983334" data-error-text="Failed to load issue title" data-permission-text="Issue title is private">#293</a>. Props Piotr Delawski (<a href="https://github.com/delawski" class="user-mention">@delawski</a>).
 
 = [0.8.0] - 2016-09-22 =
 
