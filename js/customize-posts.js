@@ -533,7 +533,7 @@
 	component.getCurrentTime = function getCurrentTime() {
 		var currentDate, currentTimestamp, timestampDifferential;
 		currentTimestamp = ( new Date() ).valueOf();
-		currentDate = new Date( component.data.initialServerDate );
+		currentDate = new Date( component.data.initialServerDate.replace( ' ', 'T' ) );
 		timestampDifferential = currentTimestamp - component.data.initialClientTimestamp;
 		timestampDifferential += component.data.initialClientTimestamp - component.data.initialServerTimestamp;
 		currentDate.setTime( currentDate.getTime() + timestampDifferential );
