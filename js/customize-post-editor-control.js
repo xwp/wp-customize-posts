@@ -100,8 +100,8 @@
 		/**
 		 * Toggle the expanded control.
 		 *
-		 * @param {Boolean} expanded
-		 * @param {Object} [params]
+		 * @param {Boolean} expanded Expanded.
+		 * @param {Object} [params]  Params.
 		 * @returns {Boolean} false if state already applied
 		 */
 		_toggleExpanded: function( expanded, params ) {
