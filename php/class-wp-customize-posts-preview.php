@@ -860,9 +860,18 @@ final class WP_Customize_Posts_Preview {
 			/**
 			 * Filter the postmeta rows that are being previewed.
 			 *
-			 * @param array $postmeta_rows Postmeta rows, associative arrays with keys for post_id, meta_key, and meta_value.
+			 * @param array $postmeta_rows                   Postmeta rows, associative arrays with keys for post_id, meta_key, and meta_value.
+			 * @param WP_Customize_Postmeta_Setting $setting Post meta setting.
 			 */
-			$postmeta_rows = apply_filters( 'customize_previewed_postmeta_rows', $postmeta_rows );
+			$postmeta_rows = apply_filters( 'customize_previewed_postmeta_rows', $postmeta_rows, $setting );
+
+			/**
+			 * Filter the postmeta rows that are being previewed for a specific key.
+			 *
+			 * @param array                         $postmeta_rows Postmeta rows, associative arrays with keys for post_id, meta_key, and meta_value.
+			 * @param WP_Customize_Postmeta_Setting $setting       Post meta setting.
+			 */
+			$postmeta_rows = apply_filters( "customize_previewed_postmeta_rows_{$setting->meta_key}", $postmeta_rows, $setting );
 
 			$previewed_meta_keys = wp_list_pluck( $postmeta_rows, 'meta_key' );
 

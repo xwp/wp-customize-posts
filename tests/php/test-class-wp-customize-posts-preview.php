@@ -831,7 +831,10 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$postmeta_setting = $this->wp_customize->get_setting( $postmeta_setting_id );
 		$postmeta_setting->preview();
 
-		add_filter( 'customize_previewed_postmeta_rows', array( $this, 'filter_customize_previewed_postmeta_rows' ) );
+		$this->filter_customize_previewed_postmeta_rows_call_count = 0;
+		$this->filter_customize_previewed_postmeta_rows_member_call_count = 0;
+		add_filter( 'customize_previewed_postmeta_rows', array( $this, 'filter_customize_previewed_postmeta_rows' ), 10, 2 );
+		add_filter( "customize_previewed_postmeta_rows_{$meta_key}", array( $this, 'filter_customize_previewed_postmeta_rows_member' ), 10, 2 );
 
 		$query = new WP_Query( array(
 			'meta_key' => 'member_age',
@@ -839,6 +842,9 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 			'meta_compare' => '=',
 		) );
 		$this->assertEqualSets( array( $club3 ), wp_list_pluck( $query->posts, 'ID' ) );
+
+		$this->assertGreaterThan( 0, $this->filter_customize_previewed_postmeta_rows_call_count );
+		$this->assertGreaterThan( 0, $this->filter_customize_previewed_postmeta_rows_member_call_count );
 
 		$query = new WP_Query( array(
 			'meta_key' => 'member_age',
@@ -857,6 +863,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	 * @param mixed  $meta_value Meta value.
 	 */
 	public function add_postmeta_query_index( $meta_id, $post_id, $meta_key, $meta_value ) {
+		unset( $meta_id );
 		if ( 'member' === $meta_key && is_array( $meta_value ) ) {
 			foreach ( $meta_value as $key => $value ) {
 				add_post_meta( $post_id, "member_{$key}", $value );
@@ -864,13 +871,22 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		}
 	}
 
+	protected $filter_customize_previewed_postmeta_rows_call_count = 0;
+	protected $filter_customize_previewed_postmeta_rows_member_call_count = 0;
+
 	/**
 	 * Filter previewed postmeta rows to inject query index postmeta for serialized values.
 	 *
-	 * @param array $postmeta_rows Postmeta rows.
+	 * @param array                         $postmeta_rows Postmeta rows.
+	 * @param WP_Customize_Postmeta_Setting $setting       Setting.
 	 * @return array Amended postmeta rows.
 	 */
-	public function filter_customize_previewed_postmeta_rows( $postmeta_rows ) {
+	public function filter_customize_previewed_postmeta_rows( $postmeta_rows, $setting ) {
+		$this->filter_customize_previewed_postmeta_rows_call_count += 1;
+		$this->assertInstanceOf( 'WP_Customize_Postmeta_Setting', $setting );
+		$this->assertInternalType( 'array', $postmeta_rows );
+		$this->assertEquals( 'member', $setting->meta_key );
+
 		$meta_key = 'member';
 		$index_postmeta_rows = array();
 		foreach ( $postmeta_rows as $postmeta_row ) {
@@ -885,6 +901,21 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 			}
 		}
 		return array_merge( $postmeta_rows, $index_postmeta_rows );
+	}
+
+	/**
+	 * Filter previewed postmeta rows to record invocations.
+	 *
+	 * @param array                         $postmeta_rows Postmeta rows.
+	 * @param WP_Customize_Postmeta_Setting $setting       Setting.
+	 * @return array Amended postmeta rows.
+	 */
+	public function filter_customize_previewed_postmeta_rows_member( $postmeta_rows, $setting ) {
+		$this->filter_customize_previewed_postmeta_rows_member_call_count += 1;
+		$this->assertInstanceOf( 'WP_Customize_Postmeta_Setting', $setting );
+		$this->assertInternalType( 'array', $postmeta_rows );
+		$this->assertEquals( 'member', $setting->meta_key );
+		return $postmeta_rows;
 	}
 
 	/**
