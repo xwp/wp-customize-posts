@@ -647,6 +647,10 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		}
 		$this->posts->transition_customize_draft( $data );
 
+		if ( post_type_exists( 'customize_changeset' ) ) {
+			$this->markTestIncomplete( 'Rework test for compatibility with changesets (aka transactions). Post values are not read for unauthenticated users.' );
+		}
+
 		$GLOBALS['current_user'] = null;
 
 		$this->go_to( home_url( sprintf( '?%s=%d&preview=true', 'page' === $post_type ? 'page_id' : 'p', $post->ID ) ) );
