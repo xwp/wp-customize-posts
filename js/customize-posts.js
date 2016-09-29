@@ -308,6 +308,7 @@
 		request = wp.ajax.post( 'customize-posts-fetch-settings', {
 			'customize-posts-nonce': api.settings.nonce['customize-posts'],
 			'wp_customize': 'on',
+			'customized': api.previewer.query().customized,
 			'post_ids': newPostIds
 		} );
 
