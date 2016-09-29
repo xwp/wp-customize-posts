@@ -1322,10 +1322,13 @@ final class WP_Customize_Posts {
 			wp_send_json_error( 'bad_post_ids' );
 		}
 
+		$this->manager->add_dynamic_settings( array_keys( $this->manager->unsanitized_post_values() ) );
+
 		$setting_params = array();
 		$settings = $this->get_settings( $post_ids );
 		foreach ( $settings as $setting ) {
 			if ( $setting->check_capabilities() ) {
+				$setting->preview();
 				$setting_params[ $setting->id ] = $this->get_setting_params( $setting );
 			}
 		}
