@@ -138,6 +138,18 @@
 		return newParams;
 	};
 
+	// WP 4.7-alpha-patch: Prevent edit post links from being classified as un-previewable. See https://github.com/xwp/wordpress-develop/pull/161.
+	if ( api.isLinkPreviewable ) {
+		api.isLinkPreviewable = ( function( originalIsLinkPreviewable ) {
+			return function( element ) {
+				if ( $( element ).hasClass( 'post-edit-link' ) ) {
+					return true;
+				}
+				return originalIsLinkPreviewable.call( this, element );
+			};
+		} )( api.isLinkPreviewable );
+	}
+
 	api.bind( 'preview-ready', function onPreviewReady() {
 		_.extend( api.previewPosts.data, _wpCustomizePreviewPostsData );
 
