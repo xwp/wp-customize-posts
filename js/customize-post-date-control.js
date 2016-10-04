@@ -183,8 +183,8 @@
 				return;
 			}
 
-			remainingTime = ( new Date( control.setting.get().post_date ) ).valueOf();
-			remainingTime -= ( new Date( api.Posts.getCurrentTime() ) ).valueOf();
+			remainingTime = api.Posts.parsePostDate( control.setting.get().post_date ).valueOf();
+			remainingTime -= api.Posts.parsePostDate( api.Posts.getCurrentTime() ).valueOf();
 			remainingTime = Math.ceil( remainingTime / 1000 );
 			if ( remainingTime > 0 ) {
 				control.scheduledCountdownContainer.text( control.scheduledCountdownTemplate( { remainingTime: remainingTime } ) );

@@ -534,11 +534,24 @@
 	component.getCurrentTime = function getCurrentTime() {
 		var currentDate, currentTimestamp, timestampDifferential;
 		currentTimestamp = ( new Date() ).valueOf();
-		currentDate = new Date( component.data.initialServerDate.replace( ' ', 'T' ) );
+		currentDate = component.parsePostDate( component.data.initialServerDate );
 		timestampDifferential = currentTimestamp - component.data.initialClientTimestamp;
 		timestampDifferential += component.data.initialClientTimestamp - component.data.initialServerTimestamp;
 		currentDate.setTime( currentDate.getTime() + timestampDifferential );
 		return component.formatDate( currentDate );
+	};
+
+	/**
+	 * Parse post date string in YYYY-MM-DD HH:MM:SS format (local timezone).
+	 *
+	 * @param {string} postDate Post date string.
+	 * @returns {Date} Parsed date.
+	 */
+	component.parsePostDate = function parsePostDate( postDate ) {
+		var dateParts = _.map( postDate.split( /\D/ ), function( datePart ) {
+			return parseInt( datePart, 10 );
+		} );
+		return new Date( dateParts[0], dateParts[1] - 1, dateParts[2], dateParts[3], dateParts[4], dateParts[5] ); // eslint-disable-line no-magic-numbers
 	};
 
 	/**
