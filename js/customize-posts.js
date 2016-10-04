@@ -106,7 +106,7 @@
 	 * @param {object} params - Query vars.
 	 * @param {number} params.post_id - Post ID.
 	 * @param {string} [params.post_type] - Post type.
-	 * @param {boolean} [params.preview] - .
+	 * @param {boolean} [params.preview] - Preview.
 	 * @return {string} Preview URL.
 	 */
 	component.getPostUrl = function getPostUrl( params ) {
