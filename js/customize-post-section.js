@@ -254,7 +254,10 @@
 
 			sectionNavigationButton.on( 'click', function( event ) {
 				event.preventDefault();
-				api.previewer.previewUrl( api.Posts.getPreviewUrl( section.params ) );
+				api.previewer.previewUrl( api.Posts.getPreviewUrl( {
+					post_type: section.params.post_type,
+					post_id: section.params.post_id
+				} ) );
 			} );
 		},
 
