@@ -3,7 +3,7 @@ Contributors:      xwp, westonruter, valendesigns
 Tags:              customizer, customize, posts, postmeta, editor, preview, featured-image, page-template
 Requires at least: 4.5
 Tested up to:      4.7-alpha
-Stable tag:        0.8.1
+Stable tag:        0.8.2
 License:           GPLv2 or later
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,6 +66,16 @@ The following are listed in reverse chronological order. The first, more recent 
 7. [0.8.0] Post parent and basic menu order control.
 
 == Changelog ==
+
+= [0.8.2] - 2016-10-03 =
+
+ * Fixed browser incompatible way of parsing local datetime strings. This is a follow-up on <a href="https://github.com/xwp/wp-customize-posts/pull/293" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/293" data-id="178983334" data-error-text="Failed to load issue title" data-permission-text="Issue title is private">#293</a>, which was not fully fixed in 0.8.1. PR <a href="https://github.com/xwp/wp-customize-posts/pull/304" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/304" data-id="180808420" data-error-text="Failed to load issue title" data-permission-text="Issue title is private">#304</a>.
+ * Improved fetching of post/postmeta settings so that the <code>customized</code> state is included in the request, and allow for placeholder <code>nav_menu_item</code> settings to be fetched. PR <a href="https://github.com/xwp/wp-customize-posts/pull/299" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/299" data-id="180154206" data-error-text="Failed to load issue title" data-permission-text="Issue title is private">#299</a>.
+ * Added <code>$setting</code> context to <code>customize_previewed_postmeta_rows</code> filter and add new <code>customize_previewed_postmeta_rows_{$setting-&gt;post_meta}</code> filter. PR <a href="https://github.com/xwp/wp-customize-posts/pull/299" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/299" data-id="180154206" data-error-text="Failed to load issue title" data-permission-text="Issue title is private">#299</a>.
+
+Props Weston Ruter (<a href="https://github.com/westonruter" class="user-mention">@westonruter</a>), Utkarsh Patel (<a href="https://github.com/PatelUtkarsh" class="user-mention">@PatelUtkarsh</a>).
+
+See <a href="https://github.com/xwp/wp-customize-posts/milestone/10?closed=1">issues and PRs in milestone</a> and <a href="https://github.com/xwp/wp-customize-posts/compare/0.8.1...0.8.2">full release commit log</a>.
 
 = [0.8.1] - 2016-09-23 =
 

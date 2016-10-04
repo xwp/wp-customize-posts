@@ -1322,25 +1322,32 @@ final class WP_Customize_Posts {
 			wp_send_json_error( 'bad_post_ids' );
 		}
 
+		$this->manager->add_dynamic_settings( array_keys( $this->manager->unsanitized_post_values() ) );
+
 		$setting_params = array();
 		$settings = $this->get_settings( $post_ids );
 		foreach ( $settings as $setting ) {
 			if ( $setting->check_capabilities() ) {
+				$setting->preview();
 				$setting_params[ $setting->id ] = $this->get_setting_params( $setting );
 			}
 		}
 
 		// Return with a failure if any of the requested posts.
 		foreach ( $post_ids as $post_id ) {
-			$post = get_post( $post_id );
-			if ( empty( $post ) ) {
-				status_header( 404 );
-				wp_send_json_error( 'requested_post_absent' );
-			}
-			if ( 'nav_menu_item' === $post->post_type ) {
-				$setting_id = sprintf( 'nav_menu_item[%d]', $post->ID );
+			if ( $post_id < 0 ) {
+				$post_type = 'nav_menu_item';
 			} else {
-				$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+				$post_type = get_post_type( $post_id );
+				if ( empty( $post_type ) ) {
+					status_header( 404 );
+					wp_send_json_error( 'requested_post_absent' );
+				}
+			}
+			if ( 'nav_menu_item' === $post_type ) {
+				$setting_id = sprintf( 'nav_menu_item[%d]', $post_id );
+			} else {
+				$setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $post_id ) );
 			}
 			if ( ! isset( $setting_params[ $setting_id ] ) ) {
 				status_header( 404 );
