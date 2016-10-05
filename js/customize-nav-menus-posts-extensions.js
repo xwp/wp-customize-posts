@@ -103,11 +103,8 @@ wp.customize.Posts.NavMenusExtensions = (function( api, $ ) {
 				// Update original_title.
 				settingValue = _.clone( control.setting.get() );
 				settingValue.original_title = newPostData.post_title;
-				if ( settingValue.title ) {
-					control.setting._value = settingValue; // Set quietly since the original_value will be unused here.
-				} else {
-					control.setting.set( settingValue );
-				}
+				control.setting._value = settingValue; // Set quietly since the original_title is readonly setting property anyway.
+				control.setting.preview();
 			};
 			postSetting.bind( setOriginalLinkTitle );
 			setOriginalLinkTitle( postSetting.get(), null );
