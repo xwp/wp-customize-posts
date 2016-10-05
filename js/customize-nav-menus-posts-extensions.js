@@ -220,10 +220,12 @@ wp.customize.Posts.NavMenusExtensions = (function( api, $ ) {
 		options.data += $.param( { customized: api.previewer.query().customized } );
 	};
 
-	api.control.each( component.extendNavMenuItemOriginalObjectReference );
-	api.control.bind( 'add', component.extendNavMenuItemOriginalObjectReference );
-	api.bind( 'change', component.watchPostSettingChanges );
-	$.ajaxPrefilter( component.ajaxPrefilterAvailableNavMenuItemRequests );
+	api.bind( 'ready', function() {
+		api.control.each( component.extendNavMenuItemOriginalObjectReference );
+		api.control.bind( 'add', component.extendNavMenuItemOriginalObjectReference );
+		api.bind( 'change', component.watchPostSettingChanges );
+		$.ajaxPrefilter( component.ajaxPrefilterAvailableNavMenuItemRequests );
+	} );
 
 	return component;
 })( wp.customize, jQuery );
