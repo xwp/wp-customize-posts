@@ -110,8 +110,8 @@
 		 */
 		updateChoices: function updateChoices() {
 			var control = this, data = control.setting.get(), isFuture, postTimestamp, currentTimestamp;
-			postTimestamp = ( new Date( data.post_date ) ).valueOf();
-			currentTimestamp = ( new Date( api.Posts.getCurrentTime() ) ).valueOf();
+			postTimestamp = api.Posts.parsePostDate( data.post_date );
+			currentTimestamp = api.Posts.parsePostDate( api.Posts.getCurrentTime() );
 			isFuture = postTimestamp > currentTimestamp;
 
 			/*
@@ -119,6 +119,8 @@
 			 * when server time and client time aren't exactly aligned. If the
 			 * status is publish, and yet the post date is less than 15 seconds
 			 * into the future, consider it as not future.
+			 *
+			 * See also https://github.com/xwp/wp-customize-posts/issues/303
 			 */
 			if ( isFuture && 'publish' === data.post_status && postTimestamp - currentTimestamp < 15 * 1000 ) {
 				isFuture = false;
