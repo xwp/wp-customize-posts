@@ -58,6 +58,15 @@ final class WP_Customize_Posts_Preview {
 	protected $has_preview_filters = false;
 
 	/**
+	 * Collection of sanitized post setting values used for syncing post setting changes into nav menu items (particularly original_title).
+	 *
+	 * Mapping of post ID to sanitized post data value.
+	 *
+	 * @var array
+	 */
+	protected $sanitized_dirty_post_setting_values = array();
+
+	/**
 	 * Initial loader.
 	 *
 	 * @access public
@@ -67,6 +76,10 @@ final class WP_Customize_Posts_Preview {
 	public function __construct( WP_Customize_Posts $component ) {
 		$this->component = $component;
 
+		$priority = 10; // Must be before 11 at which WP_Customize_Nav_Menus::customize_register() runs and the nav_menu_items are constructed.
+		add_action( 'customize_register', array( $this, 'capture_sanitized_post_setting_values_for_nav_menu_items' ), $priority );
+		add_filter( 'wp_setup_nav_menu_item', array( $this, 'filter_pristine_early_nav_menu_item' ), 5 );
+		add_action( 'customize_register', array( $this, 'remove_filter_pristine_early_nav_menu_item' ), 12 );
 		add_action( 'customize_preview_init', array( $this, 'customize_preview_init' ) );
 	}
 
@@ -103,7 +116,7 @@ final class WP_Customize_Posts_Preview {
 		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
 		add_filter( 'the_title', array( $this, 'filter_the_title' ), 1, 2 );
 		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_preview' ), 1000, 4 );
-		add_filter( 'wp_setup_nav_menu_item', array( $this, 'filter_nav_menu_item_to_set_url' ) );
+		add_filter( 'wp_setup_nav_menu_item', array( $this, 'filter_nav_menu_item_to_set_post_dependent_props' ), 100 );
 		add_filter( 'comments_open', array( $this, 'filter_preview_comments_open' ), 10, 2 );
 		add_filter( 'pings_open', array( $this, 'filter_preview_pings_open' ), 10, 2 );
 		add_filter( 'get_post_status', array( $this, 'filter_get_post_status' ), 10, 2 );
@@ -929,7 +942,90 @@ final class WP_Customize_Posts_Preview {
 	}
 
 	/**
-	 * Filter a nav menu item for an added post to supply a URL field.
+	 * Capture the post setting values before the nav menu item settings are created.
+	 *
+	 * For non-dirty nav menu item settings that reference a dirty post setting,
+	 * the dirty post setting's url and title need to be filtered into the
+	 * nav_menu_item value that is passed into the constructor for
+	 * WP_Customize_Nav_Menu_Item_Setting because if the nav menu item setting
+	 * is not itself dirty, then there is no subsequent filter to inject the
+	 * dirty post setting's value.
+	 *
+	 * Additionally, for any nav_menu_item settings that are dirty, this method
+	 * will ensure that the original_title for their values is set to be whatever
+	 * the corresponding post title is in the incoming post setting value.
+	 *
+	 * @todo Core will need to re-work how it handles the original_title.
+	 */
+	public function capture_sanitized_post_setting_values_for_nav_menu_items() {
+
+		// Gather all of the post setting values.
+		foreach ( $this->component->manager->unsanitized_post_values() as $setting_id => $unsanitized_value ) {
+			if ( 'post[' !== substr( $setting_id, 0, 5 ) ) {
+				continue;
+			}
+
+			$this->component->manager->add_dynamic_settings( array( $setting_id ) );
+			$setting = $this->component->manager->get_setting( $setting_id );
+			if ( ! ( $setting instanceof WP_Customize_Post_Setting ) ) {
+				continue;
+			}
+
+			$sanitized_value = $setting->post_value();
+			if ( $sanitized_value ) {
+				$this->sanitized_dirty_post_setting_values[ $setting->post_id ] = $sanitized_value;
+			}
+		}
+
+		// Inject the post_title from the post setting values into the original_title for any corresponding nav menu item settings.
+		foreach ( $this->component->manager->unsanitized_post_values() as $setting_id => $unsanitized_value ) {
+			$is_relevant_nav_menu_item = (
+				'nav_menu_item[' === substr( $setting_id, 0, 14 )
+				&&
+				is_array( $unsanitized_value )
+				&&
+				isset( $sanitized_value['type'] )
+				&&
+				'post_type' === $sanitized_value['type']
+				&&
+				isset( $sanitized_value['object_id'] )
+				&&
+				isset( $this->sanitized_dirty_post_setting_values[ $sanitized_value['object_id'] ] )
+			);
+			if ( $is_relevant_nav_menu_item ) {
+				$post_setting_value = $this->sanitized_dirty_post_setting_values[ $unsanitized_value['object_id'] ];
+				if ( isset( $post_setting_value['post_title'] ) ) {
+					$sanitized_value['original_title'] = $post_setting_value['post_title'];
+					$this->component->manager->set_post_value( $setting_id, $unsanitized_value );
+				}
+			}
+		}
+	}
+
+	/**
+	 * Filter pristine nav menu item values early.
+	 *
+	 * @param WP_Post $nav_menu_item Nav menu item.
+	 * @return WP_Post Nav menu item.
+	 */
+	function filter_pristine_early_nav_menu_item( $nav_menu_item ) {
+		if ( 'post_type' === $nav_menu_item->type && isset( $this->sanitized_dirty_post_setting_values[ $nav_menu_item->object_id ]['post_title'] ) ) {
+			$nav_menu_item->original_title = $this->sanitized_dirty_post_setting_values[ $nav_menu_item->object_id ]['post_title'];
+		}
+		return $nav_menu_item;
+	}
+
+	/**
+	 * Remove the wp_setup_nav_menu_item filter which was only needed when nav_menu_items were constructed.
+	 *
+	 * @see WP_Customize_Nav_Menus::customize_register()
+	 */
+	function remove_filter_pristine_early_nav_menu_item() {
+		remove_filter( 'wp_setup_nav_menu_item', array( $this, 'filter_pristine_early_nav_menu_item' ), 5 );
+	}
+
+	/**
+	 * Filter a nav menu item for a added post to supply the url and original_title fields.
 	 *
 	 * This is probably a bug in Core where the `value_as_wp_post_nav_menu_item`
 	 * should be setting the url property.
@@ -940,8 +1036,8 @@ final class WP_Customize_Posts_Preview {
 	 * @param WP_Post $nav_menu_item Nav menu item.
 	 * @return WP_Post Nav menu item.
 	 */
-	public function filter_nav_menu_item_to_set_url( $nav_menu_item ) {
-		if ( 'post_type' !== $nav_menu_item->type || $nav_menu_item->url || ! $nav_menu_item->object_id ) {
+	public function filter_nav_menu_item_to_set_post_dependent_props( $nav_menu_item ) {
+		if ( 'post_type' !== $nav_menu_item->type || ! $nav_menu_item->object_id ) {
 			return $nav_menu_item;
 		}
 
@@ -949,10 +1045,11 @@ final class WP_Customize_Posts_Preview {
 		if ( ! $post ) {
 			return $nav_menu_item;
 		}
-		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
-		$setting = $this->component->manager->get_setting( $setting_id );
-		if ( $setting ) {
-			$nav_menu_item->url = get_permalink( $post->ID );
+		if ( isset( $this->sanitized_dirty_post_setting_values[ $post->ID ] ) ) {
+			$nav_menu_item->original_title = $this->sanitized_dirty_post_setting_values[ $post->ID ]['post_title'];
+			if ( empty( $nav_menu_item->url ) ) {
+				$nav_menu_item->url = get_permalink( $post->ID );
+			}
 		}
 		return $nav_menu_item;
 	}
