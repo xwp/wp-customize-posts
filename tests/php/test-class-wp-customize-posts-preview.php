@@ -147,7 +147,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertEquals( 1, has_filter( 'get_pages', array( $preview, 'filter_get_pages_to_preview_settings' ) ) );
 		$this->assertEquals( 1, has_filter( 'the_title', array( $preview, 'filter_the_title' ) ) );
 		$this->assertEquals( 1000, has_filter( 'get_post_metadata', array( $preview, 'filter_get_post_meta_to_preview' ) ) );
-		$this->assertEquals( 10, has_filter( 'wp_setup_nav_menu_item', array( $preview, 'filter_nav_menu_item_to_set_url' ) ) );
+		$this->assertEquals( 100, has_filter( 'wp_setup_nav_menu_item', array( $preview, 'filter_nav_menu_item_to_set_post_dependent_props' ) ) );
 		$this->assertEquals( 10, has_action( 'pre_get_posts', array( $preview, 'prepare_query_preview' ) ) );
 		$this->assertEquals( 10, has_filter( 'get_meta_sql', array( $preview, 'filter_get_meta_sql_to_inject_customized_state' ) ) );
 		$this->assertEquals( 10, has_filter( 'posts_request', array( $preview, 'filter_posts_request_to_inject_customized_state' ) ) );
@@ -919,11 +919,11 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test filter_nav_menu_item_to_set_url().
+	 * Test filter_nav_menu_item_to_set_post_dependent_props().
 	 *
-	 * See WP_Customize_Posts_Preview::filter_nav_menu_item_to_set_url()
+	 * See WP_Customize_Posts_Preview::filter_nav_menu_item_to_set_post_dependent_props()
 	 */
-	public function test_filter_nav_menu_item_to_set_url() {
+	public function filter_nav_menu_item_to_set_post_dependent_props() {
 		$post = get_post( $this->factory()->post->create() );
 		$nav_menu_item = new WP_Post( (object) array(
 			'type' => 'post_type',
@@ -931,13 +931,13 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 			'url' => '',
 		) );
 
-		$filtered_nav_menu_item = $this->posts_component->preview->filter_nav_menu_item_to_set_url( clone $nav_menu_item );
+		$filtered_nav_menu_item = $this->posts_component->preview->filter_nav_menu_item_to_set_post_dependent_props( clone $nav_menu_item );
 		$this->assertEmpty( $filtered_nav_menu_item->url );
 
 		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
 		$this->posts_component->manager->set_post_value( $setting_id, $post->to_array() );
 		$this->posts_component->manager->register_dynamic_settings();
-		$filtered_nav_menu_item = $this->posts_component->preview->filter_nav_menu_item_to_set_url( clone $nav_menu_item );
+		$filtered_nav_menu_item = $this->posts_component->preview->filter_nav_menu_item_to_set_post_dependent_props( clone $nav_menu_item );
 		$this->assertNotEmpty( $filtered_nav_menu_item->url );
 		$this->assertEquals( get_permalink( $post->ID ), $filtered_nav_menu_item->url );
 	}
