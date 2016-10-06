@@ -90,7 +90,7 @@ wp.customize.Posts.NavMenusExtensions = (function( api, $ ) {
 		settingId = 'post[' + String( navMenuItem.object ) + '][' + String( navMenuItem.object_id ) + ']';
 		api( settingId, function( postSetting ) {
 			var setOriginalLinkTitle = function( newPostData, oldPostData ) {
-				var title, settingValue;
+				var title, settingValue, titleEl, titleText;
 				if ( ! oldPostData || newPostData.post_title !== oldPostData.post_title ) {
 					title = $.trim( newPostData.post_title ) || api.Posts.data.l10n.noTitle;
 				}
@@ -105,6 +105,25 @@ wp.customize.Posts.NavMenusExtensions = (function( api, $ ) {
 				settingValue.original_title = newPostData.post_title;
 				control.setting._value = settingValue; // Set quietly since the original_title is readonly setting property anyway.
 				control.setting.preview();
+
+				// The following is adapted from wp.customize.Menus.MenuItemControl.prototype._setupTitleUI():
+				titleEl = control.container.find( '.menu-item-title' );
+				titleText = settingValue.title || settingValue.original_title || api.Menus.data.l10n.untitled;
+
+				if ( settingValue._invalid ) {
+					titleText = api.Menus.data.l10n.invalidTitleTpl.replace( '%s', titleText );
+				}
+
+				// Don't update to an empty title.
+				if ( settingValue.title || settingValue.original_title ) {
+					titleEl
+						.text( titleText )
+						.removeClass( 'no-title' );
+				} else {
+					titleEl
+						.text( titleText )
+						.addClass( 'no-title' );
+				}
 			};
 			postSetting.bind( setOriginalLinkTitle );
 			setOriginalLinkTitle( postSetting.get(), null );
