@@ -354,7 +354,11 @@
 
 			setting = api( id );
 			if ( ! setting ) {
-				SettingConstructor = api.settingConstructor[ settingArgs.type ] || api.Setting;
+				if ( ! _.isUndefined( api.settingConstructor ) && api.settingConstructor[ settingArgs.type ] ) {
+					SettingConstructor = api.settingConstructor[ settingArgs.type ];
+				} else {
+					SettingConstructor = api.Setting;
+				}
 				settingParams = _.extend(
 					{},
 					settingArgs,
