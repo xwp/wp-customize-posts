@@ -1139,6 +1139,8 @@ final class WP_Customize_Posts_Preview {
 			);
 			if ( $can_preview ) {
 				$value = $postmeta_setting->post_value();
+			} else {
+				return null;
 			}
 
 			if ( $postmeta_setting->single ) {
