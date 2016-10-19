@@ -138,6 +138,33 @@
 		return newParams;
 	};
 
+	// WP 4.7-alpha-patch: Prevent edit post links from being classified as un-previewable. See https://github.com/xwp/wordpress-develop/pull/161.
+	if ( api.isLinkPreviewable ) {
+
+		// Prevent not-allowed cursor on edit-post-links.
+		api.isLinkPreviewable = ( function( originalIsLinkPreviewable ) {
+			return function( element ) {
+				if ( $( element ).hasClass( 'post-edit-link' ) ) {
+					return true;
+				}
+				return originalIsLinkPreviewable.call( this, element );
+			};
+		} )( api.isLinkPreviewable );
+	}
+
+	// WP 4.7-alpha-patch: Override behavior for clicking on edit post links to prevent sending url message to pane.
+	if ( api.Preview.prototype.handleLinkClick ) {
+		api.Preview.prototype.handleLinkClick = ( function( originalHandleLinkClick ) {
+			return function( event ) {
+				if ( $( event.target ).hasClass( 'post-edit-link' ) ) {
+					event.preventDefault();
+				} else {
+					originalHandleLinkClick.call( this, event );
+				}
+			};
+		} )( api.Preview.prototype.handleLinkClick );
+	}
+
 	api.bind( 'preview-ready', function onPreviewReady() {
 		_.extend( api.previewPosts.data, _wpCustomizePreviewPostsData );
 
