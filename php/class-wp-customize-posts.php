@@ -359,12 +359,18 @@ final class WP_Customize_Posts {
 				'capability' => 'manage_options',
 			) );
 		}
-		if ( ! $wp_customize->get_control( 'page_on_front' ) ) {
-			$wp_customize->add_control( 'page_on_front', array(
+		$page_on_front_control = $wp_customize->get_control( 'page_on_front' );
+		if ( ! $page_on_front_control ) {
+			$page_on_front_control = $wp_customize->add_control( 'page_on_front', array(
 				'label' => __( 'Front page', 'default' ),
 				'section' => 'static_front_page',
 				'type' => 'dropdown-pages',
 			) );
+		}
+
+		// Disable WP 4.7 UI for page addition in favor of ours. See <https://core.trac.wordpress.org/ticket/38164>.
+		if ( property_exists( $page_on_front_control, 'allow_addition' ) ) {
+			$page_on_front_control->allow_addition = false;
 		}
 
 		// Page for Posts.
@@ -374,12 +380,18 @@ final class WP_Customize_Posts {
 				'capability' => 'manage_options',
 			) );
 		}
-		if ( ! $wp_customize->get_control( 'page_for_posts' ) ) {
-			$wp_customize->add_control( 'page_for_posts', array(
+		$page_for_posts_control = $wp_customize->get_control( 'page_for_posts' );
+		if ( ! $page_for_posts_control ) {
+			$page_for_posts_control = $wp_customize->add_control( 'page_for_posts', array(
 				'label' => __( 'Posts page', 'default' ),
 				'section' => 'static_front_page',
 				'type' => 'dropdown-pages',
 			) );
+		}
+
+		// Disable WP 4.7 UI for page addition in favor of ours. See <https://core.trac.wordpress.org/ticket/38164>.
+		if ( property_exists( $page_for_posts_control, 'allow_addition' ) ) {
+			$page_for_posts_control->allow_addition = false;
 		}
 	}
 
