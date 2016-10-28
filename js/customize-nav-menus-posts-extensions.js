@@ -100,6 +100,11 @@ wp.customize.Posts.NavMenusExtensions = (function( api, $ ) {
 					control.container.find( '.edit-menu-item-title:first' ).attr( 'placeholder', title );
 				}
 
+				// Skip nav menu items that are deleted.
+				if ( false === control.setting.get() ) {
+					return;
+				}
+
 				// Update original_title.
 				settingValue = _.clone( control.setting.get() );
 				settingValue.original_title = newPostData.post_title;
