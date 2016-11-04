@@ -114,14 +114,17 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Replace core's load and search ajax handlers with forked versions that apply customized state.
+	 * Replace core's load and search ajax handlers with forked versions that apply customized state (only pre-4.7).
+	 *
+	 * @todo Remove this once 4.7 is the minimum requirement.
+	 * @codeCoverageIgnore
 	 *
 	 * @see WP_Customize_Nav_Menus::ajax_load_available_items()
 	 * @see WP_Customize_Nav_Menus::ajax_search_available_items()
 	 * @param WP_Customize_Manager $wp_customize Manager.
 	 */
 	public function replace_nav_menus_ajax_handlers( $wp_customize ) {
-		if ( ! isset( $wp_customize->nav_menus ) ) {
+		if ( ! isset( $wp_customize->nav_menus ) || version_compare( strtok( get_bloginfo( 'version' ), '-' ), '4.7', '>=' ) ) {
 			return;
 		}
 
@@ -1486,6 +1489,7 @@ final class WP_Customize_Posts {
 	 *
 	 * Forked from https://github.com/xwp/wordpress-develop/blob/2515aab6739ea0d2f065eea08ae429889a018fb3/src/wp-includes/class-wp-customize-nav-menus.php#L88-L115
 	 *
+	 * @todo Remove this once 4.7 is the minimum requirement.
 	 * @codeCoverageIgnore
 	 */
 	public function ajax_load_available_items() {
@@ -1526,6 +1530,7 @@ final class WP_Customize_Posts {
 	 *
 	 * Forked from https://github.com/xwp/wordpress-develop/blob/2515aab6739ea0d2f065eea08ae429889a018fb3/src/wp-includes/class-wp-customize-nav-menus.php#L228-L258
 	 *
+	 * @todo Remove this once 4.7 is the minimum requirement.
 	 * @codeCoverageIgnore
 	 */
 	public function ajax_search_available_items() {

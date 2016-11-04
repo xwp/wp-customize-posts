@@ -214,6 +214,8 @@ wp.customize.Posts.NavMenusExtensions = (function( api, $ ) {
 	/**
 	 * Rewrite Ajax requests to inject Customizer state.
 	 *
+	 * @todo Remove this once 4.7 is the minimum requirement.
+	 *
 	 * @param {object} options Options.
 	 * @param {string} options.type Type.
 	 * @param {string} options.url URL.
@@ -248,7 +250,11 @@ wp.customize.Posts.NavMenusExtensions = (function( api, $ ) {
 		api.control.each( component.extendNavMenuItemOriginalObjectReference );
 		api.control.bind( 'add', component.extendNavMenuItemOriginalObjectReference );
 		api.bind( 'change', component.watchPostSettingChanges );
-		$.ajaxPrefilter( component.ajaxPrefilterAvailableNavMenuItemRequests );
+
+		// Feature detect WP 4.7, only prefilter available item requests if WP<4.7.
+		if ( ! api.requestChangesetUpdate ) {
+			$.ajaxPrefilter( component.ajaxPrefilterAvailableNavMenuItemRequests );
+		}
 	} );
 
 	return component;
