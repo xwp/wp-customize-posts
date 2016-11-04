@@ -286,7 +286,7 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 	function test_sanitize_page_template_setting() {
 		switch_theme( 'twentytwelve' );
 
-		$post_id = $this->factory()->post->create( array( 'post_type' => 'post') );
+		$post_id = $this->factory()->post->create( array( 'post_type' => 'page' ) );
 		$meta_key = '_wp_page_template';
 		register_meta( 'post', $meta_key, array( $this->plugin->page_template_controller, 'sanitize_value' ) );
 		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $post_id ), $meta_key );

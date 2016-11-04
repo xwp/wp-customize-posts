@@ -99,6 +99,7 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'get_avatar', array( $this, 'filter_get_avatar' ), 10, 6 );
 		add_filter( 'infinite_scroll_results', array( $this, 'amend_with_queried_post_ids' ) );
 		add_filter( 'customize_render_partials_response', array( $this, 'amend_with_queried_post_ids' ) );
+		remove_filter( 'get_edit_post_link', '__return_empty_string' ); // See <https://core.trac.wordpress.org/ticket/38648>.
 	}
 
 	/**

@@ -146,7 +146,7 @@ class Test_WP_Customize_Page_Template_Controller extends WP_UnitTestCase {
 		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 
 		$controller = new WP_Customize_Page_Template_Controller();
-		$post = get_post( $this->factory()->post->create() );
+		$post = get_post( $this->factory()->post->create( array( 'post_type' => 'page' ) ) );
 		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( $post, $controller->meta_key );
 		$setting = new WP_Customize_Postmeta_Setting( $this->wp_customize, $setting_id );
 
