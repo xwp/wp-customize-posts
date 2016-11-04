@@ -122,26 +122,6 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test replace_nav_menus_ajax_handlers.
-	 *
-	 * @covers WP_Customize_Posts::replace_nav_menus_ajax_handlers()
-	 */
-	public function test_replace_nav_menus_ajax_handlers() {
-		$handlers = array(
-			'wp_ajax_load-available-menu-items-customizer' => 'ajax_load_available_items',
-			'wp_ajax_search-available-menu-items-customizer' => 'ajax_search_available_items',
-		);
-		foreach ( $handlers as $action => $method_name ) {
-			$this->assertEquals( 10, has_action( $action, array( $this->wp_customize->nav_menus, $method_name ) ) );
-		}
-		$this->posts->replace_nav_menus_ajax_handlers( $this->wp_customize );
-		foreach ( $handlers as $action => $method_name ) {
-			$this->assertFalse( has_action( $action, array( $this->wp_customize->nav_menus, $method_name ) ) );
-			$this->assertEquals( 10, has_action( $action, array( $this->posts, $method_name ) ) );
-		}
-	}
-
-	/**
 	 * Test add_customize_nonce.
 	 *
 	 * @covers WP_Customize_Posts::add_customize_nonce()
