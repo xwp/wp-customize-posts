@@ -137,31 +137,17 @@ class Test_WP_Customize_Post_Setting extends WP_UnitTestCase {
 	 *
 	 * @see WP_Customize_Post_Setting::__construct()
 	 */
-	public function test_construct_unprivileged_user() {
+	public function test_construct_capability() {
 		$exception = null;
 		$post = get_post( $this->factory()->post->create() );
 		$setting_id = sprintf( 'post[%s][%d]', $post->post_type, $post->ID );
 		wp_set_current_user( 0 );
 		$setting = new WP_Customize_Post_Setting( $this->wp_customize, $setting_id );
 		$this->assertFalse( current_user_can( $setting->capability ) );
-		$this->assertEquals( 'do_not_allow', $setting->capability );
-	}
+		$this->assertEquals( sprintf( 'edit_post[%d]', $post->ID ), $setting->capability );
 
-	/**
-	 * Test __construct().
-	 *
-	 * @see WP_Customize_Post_Setting::__construct()
-	 */
-	public function test_construct_insert() {
-		$exception = null;
-		$setting_id = sprintf( 'post[%s][%d]', 'post', -123 );
-		$setting = new WP_Customize_Post_Setting( $this->wp_customize, $setting_id );
-
-		$this->assertEquals( 'edit_posts', $setting->capability );
-		wp_set_current_user( 0 );
-
-		$setting = new WP_Customize_Post_Setting( $this->wp_customize, $setting_id );
-		$this->assertEquals( 'do_not_allow', $setting->capability );
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'editor' ) ) );
+		$this->assertTrue( current_user_can( $setting->capability ) );
 	}
 
 	/**
