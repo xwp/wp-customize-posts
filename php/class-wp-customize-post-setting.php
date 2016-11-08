@@ -92,20 +92,9 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			throw new Exception( 'Posts component not instantiated.' );
 		}
 		$this->posts_component = $manager->posts;
-		$update = $args['post_id'] > 0;
-		$post_type_obj = get_post_type_object( $args['post_type'] );
 
-		// Determine capability for editing this.
-		$can_edit = false;
-		if ( $update ) {
-			$can_edit = $this->posts_component->current_user_can_edit_post( $args['post_id'] );
-		} elseif ( $post_type_obj ) {
-			$can_edit = current_user_can( $post_type_obj->cap->edit_posts );
-		}
-		if ( $can_edit ) {
-			$args['capability'] = $post_type_obj->cap->edit_posts;
-		} else {
-			$args['capability'] = 'do_not_allow';
+		if ( empty( $args['capability'] ) ) {
+			$args['capability'] = sprintf( 'edit_post[%d]', $args['post_id'] );
 		}
 
 		parent::__construct( $manager, $id, $args );

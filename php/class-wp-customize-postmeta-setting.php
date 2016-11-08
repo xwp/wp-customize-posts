@@ -102,16 +102,8 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 			$args['default'] = array();
 		}
 
-		// Determine the capability required for editing this.
-		$post_type_obj = get_post_type_object( $args['post_type'] );
-		$can_edit = $this->posts_component->current_user_can_edit_post( $args['post_id'] );
-		if ( $can_edit ) {
-			$can_edit = current_user_can( 'edit_post_meta', $args['post_id'], $args['meta_key'] );
-		}
-		if ( ! $can_edit ) {
-			$args['capability'] = 'do_not_allow';
-		} elseif ( ! isset( $args['capability'] ) ) {
-			$args['capability'] = $post_type_obj->cap->edit_posts;
+		if ( empty( $args['capability'] ) ) {
+			$args['capability'] = sprintf( 'edit_post_meta[%d][%s]', $args['post_id'], $args['meta_key'] );
 		}
 		parent::__construct( $manager, $id, $args );
 	}

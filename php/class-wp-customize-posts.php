@@ -92,6 +92,7 @@ final class WP_Customize_Posts {
 		add_filter( 'customize_refresh_nonces', array( $this, 'add_customize_nonce' ) );
 		add_action( 'customize_register', array( $this, 'ensure_static_front_page_constructs_registered' ), 11 );
 		add_action( 'customize_register', array( $this, 'register_constructs' ), 20 );
+		add_filter( 'map_meta_cap', array( $this, 'filter_map_meta_cap' ), 10, 4 );
 		add_action( 'init', array( $this, 'register_meta' ), 100 );
 		add_filter( 'customize_dynamic_setting_args', array( $this, 'filter_customize_dynamic_setting_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_setting_class', array( $this, 'filter_customize_dynamic_setting_class' ), 5, 3 );
@@ -451,6 +452,28 @@ final class WP_Customize_Posts {
 			// Note the following is an alternative to doing WP_Customize_Manager::register_panel_type().
 			add_action( 'customize_controls_print_footer_scripts', array( $panel, 'print_template' ) );
 		}
+	}
+
+	/**
+	 * Map dynamic post/postmeta capabilities to static capabilities.
+	 *
+	 * @param array  $caps    Returns the user's actual capabilities.
+	 * @param string $cap     Capability name.
+	 * @param int    $user_id The user ID.
+	 * @return array Caps.
+	 */
+	public function filter_map_meta_cap( $caps, $cap, $user_id ) {
+		if ( preg_match( '/^(?:edit_post|edit_post_meta)\[\d+/', $cap ) ) {
+			$keys = explode( '[', str_replace( ']', '', $cap ) );
+			$map_meta_cap_args = array(
+				array_shift( $keys ),
+				$user_id,
+				intval( array_shift( $keys ) ),
+				array_shift( $keys ),
+			);
+			$caps = call_user_func_array( 'map_meta_cap', $map_meta_cap_args );
+		}
+		return $caps;
 	}
 
 	/**
