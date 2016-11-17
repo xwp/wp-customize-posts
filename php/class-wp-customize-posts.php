@@ -701,8 +701,19 @@ final class WP_Customize_Posts {
 	 * @return array
 	 */
 	public function filter_customize_save_response_to_export_saved_values( $response ) {
-		// Short circuit if there there were invalidities.
-		if ( isset( $response['setting_validities'] ) && count( array_filter( $response['setting_validities'], 'is_array' ) ) > 0 ) {
+		$has_invalidities = (
+			isset( $response['setting_validities'] )
+			&&
+			count( array_filter( $response['setting_validities'], 'is_array' ) ) > 0
+		);
+		$changeset_status_not_publish = (
+			! empty( $response['changeset_status'] )
+			&&
+			'publish' !== $response['changeset_status']
+		);
+
+		// Short circuit if there there were invalidities or the changeset status was not publish.
+		if ( $has_invalidities || $changeset_status_not_publish ) {
 			return $response;
 		}
 
