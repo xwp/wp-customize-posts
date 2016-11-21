@@ -143,11 +143,11 @@
 
 		// Prevent not-allowed cursor on edit-post-links.
 		api.isLinkPreviewable = ( function( originalIsLinkPreviewable ) {
-			return function( element ) {
+			return function( element, options ) {
 				if ( $( element ).hasClass( 'post-edit-link' ) ) {
 					return true;
 				}
-				return originalIsLinkPreviewable.call( this, element );
+				return originalIsLinkPreviewable.call( this, element, options );
 			};
 		} )( api.isLinkPreviewable );
 	}
