@@ -96,6 +96,7 @@ final class WP_Customize_Posts {
 		add_action( 'init', array( $this, 'register_meta' ), 100 );
 		add_filter( 'customize_dynamic_setting_args', array( $this, 'filter_customize_dynamic_setting_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_setting_class', array( $this, 'filter_customize_dynamic_setting_class' ), 5, 3 );
+		add_filter( 'customize_sanitize_nav_menus_created_posts', array( $this, 'filter_out_nav_menus_created_posts_for_customized_posts' ), 20 );
 		add_filter( 'customize_save_response', array( $this, 'filter_customize_save_response_for_conflicts' ), 10, 2 );
 		add_filter( 'customize_save_response', array( $this, 'filter_customize_save_response_to_export_saved_values' ), 10, 2 );
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_templates' ) );
@@ -545,6 +546,35 @@ final class WP_Customize_Posts {
 			}
 		}
 		return $class;
+	}
+
+	/**
+	 * Filter the value for `nav_menus_created_posts` to remove post IDs for posts which being fully customized.
+	 *
+	 * If an ID is present among `nav_menus_created_posts` while also among the customized posts,
+	 * then a conflict will arise. For example, if a post stub gets edited with its status changed
+	 * to 'private' then when `WP_Customize_Nav_Menus::save_nav_menus_created_posts()` runs
+	 * it can override it to be 'publish` if the setting gets updated after the post setting
+	 * is saved. If, on the other hand, the `nav_menus_created_posts` setting is processed
+	 * first then the subsequent save for the `post` setting can fail due to post conflict locking.
+	 *
+	 * @param array $post_ids IDs for post/page stubs.
+	 * @return array IDs for posts that do not have post settings.
+	 */
+	public function filter_out_nav_menus_created_posts_for_customized_posts( $post_ids ) {
+		$non_customized_post_ids = array();
+		foreach ( $post_ids as $post_id ) {
+			$post = get_post( $post_id );
+			if ( ! $post ) {
+				continue;
+			}
+			$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+			if ( $this->manager->get_setting( $setting_id ) ) {
+				continue;
+			}
+			$non_customized_post_ids[] = $post_id;
+		}
+		return $non_customized_post_ids;
 	}
 
 	/**
