@@ -1402,6 +1402,14 @@ final class WP_Customize_Posts_Preview {
 			}
 		}
 
+		// Ensure that page/post stubs are included among the queried posts.
+		if ( $this->component->manager->nav_menus && $this->component->manager->get_setting( 'nav_menus_created_posts' ) ) {
+			$this->queried_post_ids = array_merge(
+				$this->queried_post_ids,
+				$this->component->manager->get_setting( 'nav_menus_created_posts' )->value()
+			);
+		}
+
 		$exported = array(
 			'isPostPreview' => is_preview(),
 			'isSingular' => is_singular(),
