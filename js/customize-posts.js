@@ -106,7 +106,7 @@
 	 * @param {object} params - Query vars.
 	 * @param {number} params.post_id - Post ID.
 	 * @param {string} [params.post_type] - Post type.
-	 * @param {boolean} [params.preview] - .
+	 * @param {boolean} [params.preview] - Preview.
 	 * @return {string} Preview URL.
 	 */
 	component.getPostUrl = function getPostUrl( params ) {
@@ -354,7 +354,11 @@
 
 			setting = api( id );
 			if ( ! setting ) {
-				SettingConstructor = api.settingConstructor[ settingArgs.type ] || api.Setting;
+				if ( ! _.isUndefined( api.settingConstructor ) && api.settingConstructor[ settingArgs.type ] ) {
+					SettingConstructor = api.settingConstructor[ settingArgs.type ];
+				} else {
+					SettingConstructor = api.Setting;
+				}
 				settingParams = _.extend(
 					{},
 					settingArgs,

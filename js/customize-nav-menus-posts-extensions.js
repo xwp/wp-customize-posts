@@ -90,7 +90,7 @@ wp.customize.Posts.NavMenusExtensions = (function( api, $ ) {
 		settingId = 'post[' + String( navMenuItem.object ) + '][' + String( navMenuItem.object_id ) + ']';
 		api( settingId, function( postSetting ) {
 			var setOriginalLinkTitle = function( newPostData, oldPostData ) {
-				var title, settingValue;
+				var title, settingValue, titleEl, titleText;
 				if ( ! oldPostData || newPostData.post_title !== oldPostData.post_title ) {
 					title = $.trim( newPostData.post_title ) || api.Posts.data.l10n.noTitle;
 				}
@@ -100,13 +100,34 @@ wp.customize.Posts.NavMenusExtensions = (function( api, $ ) {
 					control.container.find( '.edit-menu-item-title:first' ).attr( 'placeholder', title );
 				}
 
+				// Skip nav menu items that are deleted.
+				if ( false === control.setting.get() ) {
+					return;
+				}
+
 				// Update original_title.
 				settingValue = _.clone( control.setting.get() );
 				settingValue.original_title = newPostData.post_title;
-				if ( settingValue.title ) {
-					control.setting._value = settingValue; // Set quietly since the original_value will be unused here.
+				control.setting._value = settingValue; // Set quietly since the original_title is readonly setting property anyway.
+				control.setting.preview();
+
+				// The following is adapted from wp.customize.Menus.MenuItemControl.prototype._setupTitleUI():
+				titleEl = control.container.find( '.menu-item-title' );
+				titleText = settingValue.title || settingValue.original_title || api.Menus.data.l10n.untitled;
+
+				if ( settingValue._invalid ) {
+					titleText = api.Menus.data.l10n.invalidTitleTpl.replace( '%s', titleText );
+				}
+
+				// Don't update to an empty title.
+				if ( settingValue.title || settingValue.original_title ) {
+					titleEl
+						.text( titleText )
+						.removeClass( 'no-title' );
 				} else {
-					control.setting.set( settingValue );
+					titleEl
+						.text( titleText )
+						.addClass( 'no-title' );
 				}
 			};
 			postSetting.bind( setOriginalLinkTitle );
@@ -193,6 +214,8 @@ wp.customize.Posts.NavMenusExtensions = (function( api, $ ) {
 	/**
 	 * Rewrite Ajax requests to inject Customizer state.
 	 *
+	 * @todo Remove this once 4.7 is the minimum requirement.
+	 *
 	 * @param {object} options Options.
 	 * @param {string} options.type Type.
 	 * @param {string} options.url URL.
@@ -223,10 +246,16 @@ wp.customize.Posts.NavMenusExtensions = (function( api, $ ) {
 		options.data += $.param( { customized: api.previewer.query().customized } );
 	};
 
-	api.control.each( component.extendNavMenuItemOriginalObjectReference );
-	api.control.bind( 'add', component.extendNavMenuItemOriginalObjectReference );
-	api.bind( 'change', component.watchPostSettingChanges );
-	$.ajaxPrefilter( component.ajaxPrefilterAvailableNavMenuItemRequests );
+	api.bind( 'ready', function() {
+		api.control.each( component.extendNavMenuItemOriginalObjectReference );
+		api.control.bind( 'add', component.extendNavMenuItemOriginalObjectReference );
+		api.bind( 'change', component.watchPostSettingChanges );
+
+		// Feature detect WP 4.7, only prefilter available item requests if WP<4.7.
+		if ( ! api.requestChangesetUpdate ) {
+			$.ajaxPrefilter( component.ajaxPrefilterAvailableNavMenuItemRequests );
+		}
+	} );
 
 	return component;
 })( wp.customize, jQuery );

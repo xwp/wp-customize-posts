@@ -92,9 +92,11 @@ final class WP_Customize_Posts {
 		add_filter( 'customize_refresh_nonces', array( $this, 'add_customize_nonce' ) );
 		add_action( 'customize_register', array( $this, 'ensure_static_front_page_constructs_registered' ), 11 );
 		add_action( 'customize_register', array( $this, 'register_constructs' ), 20 );
+		add_filter( 'map_meta_cap', array( $this, 'filter_map_meta_cap' ), 10, 4 );
 		add_action( 'init', array( $this, 'register_meta' ), 100 );
 		add_filter( 'customize_dynamic_setting_args', array( $this, 'filter_customize_dynamic_setting_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_setting_class', array( $this, 'filter_customize_dynamic_setting_class' ), 5, 3 );
+		add_filter( 'customize_sanitize_nav_menus_created_posts', array( $this, 'filter_out_nav_menus_created_posts_for_customized_posts' ), 20 );
 		add_filter( 'customize_save_response', array( $this, 'filter_customize_save_response_for_conflicts' ), 10, 2 );
 		add_filter( 'customize_save_response', array( $this, 'filter_customize_save_response_to_export_saved_values' ), 10, 2 );
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_templates' ) );
@@ -114,14 +116,17 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Replace core's load and search ajax handlers with forked versions that apply customized state.
+	 * Replace core's load and search ajax handlers with forked versions that apply customized state (only pre-4.7).
+	 *
+	 * @todo Remove this once 4.7 is the minimum requirement.
+	 * @codeCoverageIgnore
 	 *
 	 * @see WP_Customize_Nav_Menus::ajax_load_available_items()
 	 * @see WP_Customize_Nav_Menus::ajax_search_available_items()
 	 * @param WP_Customize_Manager $wp_customize Manager.
 	 */
 	public function replace_nav_menus_ajax_handlers( $wp_customize ) {
-		if ( ! isset( $wp_customize->nav_menus ) ) {
+		if ( ! isset( $wp_customize->nav_menus ) || version_compare( strtok( get_bloginfo( 'version' ), '-' ), '4.7', '>=' ) ) {
 			return;
 		}
 
@@ -359,12 +364,18 @@ final class WP_Customize_Posts {
 				'capability' => 'manage_options',
 			) );
 		}
-		if ( ! $wp_customize->get_control( 'page_on_front' ) ) {
-			$wp_customize->add_control( 'page_on_front', array(
+		$page_on_front_control = $wp_customize->get_control( 'page_on_front' );
+		if ( ! $page_on_front_control ) {
+			$page_on_front_control = $wp_customize->add_control( 'page_on_front', array(
 				'label' => __( 'Front page', 'default' ),
 				'section' => 'static_front_page',
 				'type' => 'dropdown-pages',
 			) );
+		}
+
+		// Disable WP 4.7 UI for page addition in favor of ours. See <https://core.trac.wordpress.org/ticket/38164>.
+		if ( property_exists( $page_on_front_control, 'allow_addition' ) ) {
+			$page_on_front_control->allow_addition = false;
 		}
 
 		// Page for Posts.
@@ -374,12 +385,18 @@ final class WP_Customize_Posts {
 				'capability' => 'manage_options',
 			) );
 		}
-		if ( ! $wp_customize->get_control( 'page_for_posts' ) ) {
-			$wp_customize->add_control( 'page_for_posts', array(
+		$page_for_posts_control = $wp_customize->get_control( 'page_for_posts' );
+		if ( ! $page_for_posts_control ) {
+			$page_for_posts_control = $wp_customize->add_control( 'page_for_posts', array(
 				'label' => __( 'Posts page', 'default' ),
 				'section' => 'static_front_page',
 				'type' => 'dropdown-pages',
 			) );
+		}
+
+		// Disable WP 4.7 UI for page addition in favor of ours. See <https://core.trac.wordpress.org/ticket/38164>.
+		if ( property_exists( $page_for_posts_control, 'allow_addition' ) ) {
+			$page_for_posts_control->allow_addition = false;
 		}
 	}
 
@@ -436,6 +453,28 @@ final class WP_Customize_Posts {
 			// Note the following is an alternative to doing WP_Customize_Manager::register_panel_type().
 			add_action( 'customize_controls_print_footer_scripts', array( $panel, 'print_template' ) );
 		}
+	}
+
+	/**
+	 * Map dynamic post/postmeta capabilities to static capabilities.
+	 *
+	 * @param array  $caps    Returns the user's actual capabilities.
+	 * @param string $cap     Capability name.
+	 * @param int    $user_id The user ID.
+	 * @return array Caps.
+	 */
+	public function filter_map_meta_cap( $caps, $cap, $user_id ) {
+		if ( preg_match( '/^(?:edit_post|edit_post_meta)\[\d+/', $cap ) ) {
+			$keys = explode( '[', str_replace( ']', '', $cap ) );
+			$map_meta_cap_args = array(
+				array_shift( $keys ),
+				$user_id,
+				intval( array_shift( $keys ) ),
+				array_shift( $keys ),
+			);
+			$caps = call_user_func_array( 'map_meta_cap', $map_meta_cap_args );
+		}
+		return $caps;
 	}
 
 	/**
@@ -507,6 +546,35 @@ final class WP_Customize_Posts {
 			}
 		}
 		return $class;
+	}
+
+	/**
+	 * Filter the value for `nav_menus_created_posts` to remove post IDs for posts which being fully customized.
+	 *
+	 * If an ID is present among `nav_menus_created_posts` while also among the customized posts,
+	 * then a conflict will arise. For example, if a post stub gets edited with its status changed
+	 * to 'private' then when `WP_Customize_Nav_Menus::save_nav_menus_created_posts()` runs
+	 * it can override it to be 'publish` if the setting gets updated after the post setting
+	 * is saved. If, on the other hand, the `nav_menus_created_posts` setting is processed
+	 * first then the subsequent save for the `post` setting can fail due to post conflict locking.
+	 *
+	 * @param array $post_ids IDs for post/page stubs.
+	 * @return array IDs for posts that do not have post settings.
+	 */
+	public function filter_out_nav_menus_created_posts_for_customized_posts( $post_ids ) {
+		$non_customized_post_ids = array();
+		foreach ( $post_ids as $post_id ) {
+			$post = get_post( $post_id );
+			if ( ! $post ) {
+				continue;
+			}
+			$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
+			if ( $this->manager->get_setting( $setting_id ) ) {
+				continue;
+			}
+			$non_customized_post_ids[] = $post_id;
+		}
+		return $non_customized_post_ids;
 	}
 
 	/**
@@ -663,8 +731,19 @@ final class WP_Customize_Posts {
 	 * @return array
 	 */
 	public function filter_customize_save_response_to_export_saved_values( $response ) {
-		// Short circuit if there there were invalidities.
-		if ( isset( $response['setting_validities'] ) && count( array_filter( $response['setting_validities'], 'is_array' ) ) > 0 ) {
+		$has_invalidities = (
+			isset( $response['setting_validities'] )
+			&&
+			count( array_filter( $response['setting_validities'], 'is_array' ) ) > 0
+		);
+		$changeset_status_publish = (
+			empty( $response['changeset_status'] ) // Prior to 4.7, this filter only would run on actual saves.
+			||
+			'publish' === $response['changeset_status']
+		);
+
+		// Short circuit if there there were invalidities or the changeset status was not publish.
+		if ( $has_invalidities || ! $changeset_status_publish ) {
 			return $response;
 		}
 
@@ -1474,6 +1553,7 @@ final class WP_Customize_Posts {
 	 *
 	 * Forked from https://github.com/xwp/wordpress-develop/blob/2515aab6739ea0d2f065eea08ae429889a018fb3/src/wp-includes/class-wp-customize-nav-menus.php#L88-L115
 	 *
+	 * @todo Remove this once 4.7 is the minimum requirement.
 	 * @codeCoverageIgnore
 	 */
 	public function ajax_load_available_items() {
@@ -1514,6 +1594,7 @@ final class WP_Customize_Posts {
 	 *
 	 * Forked from https://github.com/xwp/wordpress-develop/blob/2515aab6739ea0d2f065eea08ae429889a018fb3/src/wp-includes/class-wp-customize-nav-menus.php#L228-L258
 	 *
+	 * @todo Remove this once 4.7 is the minimum requirement.
 	 * @codeCoverageIgnore
 	 */
 	public function ajax_search_available_items() {

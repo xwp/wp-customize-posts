@@ -120,7 +120,7 @@ class Test_Customize_Posts_Plugin extends WP_UnitTestCase {
 		remove_all_actions( 'admin_bar_menu' );
 
 		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'administrator' ) ) );
-		$wp_admin_bar = new \WP_Admin_Bar(); // WPCS: Override OK.
+		$wp_admin_bar = new WP_Admin_Bar(); // WPCS: Override OK.
 		$wp_admin_bar->initialize();
 		$wp_admin_bar->add_menus();
 		do_action_ref_array( 'admin_bar_menu', array( &$wp_admin_bar ) );

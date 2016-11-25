@@ -128,7 +128,7 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 	/**
 	 * @see WP_Customize_Postmeta_Setting::__construct()
 	 */
-	function test_construct_for_unprivileged_user() {
+	function test_construct_capability() {
 		$subscriber_id = $this->factory()->user->create( array( 'role' => 'subscriber' ) );
 		$post_id = $this->factory()->post->create( array( 'post_type' => 'post') );
 		wp_set_current_user( $subscriber_id );
@@ -136,8 +136,11 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 		$setting_id = sprintf( 'postmeta[post][%d][%s]', $post_id, $meta_key );
 		register_meta( 'post', $meta_key, 'sanitize_email' );
 		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id );
-		$this->assertEquals( 'do_not_allow', $setting->capability );
+		$this->assertEquals( sprintf( 'edit_post_meta[%d][%s]', $post_id, $meta_key ), $setting->capability );
 		$this->assertFalse( current_user_can( $setting->capability ) );
+
+		wp_set_current_user( $this->factory()->user->create( array( 'role' => 'editor' ) ) );
+		$this->assertTrue( current_user_can( $setting->capability ) );
 	}
 
 	/**
@@ -192,9 +195,8 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 		$this->assertEquals( $meta_key, $setting->meta_key );
 		$this->assertEquals( '', $setting->default );
 		$this->assertTrue( $setting->single );
-		$this->assertEquals( 'edit_posts', $setting->capability );
+		$this->assertEquals( sprintf( 'edit_post_meta[%d][%s]', $post_id, $meta_key ), $setting->capability );
 		$this->assertInstanceOf( 'WP_Customize_Posts', $setting->posts_component );
-		$this->assertEquals( 'edit_posts', $setting->capability );
 
 		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id, array(
 			'capability' => 'create_awesome',
@@ -208,7 +210,7 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 		$setting = new WP_Customize_Postmeta_Setting( $this->manager, $setting_id, array(
 			'capability' => 'delete_awesome',
 		) );
-		$this->assertEquals( 'do_not_allow', $setting->capability );
+		$this->assertEquals( 'delete_awesome', $setting->capability );
 		remove_filter( 'user_has_cap', '__return_empty_array' );
 	}
 
@@ -286,7 +288,7 @@ class Test_Customize_Postmeta_Setting extends WP_UnitTestCase {
 	function test_sanitize_page_template_setting() {
 		switch_theme( 'twentytwelve' );
 
-		$post_id = $this->factory()->post->create( array( 'post_type' => 'post') );
+		$post_id = $this->factory()->post->create( array( 'post_type' => 'page' ) );
 		$meta_key = '_wp_page_template';
 		register_meta( 'post', $meta_key, array( $this->plugin->page_template_controller, 'sanitize_value' ) );
 		$setting_id = WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $post_id ), $meta_key );
