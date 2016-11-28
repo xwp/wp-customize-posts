@@ -201,22 +201,22 @@ final class WP_Customize_Posts {
 			$post_types[ $post_type_object->name ] = $post_type_object;
 		}
 
-		// Skip media as special case.
-		unset( $post_types['attachment'] );
-
 		return $post_types;
 	}
 
 	/**
-	 * Set missing post type descriptions for built-in post types.
+	 * Set missing post type descriptions for built-in post types and explicitly disallow attachments in customizer UI.
 	 */
-	public function set_builtin_post_type_descriptions() {
+	public function configure_builtin_post_types() {
 		global $wp_post_types;
 		if ( post_type_exists( 'post' ) && empty( $wp_post_types['post']->description ) ) {
 			$wp_post_types['post']->description = __( 'Posts are entries listed in reverse chronological order, usually on the site homepage or on a dedicated posts page. Posts can be organized by tags or categories.', 'customize-posts' );
 		}
 		if ( post_type_exists( 'page' ) && empty( $wp_post_types['page']->description ) ) {
 			$wp_post_types['page']->description = __( 'Pages are ordered and organized hierarchically instead of being listed by date. The organization of pages generally corresponds to the primary nav menu.', 'customize-posts' );
+		}
+		if ( post_type_exists( 'attachment' ) && ! isset( $wp_post_types['attachment']->show_in_customizer ) ) {
+			$wp_post_types['attachment']->show_in_customizer = false;
 		}
 	}
 
@@ -431,7 +431,7 @@ final class WP_Customize_Posts {
 		$panel_priority = 900; // Before widgets.
 
 		// Note that this does not include nav_menu_item.
-		$this->set_builtin_post_type_descriptions();
+		$this->configure_builtin_post_types();
 		foreach ( $this->get_post_types() as $post_type_object ) {
 			if ( empty( $post_type_object->show_in_customizer ) ) {
 				continue;
