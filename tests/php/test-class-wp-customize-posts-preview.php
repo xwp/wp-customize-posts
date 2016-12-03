@@ -746,7 +746,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		) );
 		$this->assertCount( 3, $query_post_with_in_query->posts );
 
-		$query_post_where_actual_meta_and_snapshot_with_zero = new WP_Query( array(
+		$query_post_where_actual_meta_and_previewed_meta_with_zero = new WP_Query( array(
 			'post_type' => $post_type,
 			'meta_query' => array(
 				'relation' => 'AND',
@@ -757,7 +757,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 			),
 		) );
 
-		$this->assertCount( 1, $query_post_where_actual_meta_and_snapshot_with_zero->posts );
+		$this->assertCount( 1, $query_post_where_actual_meta_and_previewed_meta_with_zero->posts );
 
 		$query_post_with_meta_value_as_array_compare_equals = new WP_Query( array(
 			'post_type' => $post_type,

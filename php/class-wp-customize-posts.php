@@ -100,7 +100,7 @@ final class WP_Customize_Posts {
 		add_filter( 'customize_save_response', array( $this, 'filter_customize_save_response_for_conflicts' ), 10, 2 );
 		add_filter( 'customize_save_response', array( $this, 'filter_customize_save_response_to_export_saved_values' ), 10, 2 );
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'render_templates' ) );
-		add_filter( 'customize_snapshot_save', array( $this, 'transition_customize_draft' ) );
+		add_action( 'transition_post_status', array( $this, 'transition_customize_draft' ), 20, 3 );
 		add_action( 'after_setup_theme', array( $this, 'preview_customize_draft_post_ids' ) );
 		add_action( 'pre_get_posts', array( $this, 'preview_customize_draft' ) );
 		add_filter( 'post_link', array( $this, 'post_link_draft' ), 10, 2 );
@@ -110,37 +110,44 @@ final class WP_Customize_Posts {
 		add_action( 'wp_ajax_customize-posts-insert-auto-draft', array( $this, 'ajax_insert_auto_draft_post' ) );
 		add_action( 'wp_ajax_customize-posts-fetch-settings', array( $this, 'ajax_fetch_settings' ) );
 		add_action( 'wp_ajax_customize-posts-select2-query', array( $this, 'ajax_posts_select2_query' ) );
-		add_action( 'customize_register', array( $this, 'replace_nav_menus_ajax_handlers' ) );
+		add_action( 'customize_register', array( $this, 'replace_nav_menus_hooks' ), 12 ); // Note that WP_Customize_Nav_Menus::customize_register() happens at 11.
 
 		$this->preview = new WP_Customize_Posts_Preview( $this );
 	}
 
 	/**
-	 * Replace core's load and search ajax handlers with forked versions that apply customized state (only pre-4.7).
-	 *
-	 * @todo Remove this once 4.7 is the minimum requirement.
-	 * @codeCoverageIgnore
+	 * Replace core's hook handlers with forked versions.
 	 *
 	 * @see WP_Customize_Nav_Menus::ajax_load_available_items()
 	 * @see WP_Customize_Nav_Menus::ajax_search_available_items()
 	 * @param WP_Customize_Manager $wp_customize Manager.
 	 */
-	public function replace_nav_menus_ajax_handlers( $wp_customize ) {
-		if ( ! isset( $wp_customize->nav_menus ) || version_compare( strtok( get_bloginfo( 'version' ), '-' ), '4.7', '>=' ) ) {
+	public function replace_nav_menus_hooks( $wp_customize ) {
+
+		if ( ! isset( $wp_customize->nav_menus ) ) {
 			return;
 		}
 
-		$handlers = array(
-			'wp_ajax_load-available-menu-items-customizer' => 'ajax_load_available_items',
-			'wp_ajax_search-available-menu-items-customizer' => 'ajax_search_available_items',
-		);
+		if ( version_compare( strtok( get_bloginfo( 'version' ), '-' ), '4.7', '<' ) ) {
+			$handlers = array(
+				'wp_ajax_load-available-menu-items-customizer' => 'ajax_load_available_items',
+				'wp_ajax_search-available-menu-items-customizer' => 'ajax_search_available_items',
+			);
 
-		foreach ( $handlers as $action => $method_name ) {
-			$priority = has_action( $action, array( $wp_customize->nav_menus, $method_name ) );
-			if ( false !== $priority ) {
-				remove_action( $action, array( $wp_customize->nav_menus, $method_name ), $priority );
-				add_action( $action, array( $this, $method_name ), $priority );
+			foreach ( $handlers as $action => $method_name ) {
+				$priority = has_action( $action, array( $wp_customize->nav_menus, $method_name ) );
+				if ( false !== $priority ) {
+					remove_action( $action, array( $wp_customize->nav_menus, $method_name ), $priority );
+					add_action( $action, array( $this, $method_name ), $priority );
+				}
 			}
+		}
+
+		// Make sure that customize-draft posts get published just as auto-draft posts do in core.
+		$priority = has_filter( 'customize_sanitize_nav_menus_created_posts', array( $wp_customize->nav_menus, 'sanitize_nav_menus_created_posts' ) );
+		if ( false !== $priority ) {
+			remove_filter( 'customize_sanitize_nav_menus_created_posts', array( $wp_customize->nav_menus, 'sanitize_nav_menus_created_posts' ), $priority );
+			add_filter( 'customize_sanitize_nav_menus_created_posts', array( $this, 'sanitize_nav_menus_created_posts' ), $priority, 3 );
 		}
 	}
 
@@ -201,22 +208,22 @@ final class WP_Customize_Posts {
 			$post_types[ $post_type_object->name ] = $post_type_object;
 		}
 
-		// Skip media as special case.
-		unset( $post_types['attachment'] );
-
 		return $post_types;
 	}
 
 	/**
-	 * Set missing post type descriptions for built-in post types.
+	 * Set missing post type descriptions for built-in post types and explicitly disallow attachments in customizer UI.
 	 */
-	public function set_builtin_post_type_descriptions() {
+	public function configure_builtin_post_types() {
 		global $wp_post_types;
 		if ( post_type_exists( 'post' ) && empty( $wp_post_types['post']->description ) ) {
 			$wp_post_types['post']->description = __( 'Posts are entries listed in reverse chronological order, usually on the site homepage or on a dedicated posts page. Posts can be organized by tags or categories.', 'customize-posts' );
 		}
 		if ( post_type_exists( 'page' ) && empty( $wp_post_types['page']->description ) ) {
 			$wp_post_types['page']->description = __( 'Pages are ordered and organized hierarchically instead of being listed by date. The organization of pages generally corresponds to the primary nav menu.', 'customize-posts' );
+		}
+		if ( post_type_exists( 'attachment' ) && ! isset( $wp_post_types['attachment']->show_in_customizer ) ) {
+			$wp_post_types['attachment']->show_in_customizer = false;
 		}
 	}
 
@@ -431,7 +438,7 @@ final class WP_Customize_Posts {
 		$panel_priority = 900; // Before widgets.
 
 		// Note that this does not include nav_menu_item.
-		$this->set_builtin_post_type_descriptions();
+		$this->configure_builtin_post_types();
 		foreach ( $this->get_post_types() as $post_type_object ) {
 			if ( empty( $post_type_object->show_in_customizer ) ) {
 				continue;
@@ -1058,43 +1065,104 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Transition the post status.
+	 * Make sure that auto-draft posts referenced in the customized state get transitioned to a non-garbage-collected status.
 	 *
-	 * This ensures unpublished new posts, which are added to a snapshot, are not
+	 * This ensures unpublished new posts, which are added to a changeset/snapshot, are not
 	 * garbage collected during the `wp_scheduled_auto_draft_delete` action by
 	 * changing the default `auto-draft` post status to `customize-draft`.
 	 *
-	 * @filter customize_snapshot_save
 	 * @access public
 	 *
-	 * @param array $data Customizer settings and values.
-	 * @return array The unchanged settings and values, as the behavior is added to a filter.
+	 * @param string  $new_status Transition to this post status.
+	 * @param string  $old_status Previous post status.
+	 * @param WP_Post $post Post data.
 	 */
-	public function transition_customize_draft( $data ) {
+	public function transition_customize_draft( $new_status, $old_status, $post ) {
+		unset( $old_status );
 		global $wpdb;
+
+		// Short-circuit if not a changeset or a (legacy) snapshot post type.
+		if ( 'customize_changeset' !== $post->post_type && 'customize_snapshot' !== $post->post_type ) {
+			return;
+		}
+
+		// Short-circuit if the auto-draft posts should be left intact or they would be getting published.
+		if ( 'auto-draft' === $new_status || 'publish' === $new_status ) {
+			return;
+		}
+
+		$auto_draft_posts = array();
+		$data = json_decode( $post->post_content, true );
+		if ( ! is_array( $data ) ) {
+			return;
+		}
+
 		foreach ( $data as $id => $setting ) {
 			if ( ! preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches ) ) {
 				continue;
 			}
 			$post = get_post( $matches['post_id'] );
 			if ( 'auto-draft' === $post->post_status ) {
-				$new_status = 'customize-draft';
-				$wpdb->update(
-					$wpdb->posts,
-					array( 'post_status' => $new_status ),
-					array( 'ID' => $matches['post_id'] )
-				);
-				clean_post_cache( $matches['post_id'] );
-
-				// Fires actions related to the transitioning of a post's status.
-				wp_transition_post_status( $new_status, $post->post_status, $post );
+				$auto_draft_posts[] = $post;
 			}
 		}
-		return $data;
+
+		if ( isset( $data['nav_menus_created_posts']['value'] ) && is_array( $data['nav_menus_created_posts']['value'] ) ) {
+			foreach ( $data['nav_menus_created_posts']['value'] as $post_id ) {
+				$post = get_post( $post_id );
+				if ( $post && 'auto-draft' === $post->post_status ) {
+					$auto_draft_posts[] = $post;
+				}
+			}
+		}
+
+		$new_status = 'customize-draft';
+		foreach ( $auto_draft_posts as $post ) {
+			$wpdb->update(
+				$wpdb->posts,
+				array( 'post_status' => $new_status ),
+				array( 'ID' => $post->ID )
+			);
+			clean_post_cache( $post->ID );
+
+			// Fires actions related to the transitioning of a post's status.
+			wp_transition_post_status( $new_status, $post->post_status, $post );
+		}
 	}
 
 	/**
-	 * Set the previewed `customize-draft` post IDs within a Snapshot.
+	 * Sanitize post IDs for auto-draft posts created for nav menu items to be published.
+	 *
+	 * Forked from `WP_Customize_Nav_Menus::sanitize_nav_menus_created_posts()` in 4.7.0.
+	 *
+	 * @see WP_Customize_Nav_Menus::sanitize_nav_menus_created_posts()
+	 * @param array $value Post IDs.
+	 * @return array Post IDs.
+	 */
+	public function sanitize_nav_menus_created_posts( $value ) {
+		$post_ids = array();
+		foreach ( wp_parse_id_list( $value ) as $post_id ) {
+			if ( empty( $post_id ) ) {
+				continue;
+			}
+			$post = get_post( $post_id );
+			if ( 'auto-draft' !== $post->post_status && 'customize-draft' !== $post->post_status ) { // This is the patched line.
+				continue;
+			}
+			$post_type_obj = get_post_type_object( $post->post_type );
+			if ( ! $post_type_obj ) {
+				continue;
+			}
+			if ( ! current_user_can( $post_type_obj->cap->publish_posts ) || ! current_user_can( $post_type_obj->cap->edit_post, $post_id ) ) {
+				continue;
+			}
+			$post_ids[] = $post->ID;
+		}
+		return $post_ids;
+	}
+
+	/**
+	 * Set the previewed `customize-draft` post IDs within a changeset/snapshot.
 	 *
 	 * @action after_setup_theme
 	 * @access public
