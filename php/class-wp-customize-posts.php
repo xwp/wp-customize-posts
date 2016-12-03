@@ -1137,7 +1137,7 @@ final class WP_Customize_Posts {
 	 *
 	 * @see WP_Customize_Nav_Menus::sanitize_nav_menus_created_posts()
 	 * @param array $value Post IDs.
-	 * @returns array Post IDs.
+	 * @return array Post IDs.
 	 */
 	public function sanitize_nav_menus_created_posts( $value ) {
 		$post_ids = array();

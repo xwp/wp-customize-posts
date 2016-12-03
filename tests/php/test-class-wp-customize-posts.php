@@ -76,6 +76,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		unset( $GLOBALS['wp_customize'] );
 		unset( $GLOBALS['wp_scripts'] );
 		unset( $_REQUEST['customize_snapshot_uuid'] );
+		unset( $_REQUEST['customize_changeset_uuid'] );
 		parent::tearDown();
 	}
 
