@@ -1438,11 +1438,11 @@ final class WP_Customize_Posts_Preview {
 	}
 
 	/**
-	 * Filter post_status to return snapshot value if available.
+	 * Filter post_status to return customize-previewed value if available.
 	 *
 	 * @param string  $post_status Default status. Used if no changes have been made.
 	 * @param WP_Post $post        Post object that may have a new value for post_status.
-	 * @return string Value of post_status stored in snapshot, or original value if unchanged.
+	 * @return string Value of post_status stored in customized state, or original value if unchanged.
 	 */
 	public function filter_get_post_status( $post_status, $post ) {
 		if ( empty( $post ) ) {
