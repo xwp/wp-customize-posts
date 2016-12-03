@@ -1162,7 +1162,7 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Set the previewed `customize-draft` post IDs within a Snapshot.
+	 * Set the previewed `customize-draft` post IDs within a changeset/snapshot.
 	 *
 	 * @action after_setup_theme
 	 * @access public

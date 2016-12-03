@@ -634,11 +634,14 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 * @covers WP_Customize_Posts::preview_customize_draft_post_ids()
 	 */
 	public function test_preview_customize_draft( $post_type ) {
+		if ( ! post_type_exists( 'customize_changeset' ) ) {
+			$this->markTestSkipped( 'Test depends on 4.7.' );
+		}
+
 		$post = $this->posts->insert_auto_draft_post( $post_type );
 		$setting_id = WP_Customize_Post_Setting::get_post_setting_id( $post );
 		$settings = $this->posts->manager->add_dynamic_settings( array( $setting_id ) );
 		$setting = array_shift( $settings );
-		$data = array();
 		$this->posts->manager->set_post_value( $setting_id, array_merge(
 			$setting->value(),
 			array(
@@ -646,19 +649,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 				'post_status' => 'publish',
 			)
 		) );
-		foreach ( $this->posts->manager->unsanitized_post_values() as $setting_id => $value ) {
-			$data[ $setting_id ] = array(
-				'value' => array_merge(
-					$setting->value(),
-					$value
-				),
-			);
-		}
-
-		if ( post_type_exists( 'customize_changeset' ) ) {
-			$this->markTestIncomplete( 'Rework test for compatibility with changesets (aka transactions). Post values are not read for unauthenticated users.' );
-		}
-		// @todo $this->posts->transition_customize_draft( $data );
+		$this->posts->manager->save_changeset_post( array( 'status' => 'draft' ) );
 
 		$GLOBALS['current_user'] = null;
 
