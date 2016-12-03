@@ -511,19 +511,19 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	 * @see WP_Customize_Posts::transition_customize_draft()
 	 */
 	public function test_transition_customize_draft() {
+		if ( ! post_type_exists( 'customize_changeset' ) ) {
+			$this->markTestSkipped( 'Test depends on 4.7.' );
+		}
 
 		$auto_draft_post = $this->posts->insert_auto_draft_post( 'post' );
 		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $auto_draft_post );
 		$auto_draft_page = $this->posts->insert_auto_draft_post( 'page' );
 		$page_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $auto_draft_page );
 
-		$nav_menu_created_stub_post = null;
-		if ( method_exists( $this->wp_customize->nav_menus, 'insert_auto_draft_post' ) ) {
-			$nav_menu_created_stub_post = $this->wp_customize->nav_menus->insert_auto_draft_post( array(
-				'post_type' => 'post',
-				'post_title' => 'Foo',
-			) );
-		}
+		$nav_menu_created_stub_post = $this->wp_customize->nav_menus->insert_auto_draft_post( array(
+			'post_type' => 'post',
+			'post_title' => 'Foo',
+		) );
 
 		$data = array();
 		$data['some_other_id'] = array(
@@ -543,11 +543,9 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 				'post_status' => 'draft',
 			),
 		);
-		if ( $nav_menu_created_stub_post ) {
-			$data['nav_menus_created_posts'] = array(
-				'value' => array( $nav_menu_created_stub_post->ID ),
-			);
-		}
+		$data['nav_menus_created_posts'] = array(
+			'value' => array( $nav_menu_created_stub_post->ID ),
+		);
 
 		$changeset_post_id = wp_insert_post( wp_slash( array(
 			'post_type' => 'customize_changeset',
@@ -557,9 +555,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 
 		$this->assertEquals( 'auto-draft', get_post_status( $auto_draft_post->ID ) );
 		$this->assertEquals( 'auto-draft', get_post_status( $auto_draft_page->ID ) );
-		if ( $nav_menu_created_stub_post ) {
-			$this->assertEquals( 'auto-draft', get_post_status( $nav_menu_created_stub_post->ID ) );
-		}
+		$this->assertEquals( 'auto-draft', get_post_status( $nav_menu_created_stub_post->ID ) );
 
 		$old_status = 'auto-draft';
 		$new_status = 'customize-draft';
@@ -568,24 +564,19 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$count_post_status = did_action( "{$new_status}_post" );
 		$count_page_status = did_action( "{$new_status}_page" );
 		wp_update_post( array( 'ID' => $changeset_post_id, 'post_status' => 'draft' ) );
-		$this->assertEquals( $count + ( $nav_menu_created_stub_post ? 4 : 3 ), did_action( 'transition_post_status' ) );
-		$this->assertEquals( $count_status_change + ( $nav_menu_created_stub_post ? 3 : 2 ), did_action( "{$old_status}_to_{$new_status}" ) );
-		$this->assertEquals( $count_post_status + ( $nav_menu_created_stub_post ? 2 : 1 ), did_action( "{$new_status}_post" ) );
+		$this->assertEquals( $count + 4, did_action( 'transition_post_status' ) );
+		$this->assertEquals( $count_status_change + 3, did_action( "{$old_status}_to_{$new_status}" ) );
+		$this->assertEquals( $count_post_status + 2, did_action( "{$new_status}_post" ) );
 		$this->assertEquals( $count_page_status + 1, did_action( "{$new_status}_page" ) );
 
 		$this->assertEquals( 'customize-draft', get_post_status( $auto_draft_post->ID ) );
 		$this->assertEquals( 'customize-draft', get_post_status( $auto_draft_page->ID ) );
-		if ( $nav_menu_created_stub_post ) {
-			$this->assertEquals( 'customize-draft', get_post_status( $nav_menu_created_stub_post->ID ) );
-		}
+		$this->assertEquals( 'customize-draft', get_post_status( $nav_menu_created_stub_post->ID ) );
 
 		wp_update_post( array( 'ID' => $changeset_post_id, 'post_status' => 'publish' ) );
 		$this->assertEquals( 'publish', get_post_status( $auto_draft_post->ID ) );
 		$this->assertEquals( 'draft', get_post_status( $auto_draft_page->ID ) );
-
-		if ( $nav_menu_created_stub_post ) {
-			$this->assertEquals( 'publish', get_post_status( $nav_menu_created_stub_post->ID ) );
-		}
+		$this->assertEquals( 'publish', get_post_status( $nav_menu_created_stub_post->ID ) );
 	}
 
 	/**
