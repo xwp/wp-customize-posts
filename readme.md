@@ -90,6 +90,12 @@ The following are listed in reverse chronological order. The first, more recent 
 
 ## Changelog ##
 
+### [0.8.4] - 2016-12-03 ###
+* Ensure auto-draft posts referenced in snapshot/changeset get transitioned to customize-draft, and that customize-draft nav_menus_created_posts get published (PR <a href="https://github.com/xwp/wp-customize-posts/pull/326" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/326" data-id="193245407">#326</a>).</li>
+* Improve method for skipping attachments so no error in console appears (PR <a href="https://github.com/xwp/wp-customize-posts/pull/325" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/325" data-id="191920013">#325</a>, Issue <a href="https://github.com/xwp/wp-customize-posts/issues/32" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/32" data-id="138023072">#32</a>).</li>
+
+See <a href="https://github.com/xwp/wp-customize-posts/milestone/12?closed=1">issues and PRs in milestone</a> and <a href="https://github.com/xwp/wp-customize-posts/compare/0.8.3...0.8.4">full release commit log</a>.
+
 ### [0.8.3] - 2016-11-24 ###
 * Prevent extra section params from being passed along to previewUrl (PR <a href="https://github.com/xwp/wp-customize-posts/pull/306" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/306" data-id="181028762">#306</a>)
 * Fix errors and erroneous selective refresh caused by dirty post settings not being synced into nav menu item settings (PR <a href="https://github.com/xwp/wp-customize-posts/pull/307" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/307" data-id="181318396">#307</a>)
