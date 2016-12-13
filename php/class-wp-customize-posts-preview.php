@@ -582,13 +582,11 @@ final class WP_Customize_Posts_Preview {
 	}
 
 	/**
-	 * Filter post_fields to inject customized state.
+	 * Filter posts_request to inject subselect UNIONs to include posts with the customized state.
 	 *
-	 * This ensures that ordering will respect the customized post data.
-	 *
-	 * @param string   $sql_select  The SELECT clause of the query.
+	 * @param string   $sql_select  A SQL SELECT query for posts.
 	 * @param WP_Query $query       The WP_Query instance (passed by reference).
-	 * @returns string Select fields.
+	 * @return string SQL SELECT query.
 	 */
 	public function filter_posts_request_to_inject_customized_state( $sql_select, $query ) {
 		global $wpdb;
@@ -820,7 +818,7 @@ final class WP_Customize_Posts_Preview {
 	 * @access private
 	 *
 	 * @param array $matches Matches.
-	 * @returns string SQL JOIN.
+	 * @return string SQL JOIN.
 	 */
 	public function _inject_meta_sql_customized_derived_tables( $matches ) {
 		global $wpdb;
@@ -1006,7 +1004,7 @@ final class WP_Customize_Posts_Preview {
 	/**
 	 * Filter pristine nav menu item values early.
 	 *
-	 * @param WP_Post $nav_menu_item Nav menu item.
+	 * @param WP_Post|object $nav_menu_item Nav menu item.
 	 * @return WP_Post Nav menu item.
 	 */
 	function filter_pristine_early_nav_menu_item( $nav_menu_item ) {
@@ -1034,7 +1032,7 @@ final class WP_Customize_Posts_Preview {
 	 * @access public
 	 * @see WP_Customize_Nav_Menu_Item_Setting::value_as_wp_post_nav_menu_item()
 	 *
-	 * @param WP_Post $nav_menu_item Nav menu item.
+	 * @param WP_Post|object $nav_menu_item Nav menu item.
 	 * @return WP_Post Nav menu item.
 	 */
 	public function filter_nav_menu_item_to_set_post_dependent_props( $nav_menu_item ) {
