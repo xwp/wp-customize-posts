@@ -192,8 +192,12 @@
 			 * Focus on the post section in the Customizer pane when clicking an edit-post-link.
 			 */
 			$( document.body ).on( 'click', '.post-edit-link', function( e ) {
-				var link = $( this ), postId;
-				postId = link.data( 'customize-post-id' );
+				var link = $( this ), postId, matches;
+				matches = link.prop( 'search' ).match( /post=(\d+)/ );
+				if ( ! matches ) {
+					return;
+				}
+				postId = parseInt( matches[1], 10 );
 				e.preventDefault();
 				if ( postId ) {
 					api.preview.send( 'edit-post', postId );
