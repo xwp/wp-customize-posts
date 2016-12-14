@@ -165,9 +165,80 @@
 		} )( api.Preview.prototype.handleLinkClick );
 	}
 
+	/**
+	 * Hook up post model in Backbone with post setting in customizer.
+	 *
+	 * @returns {void}
+	 */
+	api.previewPosts.injectBackboneModelSync = function injectBackboneModelSync() {
+		var originalInitialize = wp.api.WPApiBaseModel.prototype.initialize, postModels = {}, synced = false;
+
+		wp.customize.bind( 'active', function() {
+			synced = true;
+		} );
+
+		// Inject into Post model creation to capture instances to sync with customize settings.
+		wp.api.WPApiBaseModel.prototype.initialize = function( attributes, options ) {
+			var model = this, settingId; // eslint-disable-line consistent-this
+			originalInitialize.call( model, attributes, options );
+
+			// @todo Make sure that attributes.type is a registered post type.
+			// @todo We need a mapping of post type to schema type.
+			if ( ! attributes.type ) {
+				return;
+			}
+
+			settingId = 'post[' + attributes.type + '][' + String( attributes.id ) + ']';
+			postModels[ settingId ] = model;
+
+			wp.customize( settingId, function( postSetting ) {
+				var updateModel = function( postData ) {
+					var modelAttributes = {};
+					_.each( [ 'title', 'content', 'excerpt' ], function( field ) {
+						if ( ! model.get( field ).raw || model.get( field ).raw !== postData[ 'post_' + field ] ) {
+							modelAttributes[ field ] = {
+								raw: postData[ 'post_' + field ],
+								rendered: postData[ 'post_' + field ] // Raw value used temporarily until new value fetched from server in selective refresh request.
+							};
+
+							// Apply rudimentary wpautop while waiting for selective refresh.
+							if ( modelAttributes[ field ].rendered && ( 'excerpt' === field || 'content' === field ) ) {
+								modelAttributes[ field ].rendered = '<p>' + modelAttributes[ field ].rendered.split( /\n\n+/ ).join( '</p><p>' ) + '</p>';
+							}
+						}
+					} );
+					_.each( [ 'author', 'slug' ], function( field ) {
+						modelAttributes[ field ] = postData[ 'post_' + field ];
+					} );
+					modelAttributes.date = postData.post_date.replace( ' ', 'T' );
+					model.set( modelAttributes );
+				};
+				if ( synced ) {
+					updateModel( postSetting.get() );
+				}
+				postSetting.bind( updateModel );
+			} );
+		};
+
+		// Supply rendered data from server in the selective refresh response.
+		wp.customize.selectiveRefresh.bind( 'render-partials-response', function( data ) {
+			if ( ! data.rest_post_resources ) {
+				return;
+			}
+			_.each( data.rest_post_resources, function( postResource, settingId ) {
+				if ( postModels[ settingId ] ) {
+					postModels[ settingId ].set( postResource );
+				}
+			} );
+		} );
+	};
+
 	api.bind( 'preview-ready', function onPreviewReady() {
 		_.extend( api.previewPosts.data, _wpCustomizePreviewPostsData );
 
+		if ( api.previewPosts.data.hasRestApiBackboneClient ) {
+			api.previewPosts.injectBackboneModelSync();
+		}
 		api.each( api.previewPosts.ensurePartialsForPostSetting );
 		api.bind( 'add', api.previewPosts.ensurePartialsForPostSetting );
 
