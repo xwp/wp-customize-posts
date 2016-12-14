@@ -144,7 +144,7 @@
 		// Prevent not-allowed cursor on edit-post-links.
 		api.isLinkPreviewable = ( function( originalIsLinkPreviewable ) {
 			return function( element, options ) {
-				if ( $( element ).hasClass( 'post-edit-link' ) ) {
+				if ( $( element ).closest( 'a' ).hasClass( 'post-edit-link' ) ) {
 					return true;
 				}
 				return originalIsLinkPreviewable.call( this, element, options );
@@ -156,7 +156,7 @@
 	if ( api.Preview.prototype.handleLinkClick ) {
 		api.Preview.prototype.handleLinkClick = ( function( originalHandleLinkClick ) {
 			return function( event ) {
-				if ( $( event.target ).hasClass( 'post-edit-link' ) ) {
+				if ( $( event.target ).closest( 'a' ).hasClass( 'post-edit-link' ) ) {
 					event.preventDefault();
 				} else {
 					originalHandleLinkClick.call( this, event );
