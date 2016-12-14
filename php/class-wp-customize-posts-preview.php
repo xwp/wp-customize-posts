@@ -94,7 +94,6 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_tally_previewed_posts' ), 1000 );
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_tally_orderby_keys' ), 10, 2 );
 		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
-		add_filter( 'edit_post_link', array( $this, 'filter_edit_post_link' ), 10, 2 );
 		add_filter( 'get_edit_post_link', array( $this, 'filter_get_edit_post_link' ), 10, 2 );
 		add_filter( 'get_avatar', array( $this, 'filter_get_avatar' ), 10, 6 );
 		add_filter( 'infinite_scroll_results', array( $this, 'amend_with_queried_post_ids' ) );
@@ -1237,19 +1236,6 @@ final class WP_Customize_Posts_Preview {
 			return null;
 		}
 		return $url;
-	}
-
-	/**
-	 * Filter the post edit link so it can open the post in the Customizer.
-	 *
-	 * @param string $link    Anchor tag for the edit link.
-	 * @param int    $post_id Post ID.
-	 * @return string Edit link.
-	 */
-	function filter_edit_post_link( $link, $post_id ) {
-		$data_attributes = sprintf( ' data-customize-post-id="%d"', $post_id );
-		$link = preg_replace( '/(?<=<a\s)/', $data_attributes, $link );
-		return $link;
 	}
 
 	/**
