@@ -9,6 +9,7 @@
 	if ( ! api.previewPosts.data ) {
 		api.previewPosts.data = {};
 	}
+	api.previewPosts.backbonePostModelInstances = {};
 
 	/**
 	 * Prevent shift-clicking from inadvertently causing text selection.
@@ -171,7 +172,7 @@
 	 * @returns {void}
 	 */
 	api.previewPosts.injectBackboneModelSync = function injectBackboneModelSync() {
-		var originalInitialize = wp.api.WPApiBaseModel.prototype.initialize, postModels = {}, synced = false;
+		var originalInitialize = wp.api.WPApiBaseModel.prototype.initialize, synced = false;
 
 		wp.customize.bind( 'active', function() {
 			synced = true;
@@ -189,7 +190,13 @@
 			}
 
 			settingId = 'post[' + attributes.type + '][' + String( attributes.id ) + ']';
-			postModels[ settingId ] = model;
+
+			if ( ! api.previewPosts.backbonePostModelInstances[ settingId ] ) {
+				api.previewPosts.backbonePostModelInstances[ settingId ] = [];
+			}
+
+			// @todo Remove the model from this array when it is removed from a collection.
+			api.previewPosts.backbonePostModelInstances[ settingId ].push( model );
 
 			wp.customize( settingId, function( postSetting ) {
 				var updateModel = function( postData ) {
@@ -228,8 +235,10 @@
 				return;
 			}
 			_.each( data.rest_post_resources, function( postResource, settingId ) {
-				if ( postModels[ settingId ] ) {
-					postModels[ settingId ].set( postResource );
+				if ( api.previewPosts.backbonePostModelInstances[ settingId ] ) {
+					_.each( api.previewPosts.backbonePostModelInstances[ settingId ], function( model ) {
+						model.set( postResource );
+					} );
 				}
 			} );
 		} );
