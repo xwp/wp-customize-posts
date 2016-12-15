@@ -194,6 +194,8 @@
 			wp.customize( settingId, function( postSetting ) {
 				var updateModel = function( postData ) {
 					var modelAttributes = {};
+
+					// @todo Make sure we only set attributes that exist in the model.
 					_.each( [ 'title', 'content', 'excerpt' ], function( field ) {
 						if ( ! model.get( field ).raw || model.get( field ).raw !== postData[ 'post_' + field ] ) {
 							modelAttributes[ field ] = {

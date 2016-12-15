@@ -91,6 +91,7 @@ final class WP_Customize_Posts_Preview {
 		add_action( 'parse_query', array( $this, 'ensure_page_for_posts_preview' ), 5 );
 		add_filter( 'customize_dynamic_partial_args', array( $this, 'filter_customize_dynamic_partial_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_partial_class', array( $this, 'filter_customize_dynamic_partial_class' ), 10, 3 );
+		add_filter( 'customize_posts_partial_schema', array( $this, 'filter_customize_posts_partial_schema' ) );
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_tally_previewed_posts' ), 1000 );
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_tally_orderby_keys' ), 10, 2 );
 		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
@@ -99,13 +100,6 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'infinite_scroll_results', array( $this, 'amend_with_queried_post_ids' ) );
 		add_filter( 'customize_render_partials_response', array( $this, 'amend_with_queried_post_ids' ) );
 		add_filter( 'customize_render_partials_response', array( $this, 'amend_partials_response_with_rest_resources' ), 10, 3 );
-
-		// @todo There should be some more sophisticated logic for determining whether fallback_refresh is done.
-		add_filter( 'customize_posts_partial_schema', function( $schema ) {
-			$schema['post_title']['fallback_refresh'] = false;
-			$schema['post_excerpt']['fallback_refresh'] = false;
-			return $schema;
-		} );
 		remove_filter( 'get_edit_post_link', '__return_empty_string' ); // See <https://core.trac.wordpress.org/ticket/38648>.
 	}
 
@@ -1226,6 +1220,20 @@ final class WP_Customize_Posts_Preview {
 			$partial_class = 'WP_Customize_Post_Field_Partial';
 		}
 		return $partial_class;
+	}
+
+	/**
+	 * Prevent fallback_refresh for select post fields.
+	 *
+	 * @todo There should be some more sophisticated logic for determining whether fallback_refresh is done.
+	 *
+	 * @param array $schema Schema.
+	 * @return array Schema.
+	 */
+	function filter_customize_posts_partial_schema( $schema ) {
+		$schema['post_title']['fallback_refresh'] = false;
+		$schema['post_excerpt']['fallback_refresh'] = false;
+		return $schema;
 	}
 
 	/**
