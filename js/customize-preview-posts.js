@@ -183,9 +183,8 @@
 			var model = this, postSettingId; // eslint-disable-line consistent-this
 			originalInitialize.call( model, attributes, options );
 
-			// @todo Make sure that attributes.type is a registered post type.
-			// @todo We need a mapping of post type to schema type.
-			if ( ! attributes.type ) {
+			// @todo The post type may not correspond directly to the schema type.
+			if ( -1 === api.previewPosts.data.postTypes.indexOf( attributes.type ) ) {
 				return;
 			}
 
@@ -199,29 +198,9 @@
 			api.previewPosts.wpApiModelInstances[ postSettingId ].push( model );
 			api.previewPosts.wpApiModelInstances.trigger( 'add', model, postSettingId );
 
-			wp.customize( postSettingId, function( postSetting ) {
+			api( postSettingId, function( postSetting ) {
 				var updateModel = function( postData ) {
-					var modelAttributes = {};
-
-					// @todo Make sure we only set attributes that exist in the model.
-					_.each( [ 'title', 'content', 'excerpt' ], function( field ) {
-						if ( ! model.get( field ).raw || model.get( field ).raw !== postData[ 'post_' + field ] ) {
-							modelAttributes[ field ] = {
-								raw: postData[ 'post_' + field ],
-								rendered: postData[ 'post_' + field ] // Raw value used temporarily until new value fetched from server in selective refresh request.
-							};
-
-							// Apply rudimentary wpautop while waiting for selective refresh.
-							if ( modelAttributes[ field ].rendered && ( 'excerpt' === field || 'content' === field ) ) {
-								modelAttributes[ field ].rendered = '<p>' + modelAttributes[ field ].rendered.split( /\n\n+/ ).join( '</p><p>' ) + '</p>';
-							}
-						}
-					} );
-					_.each( [ 'author', 'slug' ], function( field ) {
-						modelAttributes[ field ] = postData[ 'post_' + field ];
-					} );
-					modelAttributes.date = postData.post_date.replace( ' ', 'T' );
-					model.set( modelAttributes );
+					api.previewPosts.handlePostSettingChangeForBackboneModel( model, postData );
 				};
 				if ( synced ) {
 					updateModel( postSetting.get() );
@@ -231,6 +210,43 @@
 		};
 
 		wp.customize.selectiveRefresh.bind( 'render-partials-response', api.previewPosts.handleRenderPartialsResponse );
+	};
+
+	/**
+	 * Handle post setting change to sync into corresponding Backbone model.
+	 *
+	 * @param {wp.api.WPApiBaseModel|wp.api.models.Post} model Post model.
+	 * @param {object} postData Data from the post setting.
+	 * @returns {void}
+	 */
+	api.previewPosts.handlePostSettingChangeForBackboneModel = function handlePostSettingChangeForBackboneModel( model, postData ) {
+		var modelAttributes = {};
+
+		_.each( [ 'title', 'content', 'excerpt' ], function( field ) {
+			if ( ! _.isObject( model.get( field ) ) ) {
+				return;
+			}
+			if ( ! model.get( field ).raw || model.get( field ).raw !== postData[ 'post_' + field ] ) {
+				modelAttributes[ field ] = {
+					raw: postData[ 'post_' + field ],
+					rendered: postData[ 'post_' + field ] // Raw value used temporarily until new value fetched from server in selective refresh request.
+				};
+
+				// Apply rudimentary wpautop while waiting for selective refresh.
+				if ( modelAttributes[ field ].rendered && ( 'excerpt' === field || 'content' === field ) ) {
+					modelAttributes[ field ].rendered = '<p>' + modelAttributes[ field ].rendered.split( /\n\n+/ ).join( '</p><p>' ) + '</p>';
+				}
+			}
+		} );
+		_.each( [ 'author', 'slug' ], function( field ) {
+			if ( ! _.isUndefined( model.get( field ) ) ) {
+				modelAttributes[ field ] = postData[ 'post_' + field ];
+			}
+		} );
+		if ( ! _.isUndefined( model.get( 'date' ) ) ) {
+			modelAttributes.date = postData.post_date.replace( ' ', 'T' );
+		}
+		model.set( modelAttributes );
 	};
 
 	/**

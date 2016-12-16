@@ -35,7 +35,7 @@ var CustomizePreviewFeaturedImage = (function( api, $ ) {
 	 */
 	component.handleWpApiBackboneModelAdd = function handleWpApiBackboneModelAdd( postModel ) {
 		var settingId;
-		if ( 'undefined' === typeof postModel.get( 'featured_media' ) ) {
+		if ( _.isUndefined( postModel.get( 'featured_media' ) ) ) {
 			return;
 		}
 		settingId = 'postmeta[' + postModel.get( 'type' ) + '][' + String( postModel.get( 'id' ) ) + '][_thumbnail_id]';

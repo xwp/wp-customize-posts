@@ -1419,6 +1419,7 @@ final class WP_Customize_Posts_Preview {
 			'partialSchema' => $exported_partial_schema,
 			'queriedOrderbyFields' => $queried_orderby_fields,
 			'hasRestApiBackboneClient' => wp_script_is( 'wp-api', 'enqueued' ),
+			'postTypes' => array_keys( $this->component->get_post_types() ), // Used to determine which REST API model types are for posts.
 		);
 
 		$data = sprintf( 'var _wpCustomizePreviewPostsData = %s;', wp_json_encode( $exported ) );
