@@ -235,6 +235,7 @@
 				// Apply rudimentary wpautop while waiting for selective refresh.
 				if ( modelAttributes[ field ].rendered && ( 'excerpt' === field || 'content' === field ) ) {
 					modelAttributes[ field ].rendered = '<p>' + modelAttributes[ field ].rendered.split( /\n\n+/ ).join( '</p><p>' ) + '</p>';
+					modelAttributes[ field ].rendered = modelAttributes[ field ].rendered.replace( /\n/g, '<br>' );
 				}
 			}
 		} );
