@@ -180,7 +180,7 @@
 
 		// Inject into Post model creation to capture instances to sync with customize settings.
 		wp.api.WPApiBaseModel.prototype.initialize = function( attributes, options ) {
-			var model = this, settingId; // eslint-disable-line consistent-this
+			var model = this, postSettingId, featuredImagePostMetaSettingId; // eslint-disable-line consistent-this
 			originalInitialize.call( model, attributes, options );
 
 			// @todo Make sure that attributes.type is a registered post type.
@@ -189,16 +189,17 @@
 				return;
 			}
 
-			settingId = 'post[' + attributes.type + '][' + String( attributes.id ) + ']';
+			postSettingId = 'post[' + attributes.type + '][' + String( attributes.id ) + ']';
+			featuredImagePostMetaSettingId = 'postmeta[' + attributes.type + '][' + String( attributes.id ) + '][_thumbnail_id]';
 
-			if ( ! api.previewPosts.backbonePostModelInstances[ settingId ] ) {
-				api.previewPosts.backbonePostModelInstances[ settingId ] = [];
+			if ( ! api.previewPosts.backbonePostModelInstances[ postSettingId ] ) {
+				api.previewPosts.backbonePostModelInstances[ postSettingId ] = [];
 			}
 
 			// @todo Remove the model from this array when it is removed from a collection.
-			api.previewPosts.backbonePostModelInstances[ settingId ].push( model );
+			api.previewPosts.backbonePostModelInstances[ postSettingId ].push( model );
 
-			wp.customize( settingId, function( postSetting ) {
+			wp.customize( postSettingId, function( postSetting ) {
 				var updateModel = function( postData ) {
 					var modelAttributes = {};
 
@@ -227,6 +228,16 @@
 				}
 				postSetting.bind( updateModel );
 			} );
+
+			// Also handle syncing featured image.
+			// @todo This should be handled in the featured image controller.
+			if ( 'undefined' !== typeof model.get( 'featured_media' ) ) {
+				wp.customize( featuredImagePostMetaSettingId, function( postmetaSetting ) {
+					postmetaSetting.bind( function( featuredImageId ) {
+						model.set( 'featured_media', featuredImageId );
+					} );
+				} );
+			}
 		};
 
 		// Supply rendered data from server in the selective refresh response.
