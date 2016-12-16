@@ -195,12 +195,12 @@ class Test_WP_Customize_Featured_Image_Controller extends WP_UnitTestCase {
 		$controller = new WP_Customize_Featured_Image_Controller();
 
 		$html = get_the_post_thumbnail( $post_id );
-		$this->assertNotContains( 'data-customize-featured-image-partial="1"', $html );
+		$this->assertNotContains( 'data-customize-featured-image-partial="' . $post_id . '"', $html );
 		$this->assertNotContains( 'data-customize-partial-placement-context', $html );
 
 		$controller->setup_selective_refresh();
 		$html = get_the_post_thumbnail( $post_id );
-		$this->assertContains( 'data-customize-featured-image-partial="1"', $html );
+		$this->assertContains( 'data-customize-featured-image-partial="' . $post_id . '"', $html );
 		$this->assertContains( 'data-customize-partial-placement-context', $html );
 
 		$html = get_the_post_thumbnail( $post_id, 'large', array( 'data-foo' => 'bar' ) );

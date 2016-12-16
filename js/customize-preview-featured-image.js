@@ -7,7 +7,7 @@ var CustomizePreviewFeaturedImage = (function( api, $ ) {
 
 	var component = {
 		data: {
-			partialSelector: '',
+			partialSelectorAttribute: '',
 			partialContainerInclusive: true
 		}
 	};
@@ -82,18 +82,19 @@ var CustomizePreviewFeaturedImage = (function( api, $ ) {
 	 * @returns {component.FeaturedImagePartial|null} New or existing featured image partial, or null if not relevant setting.
 	 */
 	component.ensurePartialForSetting = function ensurePartialForSetting( setting ) {
-		var ensuredPartial, partialId, matches = setting.id.match( /^postmeta\[.+?]\[(\d+)]\[_thumbnail_id]$/ );
+		var ensuredPartial, partialId, postId, matches = setting.id.match( /^postmeta\[.+?]\[(\d+)]\[_thumbnail_id]$/ );
 		if ( ! matches ) {
 			return null;
 		}
 		partialId = setting.id;
+		postId = parseInt( matches[1], 10 );
 		ensuredPartial = api.selectiveRefresh.partial( partialId );
 		if ( ensuredPartial ) {
 			return ensuredPartial;
 		}
 		ensuredPartial = new component.FeaturedImagePartial( partialId, {
 			params: {
-				selector: component.data.partialSelector,
+				selector: '[' + component.data.partialSelectorAttribute + '=' + String( postId ) + ']',
 				settings: [ setting.id ],
 				primarySetting: setting.id,
 				containerInclusive: component.data.partialContainerInclusive
