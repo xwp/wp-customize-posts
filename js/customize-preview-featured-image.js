@@ -23,6 +23,27 @@ var CustomizePreviewFeaturedImage = (function( api, $ ) {
 			_.extend( component.data, configData );
 		}
 		component.registerPartials();
+
+		api.previewPosts.wpApiModelInstances.bind( 'add', component.handleWpApiBackboneModelAdd );
+	};
+
+	/**
+	 * Sync changes to featured image into Backbone models
+	 *
+	 * @param {wp.api.WPApiBaseModel|wp.api.models.Post} postModel Post model.
+	 * @returns {void}
+	 */
+	component.handleWpApiBackboneModelAdd = function handleWpApiBackboneModelAdd( postModel ) {
+		var settingId;
+		if ( 'undefined' === typeof postModel.get( 'featured_media' ) ) {
+			return;
+		}
+		settingId = 'postmeta[' + postModel.get( 'type' ) + '][' + String( postModel.get( 'id' ) ) + '][_thumbnail_id]';
+		api( settingId, function( postmetaSetting ) {
+			postmetaSetting.bind( function( featuredImageId ) {
+				postModel.set( 'featured_media', featuredImageId );
+			} );
+		} );
 	};
 
 	/**

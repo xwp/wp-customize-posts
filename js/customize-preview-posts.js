@@ -9,7 +9,7 @@
 	if ( ! api.previewPosts.data ) {
 		api.previewPosts.data = {};
 	}
-	api.previewPosts.backbonePostModelInstances = {};
+	api.previewPosts.wpApiModelInstances = _.extend( {}, api.Events );
 
 	/**
 	 * Prevent shift-clicking from inadvertently causing text selection.
@@ -180,7 +180,7 @@
 
 		// Inject into Post model creation to capture instances to sync with customize settings.
 		wp.api.WPApiBaseModel.prototype.initialize = function( attributes, options ) {
-			var model = this, postSettingId, featuredImagePostMetaSettingId; // eslint-disable-line consistent-this
+			var model = this, postSettingId; // eslint-disable-line consistent-this
 			originalInitialize.call( model, attributes, options );
 
 			// @todo Make sure that attributes.type is a registered post type.
@@ -190,14 +190,14 @@
 			}
 
 			postSettingId = 'post[' + attributes.type + '][' + String( attributes.id ) + ']';
-			featuredImagePostMetaSettingId = 'postmeta[' + attributes.type + '][' + String( attributes.id ) + '][_thumbnail_id]';
 
-			if ( ! api.previewPosts.backbonePostModelInstances[ postSettingId ] ) {
-				api.previewPosts.backbonePostModelInstances[ postSettingId ] = [];
+			if ( ! api.previewPosts.wpApiModelInstances[ postSettingId ] ) {
+				api.previewPosts.wpApiModelInstances[ postSettingId ] = [];
 			}
 
 			// @todo Remove the model from this array when it is removed from a collection.
-			api.previewPosts.backbonePostModelInstances[ postSettingId ].push( model );
+			api.previewPosts.wpApiModelInstances[ postSettingId ].push( model );
+			api.previewPosts.wpApiModelInstances.trigger( 'add', model, postSettingId );
 
 			wp.customize( postSettingId, function( postSetting ) {
 				var updateModel = function( postData ) {
@@ -228,30 +228,28 @@
 				}
 				postSetting.bind( updateModel );
 			} );
-
-			// Also handle syncing featured image.
-			// @todo This should be handled in the featured image controller.
-			if ( 'undefined' !== typeof model.get( 'featured_media' ) ) {
-				wp.customize( featuredImagePostMetaSettingId, function( postmetaSetting ) {
-					postmetaSetting.bind( function( featuredImageId ) {
-						model.set( 'featured_media', featuredImageId );
-					} );
-				} );
-			}
 		};
 
-		// Supply rendered data from server in the selective refresh response.
-		wp.customize.selectiveRefresh.bind( 'render-partials-response', function( data ) {
-			if ( ! data.rest_post_resources ) {
-				return;
+		wp.customize.selectiveRefresh.bind( 'render-partials-response', api.previewPosts.handleRenderPartialsResponse );
+	};
+
+	/**
+	 * Supply rendered data from server in the selective refresh response.
+	 *
+	 * @param {object} data Response data.
+	 * @param {object} data.rest_post_resources REST resources for the customized posts.
+	 * @returns {void}
+	 */
+	api.previewPosts.handleRenderPartialsResponse = function handleRenderPartialsResponse( data ) {
+		if ( ! data.rest_post_resources ) {
+			return;
+		}
+		_.each( data.rest_post_resources, function( postResource, settingId ) {
+			if ( api.previewPosts.wpApiModelInstances[ settingId ] ) {
+				_.each( api.previewPosts.wpApiModelInstances[ settingId ], function( model ) {
+					model.set( postResource );
+				} );
 			}
-			_.each( data.rest_post_resources, function( postResource, settingId ) {
-				if ( api.previewPosts.backbonePostModelInstances[ settingId ] ) {
-					_.each( api.previewPosts.backbonePostModelInstances[ settingId ], function( model ) {
-						model.set( postResource );
-					} );
-				}
-			} );
 		} );
 	};
 
