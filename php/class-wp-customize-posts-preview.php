@@ -91,7 +91,6 @@ final class WP_Customize_Posts_Preview {
 		add_action( 'parse_query', array( $this, 'ensure_page_for_posts_preview' ), 5 );
 		add_filter( 'customize_dynamic_partial_args', array( $this, 'filter_customize_dynamic_partial_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_partial_class', array( $this, 'filter_customize_dynamic_partial_class' ), 10, 3 );
-		add_filter( 'customize_posts_partial_schema', array( $this, 'filter_customize_posts_partial_schema' ) );
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_tally_previewed_posts' ), 1000 );
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_tally_orderby_keys' ), 10, 2 );
 		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
@@ -1223,20 +1222,6 @@ final class WP_Customize_Posts_Preview {
 	}
 
 	/**
-	 * Prevent fallback_refresh for select post fields.
-	 *
-	 * @todo There should be some more sophisticated logic for determining whether fallback_refresh is done.
-	 *
-	 * @param array $schema Schema.
-	 * @return array Schema.
-	 */
-	function filter_customize_posts_partial_schema( $schema ) {
-		$schema['post_title']['fallback_refresh'] = false;
-		$schema['post_excerpt']['fallback_refresh'] = false;
-		return $schema;
-	}
-
-	/**
 	 * Filters get_edit_post_link to short-circuits if post cannot be edited in Customizer.
 	 *
 	 * @param string $url The edit link.
@@ -1321,22 +1306,19 @@ final class WP_Customize_Posts_Preview {
 			),
 			'post_excerpt' => array(
 				'selector' => '.entry-summary',
+				'fallback_refresh' => true,
 			),
 			'comment_status[comments-area]' => array(
 				'selector' => '.comments-area',
-				'body_selector' => true,
-				'singular_only' => true,
 				'container_inclusive' => true,
 			),
 			'comment_status[comments-link]' => array(
 				'selector' => '.comments-link',
-				'archive_only' => true,
+				'fallback_dependent_selector' => 'body.archive', // Only do fallback when on archives.
 				'container_inclusive' => true,
 			),
 			'ping_status' => array(
 				'selector' => '.comments-area',
-				'body_selector' => true,
-				'singular_only' => true,
 				'container_inclusive' => true,
 			),
 			'post_author[byline]' => array(
@@ -1358,6 +1340,15 @@ final class WP_Customize_Posts_Preview {
 		 * @return array
 		 */
 		$schema = apply_filters( 'customize_posts_partial_schema', $schema );
+
+		$deprecated_keys = array( 'body_selector', 'archive_only', 'singular_only' );
+		foreach ( $schema as $_field_id => $_partial_args ) {
+			foreach ( $deprecated_keys as $deprecated_key ) {
+				if ( array_key_exists( $deprecated_key, $_partial_args ) ) {
+					_deprecated_argument( __FUNCTION__, '0.8.5', sprintf( __( 'The %s param has been removed from the partial schema. Consider fallback_dependent_selector if needed.', 'customize-posts' ), $deprecated_key ) );
+				}
+			}
+		}
 
 		// Return specific schema based on the field_id & placement.
 		if ( ! empty( $field_id ) ) {

@@ -58,7 +58,7 @@ if ( ! class_exists( 'Customize_Posts_Dummy_Support' ) ) {
 		public function filter_partial_schema( $schema ) {
 			$schema['post_author[biography]'] = array(
 				'selector' => '.author-info',
-				'singular_only' => true,
+				'fallback_dependent_selector' => 'body.singular',
 				'container_inclusive' => true,
 				'render_callback' => array( $this, 'biography_render_callback' ),
 			);

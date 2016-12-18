@@ -36,7 +36,7 @@
 
 		// Add the partials.
 		_.each( api.previewPosts.partialSchema( setting.id ), function( schema ) {
-			var partial, addPartial, matches, baseSelector;
+			var partial, matches, postId, postType, selectorBases;
 
 			matches = schema.id.match( idPattern );
 			if ( ! matches ) {
@@ -46,25 +46,28 @@
 			if ( api.selectiveRefresh.partial.has( schema.id ) ) {
 				return;
 			}
+			postType = matches[1];
+			postId = parseInt( matches[2], 10 );
 
 			if ( schema.params.selector ) {
-				if ( ! schema.params.bodySelector ) {
-					baseSelector = '.hentry.post-' + String( parseInt( matches[2], 10 ) ) + '.type-' + matches[1];
+
+				selectorBases = [
+					'.hentry.post-' + String( postId )
+				];
+				if ( 'page' === postType ) {
+					selectorBases.push( 'body.page.page-id-' + String( postId ) );
 				} else {
-					baseSelector = '.postid-' + String( parseInt( matches[2], 10 ) ) + '.single-' + matches[1];
+					selectorBases.push( 'body.postid-' + String( postId ) );
 				}
-				schema.params.selector = baseSelector + ' ' + schema.params.selector;
+				schema.params.selector = _.map( selectorBases, function( selectorBase ) {
+					var selector = selectorBase + ' ' + schema.params.selector;
+					selector = selector.replace( /%d/g, String( postId ) );
+					return selector;
+				} ).join( ', ' );
 
-				addPartial =
-					! schema.params.singularOnly && ! schema.params.archiveOnly ||
-					schema.params.singularOnly && api.previewPosts.data.isSingular ||
-					schema.params.archiveOnly && ! api.previewPosts.data.isSingular;
-
-				if ( addPartial ) {
-					partial = new api.selectiveRefresh.partialConstructor.post_field( schema.id, { params: schema.params } );
-					api.selectiveRefresh.partial.add( partial.id, partial );
-					addedPartials.push( partial );
-				}
+				partial = new api.selectiveRefresh.partialConstructor.post_field( schema.id, { params: schema.params } );
+				api.selectiveRefresh.partial.add( partial.id, partial );
+				addedPartials.push( partial );
 			} else {
 				partial = new api.selectiveRefresh.partialConstructor.post_field( schema.id, { params: schema.params } );
 
@@ -79,7 +82,7 @@
 				partial.refresh = function refreshWithoutSelector() {
 					var deferred = $.Deferred();
 					if ( this.params.fallbackRefresh ) {
-						api.selectiveRefresh.requestFullRefresh();
+						api.selectiveRefresh.requestFullRefresh(); // @todo Do partial.fallback()?
 						deferred.resolve();
 					} else {
 						deferred.reject();
@@ -209,7 +212,7 @@
 			} );
 		};
 
-		wp.customize.selectiveRefresh.bind( 'render-partials-response', api.previewPosts.handleRenderPartialsResponse );
+		api.selectiveRefresh.bind( 'render-partials-response', api.previewPosts.handleRenderPartialsResponse );
 	};
 
 	/**

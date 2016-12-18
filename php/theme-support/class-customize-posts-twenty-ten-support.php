@@ -45,7 +45,7 @@ class Customize_Posts_Twenty_Ten_Support extends Customize_Posts_Theme_Support {
 
 		$schema['post_author[biography]'] = array(
 			'selector' => '#entry-author-info',
-			'singular_only' => true,
+			'fallback_dependent_selector' => 'body.singular',
 			'container_inclusive' => true,
 			'render_callback' => array( $this, 'biography_render_callback' ),
 		);
