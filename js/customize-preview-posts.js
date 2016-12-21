@@ -187,7 +187,7 @@
 			originalInitialize.call( model, attributes, options );
 
 			// @todo The post type may not correspond directly to the schema type.
-			if ( -1 === api.previewPosts.data.postTypes.indexOf( attributes.type ) ) {
+			if ( ! attributes || -1 === api.previewPosts.data.postTypes.indexOf( attributes.type ) ) {
 				return;
 			}
 
