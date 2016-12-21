@@ -41,7 +41,7 @@ class Customize_Posts_Twenty_Fifteen_Support extends Customize_Posts_Theme_Suppo
 	public function filter_partial_schema( $schema ) {
 		$schema['post_author[biography]'] = array(
 			'selector' => '.author-info',
-			'singular_only' => true,
+			'fallback_dependent_selector' => 'body.singular',
 			'container_inclusive' => true,
 			'render_callback' => array( $this, 'biography_render_callback' ),
 		);

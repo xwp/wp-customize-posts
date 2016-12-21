@@ -35,8 +35,6 @@
 			api.selectiveRefresh.partialConstructor.deferred.prototype.initialize.call( partial, id, args );
 
 			partial.addInstantPreviews();
-
-			// @todo If singular_only, and this is not the post singular post for this partial, then no refresh!
 		},
 
 		/**
@@ -121,6 +119,41 @@
 			} );
 
 			return refreshPromise;
+		},
+
+		/**
+		 * Handle fail to render partial.
+		 *
+		 * {@inheritdoc}
+		 *
+		 * @this {wp.customize.selectiveRefresh.partialConstructor.deferred}
+		 * @returns {void}
+		 */
+		fallback: function postFieldPartialFallback() {
+			var partial = this, dependentSelector;
+
+			/*
+			 * Skip invoking fallback behavior for partials on documents that lack matches for
+			 * the fallback dependent selector. The default fallback dependent selector is
+			 * essentially checking to see if a body_class or post_class exists in the document
+			 * which references the given post. If the dependent selector fails to match any
+			 * elements, then the selector dependency fails and the partial should not be added.
+			 * Note that the dependent selector could have been used as a determiner for whether
+			 * the partial was added in the first place. However, this would have meant that no
+			 * selective refresh requests would have been spawned by the change, and this would
+			 * have meant that any Backbone models for the WP-API would not have had the chance
+			 * to get the rendered updates from the server.
+			 */
+			dependentSelector = partial.params.fallbackDependentSelector;
+			if ( ! dependentSelector ) {
+				dependentSelector = '.hentry.post-%d, body.page-id-%d, body.postid-%d';
+			}
+			dependentSelector = dependentSelector.replace( /%d/g, String( partial.params.post_id ) );
+			if ( 0 === $( dependentSelector ).length ) {
+				return;
+			}
+
+			api.selectiveRefresh.partialConstructor.deferred.prototype.fallback.call( partial );
 		},
 
 		/**
