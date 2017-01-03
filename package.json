@@ -6,7 +6,7 @@
     "type": "git",
     "url": "https://github.com/xwp/wp-customize-posts.git"
   },
-  "version": "0.8.4",
+  "version": "0.8.5",
   "license": "GPL-2.0+",
   "private": true,
   "devDependencies": {
