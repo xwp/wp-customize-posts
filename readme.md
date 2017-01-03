@@ -6,9 +6,9 @@ Edit posts and postmeta in the Customizer. Stop editing your posts/postmeta blin
 
 **Contributors:** [xwp](https://profiles.wordpress.org/xwp), [westonruter](https://profiles.wordpress.org/westonruter), [valendesigns](https://profiles.wordpress.org/valendesigns)  
 **Tags:** [customizer](https://wordpress.org/plugins/tags/customizer), [customize](https://wordpress.org/plugins/tags/customize), [posts](https://wordpress.org/plugins/tags/posts), [postmeta](https://wordpress.org/plugins/tags/postmeta), [editor](https://wordpress.org/plugins/tags/editor), [preview](https://wordpress.org/plugins/tags/preview), [featured-image](https://wordpress.org/plugins/tags/featured-image), [page-template](https://wordpress.org/plugins/tags/page-template)  
-**Requires at least:** 4.5  
-**Tested up to:** 4.7  
-**Stable tag:** 0.8.3  
+**Requires at least:** 4.5.0  
+**Tested up to:** 4.7.0  
+**Stable tag:** 0.8.5  
 **License:** [GPLv2 or later](http://www.gnu.org/licenses/gpl-2.0.html)  
 
 [![Build Status](https://travis-ci.org/xwp/wp-customize-posts.svg?branch=master)](https://travis-ci.org/xwp/wp-customize-posts) [![Coverage Status](https://coveralls.io/repos/xwp/wp-customize-posts/badge.svg?branch=master)](https://coveralls.io/github/xwp/wp-customize-posts) [![Built with Grunt](https://cdn.gruntjs.com/builtwith.svg)](http://gruntjs.com) [![devDependency Status](https://david-dm.org/xwp/wp-customize-posts/dev-status.svg)](https://david-dm.org/xwp/wp-customize-posts#info=devDependencies) 
@@ -90,9 +90,17 @@ The following are listed in reverse chronological order. The first, more recent 
 
 ## Changelog ##
 
+### [0.8.5] - 2017-01-03 ###
+* Add syncing of customize post settings to Backbone post models; try this out with the <a href="https://github.com/xwp/wp-next-recent-posts-widget">Next Recent Posts Widget</a>. Fixes <a href="https://github.com/xwp/wp-customize-posts/issues/331" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/331">#331</a>, PR <a href="https://github.com/xwp/wp-customize-posts/pull/333" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/333" data-id="195595516" data-error-text="Failed to load issue title">#333</a>.
+* Improve logic for determining when to do fallback refresh for post field partials, reducing the number of needless full page refreshes. PR <a href="https://github.com/xwp/wp-customize-posts/pull/335" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/335" data-id="196263607" data-error-text="Failed to load issue title">#335</a>.
+* Differentiate featured image partials on index templates for separate posts, allowing changes to featured images to be previewed properly on the homepage and archive views. Fixes <a href="https://github.com/xwp/wp-customize-posts/issues/297" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/297" data-id="179474568" data-error-text="Failed to load issue title">#297</a>, PR <a href="https://github.com/xwp/wp-customize-posts/pull/334" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/334" data-id="195979968" data-error-text="Failed to load issue title">#334</a>.
+* Handle edit post links that have child elements; remove need for <code>data-customize-post-id</code> attribute. PR <a href="https://github.com/xwp/wp-customize-posts/pull/332" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/332" data-id="195420714" data-error-text="Failed to load issue title">#332</a>.
+
+See <a href="https://github.com/xwp/wp-customize-posts/milestone/14?closed=1">issues and PRs in milestone</a> and <a href="https://github.com/xwp/wp-customize-posts/compare/0.8.4...0.8.5">full release commit log</a>.
+
 ### [0.8.4] - 2016-12-03 ###
-* Ensure auto-draft posts referenced in snapshot/changeset get transitioned to customize-draft, and that customize-draft nav_menus_created_posts get published (PR <a href="https://github.com/xwp/wp-customize-posts/pull/326" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/326" data-id="193245407">#326</a>).</li>
-* Improve method for skipping attachments so no error in console appears (PR <a href="https://github.com/xwp/wp-customize-posts/pull/325" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/325" data-id="191920013">#325</a>, Issue <a href="https://github.com/xwp/wp-customize-posts/issues/32" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/32" data-id="138023072">#32</a>).</li>
+* Ensure auto-draft posts referenced in snapshot/changeset get transitioned to customize-draft, and that customize-draft nav_menus_created_posts get published (PR <a href="https://github.com/xwp/wp-customize-posts/pull/326" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/326" data-id="193245407">#326</a>).
+* Improve method for skipping attachments so no error in console appears (PR <a href="https://github.com/xwp/wp-customize-posts/pull/325" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/325" data-id="191920013">#325</a>, Issue <a href="https://github.com/xwp/wp-customize-posts/issues/32" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/32" data-id="138023072">#32</a>).
 
 See <a href="https://github.com/xwp/wp-customize-posts/milestone/12?closed=1">issues and PRs in milestone</a> and <a href="https://github.com/xwp/wp-customize-posts/compare/0.8.3...0.8.4">full release commit log</a>.
 

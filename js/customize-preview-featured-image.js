@@ -7,8 +7,11 @@ var CustomizePreviewFeaturedImage = (function( api, $ ) {
 
 	var component = {
 		data: {
-			partialSelector: '',
-			partialContainerInclusive: true
+			partialArgs: {
+				selector: '',
+				containerInclusive: true,
+				fallbackDependentSelector: ''
+			}
 		}
 	};
 
@@ -23,6 +26,27 @@ var CustomizePreviewFeaturedImage = (function( api, $ ) {
 			_.extend( component.data, configData );
 		}
 		component.registerPartials();
+
+		api.previewPosts.wpApiModelInstances.bind( 'add', component.handleWpApiBackboneModelAdd );
+	};
+
+	/**
+	 * Sync changes to featured image into Backbone models
+	 *
+	 * @param {wp.api.WPApiBaseModel|wp.api.models.Post} postModel Post model.
+	 * @returns {void}
+	 */
+	component.handleWpApiBackboneModelAdd = function handleWpApiBackboneModelAdd( postModel ) {
+		var settingId;
+		if ( _.isUndefined( postModel.get( 'featured_media' ) ) ) {
+			return;
+		}
+		settingId = 'postmeta[' + postModel.get( 'type' ) + '][' + String( postModel.get( 'id' ) ) + '][_thumbnail_id]';
+		api( settingId, function( postmetaSetting ) {
+			postmetaSetting.bind( function( featuredImageId ) {
+				postModel.set( 'featured_media', featuredImageId );
+			} );
+		} );
 	};
 
 	/**
@@ -34,6 +58,37 @@ var CustomizePreviewFeaturedImage = (function( api, $ ) {
 	 * @augments wp.customize.Class
 	 */
 	component.FeaturedImagePartial = api.selectiveRefresh.partialConstructor.deferred.extend({
+
+		idPattern: /^postmeta\[(.+?)]\[(\d+)]\[_thumbnail_id]$/,
+
+		/**
+		 * Initialize.
+		 *
+		 * @param {string} id          Partial ID.
+		 * @param {object} args        Args.
+		 * @param {object} args.params Params.
+		 * @returns {void}
+		 */
+		initialize: function( id, args ) {
+			var partial = this, matches, postId, postType, params;
+			matches = id.match( partial.idPattern );
+			postType = matches[1];
+			postId = parseInt( matches[2], 10 );
+			params = _.extend(
+				{
+					post_id: postId,
+					post_type: postType,
+					selector: component.data.partialArgs.selector.replace( /%d/g, String( postId ) ),
+					settings: [ id ],
+					primarySetting: id,
+					containerInclusive: component.data.partialArgs.containerInclusive,
+					fallbackDependentSelector: component.data.partialArgs.fallbackDependentSelector
+				},
+				args ? args.params || {} : {}
+			);
+
+			api.selectiveRefresh.partialConstructor.deferred.prototype.initialize.call( partial, id, { params: params } );
+		},
 
 		/**
 		 * Force fallback (full page refresh) behavior when the featured image is removed.
@@ -72,6 +127,27 @@ var CustomizePreviewFeaturedImage = (function( api, $ ) {
 			} else {
 				return api.selectiveRefresh.Partial.prototype.renderContent.call( partial, placement );
 			}
+		},
+
+		/**
+		 * Handle fail to render partial.
+		 *
+		 * Skip performing fallback behavior if post does not appear on the current template.
+		 *
+		 * {@inheritdoc}
+		 *
+		 * @this {wp.customize.selectiveRefresh.partialConstructor.deferred}
+		 * @returns {void}
+		 */
+		fallback: function postFieldPartialFallback() {
+			var partial = this, dependentSelector;
+
+			dependentSelector = partial.params.fallbackDependentSelector.replace( /%d/g, String( partial.params.post_id ) );
+			if ( 0 === $( dependentSelector ).length ) {
+				return;
+			}
+
+			api.selectiveRefresh.partialConstructor.deferred.prototype.fallback.call( partial );
 		}
 	});
 
@@ -82,8 +158,8 @@ var CustomizePreviewFeaturedImage = (function( api, $ ) {
 	 * @returns {component.FeaturedImagePartial|null} New or existing featured image partial, or null if not relevant setting.
 	 */
 	component.ensurePartialForSetting = function ensurePartialForSetting( setting ) {
-		var ensuredPartial, partialId, matches = setting.id.match( /^postmeta\[.+?]\[(\d+)]\[_thumbnail_id]$/ );
-		if ( ! matches ) {
+		var ensuredPartial, partialId;
+		if ( ! component.FeaturedImagePartial.prototype.idPattern.test( setting.id ) ) {
 			return null;
 		}
 		partialId = setting.id;
@@ -93,10 +169,7 @@ var CustomizePreviewFeaturedImage = (function( api, $ ) {
 		}
 		ensuredPartial = new component.FeaturedImagePartial( partialId, {
 			params: {
-				selector: component.data.partialSelector,
-				settings: [ setting.id ],
-				primarySetting: setting.id,
-				containerInclusive: component.data.partialContainerInclusive
+				settings: [ setting.id ]
 			}
 		} );
 		api.selectiveRefresh.partial.add( partialId, ensuredPartial );

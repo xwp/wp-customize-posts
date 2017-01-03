@@ -127,7 +127,6 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertEquals( 1000, has_filter( 'the_posts', array( $preview, 'filter_the_posts_to_tally_previewed_posts' ) ) );
 		$this->assertEquals( 10, has_filter( 'the_posts', array( $preview, 'filter_the_posts_to_tally_orderby_keys' ) ) );
 		$this->assertEquals( 10, has_action( 'wp_footer', array( $preview, 'export_preview_data' ) ) );
-		$this->assertEquals( 10, has_filter( 'edit_post_link', array( $preview, 'filter_edit_post_link' ) ) );
 		$this->assertEquals( 10, has_filter( 'get_edit_post_link', array( $preview, 'filter_get_edit_post_link' ) ) );
 		$this->assertEquals( 10, has_filter( 'get_avatar', array( $preview, 'filter_get_avatar' ) ) );
 		$this->assertEquals( 10, has_filter( 'infinite_scroll_results', array( $preview, 'amend_with_queried_post_ids' ) ) );
@@ -1153,18 +1152,6 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 
 		wp_set_current_user( $this->user_id );
 		$this->assertEquals( $edit_post_link, $preview->filter_get_edit_post_link( $edit_post_link, $this->post_id ) );
-	}
-
-	/**
-	 * Test filter_edit_post_link().
-	 *
-	 * @see WP_Customize_Posts_Preview::filter_edit_post_link()
-	 */
-	public function test_filter_edit_post_link() {
-		$preview = new WP_Customize_Posts_Preview( $this->posts_component );
-		$link = '<a class="edit-me" href="' . esc_url( home_url( '?edit-me' ) ) . '">Edit</a>';
-		$contained = sprintf( ' data-customize-post-id="%d"', $this->post_id );
-		$this->assertContains( $contained, $preview->filter_edit_post_link( $link, $this->post_id ) );
 	}
 
 	/**

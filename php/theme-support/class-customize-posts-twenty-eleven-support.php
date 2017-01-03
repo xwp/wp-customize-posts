@@ -43,7 +43,7 @@ class Customize_Posts_Twenty_Eleven_Support extends Customize_Posts_Theme_Suppor
 
 		$schema['post_author[biography]'] = array(
 			'selector' => '#author-info',
-			'singular_only' => true,
+			'fallback_dependent_selector' => 'body.singular',
 			'container_inclusive' => true,
 			'render_callback' => array( $this, 'biography_render_callback' ),
 		);
