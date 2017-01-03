@@ -9,6 +9,7 @@
 	if ( ! api.previewPosts.data ) {
 		api.previewPosts.data = {};
 	}
+	api.previewPosts.wpApiModelInstances = _.extend( {}, api.Events );
 
 	/**
 	 * Prevent shift-clicking from inadvertently causing text selection.
@@ -35,7 +36,7 @@
 
 		// Add the partials.
 		_.each( api.previewPosts.partialSchema( setting.id ), function( schema ) {
-			var partial, addPartial, matches, baseSelector;
+			var partial, matches, postId, postType, selectorBases;
 
 			matches = schema.id.match( idPattern );
 			if ( ! matches ) {
@@ -45,25 +46,28 @@
 			if ( api.selectiveRefresh.partial.has( schema.id ) ) {
 				return;
 			}
+			postType = matches[1];
+			postId = parseInt( matches[2], 10 );
 
 			if ( schema.params.selector ) {
-				if ( ! schema.params.bodySelector ) {
-					baseSelector = '.hentry.post-' + String( parseInt( matches[2], 10 ) ) + '.type-' + matches[1];
+
+				selectorBases = [
+					'.hentry.post-' + String( postId )
+				];
+				if ( 'page' === postType ) {
+					selectorBases.push( 'body.page.page-id-' + String( postId ) );
 				} else {
-					baseSelector = '.postid-' + String( parseInt( matches[2], 10 ) ) + '.single-' + matches[1];
+					selectorBases.push( 'body.postid-' + String( postId ) );
 				}
-				schema.params.selector = baseSelector + ' ' + schema.params.selector;
+				schema.params.selector = _.map( selectorBases, function( selectorBase ) {
+					var selector = selectorBase + ' ' + schema.params.selector;
+					selector = selector.replace( /%d/g, String( postId ) );
+					return selector;
+				} ).join( ', ' );
 
-				addPartial =
-					! schema.params.singularOnly && ! schema.params.archiveOnly ||
-					schema.params.singularOnly && api.previewPosts.data.isSingular ||
-					schema.params.archiveOnly && ! api.previewPosts.data.isSingular;
-
-				if ( addPartial ) {
-					partial = new api.selectiveRefresh.partialConstructor.post_field( schema.id, { params: schema.params } );
-					api.selectiveRefresh.partial.add( partial.id, partial );
-					addedPartials.push( partial );
-				}
+				partial = new api.selectiveRefresh.partialConstructor.post_field( schema.id, { params: schema.params } );
+				api.selectiveRefresh.partial.add( partial.id, partial );
+				addedPartials.push( partial );
 			} else {
 				partial = new api.selectiveRefresh.partialConstructor.post_field( schema.id, { params: schema.params } );
 
@@ -78,7 +82,7 @@
 				partial.refresh = function refreshWithoutSelector() {
 					var deferred = $.Deferred();
 					if ( this.params.fallbackRefresh ) {
-						api.selectiveRefresh.requestFullRefresh();
+						api.selectiveRefresh.requestFullRefresh(); // @todo Do partial.fallback()?
 						deferred.resolve();
 					} else {
 						deferred.reject();
@@ -165,9 +169,116 @@
 		} )( api.Preview.prototype.handleLinkClick );
 	}
 
+	/**
+	 * Hook up post model in Backbone with post setting in customizer.
+	 *
+	 * @returns {void}
+	 */
+	api.previewPosts.injectBackboneModelSync = function injectBackboneModelSync() {
+		var originalInitialize = wp.api.WPApiBaseModel.prototype.initialize, synced = false;
+
+		wp.customize.bind( 'active', function() {
+			synced = true;
+		} );
+
+		// Inject into Post model creation to capture instances to sync with customize settings.
+		wp.api.WPApiBaseModel.prototype.initialize = function( attributes, options ) {
+			var model = this, postSettingId; // eslint-disable-line consistent-this
+			originalInitialize.call( model, attributes, options );
+
+			// @todo The post type may not correspond directly to the schema type.
+			if ( ! attributes || -1 === api.previewPosts.data.postTypes.indexOf( attributes.type ) ) {
+				return;
+			}
+
+			postSettingId = 'post[' + attributes.type + '][' + String( attributes.id ) + ']';
+
+			if ( ! api.previewPosts.wpApiModelInstances[ postSettingId ] ) {
+				api.previewPosts.wpApiModelInstances[ postSettingId ] = [];
+			}
+
+			// @todo Remove the model from this array when it is removed from a collection.
+			api.previewPosts.wpApiModelInstances[ postSettingId ].push( model );
+			api.previewPosts.wpApiModelInstances.trigger( 'add', model, postSettingId );
+
+			api( postSettingId, function( postSetting ) {
+				var updateModel = function( postData ) {
+					api.previewPosts.handlePostSettingChangeForBackboneModel( model, postData );
+				};
+				if ( synced ) {
+					updateModel( postSetting.get() );
+				}
+				postSetting.bind( updateModel );
+			} );
+		};
+
+		api.selectiveRefresh.bind( 'render-partials-response', api.previewPosts.handleRenderPartialsResponse );
+	};
+
+	/**
+	 * Handle post setting change to sync into corresponding Backbone model.
+	 *
+	 * @param {wp.api.WPApiBaseModel|wp.api.models.Post} model Post model.
+	 * @param {object} postData Data from the post setting.
+	 * @returns {void}
+	 */
+	api.previewPosts.handlePostSettingChangeForBackboneModel = function handlePostSettingChangeForBackboneModel( model, postData ) {
+		var modelAttributes = {};
+
+		_.each( [ 'title', 'content', 'excerpt' ], function( field ) {
+			if ( ! _.isObject( model.get( field ) ) ) {
+				return;
+			}
+			if ( ! model.get( field ).raw || model.get( field ).raw !== postData[ 'post_' + field ] ) {
+				modelAttributes[ field ] = {
+					raw: postData[ 'post_' + field ],
+					rendered: postData[ 'post_' + field ] // Raw value used temporarily until new value fetched from server in selective refresh request.
+				};
+
+				// Apply rudimentary wpautop while waiting for selective refresh.
+				if ( modelAttributes[ field ].rendered && ( 'excerpt' === field || 'content' === field ) ) {
+					modelAttributes[ field ].rendered = '<p>' + modelAttributes[ field ].rendered.split( /\n\n+/ ).join( '</p><p>' ) + '</p>';
+					modelAttributes[ field ].rendered = modelAttributes[ field ].rendered.replace( /\n/g, '<br>' );
+				}
+			}
+		} );
+		_.each( [ 'author', 'slug' ], function( field ) {
+			if ( ! _.isUndefined( model.get( field ) ) ) {
+				modelAttributes[ field ] = postData[ 'post_' + field ];
+			}
+		} );
+		if ( ! _.isUndefined( model.get( 'date' ) ) ) {
+			modelAttributes.date = postData.post_date.replace( ' ', 'T' );
+		}
+		model.set( modelAttributes );
+	};
+
+	/**
+	 * Supply rendered data from server in the selective refresh response.
+	 *
+	 * @param {object} data Response data.
+	 * @param {object} data.rest_post_resources REST resources for the customized posts.
+	 * @returns {void}
+	 */
+	api.previewPosts.handleRenderPartialsResponse = function handleRenderPartialsResponse( data ) {
+		if ( ! data.rest_post_resources ) {
+			return;
+		}
+		_.each( data.rest_post_resources, function( postResource, settingId ) {
+			if ( api.previewPosts.wpApiModelInstances[ settingId ] ) {
+				_.each( api.previewPosts.wpApiModelInstances[ settingId ], function( model ) {
+					model.set( postResource );
+				} );
+			}
+		} );
+	};
+
 	api.bind( 'preview-ready', function onPreviewReady() {
 		_.extend( api.previewPosts.data, _wpCustomizePreviewPostsData );
 
+		if ( api.previewPosts.data.hasRestApiBackboneClient ) {
+			api.previewPosts.injectBackboneModelSync();
+		}
 		api.each( api.previewPosts.ensurePartialsForPostSetting );
 		api.bind( 'add', api.previewPosts.ensurePartialsForPostSetting );
 

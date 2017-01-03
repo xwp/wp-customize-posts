@@ -98,6 +98,7 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'get_avatar', array( $this, 'filter_get_avatar' ), 10, 6 );
 		add_filter( 'infinite_scroll_results', array( $this, 'amend_with_queried_post_ids' ) );
 		add_filter( 'customize_render_partials_response', array( $this, 'amend_with_queried_post_ids' ) );
+		add_filter( 'customize_render_partials_response', array( $this, 'amend_partials_response_with_rest_resources' ), 10, 3 );
 		remove_filter( 'get_edit_post_link', '__return_empty_string' ); // See <https://core.trac.wordpress.org/ticket/38648>.
 	}
 
@@ -1305,22 +1306,19 @@ final class WP_Customize_Posts_Preview {
 			),
 			'post_excerpt' => array(
 				'selector' => '.entry-summary',
+				'fallback_refresh' => true,
 			),
 			'comment_status[comments-area]' => array(
 				'selector' => '.comments-area',
-				'body_selector' => true,
-				'singular_only' => true,
 				'container_inclusive' => true,
 			),
 			'comment_status[comments-link]' => array(
 				'selector' => '.comments-link',
-				'archive_only' => true,
+				'fallback_dependent_selector' => 'body.archive', // Only do fallback when on archives.
 				'container_inclusive' => true,
 			),
 			'ping_status' => array(
 				'selector' => '.comments-area',
-				'body_selector' => true,
-				'singular_only' => true,
 				'container_inclusive' => true,
 			),
 			'post_author[byline]' => array(
@@ -1342,6 +1340,15 @@ final class WP_Customize_Posts_Preview {
 		 * @return array
 		 */
 		$schema = apply_filters( 'customize_posts_partial_schema', $schema );
+
+		$deprecated_keys = array( 'body_selector', 'archive_only', 'singular_only' );
+		foreach ( $schema as $_field_id => $_partial_args ) {
+			foreach ( $deprecated_keys as $deprecated_key ) {
+				if ( array_key_exists( $deprecated_key, $_partial_args ) ) {
+					_deprecated_argument( __FUNCTION__, '0.8.5', sprintf( __( 'The %s param has been removed from the partial schema. Consider fallback_dependent_selector if needed.', 'customize-posts' ), $deprecated_key ) );
+				}
+			}
+		}
 
 		// Return specific schema based on the field_id & placement.
 		if ( ! empty( $field_id ) ) {
@@ -1402,6 +1409,8 @@ final class WP_Customize_Posts_Preview {
 			'postIds' => array_values( array_unique( $this->queried_post_ids ) ),
 			'partialSchema' => $exported_partial_schema,
 			'queriedOrderbyFields' => $queried_orderby_fields,
+			'hasRestApiBackboneClient' => wp_script_is( 'wp-api', 'enqueued' ),
+			'postTypes' => array_keys( $this->component->get_post_types() ), // Used to determine which REST API model types are for posts.
 		);
 
 		$data = sprintf( 'var _wpCustomizePreviewPostsData = %s;', wp_json_encode( $exported ) );
@@ -1419,6 +1428,90 @@ final class WP_Customize_Posts_Preview {
 	public function amend_with_queried_post_ids( $results ) {
 		$results['queried_post_ids'] = array_unique( $this->queried_post_ids );
 		return $results;
+	}
+
+	/**
+	 * Add the REST resources for the customized posts to the partial rendering response.
+	 *
+	 * @param array                           $response {
+	 *     Response.
+	 *
+	 *     @type array $contents Associative array mapping a partial ID its corresponding array of contents
+	 *                           for the containers requested.
+	 *     @type array $errors   List of errors triggered during rendering of partials, if `WP_DEBUG_DISPLAY`
+	 *                           is enabled.
+	 * }
+	 * @param \WP_Customize_Selective_Refresh $selective_refresh Selective refresh component.
+	 * @param array                           $partials Placements' context data for the partials rendered in the request.
+	 *                                                  The array is keyed by partial ID, with each item being an array of
+	 *                                                  the placements' context data.
+	 * @return array Response.
+	 */
+	public function amend_partials_response_with_rest_resources( $response, $selective_refresh, $partials ) {
+
+		// Abort if the partial render request isn't for a post field partial.
+		$requesting_post_field_partial = false;
+		foreach ( array_keys( $partials ) as $partial_id ) {
+			if ( $selective_refresh->get_partial( $partial_id ) instanceof \WP_Customize_Post_Field_Partial ) {
+				$requesting_post_field_partial = true;
+				break;
+			}
+		}
+		if ( ! $requesting_post_field_partial ) {
+			return $response;
+		}
+
+		// Gather the customized posts by type.
+		$posts_by_type = array();
+		foreach ( $selective_refresh->manager->settings() as $setting ) {
+			if ( $setting instanceof \WP_Customize_Post_Setting ) {
+				if ( ! isset( $posts_by_type[ $setting->post_type ] ) ) {
+					$posts_by_type[ $setting->post_type ] = array();
+				}
+				$posts_by_type[ $setting->post_type ][] = get_post( $setting->post_id );
+			}
+		}
+
+		// Short-circuit if there are no customized posts.
+		if ( count( $posts_by_type ) === 0 ) {
+			return $response;
+		}
+
+		// Amend partial render response with the rest resources for the given customized posts.
+		$response['rest_post_resources'] = array();
+		$wp_rest_server = rest_get_server();
+		foreach ( $posts_by_type as $type => $posts ) {
+			$post_type_object = get_post_type_object( $type );
+			if ( ! $post_type_object || empty( $post_type_object->rest_base ) ) {
+				continue;
+			}
+
+			// @todo Do a separate request for each post individually to improve performance?
+			$request = new \WP_REST_Request( 'GET', '/wp/v2/' . $post_type_object->rest_base );
+			$request->set_query_params( array(
+				'per_page' => 100,
+				'include' => wp_list_pluck( $posts, 'ID' ),
+			) );
+			if ( current_user_can( $post_type_object->cap->edit_posts ) ) {
+				$request->set_query_params( array(
+					'context' => 'edit',
+				) );
+			}
+
+			$rest_response = $wp_rest_server->dispatch( $request );
+			if ( ! $rest_response->is_error() ) {
+
+				/** This filter is documented in wp-includes/rest-api/class-wp-rest-server.php */
+				$rest_response = apply_filters( 'rest_post_dispatch', rest_ensure_response( $rest_response ), $wp_rest_server, $request );
+
+				foreach ( $wp_rest_server->response_to_data( $rest_response, true ) as $post_data ) {
+					$setting_id = WP_Customize_Post_Setting::get_post_setting_id( get_post( $post_data['id'] ) );
+					$response['rest_post_resources'][ $setting_id ] = $post_data;
+				}
+			}
+		}
+
+		return $response;
 	}
 
 	/**
