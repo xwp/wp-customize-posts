@@ -104,7 +104,7 @@ class Edit_Post_Preview {
 	public static function get_preview_post_link( $post ) {
 		$permalink = '';
 
-		if ( $post instanceof WP_Post ) {
+		if ( $post instanceof WP_Post && post_type_exists( $post->post_type ) ) {
 			$id_param = ( 'page' === $post->post_type ) ? 'page_id' : 'p';
 			$args = array();
 			$args['preview'] = true;
