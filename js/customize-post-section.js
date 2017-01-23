@@ -892,7 +892,7 @@
 			// Detect conflict errors.
 			api.bind( 'error', function( response ) {
 				var theirValue, ourValue,
-					isFirstConflict = true;
+					conflictedControls = [];
 				if ( ! response.update_conflicted_setting_values ) {
 					return;
 				}
@@ -913,12 +913,22 @@
 						} );
 						control.notifications.remove( notification.code );
 						control.notifications.add( notification.code, notification );
-					}
-					if ( api.section( control.section() ).expanded() && isFirstConflict ) {
-						control.focus();
-						isFirstConflict = false;
+						conflictedControls.push( control );
 					}
 				} );
+
+				// Focus on first field that have conflict.
+				if ( section.expanded() ) {
+					_.every( section.controls(), function( _setting ) {
+						return _.every( conflictedControls, function( conflictedControl ) {
+							if ( conflictedControl.id === _setting.id ) {
+								_setting.focus();
+								return false;
+							}
+							return true;
+						} );
+					} );
+				}
 			} );
 
 			api.bind( 'save', function() {
