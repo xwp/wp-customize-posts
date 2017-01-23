@@ -891,7 +891,8 @@
 
 			// Detect conflict errors.
 			api.bind( 'error', function( response ) {
-				var theirValue, ourValue;
+				var theirValue, ourValue,
+					isFirstConflict = true;
 				if ( ! response.update_conflicted_setting_values ) {
 					return;
 				}
@@ -912,6 +913,10 @@
 						} );
 						control.notifications.remove( notification.code );
 						control.notifications.add( notification.code, notification );
+					}
+					if ( api.section( control.section() ).expanded() && isFirstConflict ) {
+						control.focus();
+						isFirstConflict = false;
 					}
 				} );
 			} );
