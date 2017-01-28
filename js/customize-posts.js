@@ -395,7 +395,7 @@
 	 * @return {wp.customize.Section|null} Added (or existing) section, or null if not able to be added.
 	 */
 	component.addPostSection = function( settingId ) {
-		var section, parsedSettingId, sectionId, panelId, sectionType, Constructor, htmlParser, postTypeObj;
+		var section, parsedSettingId, sectionId, panelId, sectionType, Constructor, htmlParser, postTypeObj, customizeActionTpl;
 		parsedSettingId = component.parseSettingId( settingId );
 		if ( ! parsedSettingId || 'post' !== parsedSettingId.settingType ) {
 			throw new Error( 'Bad setting ID' );
@@ -422,7 +422,8 @@
 
 		Constructor = api.sectionConstructor[ sectionType ] || api.sectionConstructor.post;
 
-		htmlParser = $( '<div>' ).html( component.data.l10n.sectionCustomizeActionTpl.replace( '%s', api.panel( panelId ).params.title ) );
+		customizeActionTpl = postTypeObj.labels.customize_action || component.data.l10n.sectionCustomizeActionTpl;
+		htmlParser = $( '<div>' ).html( customizeActionTpl.replace( '%s', api.panel( panelId ).params.title ) );
 		section = new Constructor( sectionId, {
 			params: {
 				id: sectionId,
