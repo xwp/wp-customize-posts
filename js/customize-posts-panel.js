@@ -34,6 +34,10 @@
 			panel.deferred.embedded.done(function() {
 				panel.setupPanelActions();
 			});
+
+			api.bind( 'saved', function() {
+				panel.removeTrashNotifications();
+			} );
 		},
 
 		/**
@@ -170,13 +174,13 @@
 		},
 
 		/**
-		 * Toggle trash notification if a post is restored from trash.
+		 * Toggle trash notification if a post is restored or moved to trash.
 		 *
 		 * @param {object} postData Post data.
 		 * @returns {void}
 		 */
 		toggleTrashNotification: function toggleTrashNotification( postData ) {
-			var panel = this, notification, code, statusControl;
+			var panel = this, notification, statusControl;
 
 			notification = new api.Notification( panel.trashNotificationCode, {
 				type: 'info',
@@ -188,9 +192,25 @@
 				statusControl.notifications.add( panel.trashNotificationCode, notification );
 			} );
 
-			statusControl.setting.bind( function( setting ) {
-				if ( 'trash' === setting.post_status ) {
-					statusControl.notifications.remove( panel.trashNotificationCode );
+			statusControl.setting.bind( function() {
+				statusControl.notifications.remove( panel.trashNotificationCode );
+			} );
+		},
+
+		/**
+		 * Remove trash notifications from all post sections on customize save.
+		 *
+		 * @returns {void}
+		 */
+		removeTrashNotifications: function removeTrashNotifications() {
+			var panel = this, statusControl;
+
+			api.section.each( function( section ) {
+				if ( section.extended( api.Posts.PostSection ) ) {
+					statusControl = api.control( section.id + '[post_status]' );
+					if ( statusControl && statusControl.notifications ) {
+						statusControl.notifications.remove( panel.trashNotificationCode );
+					}
 				}
 			} );
 		}
