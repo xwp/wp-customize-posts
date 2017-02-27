@@ -846,6 +846,7 @@ final class WP_Customize_Posts {
 						__( 'Customize Object Selector', 'customize-posts' )
 					)
 				),
+				'trashPostNotification' => __( 'This has been untrashed. If you publish changes now, this post will be published. Move back to trash to avoid this.' , 'customize-posts' ),
 
 				/* translators: %s post type */
 				'jumpToPostPlaceholder' => __( 'Jump to %s', 'customize-posts' ),
@@ -1355,6 +1356,7 @@ final class WP_Customize_Posts {
 		// Amend trashed post setting values with the pre-trashed state.
 		if ( $setting instanceof WP_Customize_Post_Setting && 'trash' === $setting_params['value']['post_status'] ) {
 			$setting_params['dirty'] = true;
+			$setting_params['trashedPreviously'] = true;
 
 			// Resurrect the old status.
 			$former_status = get_post_meta( $setting->post_id, '_wp_trash_meta_status', true );

@@ -19,6 +19,8 @@
 
 		postType: 'post',
 
+		trashNotificationCode: 'untrash',
+
 		ready: function() {
 			var panel = this;
 
@@ -91,6 +93,7 @@
 					if ( ! postData ) {
 						return;
 					}
+
 					isPostVisibleInPreview = -1 !== _.indexOf( api.Posts.previewedQuery.get().postIds, postId );
 					postData.section.focus();
 					if ( postTypeObj['public'] && ! isPostVisibleInPreview ) {
@@ -98,6 +101,10 @@
 							post_type: panel.postType,
 							post_id: postId
 						} ) );
+					}
+
+					if ( postData.setting.trashedPreviously && api.Notification ) {
+						panel.toggleTrashNotification( postData );
 					}
 				} );
 				ensuredPromise.always( function() {
@@ -160,6 +167,32 @@
 		isContextuallyActive: function() {
 			var panel = this;
 			return panel.active();
+		},
+
+		/**
+		 * Toggle trash notification if a post is restored from trash.
+		 *
+		 * @param {object} postData Post data.
+		 * @returns {void}
+		 */
+		toggleTrashNotification: function toggleTrashNotification( postData ) {
+			var panel = this, notification, code, statusControl;
+
+			notification = new api.Notification( panel.trashNotificationCode, {
+				type: 'info',
+				message: api.Posts.data.l10n.trashPostNotification
+			} );
+
+			statusControl = api.control( postData.section.id + '[post_status]' );
+			statusControl.deferred.embedded.done( function() {
+				statusControl.notifications.add( panel.trashNotificationCode, notification );
+			} );
+
+			statusControl.setting.bind( function( setting ) {
+				if ( 'trash' === setting.post_status ) {
+					statusControl.notifications.remove( panel.trashNotificationCode );
+				}
+			} );
 		}
 	});
 
