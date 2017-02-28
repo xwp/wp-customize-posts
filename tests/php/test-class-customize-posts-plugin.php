@@ -235,7 +235,7 @@ class Test_Customize_Posts_Plugin extends WP_UnitTestCase {
 			'post_content' => wp_json_encode( $data ),
 		) ) );
 		$changeset_post = get_post( $changeset_post_id );
-		$this->assertInstanceOf( WP_Post::class, get_post( $auto_draft_post_id ) );
+		$this->assertInstanceOf( 'WP_Post', get_post( $auto_draft_post_id ) );
 		wp_delete_post( $changeset_post->ID, true );
 		$this->assertNull( get_post( $auto_draft_post_id ) );
 		$this->wp_customize = null;
