@@ -440,7 +440,7 @@ class Customize_Posts_Plugin {
 				if ( $wpdb->get_var( $query ) ) { // WPCS: unprepared SQL ok.
 					continue;
 				}
-				wp_delete_post( $setting_post->ID );
+				wp_delete_post( $setting_post->ID, true );
 			}
 		}
 	}
