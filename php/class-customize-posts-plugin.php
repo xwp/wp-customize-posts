@@ -70,7 +70,7 @@ class Customize_Posts_Plugin {
 		add_filter( 'customize_loaded_components', array( $this, 'add_posts_to_customize_loaded_components' ), 0, 1 );
 		add_filter( 'customize_loaded_components', array( $this, 'filter_customize_loaded_components' ), 100, 2 );
 		add_action( 'customize_register', array( $this, 'load_support_classes' ) );
-		add_action( 'delete_post', array( $this, 'delete_changeset_created_posts' ) );
+		add_action( 'delete_post', array( $this, 'cleanup_autodraft_on_changeset_delete' ) );
 	}
 
 	/**
@@ -413,10 +413,9 @@ class Customize_Posts_Plugin {
 	/**
 	 * Delete auto-draft posts associated with the supplied changeset.
 	 *
-	 * @action delete_post
 	 * @param int $post_id changeset/snapshot post_id.
 	 */
-	public function delete_changeset_created_posts( $post_id ) {
+	public function cleanup_autodraft_on_changeset_delete( $post_id ) {
 		global $wpdb;
 		$post = get_post( $post_id );
 		$allowed_snapshot_status = array( 'customize_changeset', 'customize_snapshot' );
