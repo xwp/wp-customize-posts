@@ -70,6 +70,7 @@ class Customize_Posts_Plugin {
 		add_filter( 'customize_loaded_components', array( $this, 'add_posts_to_customize_loaded_components' ), 0, 1 );
 		add_filter( 'customize_loaded_components', array( $this, 'filter_customize_loaded_components' ), 100, 2 );
 		add_action( 'customize_register', array( $this, 'load_support_classes' ) );
+		add_action( 'delete_post', array( $this, 'delete_changeset_created_posts' ) );
 	}
 
 	/**
@@ -407,5 +408,41 @@ class Customize_Posts_Plugin {
 		$src = plugins_url( 'css/edit-post-preview-customize' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'customize-controls' );
 		$wp_styles->add( $handle, $src, $deps, $this->version );
+	}
+
+	/**
+	 * Delete auto-draft posts associated with the supplied changeset.
+	 *
+	 * @action delete_post
+	 * @param int $post_id changeset/snapshot post_id.
+	 */
+	public function delete_changeset_created_posts( $post_id ) {
+		global $wpdb;
+		$post = get_post( $post_id );
+		$allowed_snapshot_status = array( 'customize_changeset', 'customize_snapshot' );
+		if ( ! $post || ! in_array( $post->post_type, $allowed_snapshot_status, true ) ) {
+			return;
+		}
+		require_once( ABSPATH . WPINC . '/class-wp-customize-setting.php' );
+		require_once( dirname( __FILE__ ) . '/class-wp-customize-post-setting.php' );
+		$settings_data = json_decode( $post->post_content, true );
+		$status_to_delete = array( 'auto-draft', 'customize-draft' );
+		foreach ( $settings_data as $setting_key => $val ) {
+			if ( preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $setting_key, $matches ) ) {
+				$setting_post = get_post( $matches['post_id'] );
+				if ( ! in_array( $setting_post->post_status, $status_to_delete, true ) ) {
+					continue;
+				}
+
+				// Confirm this is the only post setting.
+				$query = $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_status NOT IN ('trash', 'publish') AND ID != %d AND ", $setting_post->post_status, $setting_post->ID );
+				$query .= $wpdb->prepare( 'post_content LIKE %s', '%' . $wpdb->esc_like( wp_json_encode( $setting_key ) ) . '%' );
+				$query .= ' LIMIT 1';
+				if ( $wpdb->get_var( $query ) ) { // WPCS: unprepared SQL ok.
+					continue;
+				}
+				wp_delete_post( $setting_post->ID );
+			}
+		}
 	}
 }
