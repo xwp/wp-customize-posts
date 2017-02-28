@@ -199,4 +199,45 @@ class Test_Customize_Posts_Plugin extends WP_UnitTestCase {
 		$this->assertTrue( wp_style_is( 'customize-posts', 'registered' ) );
 		$this->assertTrue( wp_style_is( 'edit-post-preview-customize', 'registered' ) );
 	}
+
+	/**
+	 * Test on delete changeset all auto-draft posts created with it is deleted.
+	 *
+	 * @see Customize_Posts_Plugin::cleanup_autodraft_on_changeset_delete()
+	 */
+	function test_cleanup_autodraft_on_changeset_delete() {
+		$this->assertEquals( 10, has_action( 'delete_post', array(
+			$this->plugin,
+			'cleanup_autodraft_on_changeset_delete',
+		) ) );
+		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
+		// @codingStandardsIgnoreStart
+		$GLOBALS['wp_customize'] = new WP_Customize_Manager();
+		// @codingStandardsIgnoreStop
+		$wp_customize = $GLOBALS['wp_customize'];
+		if ( isset( $wp_customize->posts ) ) {
+			$posts = $wp_customize->posts;
+		}
+		$auto_draft_post = $posts->insert_auto_draft_post( 'post' );
+		$auto_draft_post_id = $auto_draft_post->ID;
+		$post_setting_id = WP_Customize_Post_Setting::get_post_setting_id( $auto_draft_post );
+		unset( $auto_draft_post );
+		$data = array();
+		$data[ $post_setting_id ] = array(
+			'value' => array(
+				'post_title' => 'Testing Post Publish',
+				'post_status' => 'publish',
+			),
+		);
+		$changeset_post_id = wp_insert_post( wp_slash( array(
+			'post_type' => 'customize_changeset',
+			'post_status' => 'auto-draft',
+			'post_content' => wp_json_encode( $data ),
+		) ) );
+		$changeset_post = get_post( $changeset_post_id );
+		$this->assertInstanceOf( WP_Post::class, get_post( $auto_draft_post_id ) );
+		wp_delete_post( $changeset_post->ID, true );
+		$this->assertNull( get_post( $auto_draft_post_id ) );
+		$this->wp_customize = null;
+	}
 }
