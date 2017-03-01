@@ -281,7 +281,6 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 	 * Test filter_the_posts_to_preview_settings().
 	 *
 	 * @covers WP_Customize_Posts_Preview::filter_the_posts_to_preview_settings()
-	 * @covers WP_Customize_Posts_Preview::compare_posts_to_resort_posts_for_query()
 	 */
 	public function test_filter_the_posts_to_preview_settings() {
 		$data = array(
