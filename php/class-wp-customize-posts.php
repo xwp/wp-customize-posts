@@ -1102,17 +1102,17 @@ final class WP_Customize_Posts {
 			if ( ! preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches ) ) {
 				continue;
 			}
-			$post = get_post( $matches['post_id'] );
-			if ( in_array( $post->post_status, $allowed_status, true ) ) {
-				$auto_draft_posts[] = $post;
+			$setting_post = get_post( $matches['post_id'] );
+			if ( $setting_post instanceof WP_Post && in_array( $setting_post->post_status, $allowed_status, true ) ) {
+				$auto_draft_posts[] = $setting_post;
 			}
 		}
 
 		if ( isset( $data['nav_menus_created_posts']['value'] ) && is_array( $data['nav_menus_created_posts']['value'] ) ) {
 			foreach ( $data['nav_menus_created_posts']['value'] as $post_id ) {
-				$post = get_post( $post_id );
-				if ( $post && in_array( $post->post_status, $allowed_status, true ) ) {
-					$auto_draft_posts[] = $post;
+				$setting_post = get_post( $post_id );
+				if ( $setting_post instanceof WP_Post && in_array( $setting_post->post_status, $allowed_status, true ) ) {
+					$auto_draft_posts[] = $setting_post;
 				}
 			}
 		}
