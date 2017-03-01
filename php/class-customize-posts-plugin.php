@@ -418,8 +418,8 @@ class Customize_Posts_Plugin {
 	public function cleanup_autodraft_on_changeset_delete( $post_id ) {
 		global $wpdb;
 		$post = get_post( $post_id );
-		$allowed_snapshot_status = array( 'customize_changeset', 'customize_snapshot' );
-		if ( ! $post || ! in_array( $post->post_type, $allowed_snapshot_status, true ) ) {
+		$allowed_snapshot_post_type = array( 'customize_changeset', 'customize_snapshot' );
+		if ( ! $post || ! in_array( $post->post_type, $allowed_snapshot_post_type, true ) ) {
 			return;
 		}
 		require_once( ABSPATH . WPINC . '/class-wp-customize-setting.php' );
@@ -429,11 +429,11 @@ class Customize_Posts_Plugin {
 		foreach ( $settings_data as $setting_key => $val ) {
 			if ( preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $setting_key, $matches ) ) {
 				$setting_post = get_post( $matches['post_id'] );
-				if ( ! in_array( $setting_post->post_status, $status_to_delete, true ) ) {
+				if ( ! ( $setting_post instanceof WP_Post ) || ! in_array( $setting_post->post_status, $status_to_delete, true ) ) {
 					continue;
 				}
 
-				// Confirm this is the only post setting.
+				// Confirm that this changeset is the only one which references this post so it is cleared for garbage collection.
 				$query = $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_status NOT IN ('trash', 'publish') AND ID != %d AND ", $setting_post->post_status, $setting_post->ID );
 				$query .= $wpdb->prepare( 'post_content LIKE %s', '%' . $wpdb->esc_like( wp_json_encode( $setting_key ) ) . '%' );
 				$query .= ' LIMIT 1';
