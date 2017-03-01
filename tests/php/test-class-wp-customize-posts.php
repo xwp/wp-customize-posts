@@ -551,7 +551,9 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$changeset_post_id = wp_insert_post( wp_slash( array(
 			'post_type' => 'customize_changeset',
 			'post_status' => 'auto-draft',
+			'post_date' => gmdate( 'Y-m-d H:i:d', strtotime( '+7 days' ) ),
 			'post_content' => wp_json_encode( $data ),
+			'edit_date' => true,
 		) ) );
 
 		$changeset_post = get_post( $changeset_post_id );
@@ -563,6 +565,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertEquals( $changeset_post->post_date, get_post_field( 'post_date', $nav_menu_created_stub_post->ID, 'raw' ) );
 
 		$count = did_action( 'transition_post_status' );
+		$count = post_type_supports( 'customize_changeset', 'revisions' ) ? $count + 1 : $count;
 		wp_update_post( array( 'ID' => $changeset_post_id, 'post_status' => 'draft' ) );
 		$this->assertEquals( $count + 1, did_action( 'transition_post_status' ) );
 		$new_status = 'auto-draft';
