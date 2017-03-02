@@ -234,9 +234,18 @@ class Test_Customize_Posts_Plugin extends WP_UnitTestCase {
 			'post_status' => 'auto-draft',
 			'post_content' => wp_json_encode( $data ),
 		) ) );
-		$changeset_post = get_post( $changeset_post_id );
+		// Duplicate post.
+		$changeset_post_id_duplicate = wp_insert_post( wp_slash( array(
+			'post_type' => 'customize_changeset',
+			'post_status' => 'auto-draft',
+			'post_content' => wp_json_encode( $data ),
+		) ) );
 		$this->assertInstanceOf( 'WP_Post', get_post( $auto_draft_post_id ) );
-		wp_delete_post( $changeset_post->ID, true );
+		wp_delete_post( $changeset_post_id, true );
+		// Should not delete as duplicate post exists.
+		$this->assertInstanceOf( 'WP_Post', get_post( $auto_draft_post_id ) );
+		wp_delete_post( $changeset_post_id_duplicate, true );
+		// Should delete as there are no other ref of setting draft post.
 		$this->assertNull( get_post( $auto_draft_post_id ) );
 		$this->wp_customize = null;
 	}
