@@ -846,7 +846,7 @@ final class WP_Customize_Posts {
 						__( 'Customize Object Selector', 'customize-posts' )
 					)
 				),
-				'trashPostNotification' => __( 'This has been untrashed. If you publish changes now, this post will be published. Move back to trash to avoid this.' , 'customize-posts' ),
+				'trashPostNotification' => __( 'This has been untrashed. If you publish changes now, its status will change to the selected status. Move back to trash to avoid this.' , 'customize-posts' ),
 
 				/* translators: %s post type */
 				'jumpToPostPlaceholder' => __( 'Jump to %s', 'customize-posts' ),
