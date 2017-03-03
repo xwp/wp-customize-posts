@@ -434,7 +434,7 @@ class Customize_Posts_Plugin {
 				}
 
 				// Confirm that this changeset is the only one which references this post so it is cleared for garbage collection.
-				$query = $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND post_status NOT IN ('trash', 'publish') AND ID != %d AND ", $post->post_type, $post->ID );
+				$query = $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND ID != %d AND ", $post->post_type, $post->ID );
 				$query .= $wpdb->prepare( 'post_content LIKE %s', '%' . $wpdb->esc_like( wp_json_encode( $setting_key ) ) . '%' );
 				$query .= ' LIMIT 1';
 				if ( $wpdb->get_var( $query ) ) { // WPCS: unprepared SQL ok.
