@@ -180,7 +180,7 @@
 		 * @returns {void}
 		 */
 		toggleTrashNotification: function toggleTrashNotification( postData ) {
-			var panel = this, notification, statusControl;
+			var panel = this, notification, statusControl, removeNotification;
 
 			notification = new api.Notification( panel.trashNotificationCode, {
 				type: 'info',
@@ -188,13 +188,19 @@
 			} );
 
 			statusControl = api.control( postData.section.id + '[post_status]' );
-			statusControl.deferred.embedded.done( function() {
-				statusControl.notifications.add( panel.trashNotificationCode, notification );
-			} );
 
-			statusControl.setting.bind( function() {
+			if ( ! statusControl || 'trash' === statusControl.setting.get().post_status ) {
+			    return;
+			}
+
+			statusControl.notifications.add( panel.trashNotificationCode, notification );
+
+			removeNotification = function() {
 				statusControl.notifications.remove( panel.trashNotificationCode );
-			} );
+				statusControl.setting.unbind( removeNotification );
+			};
+
+			statusControl.setting.bind( removeNotification );
 		},
 
 		/**
