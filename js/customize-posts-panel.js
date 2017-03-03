@@ -19,6 +19,8 @@
 
 		postType: 'post',
 
+		trashNotificationCode: 'untrash',
+
 		ready: function() {
 			var panel = this;
 
@@ -32,6 +34,10 @@
 			panel.deferred.embedded.done(function() {
 				panel.setupPanelActions();
 			});
+
+			api.bind( 'saved', function() {
+				panel.removeTrashNotifications();
+			} );
 		},
 
 		/**
@@ -91,6 +97,7 @@
 					if ( ! postData ) {
 						return;
 					}
+
 					isPostVisibleInPreview = -1 !== _.indexOf( api.Posts.previewedQuery.get().postIds, postId );
 					postData.section.focus();
 					if ( postTypeObj['public'] && ! isPostVisibleInPreview ) {
@@ -98,6 +105,10 @@
 							post_type: panel.postType,
 							post_id: postId
 						} ) );
+					}
+
+					if ( postData.setting.trashedPreviously && api.Notification ) {
+						panel.toggleTrashNotification( postData );
 					}
 				} );
 				ensuredPromise.always( function() {
@@ -160,6 +171,54 @@
 		isContextuallyActive: function() {
 			var panel = this;
 			return panel.active();
+		},
+
+		/**
+		 * Toggle trash notification if a post is restored or moved to trash.
+		 *
+		 * @param {object} postData Post data.
+		 * @returns {void}
+		 */
+		toggleTrashNotification: function toggleTrashNotification( postData ) {
+			var panel = this, notification, statusControl, removeNotification;
+
+			notification = new api.Notification( panel.trashNotificationCode, {
+				type: 'info',
+				message: api.Posts.data.l10n.trashPostNotification
+			} );
+
+			statusControl = api.control( postData.section.id + '[post_status]' );
+
+			if ( ! statusControl || 'trash' === statusControl.setting.get().post_status ) {
+			    return;
+			}
+
+			statusControl.notifications.add( panel.trashNotificationCode, notification );
+
+			removeNotification = function() {
+				statusControl.notifications.remove( panel.trashNotificationCode );
+				statusControl.setting.unbind( removeNotification );
+			};
+
+			statusControl.setting.bind( removeNotification );
+		},
+
+		/**
+		 * Remove trash notifications from all post sections on customize save.
+		 *
+		 * @returns {void}
+		 */
+		removeTrashNotifications: function removeTrashNotifications() {
+			var panel = this, statusControl;
+
+			api.section.each( function( section ) {
+				if ( section.extended( api.Posts.PostSection ) ) {
+					statusControl = api.control( section.id + '[post_status]' );
+					if ( statusControl && statusControl.notifications ) {
+						statusControl.notifications.remove( panel.trashNotificationCode );
+					}
+				}
+			} );
 		}
 	});
 
