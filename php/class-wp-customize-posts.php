@@ -1086,12 +1086,13 @@ final class WP_Customize_Posts {
 			return;
 		}
 
-		// Short-circuit if the auto-draft posts should be left intact or they would be getting published.
-		if ( 'auto-draft' === $new_status || 'publish' === $new_status ) {
+		// Short-circuit if getting published.
+		if ( 'publish' === $new_status ) {
 			return;
 		}
 
 		$auto_draft_posts = array();
+		$allowed_status = array( 'auto-draft', 'customize-draft' );
 		$data = json_decode( $post->post_content, true );
 		if ( ! is_array( $data ) ) {
 			return;
@@ -1101,32 +1102,56 @@ final class WP_Customize_Posts {
 			if ( ! preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $id, $matches ) ) {
 				continue;
 			}
-			$post = get_post( $matches['post_id'] );
-			if ( 'auto-draft' === $post->post_status ) {
-				$auto_draft_posts[] = $post;
+			$setting_post = get_post( $matches['post_id'] );
+			if ( $setting_post instanceof WP_Post && in_array( $setting_post->post_status, $allowed_status, true ) ) {
+				$auto_draft_posts[] = $setting_post;
 			}
 		}
 
 		if ( isset( $data['nav_menus_created_posts']['value'] ) && is_array( $data['nav_menus_created_posts']['value'] ) ) {
 			foreach ( $data['nav_menus_created_posts']['value'] as $post_id ) {
-				$post = get_post( $post_id );
-				if ( $post && 'auto-draft' === $post->post_status ) {
-					$auto_draft_posts[] = $post;
+				$setting_post = get_post( $post_id );
+				if ( $setting_post instanceof WP_Post && in_array( $setting_post->post_status, $allowed_status, true ) ) {
+					$auto_draft_posts[] = $setting_post;
 				}
 			}
 		}
 
-		$new_status = 'customize-draft';
+		if ( 'auto-draft' === $new_status ) {
+			/*
+			 * Keep the post date for the post matching the changeset
+			 * so that it will not be garbage-collected before the changeset.
+			 */
+			$new_post_date = $post->post_date;
+		} else {
+			/*
+			 * Since the changeset no longer has an auto-draft (and it is not published)
+			 * it is now a persistent changeset, a long-lived draft, and so any
+			 * associated auto-draft posts should have their dates
+			 * pushed out very far into the future to prevent them from ever
+			 * being garbage-collected.
+			 */
+			$new_post_date = gmdate( 'Y-m-d H:i:d', strtotime( '+100 years' ) );
+		}
+
 		foreach ( $auto_draft_posts as $post ) {
-			$wpdb->update(
-				$wpdb->posts,
-				array( 'post_status' => $new_status ),
-				array( 'ID' => $post->ID )
+			$update_data = array(
+				'post_date' => $new_post_date,
 			);
+
+			// Allows old post status `customize-draft` to change into auto-draft.
+			if ( 'customize-draft' === $post->post_status ) {
+				$update_data['post_status'] = 'auto-draft';
+			}
+			$wpdb->update( $wpdb->posts, $update_data, array(
+				'ID' => $post->ID,
+			) );
 			clean_post_cache( $post->ID );
 
-			// Fires actions related to the transitioning of a post's status.
-			wp_transition_post_status( $new_status, $post->post_status, $post );
+			if ( isset( $update_data['post_status'] ) ) {
+				// Fires actions related to the transitioning of a post's status.
+				wp_transition_post_status( $update_data['post_status'], $post->post_status, $post );
+			}
 		}
 	}
 
@@ -1178,7 +1203,7 @@ final class WP_Customize_Posts {
 					continue;
 				}
 				$post_id = intval( $matches['post_id'] );
-				if ( 'customize-draft' === get_post_status( $post_id ) ) {
+				if ( 'auto-draft' === get_post_status( $post_id ) ) {
 					$this->customize_draft_post_ids[] = $post_id;
 				}
 			}
@@ -1186,7 +1211,7 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Allow the `customize-draft` status to be previewed in a Snapshot by all users.
+	 * Allow the `auto-draft` status to be previewed in a Snapshot by all users.
 	 *
 	 * @action pre_get_posts
 	 * @access public
@@ -1205,7 +1230,7 @@ final class WP_Customize_Posts {
 			}
 
 			if ( in_array( $post_id, $this->customize_draft_post_ids, true ) ) {
-				$query->set( 'post_status', 'customize-draft' );
+				$query->set( 'post_status', 'auto-draft' );
 			}
 		}
 	}
