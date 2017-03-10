@@ -1,11 +1,11 @@
-/* global jQuery, wp, _, tinyMCE */
+/* global jQuery, wp, _, tinyMCE, _customizePostEditorControlSettings */
 /* eslint consistent-this: [ "error", "control" ], no-magic-numbers: [ "error", { "ignore": [1] } ] */
 
 (function( api, $ ) {
 	'use strict';
 
-	// This is true because wp_editor() is forcibly called with 'default_editor' => 'tinymce'.
-	var visualModeEnabled = true;
+	// This is set based on setting["Disable the visual editor when writing"] available in user profile edit screen.
+	var visualModeEnabled = _customizePostEditorControlSettings.visualModeEnabled == "true" ? true : false;
 
 	/**
 	 * An post editor control.
@@ -150,7 +150,9 @@
 				settingValue = setting.get();
 			}
 
-			editor = tinyMCE.get( 'customize-posts-content' );
+			if ( visualModeEnabled ) {
+				editor = tinyMCE.get('customize-posts-content');
+			}
 			control.updateEditorToggleExpandButtonLabel( expanded );
 
 			if ( expanded ) {
@@ -165,22 +167,28 @@
 				} else {
 					control.contentTextarea.val( settingValue );
 				}
-				editor.on( 'input change keyup', control.onVisualEditorChange );
+				if ( visualModeEnabled ) {
+					editor.on('input change keyup', control.onVisualEditorChange);
+				}
 				control.contentTextarea.on( 'input', control.onTextEditorChange );
 				$( '#wp-customize-posts-content-wrap' ).on( 'keydown', control.stopEscKeypressEventPropagation );
 				$( document.body ).addClass( 'customize-posts-content-editor-pane-open' );
 				control.resizeEditor( window.innerHeight - control.editorPane.height() );
 			} else {
 				control.editorHeading.text( '' );
-				editor.off( 'input change keyup', control.onVisualEditorChange );
+				if ( visualModeEnabled ) {
+					editor.off('input change keyup', control.onVisualEditorChange);
+				}
 				control.contentTextarea.off( 'input', control.onTextEditorChange );
 				$( '#wp-customize-posts-content-wrap' ).off( 'keydown', control.stopEscKeypressEventPropagation );
 				$( document.body ).removeClass( 'customize-posts-content-editor-pane-open' );
 
 				// Cancel link and force a click event to exit fullscreen & kitchen sink mode.
 				$( '.mce-active' ).click(); // Remove active status from each item. @todo This is a hack.
-				visualModeEnabled = ! editor.isHidden();
-				editor.hide(); // Make sure all toolbars are hidden.
+				if ( visualModeEnabled ) {
+					visualModeEnabled = !editor.isHidden();
+					editor.hide(); // Make sure all toolbars are hidden.
+				}
 				control.customizePreview.css( 'bottom', '' );
 				control.collapseSidebar.css( 'bottom', '' );
 			}
@@ -345,11 +353,13 @@
 		 * @returns {void}
 		 */
 		handleToggleEditorButtonClick: function handleToggleEditorButtonClick() {
-			var control = this,
-				editor = tinyMCE.get( 'customize-posts-content' );
+			var control = this;
+			if ( visualModeEnabled ) {
+				var editor = tinyMCE.get('customize-posts-content');
+			}
 			control.expanded.set( ! control.expanded() );
 			if ( control.expanded() ) {
-				if ( editor ) {
+				if ( visualModeEnabled && editor ) {
 					editor.focus();
 				} else {
 					control.contentTextarea.focus();
