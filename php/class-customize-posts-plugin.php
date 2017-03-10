@@ -271,10 +271,10 @@ class Customize_Posts_Plugin {
 		$in_footer = 1;
 		$wp_scripts->add( $handle, $src, $deps, $this->version, $in_footer );
 
-        //add data to check TinyMCE is enable for the current user or not
-        $user_id      = get_current_user_id();
-        $rich_editing = get_user_meta( $user_id, 'rich_editing', true );
-        wp_localize_script( 'customize-post-editor-control', '_customizePostEditorControlSettings', array( 'visualModeEnabled' => $rich_editing ) );
+            //add data to check TinyMCE is enable for the current user or not
+            $user_id      = get_current_user_id();
+            $rich_editing = get_user_meta( $user_id, 'rich_editing', true );
+            wp_localize_script( 'customize-post-editor-control', '_customizePostEditorControlSettings', array( 'visualModeEnabled' => $rich_editing ) );
 
 		$handle = 'customize-post-status-control';
 		$src = plugins_url( 'js/customize-post-status-control' . $suffix, dirname( __FILE__ ) );
