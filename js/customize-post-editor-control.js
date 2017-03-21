@@ -47,7 +47,9 @@
 				options.params || {}
 			);
 
-			visualModeEnabled = api.Posts.data.visualModeEnabled === 'true' ? true : false;
+			if ( 'true' === api.Posts.data.visualModeEnabled ) {
+				visualModeEnabled = true;
+			}
 
 			control.expanded = new api.Value( false );
 			control.expandedArgumentsQueue = [];
@@ -153,7 +155,7 @@
 			}
 
 			if ( visualModeEnabled ) {
-				editor = tinyMCE.get('customize-posts-content');
+				editor = tinyMCE.get( 'customize-posts-content' );
 			}
 			control.updateEditorToggleExpandButtonLabel( expanded );
 
@@ -170,7 +172,7 @@
 					control.contentTextarea.val( settingValue );
 				}
 				if ( visualModeEnabled ) {
-					editor.on('input change keyup', control.onVisualEditorChange);
+					editor.on( 'input change keyup', control.onVisualEditorChange );
 				}
 				control.contentTextarea.on( 'input', control.onTextEditorChange );
 				$( '#wp-customize-posts-content-wrap' ).on( 'keydown', control.stopEscKeypressEventPropagation );
@@ -179,7 +181,7 @@
 			} else {
 				control.editorHeading.text( '' );
 				if ( visualModeEnabled ) {
-					editor.off('input change keyup', control.onVisualEditorChange);
+					editor.off( 'input change keyup', control.onVisualEditorChange );
 				}
 				control.contentTextarea.off( 'input', control.onTextEditorChange );
 				$( '#wp-customize-posts-content-wrap' ).off( 'keydown', control.stopEscKeypressEventPropagation );
@@ -188,7 +190,7 @@
 				// Cancel link and force a click event to exit fullscreen & kitchen sink mode.
 				$( '.mce-active' ).click(); // Remove active status from each item. @todo This is a hack.
 				if ( visualModeEnabled ) {
-					visualModeEnabled = !editor.isHidden();
+					visualModeEnabled = ! editor.isHidden();
 					editor.hide(); // Make sure all toolbars are hidden.
 				}
 				control.customizePreview.css( 'bottom', '' );
@@ -357,7 +359,7 @@
 		handleToggleEditorButtonClick: function handleToggleEditorButtonClick() {
 			var control = this, editor = false;
 			if ( visualModeEnabled ) {
-				editor = tinyMCE.get('customize-posts-content');
+				editor = tinyMCE.get( 'customize-posts-content' );
 			}
 			control.expanded.set( ! control.expanded() );
 			if ( control.expanded() ) {
