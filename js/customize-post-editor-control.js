@@ -47,7 +47,7 @@
 				options.params || {}
 			);
 
-			visualModeEnabled = api.Posts.data.visualModeEnabled == "true" ? true : false;
+			visualModeEnabled = api.Posts.data.visualModeEnabled === 'true' ? true : false;
 
 			control.expanded = new api.Value( false );
 			control.expandedArgumentsQueue = [];
