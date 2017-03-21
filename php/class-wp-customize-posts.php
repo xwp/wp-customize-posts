@@ -806,6 +806,10 @@ final class WP_Customize_Posts {
 			);
 		}
 
+		// Add data to check TinyMCE is enable for the current user or not.
+		$user_id      = get_current_user_id();
+		$rich_editing = get_user_meta( $user_id, 'rich_editing', true );
+
 		$exports = array(
 			'postTypes' => $post_types,
 			'postStatusChoices' => $this->get_post_status_choices(),
@@ -813,6 +817,7 @@ final class WP_Customize_Posts {
 			'dateMonthChoices' => $this->get_date_month_choices(),
 			'initialServerDate' => current_time( 'mysql', false ),
 			'initialServerTimestamp' => floor( microtime( true ) * 1000 ),
+			'visualModeEnabled' => $rich_editing,
 			'l10n' => array(
 				/* translators: &#9656; is the unicode right-pointing triangle, and %s is the section title in the Customizer */
 				'sectionCustomizeActionTpl' => __( 'Customizing &#9656; %s', 'customize-posts' ),

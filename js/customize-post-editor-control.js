@@ -1,11 +1,11 @@
-/* global jQuery, wp, _, tinyMCE, _customizePostEditorControlSettings */
+/* global jQuery, wp, _, tinyMCE */
 /* eslint consistent-this: [ "error", "control" ], no-magic-numbers: [ "error", { "ignore": [1] } ] */
 
 (function( api, $ ) {
 	'use strict';
 
 	// This is set based on setting["Disable the visual editor when writing"] available in user profile edit screen.
-	var visualModeEnabled = _customizePostEditorControlSettings.visualModeEnabled == "true" ? true : false;
+	var visualModeEnabled = false;
 
 	/**
 	 * An post editor control.
@@ -46,6 +46,8 @@
 				},
 				options.params || {}
 			);
+
+			visualModeEnabled = api.Posts.data.visualModeEnabled == "true" ? true : false;
 
 			control.expanded = new api.Value( false );
 			control.expandedArgumentsQueue = [];
@@ -353,9 +355,9 @@
 		 * @returns {void}
 		 */
 		handleToggleEditorButtonClick: function handleToggleEditorButtonClick() {
-			var control = this;
+			var control = this, editor = false;
 			if ( visualModeEnabled ) {
-				var editor = tinyMCE.get('customize-posts-content');
+				editor = tinyMCE.get('customize-posts-content');
 			}
 			control.expanded.set( ! control.expanded() );
 			if ( control.expanded() ) {
