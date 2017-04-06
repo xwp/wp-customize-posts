@@ -131,42 +131,26 @@ class Edit_Post_Preview {
 		wp_enqueue_script( 'edit-post-preview-admin' );
 		$post = $this->get_previewed_post();
 
-		$data = array(
-			self::UPDATE_CHANGESET_NONCE => wp_create_nonce( self::UPDATE_CHANGESET_NONCE_ACTION ),
-			'previewed_post' => $post->ID,
+		$customize_url = add_query_arg(
+			array(
+				'url' => urlencode( self::get_preview_post_link( $post ) ),
+				'previewed_post' => $post->ID,
+				'autofocus[section]' => sprintf( 'post[%s][%d]', $post->post_type, $post->ID ),
+				self::PREVIEW_POST_NONCE_QUERY_VAR => wp_create_nonce( self::PREVIEW_POST_NONCE_ACTION ),
+			),
+			wp_customize_url()
 		);
 
-		if ( version_compare( strtok( get_bloginfo( 'version' ), '-' ), '4.7', '<' ) ) {
-			$data['customize_url'] = $this->get_customize_url( $post );
-		}
+		$data = array(
+			'customize_url' => $customize_url,
+			self::UPDATE_CHANGESET_NONCE => wp_create_nonce( self::UPDATE_CHANGESET_NONCE_ACTION ),
+			'previewed_post' => $post->ID,
+			'is_compat' => version_compare( strtok( get_bloginfo( 'version' ), '-' ), '4.7', '<' ),
+		);
 
 		wp_scripts()->add_data( 'edit-post-preview-admin', 'data', sprintf( 'var _editPostPreviewAdminExports = %s;', wp_json_encode( $data ) ) );
 		wp_enqueue_script( 'customize-loader' );
 		wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( function() { EditPostPreviewAdmin.init(); } );', 'after' );
-	}
-
-	/**
-	 * Gets customize url for previewing post.
-	 *
-	 * @param WP_Post $post The post in question.
-	 * @param array   $params Additional params.
-	 * @return string.
-	 */
-	public function get_customize_url( $post, $params = array() ) {
-		$customize_url = '';
-
-		$args = array(
-			'url' => urlencode( self::get_preview_post_link( $post ) ),
-			'previewed_post' => $post->ID,
-			'autofocus[section]' => sprintf( 'post[%s][%d]', $post->post_type, $post->ID ),
-			self::PREVIEW_POST_NONCE_QUERY_VAR => wp_create_nonce( self::PREVIEW_POST_NONCE_ACTION ),
-		);
-
-		array_merge( $args, $params );
-
-		$customize_url = add_query_arg( $args, wp_customize_url() );
-
-		return $customize_url;
 	}
 
 	/**
@@ -235,13 +219,68 @@ class Edit_Post_Preview {
 		} elseif ( empty( $_POST['previewed_post'] ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'missing_previewed_post' );
+		} elseif ( empty( $_POST['customize_url'] ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'missing_customize_url' );
 		}
 
-		$post = $this->get_previewed_post();
-		$customize_url = $this->get_customize_url( $post );
+		global $wp_customize;
+
+		$previewed_post_id = absint( wp_unslash( $_POST['previewed_post'] ) );
+		$changeset_uuid = get_post_meta( $previewed_post_id, '_changeset_uuid', true );
+
+		if ( empty( $wp_customize ) || ! ( $wp_customize instanceof WP_Customize_Manager ) || ! isset( $wp_customize->posts ) ) {
+			require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
+			require_once dirname( __FILE__ ) . '/class-wp-customize-posts.php';
+		}
+
+		if ( $changeset_uuid ) {
+			$wp_customize = new \WP_Customize_Manager( array(
+				'changeset_uuid' => $changeset_uuid,
+			) );
+		} else {
+			$wp_customize = new \WP_Customize_Manager();
+			$changeset_uuid = $wp_customize->changeset_uuid();
+			update_post_meta( $previewed_post_id, '_changeset_uuid', $changeset_uuid );
+		}
+
+		$customize_url = add_query_arg(
+			array(
+				'changeset_uuid' => $changeset_uuid,
+			),
+			wp_unslash( $_POST['customize_url'] )
+		);
+
+		$wp_customize_posts = new WP_Customize_Posts( $wp_customize );
+		$response = '';
+
+		if ( ! empty( $_POST['customize_changeset_data'] ) ) {
+
+			$input_customize_data = array();
+			$settings = $wp_customize_posts->get_settings( array( $previewed_post_id ) );
+			$setting = array_shift( $settings );
+
+			if ( $setting->check_capabilities() ) {
+				$setting->preview();
+				$params = $wp_customize_posts->get_setting_params( $setting );
+				$default_data = $params['value'];
+				$input_data = wp_array_slice_assoc( wp_unslash( $_POST['customize_changeset_data'] ), array_keys( $default_data ) );
+
+				$params['value'] = array_merge(
+					$default_data,
+					$input_data
+				);
+				$input_customize_data[ $setting->id ] = $params;
+			}
+
+			$response = $wp_customize->save_changeset_post( array(
+				'data' => $input_customize_data,
+			)  );
+		}
 
 		wp_send_json_success( array(
 			'customize_url' => $customize_url,
+			'response' => $response,
 		) );
 	}
 }

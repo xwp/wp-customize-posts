@@ -5,7 +5,8 @@ var EditPostPreviewAdmin = (function( $ ) {
 
 	var component = {
 		data: {
-			customize_url: null
+			customize_url: null,
+			is_compat: false
 		}
 	};
 
@@ -74,7 +75,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 		wp.customize.trigger( 'settings-from-edit-post-screen', settings );
 
 		// For backward compatibility send the current input fields from the edit post page to the Customizer via sessionStorage.
-		if ( component.data.customize_url ) {
+		if ( component.data.is_compat ) {
 			sessionStorage.setItem( 'previewedCustomizePostSettings[' + postId + ']', JSON.stringify( settings ) );
 			component.openCustomizer( component.data.customize_url, postSettingId );
 		} else {
@@ -82,7 +83,6 @@ var EditPostPreviewAdmin = (function( $ ) {
 				customize_posts_update_changeset_nonce: component.data.customize_posts_update_changeset_nonce,
 				previewed_post: component.data.previewed_post,
 				customize_url: component.data.customize_url,
-				post_setting_id: postSettingId,
 				customize_changeset_data: postSettingValue
 			} );
 
