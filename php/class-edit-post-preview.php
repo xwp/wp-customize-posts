@@ -38,7 +38,7 @@ class Edit_Post_Preview {
 		add_action( 'customize_controls_init', array( $this, 'remove_static_controls_and_sections' ), 100 );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_customize_scripts' ) );
 		add_action( 'customize_preview_init', array( $this, 'make_auto_draft_status_previewable' ) );
-		add_action( 'wp_ajax_' . self::UPDATE_CHANGESET_NONCE_ACTION, array( $this, 'update_changeset' ) );
+		add_action( 'wp_ajax_' . self::UPDATE_CHANGESET_NONCE_ACTION, array( $this, 'update_post_changeset' ) );
 	}
 
 	/**
@@ -209,7 +209,7 @@ class Edit_Post_Preview {
 	/**
 	 * Updates changeset via ajax when preview button is clicked.
 	 */
-	public function update_changeset() {
+	public function update_post_changeset() {
 		if ( ! check_ajax_referer( self::UPDATE_CHANGESET_NONCE_ACTION, self::UPDATE_CHANGESET_NONCE, false ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'bad_nonce' );
@@ -254,7 +254,7 @@ class Edit_Post_Preview {
 		$wp_customize_posts = new WP_Customize_Posts( $wp_customize );
 		$response = '';
 
-		if ( ! empty( $_POST['customize_changeset_data'] ) ) {
+		if ( ! empty( $_POST['input_data'] ) ) {
 
 			$input_customize_data = array();
 			$settings = $wp_customize_posts->get_settings( array( $previewed_post_id ) );
@@ -264,7 +264,7 @@ class Edit_Post_Preview {
 				$setting->preview();
 				$params = $wp_customize_posts->get_setting_params( $setting );
 				$default_data = $params['value'];
-				$input_data = wp_array_slice_assoc( wp_unslash( $_POST['customize_changeset_data'] ), array_keys( $default_data ) );
+				$input_data = wp_array_slice_assoc( wp_unslash( $_POST['input_data'] ), array_keys( $default_data ) );
 
 				$params['value'] = array_merge(
 					$default_data,

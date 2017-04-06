@@ -1,4 +1,4 @@
-/* global jQuery, _editPostPreviewCustomizeExports, JSON, console, wp */
+/* global jQuery, _editPostPreviewCustomizeExports, JSON, console, wp, _ */
 /* exported EditPostPreviewCustomize */
 var EditPostPreviewCustomize = (function( $, api ) {
 	'use strict';

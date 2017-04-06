@@ -1,6 +1,6 @@
 /* global jQuery, _editPostPreviewAdminExports, JSON, tinymce, wp */
 /* exported EditPostPreviewAdmin */
-var EditPostPreviewAdmin = (function( $, api ) {
+var EditPostPreviewAdmin = (function( $ ) {
 	'use strict';
 
 	var component = {
@@ -39,14 +39,14 @@ var EditPostPreviewAdmin = (function( $, api ) {
 			return;
 		}
 
-		api.Loader.link = $btn;
+		wp.customize.Loader.link = $btn;
 
 		// Prevent loader from navigating to new URL.
-		wasMobile = api.Loader.settings.browser.mobile;
-		api.Loader.settings.browser.mobile = false;
+		wasMobile = wp.customize.Loader.settings.browser.mobile;
+		wp.customize.Loader.settings.browser.mobile = false;
 
 		// Override default close behavior.
-		api.Loader.close = component.closeLoader;
+		wp.customize.Loader.close = component.closeLoader;
 
 		parentId = parseInt( $( '#parent_id' ).val(), 10 );
 		if ( ! parentId ) {
@@ -66,34 +66,35 @@ var EditPostPreviewAdmin = (function( $, api ) {
 			post_excerpt: $( '#excerpt' ).val(),
 			comment_status: $( '#comment_status' ).prop( 'checked' ) ? 'open' : 'closed',
 			ping_status: $( '#ping_status' ).prop( 'checked' ) ? 'open' : 'closed',
+			post_status: $( '#post_status' ).val(),
 			post_author: parseInt( $( '#post_author_override' ).val(), 10 )
 		};
 		postSettingId = 'post[' + postType + '][' + postId + ']';
 		settings[ postSettingId ] = postSettingValue;
 
 		// Allow plugins to inject additional settings to preview.
-		api.trigger( 'settings-from-edit-post-screen', settings );
+		wp.customize.trigger( 'settings-from-edit-post-screen', settings );
 
 		// For backward compatibility send the current input fields from the edit post page to the Customizer via sessionStorage.
 		if ( component.data.is_compat ) {
 			sessionStorage.setItem( 'previewedCustomizePostSettings[' + postId + ']', JSON.stringify( settings ) );
-			api.Loader.open( component.data.customize_url );
+			wp.customize.Loader.open( component.data.customize_url );
 			component.bindChangesToCustomizer( postSettingId, editor );
 		} else {
 			request = wp.ajax.post( 'customize_posts_update_changeset', {
 				customize_posts_update_changeset_nonce: component.data.customize_posts_update_changeset_nonce,
 				previewed_post: component.data.previewed_post,
 				customize_url: component.data.customize_url,
-				customize_changeset_data: postSettingValue
+				input_data: postSettingValue
 			} );
 
 			request.done( function( resp ) {
-				api.Loader.open( resp.customize_url );
+				wp.customize.Loader.open( resp.customize_url );
 				component.bindChangesToCustomizer( postSettingId, editor );
 			} );
 		}
 
-		api.Loader.settings.browser.mobile = wasMobile;
+		wp.customize.Loader.settings.browser.mobile = wasMobile;
 	};
 
 	/**
@@ -104,7 +105,7 @@ var EditPostPreviewAdmin = (function( $, api ) {
 	 * @return {void}
 	 */
 	component.bindChangesToCustomizer = function( postSettingId, editor ) {
-		api.Loader.messenger.bind( 'customize-post-settings-data', function( data ) {
+		wp.customize.Loader.messenger.bind( 'customize-post-settings-data', function( data ) {
 			var settingParentId;
 			if ( data[ postSettingId ] ) {
 				$( '#title' ).val( data[ postSettingId ].post_title ).trigger( 'change' );
@@ -112,7 +113,8 @@ var EditPostPreviewAdmin = (function( $, api ) {
 					editor.setContent( wp.editor.autop( data[ postSettingId ].post_content ) );
 				}
 
-				// @todo Handle post_status and post_date sync.
+				// @todo Handle post_date sync.
+				$( '#post_status' ).val( data[ postSettingId ].post_status );
 				$( '#content' ).val( data[ postSettingId ].post_content ).trigger( 'change' );
 				$( '#excerpt' ).val( data[ postSettingId ].post_excerpt ).trigger( 'change' );
 				$( '#comment_status' ).prop( 'checked', 'open' === data[ postSettingId ].comment_status ).trigger( 'change' );
@@ -127,7 +129,7 @@ var EditPostPreviewAdmin = (function( $, api ) {
 			}
 
 			// Let plugins handle updates.
-			api.trigger( 'settings-from-customizer', data );
+			wp.customize.trigger( 'settings-from-customizer', data );
 		} );
 	};
 
@@ -174,4 +176,4 @@ var EditPostPreviewAdmin = (function( $, api ) {
 	};
 
 	return component;
-})( jQuery, wp.customize );
+})( jQuery );
