@@ -13,6 +13,8 @@ class Edit_Post_Preview {
 
 	const PREVIEW_POST_NONCE_ACTION = 'customize_preview_post';
 	const PREVIEW_POST_NONCE_QUERY_VAR = 'customize_preview_post_nonce';
+	const UPDATE_CHANGESET_NONCE_ACTION = 'customize_posts_update_changeset';
+	const UPDATE_CHANGESET_NONCE = 'customize_posts_update_changeset_nonce';
 
 	/**
 	 * Plugin instance.
@@ -36,6 +38,7 @@ class Edit_Post_Preview {
 		add_action( 'customize_controls_init', array( $this, 'remove_static_controls_and_sections' ), 100 );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_customize_scripts' ) );
 		add_action( 'customize_preview_init', array( $this, 'make_auto_draft_status_previewable' ) );
+		add_action( 'wp_ajax_' . self::UPDATE_CHANGESET_NONCE_ACTION, array( $this, 'update_changeset' ) );
 	}
 
 	/**
@@ -128,21 +131,42 @@ class Edit_Post_Preview {
 		wp_enqueue_script( 'edit-post-preview-admin' );
 		$post = $this->get_previewed_post();
 
-		$customize_url = add_query_arg(
-			array(
-				'url' => urlencode( self::get_preview_post_link( $post ) ),
-				'previewed_post' => $post->ID,
-				'autofocus[section]' => sprintf( 'post[%s][%d]', $post->post_type, $post->ID ),
-				self::PREVIEW_POST_NONCE_QUERY_VAR => wp_create_nonce( self::PREVIEW_POST_NONCE_ACTION ),
-			),
-			wp_customize_url()
-		);
 		$data = array(
-			'customize_url' => $customize_url,
+			self::UPDATE_CHANGESET_NONCE => wp_create_nonce( self::UPDATE_CHANGESET_NONCE_ACTION ),
+			'previewed_post' => $post->ID,
 		);
+
+		if ( version_compare( strtok( get_bloginfo( 'version' ), '-' ), '4.7', '<' ) ) {
+			$data['customize_url'] = $this->get_customize_url( $post );
+		}
+
 		wp_scripts()->add_data( 'edit-post-preview-admin', 'data', sprintf( 'var _editPostPreviewAdminExports = %s;', wp_json_encode( $data ) ) );
 		wp_enqueue_script( 'customize-loader' );
 		wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( function() { EditPostPreviewAdmin.init(); } );', 'after' );
+	}
+
+	/**
+	 * Gets customize url for previewing post.
+	 *
+	 * @param WP_Post $post The post in question.
+	 * @param array   $params Additional params.
+	 * @return string.
+	 */
+	public function get_customize_url( $post, $params = array() ) {
+		$customize_url = '';
+
+		$args = array(
+			'url' => urlencode( self::get_preview_post_link( $post ) ),
+			'previewed_post' => $post->ID,
+			'autofocus[section]' => sprintf( 'post[%s][%d]', $post->post_type, $post->ID ),
+			self::PREVIEW_POST_NONCE_QUERY_VAR => wp_create_nonce( self::PREVIEW_POST_NONCE_ACTION ),
+		);
+
+		array_merge( $args, $params );
+
+		$customize_url = add_query_arg( $args, wp_customize_url() );
+
+		return $customize_url;
 	}
 
 	/**
@@ -196,5 +220,28 @@ class Edit_Post_Preview {
 	public function make_auto_draft_status_previewable() {
 		global $wp_post_statuses;
 		$wp_post_statuses['auto-draft']->protected = true;
+	}
+
+	/**
+	 * Updates changeset via ajax when preview button is clicked.
+	 */
+	public function update_changeset() {
+		if ( ! check_ajax_referer( self::UPDATE_CHANGESET_NONCE_ACTION, self::UPDATE_CHANGESET_NONCE, false ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'bad_nonce' );
+		} elseif ( ! current_user_can( 'customize' ) ) {
+			status_header( 403 ); // @todo If they don't have customize permission, show on front-end?
+			wp_send_json_error( 'customize_not_allowed' );
+		} elseif ( empty( $_POST['previewed_post'] ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'missing_previewed_post' );
+		}
+
+		$post = $this->get_previewed_post();
+		$customize_url = $this->get_customize_url( $post );
+
+		wp_send_json_success( array(
+			'customize_url' => $customize_url,
+		) );
 	}
 }
