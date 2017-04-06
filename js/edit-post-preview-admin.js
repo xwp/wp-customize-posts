@@ -1,6 +1,6 @@
-/* global jQuery, _editPostPreviewAdminExports, JSON, tinymce */
+/* global jQuery, _editPostPreviewAdminExports, JSON, tinymce, wp */
 /* exported EditPostPreviewAdmin */
-var EditPostPreviewAdmin = (function( $ ) {
+var EditPostPreviewAdmin = (function( $, api ) {
 	'use strict';
 
 	var component = {
@@ -39,14 +39,14 @@ var EditPostPreviewAdmin = (function( $ ) {
 			return;
 		}
 
-		wp.customize.Loader.link = $btn;
+		api.Loader.link = $btn;
 
 		// Prevent loader from navigating to new URL.
-		wasMobile = wp.customize.Loader.settings.browser.mobile;
-		wp.customize.Loader.settings.browser.mobile = false;
+		wasMobile = api.Loader.settings.browser.mobile;
+		api.Loader.settings.browser.mobile = false;
 
 		// Override default close behavior.
-		wp.customize.Loader.close = component.closeLoader;
+		api.Loader.close = component.closeLoader;
 
 		parentId = parseInt( $( '#parent_id' ).val(), 10 );
 		if ( ! parentId ) {
@@ -72,12 +72,13 @@ var EditPostPreviewAdmin = (function( $ ) {
 		settings[ postSettingId ] = postSettingValue;
 
 		// Allow plugins to inject additional settings to preview.
-		wp.customize.trigger( 'settings-from-edit-post-screen', settings );
+		api.trigger( 'settings-from-edit-post-screen', settings );
 
 		// For backward compatibility send the current input fields from the edit post page to the Customizer via sessionStorage.
 		if ( component.data.is_compat ) {
 			sessionStorage.setItem( 'previewedCustomizePostSettings[' + postId + ']', JSON.stringify( settings ) );
-			component.openCustomizer( component.data.customize_url, postSettingId );
+			api.Loader.open( component.data.customize_url );
+			component.bindChangesToCustomizer( postSettingId, editor );
 		} else {
 			request = wp.ajax.post( 'customize_posts_update_changeset', {
 				customize_posts_update_changeset_nonce: component.data.customize_posts_update_changeset_nonce,
@@ -87,25 +88,23 @@ var EditPostPreviewAdmin = (function( $ ) {
 			} );
 
 			request.done( function( resp ) {
-				component.openCustomizer( resp.customize_url, postSettingId );
+				api.Loader.open( resp.customize_url );
+				component.bindChangesToCustomizer( postSettingId, editor );
 			} );
 		}
 
-		wp.customize.Loader.settings.browser.mobile = wasMobile;
+		api.Loader.settings.browser.mobile = wasMobile;
 	};
 
 	/**
-	 * Opens customizers.
+	 * Sync changes from the Customizer to the post input fields.
 	 *
-	 * @param {string} customizeUrl Customize URL.
 	 * @param {string} postSettingId post setting id.
-	 * @return {void}.
+	 * @param {object} editor Tinymce object.
+	 * @return {void}
 	 */
-	component.openCustomizer = function( customizeUrl, postSettingId ) {
-		wp.customize.Loader.open( customizeUrl );
-
-		// Sync changes from the Customizer to the post input fields.
-		wp.customize.Loader.messenger.bind( 'customize-post-settings-data', function( data ) {
+	component.bindChangesToCustomizer = function( postSettingId, editor ) {
+		api.Loader.messenger.bind( 'customize-post-settings-data', function( data ) {
 			var settingParentId;
 			if ( data[ postSettingId ] ) {
 				$( '#title' ).val( data[ postSettingId ].post_title ).trigger( 'change' );
@@ -128,7 +127,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 			}
 
 			// Let plugins handle updates.
-			wp.customize.trigger( 'settings-from-customizer', data );
+			api.trigger( 'settings-from-customizer', data );
 		} );
 	};
 
@@ -175,4 +174,4 @@ var EditPostPreviewAdmin = (function( $ ) {
 	};
 
 	return component;
-})( jQuery );
+})( jQuery, wp.customize );

@@ -1,4 +1,4 @@
-/* global jQuery, _editPostPreviewCustomizeExports, JSON, console */
+/* global jQuery, _editPostPreviewCustomizeExports, JSON, console, wp */
 /* exported EditPostPreviewCustomize */
 var EditPostPreviewCustomize = (function( $, api ) {
 	'use strict';
@@ -64,8 +64,13 @@ var EditPostPreviewCustomize = (function( $, api ) {
 	 */
 	component.ready = function() {
 
-		// Wait to populate the settings until the customized-posts message is received so we know the preview is ready to receive mesages.
-		api.previewer.bind( 'customized-posts', component.populateSettings );
+		/**
+		 * For backward compatibility.
+		 * Wait to populate the settings until the customized-posts message is received so we know the preview is ready to receive messages.
+ 		 */
+		if ( ! api.state.has( 'changesetStatus' ) ) {
+			api.previewer.bind( 'customized-posts', component.populateSettings );
+		}
 
 		// Prevent 'saved' state from becoming false, since we only want to save from the admin page.
 		api.state( 'saved' ).set( true ).validate = function() {
