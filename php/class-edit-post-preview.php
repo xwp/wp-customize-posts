@@ -39,6 +39,7 @@ class Edit_Post_Preview {
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_customize_scripts' ) );
 		add_action( 'customize_preview_init', array( $this, 'make_auto_draft_status_previewable' ) );
 		add_action( 'customize_save_after', array( $this, 'remove_changeset_on_customize_publish' ) );
+		add_action( 'save_post', array( $this, 'remove_changeset_on_post_save' ), 10, 2 );
 		add_action( 'wp_ajax_' . self::UPDATE_CHANGESET_NONCE_ACTION, array( $this, 'update_post_changeset' ) );
 	}
 
@@ -307,6 +308,22 @@ class Edit_Post_Preview {
 		if ( ! empty( $_POST['customize_previewed_post_id'] ) ) {
 			$previewed_post_id = absint( wp_unslash( $_POST['customize_previewed_post_id'] ) );
 			delete_post_meta( $previewed_post_id, '_preview_changeset_uuid' );
+		}
+	}
+
+	/**
+	 * Removes _preview_changeset_uuid meta key when post is published.
+	 *
+	 * @param int     $post_id Post id.
+	 * @param WP_Post $post Post object.
+	 */
+	public function remove_changeset_on_post_save( $post_id, $post ) {
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return;
+		}
+
+		if ( 'publish' === $post->post_status ) {
+			delete_post_meta( $post_id, '_preview_changeset_uuid' );
 		}
 	}
 }
