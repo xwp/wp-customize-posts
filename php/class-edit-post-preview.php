@@ -303,6 +303,8 @@ class Edit_Post_Preview {
 
 	/**
 	 * Removes _preview_changeset_uuid post meta key from after a changeset has been published.
+	 *
+	 * @todo Allow publishing the post from customizer.
 	 */
 	public function remove_changeset_on_customize_publish() {
 		if ( ! empty( $_POST['customize_previewed_post_id'] ) ) {
