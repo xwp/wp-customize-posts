@@ -6,7 +6,9 @@ var EditPostPreviewAdmin = (function( $ ) {
 	var component = {
 		data: {
 			customize_url: null,
-			is_compat: false
+			is_compat: false,
+			previewed_post: null,
+			customize_posts_update_changeset_nonce: null
 		}
 	};
 
@@ -81,7 +83,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 		if ( component.data.is_compat ) {
 			sessionStorage.setItem( 'previewedCustomizePostSettings[' + postId + ']', JSON.stringify( settings ) );
 			wp.customize.Loader.open( component.data.customize_url );
-			component.bindChangesToCustomizer( postSettingId, editor );
+			component.bindChangesFromCustomizer( postSettingId, editor );
 		} else {
 			$btn.addClass( 'disabled' );
 			component.previewButtonSpinner.addClass( 'is-active' );
@@ -94,7 +96,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 
 			request.done( function( resp ) {
 				wp.customize.Loader.open( resp.customize_url );
-				component.bindChangesToCustomizer( postSettingId, editor );
+				component.bindChangesFromCustomizer( postSettingId, editor );
 			} );
 
 			request.always( function() {
@@ -113,7 +115,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 	 * @param {object} editor Tinymce object.
 	 * @return {void}
 	 */
-	component.bindChangesToCustomizer = function( postSettingId, editor ) {
+	component.bindChangesFromCustomizer = function( postSettingId, editor ) {
 		wp.customize.Loader.messenger.bind( 'customize-post-settings-data', function( data ) {
 			var settingParentId;
 			if ( data[ postSettingId ] ) {

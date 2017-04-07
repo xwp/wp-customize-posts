@@ -125,7 +125,7 @@ class Edit_Post_Preview {
 	 * Enqueue scripts for post edit screen.
 	 */
 	public function enqueue_admin_scripts() {
-		if ( ! function_exists( 'get_current_screen' ) || ! get_current_screen() || 'post' !== get_current_screen()->base ) {
+		if ( ! function_exists( 'get_current_screen' ) || ! get_current_screen() || 'post' !== get_current_screen()->base || ! current_user_can( 'customize' ) ) {
 			return;
 		}
 		wp_enqueue_script( 'edit-post-preview-admin' );
@@ -214,7 +214,7 @@ class Edit_Post_Preview {
 			status_header( 400 );
 			wp_send_json_error( 'bad_nonce' );
 		} elseif ( ! current_user_can( 'customize' ) ) {
-			status_header( 403 ); // @todo If they don't have customize permission, show on front-end?
+			status_header( 403 );
 			wp_send_json_error( 'customize_not_allowed' );
 		} elseif ( empty( $_POST['previewed_post'] ) ) {
 			status_header( 400 );
