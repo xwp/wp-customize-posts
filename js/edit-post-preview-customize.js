@@ -70,6 +70,8 @@ var EditPostPreviewCustomize = (function( $, api ) {
  		 */
 		if ( ! api.state.has( 'changesetStatus' ) ) {
 			api.previewer.bind( 'customized-posts', component.populateSettings );
+		} else {
+			component.extendPreviewerQuery();
 		}
 
 		// Prevent 'saved' state from becoming false, since we only want to save from the admin page.
@@ -120,6 +122,20 @@ var EditPostPreviewCustomize = (function( $, api ) {
 	 */
 	component.sendSettingsToEditPostScreen = function( settings ) {
 		component.parentFrame.send( 'customize-post-settings-data', settings );
+	};
+
+	component.extendPreviewerQuery = function() {
+		var originalQuery = api.previewer.query;
+
+		api.previewer.query = function() {
+			var retval = originalQuery.apply( this, arguments );
+
+			if ( component.data.previewed_post ) {
+				retval.customize_previewed_post_id = component.data.previewed_post.ID;
+			}
+
+			return retval;
+		};
 	};
 
 	/**

@@ -38,6 +38,7 @@ class Edit_Post_Preview {
 		add_action( 'customize_controls_init', array( $this, 'remove_static_controls_and_sections' ), 100 );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_customize_scripts' ) );
 		add_action( 'customize_preview_init', array( $this, 'make_auto_draft_status_previewable' ) );
+		add_action( 'customize_save_after', array( $this, 'remove_changeset_on_customize_publish' ) );
 		add_action( 'wp_ajax_' . self::UPDATE_CHANGESET_NONCE_ACTION, array( $this, 'update_post_changeset' ) );
 	}
 
@@ -227,7 +228,7 @@ class Edit_Post_Preview {
 		global $wp_customize;
 
 		$previewed_post_id = absint( wp_unslash( $_POST['previewed_post'] ) );
-		$changeset_uuid = get_post_meta( $previewed_post_id, '_changeset_uuid', true );
+		$changeset_uuid = get_post_meta( $previewed_post_id, '_preview_changeset_uuid', true );
 
 		if ( empty( $wp_customize ) || ! ( $wp_customize instanceof WP_Customize_Manager ) || ! isset( $wp_customize->posts ) ) {
 			require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
@@ -238,10 +239,25 @@ class Edit_Post_Preview {
 			$wp_customize = new \WP_Customize_Manager( array(
 				'changeset_uuid' => $changeset_uuid,
 			) );
+			$changeset_post_id = $wp_customize->changeset_post_id();
+
+			if ( 'publish' === get_post_status( $changeset_post_id ) ) {
+				status_header( 400 );
+				wp_send_json_error( 'changeset_already_published' );
+			}
+
+			if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->edit_post, $changeset_post_id ) ) {
+				status_header( 403 );
+				wp_send_json_error( 'cannot_edit_changeset_post' );
+			}
 		} else {
+			if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->create_posts ) ) {
+				status_header( 403 );
+				wp_send_json_error( 'cannot_create_changeset_post' );
+			}
 			$wp_customize = new \WP_Customize_Manager();
 			$changeset_uuid = $wp_customize->changeset_uuid();
-			update_post_meta( $previewed_post_id, '_changeset_uuid', $changeset_uuid );
+			update_post_meta( $previewed_post_id, '_preview_changeset_uuid', $changeset_uuid );
 		}
 
 		$customize_url = add_query_arg(
@@ -282,5 +298,15 @@ class Edit_Post_Preview {
 			'customize_url' => $customize_url,
 			'response' => $response,
 		) );
+	}
+
+	/**
+	 * Removes _preview_changeset_uuid post meta key from after a changeset has been published.
+	 */
+	public function remove_changeset_on_customize_publish() {
+		if ( ! empty( $_POST['customize_previewed_post_id'] ) ) {
+			$previewed_post_id = absint( wp_unslash( $_POST['customize_previewed_post_id'] ) );
+			delete_post_meta( $previewed_post_id, '_preview_changeset_uuid' );
+		}
 	}
 }

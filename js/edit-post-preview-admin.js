@@ -83,6 +83,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 		if ( component.data.is_compat ) {
 			sessionStorage.setItem( 'previewedCustomizePostSettings[' + postId + ']', JSON.stringify( settings ) );
 			wp.customize.Loader.open( component.data.customize_url );
+			wp.customize.Loader.settings.browser.mobile = wasMobile;
 			component.bindChangesFromCustomizer( postSettingId, editor );
 		} else {
 			$btn.addClass( 'disabled' );
@@ -96,6 +97,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 
 			request.done( function( resp ) {
 				wp.customize.Loader.open( resp.customize_url );
+				wp.customize.Loader.settings.browser.mobile = wasMobile;
 				component.bindChangesFromCustomizer( postSettingId, editor );
 			} );
 
@@ -104,8 +106,6 @@ var EditPostPreviewAdmin = (function( $ ) {
 				component.previewButtonSpinner.removeClass( 'is-active' );
 			} );
 		}
-
-		wp.customize.Loader.settings.browser.mobile = wasMobile;
 	};
 
 	/**
