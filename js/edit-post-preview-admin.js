@@ -15,7 +15,10 @@ var EditPostPreviewAdmin = (function( $ ) {
 	}
 
 	component.init = function() {
-		$( '#post-preview' )
+		component.previewButton = $( '#post-preview' );
+		component.previewButtonSpinner = $( 'span.spinner' ).first().clone();
+		component.previewButton.after( component.previewButtonSpinner );
+		component.previewButton
 			.off( 'click.post-preview' )
 			.on( 'click.post-preview', component.onClickPreviewBtn );
 	};
@@ -66,7 +69,6 @@ var EditPostPreviewAdmin = (function( $ ) {
 			post_excerpt: $( '#excerpt' ).val(),
 			comment_status: $( '#comment_status' ).prop( 'checked' ) ? 'open' : 'closed',
 			ping_status: $( '#ping_status' ).prop( 'checked' ) ? 'open' : 'closed',
-			post_status: $( '#post_status' ).val(),
 			post_author: parseInt( $( '#post_author_override' ).val(), 10 )
 		};
 		postSettingId = 'post[' + postType + '][' + postId + ']';
@@ -81,6 +83,8 @@ var EditPostPreviewAdmin = (function( $ ) {
 			wp.customize.Loader.open( component.data.customize_url );
 			component.bindChangesToCustomizer( postSettingId, editor );
 		} else {
+			$btn.addClass( 'disabled' );
+			component.previewButtonSpinner.addClass( 'is-active' );
 			request = wp.ajax.post( 'customize_posts_update_changeset', {
 				customize_posts_update_changeset_nonce: component.data.customize_posts_update_changeset_nonce,
 				previewed_post: component.data.previewed_post,
@@ -91,6 +95,11 @@ var EditPostPreviewAdmin = (function( $ ) {
 			request.done( function( resp ) {
 				wp.customize.Loader.open( resp.customize_url );
 				component.bindChangesToCustomizer( postSettingId, editor );
+			} );
+
+			request.always( function() {
+				$btn.removeClass( 'disabled' );
+				component.previewButtonSpinner.removeClass( 'is-active' );
 			} );
 		}
 
@@ -113,8 +122,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 					editor.setContent( wp.editor.autop( data[ postSettingId ].post_content ) );
 				}
 
-				// @todo Handle post_date sync.
-				$( '#post_status' ).val( data[ postSettingId ].post_status );
+				// @todo Handle post_status and post_date sync.
 				$( '#content' ).val( data[ postSettingId ].post_content ).trigger( 'change' );
 				$( '#excerpt' ).val( data[ postSettingId ].post_excerpt ).trigger( 'change' );
 				$( '#comment_status' ).prop( 'checked', 'open' === data[ postSettingId ].comment_status ).trigger( 'change' );
