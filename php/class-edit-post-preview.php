@@ -36,6 +36,9 @@ class Edit_Post_Preview {
 		add_action( 'customize_controls_init', array( $this, 'remove_static_controls_and_sections' ), 100 );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_customize_scripts' ) );
 		add_action( 'customize_preview_init', array( $this, 'make_auto_draft_status_previewable' ) );
+		add_action( 'admin_footer', array( $this, 'add_edit_customizer_button_posts' ) );
+		add_filter( 'post_row_actions', array( $this, 'add_edit_customizer_to_row_actions' ), 10, 2 );
+		add_filter( 'page_row_actions', array( $this, 'add_edit_customizer_to_row_actions' ), 10, 2 );
 	}
 
 	/**
@@ -126,7 +129,84 @@ class Edit_Post_Preview {
 			return;
 		}
 		wp_enqueue_script( 'edit-post-preview-admin' );
-		$post = $this->get_previewed_post();
+
+		$data = array(
+			'customize_url' => self::get_customize_url(),
+		);
+		wp_scripts()->add_data( 'edit-post-preview-admin', 'data', sprintf( 'var _editPostPreviewAdminExports = %s;', wp_json_encode( $data ) ) );
+		wp_enqueue_script( 'customize-loader' );
+		wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( function() { EditPostPreviewAdmin.init(); } );', 'after' );
+	}
+
+	/**
+	 * Add the edit customizer to row actions for Posts/Pages.
+	 *
+	 * @param array  $actions Actions.
+	 * @param object $post Post.
+	 * @return array $rebuild_actions
+	 */
+	public function add_edit_customizer_to_row_actions( $actions, $post ) {
+		if ( ! ( $post instanceof WP_Post ) ) {
+			return false;
+		}
+
+		$post_type_object = get_post_type_object( $post->post_type );
+
+		$can_preview = (
+			(
+				! empty( $post_type_object->show_in_customizer )
+				||
+				in_array( $post->post_type, array( 'post', 'page' ), true )
+			)
+			&&
+			current_user_can( 'edit_post', $post->ID )
+		);
+
+		if ( $can_preview ) {
+			$actions = array_merge( array( sprintf( '<a href="%1$s">%2$s</a>', esc_url( self::get_customize_url( $post ) ), esc_html__( 'Customize', 'customize-posts' ) ) ), $actions );
+		}
+
+		return $actions;
+	}
+
+	/**
+	 * Add the Edit in Customizer button to the edit post screen.
+	 */
+	public function add_edit_customizer_button_posts() {
+		$post_type_object = get_post_type_object( get_post_type() );
+
+		$can_preview = (
+			! empty( $post_type_object->show_in_customizer )
+			||
+			in_array( get_post_type(), array( 'post', 'page' ), true )
+		);
+
+		if ( $can_preview ) {
+			printf(
+				'<a id="%1$s" class="%2$s" href="%3$s">%4$s</a>',
+				esc_html__( 'customize-button', 'customize-posts' ),
+				esc_html__( 'page-title-action hide-if-no-customize', 'customize-posts' ),
+				esc_url( self::get_customize_url() ),
+				esc_html__( 'Edit in Customizer', 'customize-posts' )
+			);
+			wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( \'#customize-button\' ).appendTo( \'.wrap h1\' )', 'after' );
+		}
+	}
+
+	/**
+	 * Get the customize line.
+	 *
+	 * @param array $post Post.
+	 * @return string $customize_url
+	 */
+	public function get_customize_url( $post = null ) {
+		if ( ! ( $post instanceof WP_Post ) ) {
+			$post = $this->get_previewed_post();
+		}
+
+		if ( ! $post ) {
+			return false;
+		}
 
 		$customize_url = add_query_arg(
 			array(
@@ -137,12 +217,8 @@ class Edit_Post_Preview {
 			),
 			wp_customize_url()
 		);
-		$data = array(
-			'customize_url' => $customize_url,
-		);
-		wp_scripts()->add_data( 'edit-post-preview-admin', 'data', sprintf( 'var _editPostPreviewAdminExports = %s;', wp_json_encode( $data ) ) );
-		wp_enqueue_script( 'customize-loader' );
-		wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( function() { EditPostPreviewAdmin.init(); } );', 'after' );
+
+		return $customize_url;
 	}
 
 	/**
