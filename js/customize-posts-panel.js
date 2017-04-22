@@ -69,7 +69,10 @@
 						});
 						request.done( success );
 						request.fail( failure );
-					}
+
+						return request;
+					},
+					delay: 250
 				},
 				templateResult: function( data ) {
 					return panel.queriedPostSelect2ItemResultTemplate( data );
