@@ -298,19 +298,14 @@ class Edit_Post_Preview {
 				return;
 			}
 			$setting->preview();
-			$params = $wp_customize_posts->get_setting_params( $setting );
-			$default_data = $params['value'];
-			$input_data = wp_array_slice_assoc( wp_unslash( $_POST['input_data'] ), array_keys( $default_data ) );
 
-			$params['value'] = array_merge(
-				$default_data,
-				$input_data
-			);
-			$input_customize_data[ $setting->id ] = $params;
-
+			$wp_customize->set_post_value( $setting->id, wp_array_slice_assoc(
+				array_merge( $setting->value(), wp_unslash( $_POST['input_data'] ) ),
+				array_keys( $setting->default )
+			) );
 			$response = $wp_customize->save_changeset_post( array(
 				'data' => $input_customize_data,
-			)  );
+			) );
 		}
 
 		wp_send_json_success( compact( 'customize_url', 'response' ) );
