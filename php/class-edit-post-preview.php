@@ -229,9 +229,9 @@ class Edit_Post_Preview {
 		}
 
 		$previewed_post_id = intval( wp_unslash( $_POST['previewed_post'] ) );
-		if ( empty( $previewed_post_id ) ) {
-			status_header( 400 );
-			wp_send_json_error( 'missing_previewed_post' );
+		if ( empty( $previewed_post_id ) || ! get_post( $previewed_post_id ) ) {
+			status_header( 404 );
+			wp_send_json_error( 'post_not_found' );
 		} elseif ( ! current_user_can( 'edit_post', $previewed_post_id ) ) {
 			status_header( 403 );
 			wp_send_json_error( 'missing_previewed_post' );
@@ -290,18 +290,25 @@ class Edit_Post_Preview {
 			$settings = $wp_customize_posts->get_settings( array( $previewed_post_id ) );
 			$setting = array_shift( $settings );
 
-			if ( $setting->check_capabilities() ) {
-				$setting->preview();
-				$params = $wp_customize_posts->get_setting_params( $setting );
-				$default_data = $params['value'];
-				$input_data = wp_array_slice_assoc( wp_unslash( $_POST['input_data'] ), array_keys( $default_data ) );
-
-				$params['value'] = array_merge(
-					$default_data,
-					$input_data
-				);
-				$input_customize_data[ $setting->id ] = $params;
+			if ( ! $setting ) {
+				status_header( 404 );
+				wp_send_json_error( 'setting_not_found' );
+				return;
+			} elseif ( ! $setting->check_capabilities() ) {
+				status_header( 403 );
+				wp_send_json_error( 'changeset_already_published' );
+				return;
 			}
+			$setting->preview();
+			$params = $wp_customize_posts->get_setting_params( $setting );
+			$default_data = $params['value'];
+			$input_data = wp_array_slice_assoc( wp_unslash( $_POST['input_data'] ), array_keys( $default_data ) );
+
+			$params['value'] = array_merge(
+				$default_data,
+				$input_data
+			);
+			$input_customize_data[ $setting->id ] = $params;
 
 			$response = $wp_customize->save_changeset_post( array(
 				'data' => $input_customize_data,
