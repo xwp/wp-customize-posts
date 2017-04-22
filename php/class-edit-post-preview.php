@@ -227,6 +227,9 @@ class Edit_Post_Preview {
 		} elseif ( empty( $_POST['customize_url'] ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'missing_customize_url' );
+		} elseif ( empty( $_POST['input_data'] ) || ! is_array( $_POST['input_data'] ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'missing_input_data' );
 		}
 
 		$previewed_post_id = intval( wp_unslash( $_POST['previewed_post'] ) );
@@ -281,35 +284,29 @@ class Edit_Post_Preview {
 		 * @var WP_Customize_Posts $wp_customize_posts
 		 */
 		$wp_customize_posts = $wp_customize->posts;
-		$response = '';
 
-		if ( ! empty( $_POST['input_data'] ) ) {
+		$settings = $wp_customize_posts->get_settings( array( $previewed_post_id ) );
+		$setting = array_shift( $settings );
 
-			$input_customize_data = array();
-			$settings = $wp_customize_posts->get_settings( array( $previewed_post_id ) );
-			$setting = array_shift( $settings );
+		if ( ! $setting ) {
+			status_header( 404 );
+			wp_send_json_error( 'setting_not_found' );
+			return;
+		} elseif ( ! $setting->check_capabilities() ) {
+			status_header( 403 );
+			wp_send_json_error( 'changeset_already_published' );
+			return;
+		}
+		$setting->preview();
 
-			if ( ! $setting ) {
-				status_header( 404 );
-				wp_send_json_error( 'setting_not_found' );
-				return;
-			} elseif ( ! $setting->check_capabilities() ) {
-				status_header( 403 );
-				wp_send_json_error( 'changeset_already_published' );
-				return;
-			}
-			$setting->preview();
-
-			$wp_customize->set_post_value( $setting->id, wp_array_slice_assoc(
-				array_merge( $setting->value(), wp_unslash( $_POST['input_data'] ) ),
-				array_keys( $setting->default )
-			) );
-			$response = $wp_customize->save_changeset_post( array(
-				'data' => $input_customize_data,
-			) );
-			if ( is_wp_error( $response ) ) {
-				wp_send_json_error( $response->get_error_code() );
-			}
+		// Note that save_changeset_post() will handle validation and sanitization.
+		$wp_customize->set_post_value( $setting->id, wp_array_slice_assoc(
+			array_merge( $setting->value(), wp_unslash( $_POST['input_data'] ) ),
+			array_keys( $setting->default )
+		) );
+		$response = $wp_customize->save_changeset_post();
+		if ( is_wp_error( $response ) ) {
+			wp_send_json_error( $response->get_error_code() );
 		}
 
 		wp_send_json_success( compact( 'customize_url', 'response' ) );
