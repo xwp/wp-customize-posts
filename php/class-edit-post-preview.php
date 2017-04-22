@@ -208,15 +208,19 @@ class Edit_Post_Preview {
 
 	/**
 	 * Updates changeset via ajax when preview button is clicked.
+	 *
+	 * @global WP_Customize_Manager $wp_customize
 	 */
 	public function update_post_changeset() {
+		global $wp_customize;
+
 		if ( ! check_ajax_referer( self::UPDATE_CHANGESET_NONCE_ACTION, self::UPDATE_CHANGESET_NONCE, false ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'bad_nonce' );
 		} elseif ( ! current_user_can( 'customize' ) ) {
 			status_header( 403 );
 			wp_send_json_error( 'customize_not_allowed' );
-		} elseif ( empty( $_POST['previewed_post'] ) ) {
+		} elseif ( ! isset( $_POST['previewed_post'] ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'missing_previewed_post' );
 		} elseif ( empty( $_POST['customize_url'] ) ) {
@@ -224,9 +228,15 @@ class Edit_Post_Preview {
 			wp_send_json_error( 'missing_customize_url' );
 		}
 
-		global $wp_customize;
+		$previewed_post_id = intval( wp_unslash( $_POST['previewed_post'] ) );
+		if ( empty( $previewed_post_id ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'missing_previewed_post' );
+		} elseif ( ! current_user_can( 'edit_post', $previewed_post_id ) ) {
+			status_header( 403 );
+			wp_send_json_error( 'missing_previewed_post' );
+		}
 
-		$previewed_post_id = absint( wp_unslash( $_POST['previewed_post'] ) );
 		$changeset_uuid = get_post_meta( $previewed_post_id, '_preview_changeset_uuid', true );
 
 		if ( empty( $wp_customize ) || ! ( $wp_customize instanceof WP_Customize_Manager ) || ! isset( $wp_customize->posts ) ) {
