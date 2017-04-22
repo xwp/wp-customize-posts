@@ -270,9 +270,7 @@ class Edit_Post_Preview {
 		}
 
 		$customize_url = add_query_arg(
-			array(
-				'changeset_uuid' => $changeset_uuid,
-			),
+			compact( 'changeset_uuid' ),
 			wp_unslash( $_POST['customize_url'] )
 		);
 
@@ -315,9 +313,6 @@ class Edit_Post_Preview {
 			)  );
 		}
 
-		wp_send_json_success( array(
-			'customize_url' => $customize_url,
-			'response' => $response,
-		) );
+		wp_send_json_success( compact( 'customize_url', 'response' ) );
 	}
 }
