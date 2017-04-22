@@ -266,7 +266,12 @@ class Edit_Post_Preview {
 			wp_unslash( $_POST['customize_url'] )
 		);
 
-		$wp_customize_posts = new WP_Customize_Posts( $wp_customize );
+		/**
+		 * Posts component.
+		 *
+		 * @var WP_Customize_Posts $wp_customize_posts
+		 */
+		$wp_customize_posts = $wp_customize->posts;
 		$response = '';
 
 		if ( ! empty( $_POST['input_data'] ) ) {
