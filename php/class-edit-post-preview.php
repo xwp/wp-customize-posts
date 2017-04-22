@@ -243,8 +243,8 @@ class Edit_Post_Preview {
 
 		$changeset_uuid = get_post_meta( $previewed_post_id, '_preview_changeset_uuid', true );
 
-		if ( empty( $wp_customize ) || ! ( $wp_customize instanceof WP_Customize_Manager ) || ! isset( $wp_customize->posts ) ) {
-			require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
+		if ( empty( $wp_customize ) || ! ( $wp_customize instanceof WP_Customize_Manager ) ) {
+			require_once ABSPATH . WPINC . '/class-wp-customize-manager.php';
 			require_once dirname( __FILE__ ) . '/class-wp-customize-posts.php';
 		}
 
@@ -277,6 +277,10 @@ class Edit_Post_Preview {
 			compact( 'changeset_uuid' ),
 			wp_unslash( $_POST['customize_url'] )
 		);
+
+		if ( ! isset( $wp_customize->posts ) || ! ( $wp_customize->posts instanceof WP_Customize_Posts ) ) {
+			wp_send_json_error( 'missing_posts_component' );
+		}
 
 		/**
 		 * Posts component.
