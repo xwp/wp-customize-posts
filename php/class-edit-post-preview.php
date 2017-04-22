@@ -129,6 +129,7 @@ class Edit_Post_Preview {
 			return;
 		}
 		wp_enqueue_script( 'edit-post-preview-admin' );
+		wp_enqueue_style( 'edit-post-preview-admin' );
 		$post = $this->get_previewed_post();
 
 		$customize_url = add_query_arg(
@@ -306,6 +307,9 @@ class Edit_Post_Preview {
 			$response = $wp_customize->save_changeset_post( array(
 				'data' => $input_customize_data,
 			) );
+			if ( is_wp_error( $response ) ) {
+				wp_send_json_error( $response->get_error_code() );
+			}
 		}
 
 		wp_send_json_success( compact( 'customize_url', 'response' ) );

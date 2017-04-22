@@ -408,6 +408,11 @@ class Customize_Posts_Plugin {
 		$src = plugins_url( 'css/edit-post-preview-customize' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'customize-controls' );
 		$wp_styles->add( $handle, $src, $deps, $this->version );
+
+		$handle = 'edit-post-preview-admin';
+		$src = plugins_url( 'css/edit-post-preview-admin' . $suffix, dirname( __FILE__ ) );
+		$deps = array( 'common' );
+		$wp_styles->add( $handle, $src, $deps, $this->version );
 	}
 
 	/**
