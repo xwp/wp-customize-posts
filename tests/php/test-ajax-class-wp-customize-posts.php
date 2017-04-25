@@ -463,6 +463,9 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 	 * @see Edit_Post_Preview::update_post_changeset()
 	 */
 	public function test_update_post_changeset_successes() {
+		if ( version_compare( strtok( get_bloginfo( 'version' ), '-' ), '4.7', '<' ) ) {
+			return;
+		}
 
 		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $user_id );
