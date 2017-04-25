@@ -1,5 +1,7 @@
 /* global jQuery, _editPostPreviewAdminExports, JSON, tinymce, wp, alert */
 /* exported EditPostPreviewAdmin */
+/*eslint no-magic-numbers: ["error", { "ignore": [0, 1] }]*/
+
 var EditPostPreviewAdmin = (function( $ ) {
 	'use strict';
 
@@ -87,7 +89,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 			component.bindChangesFromCustomizer( postSettingId, editor );
 		} else {
 			$btn.addClass( 'disabled' );
-			component.previewButtonSpinner.addClass( 'is-active' ).addClass( 'is-active-preview' );
+			component.previewButtonSpinner.addClass( 'is-active is-active-preview' );
 			request = wp.ajax.post( 'customize_posts_update_changeset', {
 				customize_posts_update_changeset_nonce: component.data.customize_posts_update_changeset_nonce,
 				previewed_post: component.data.previewed_post,
@@ -96,7 +98,11 @@ var EditPostPreviewAdmin = (function( $ ) {
 			} );
 
 			request.fail( function( resp ) {
-				alert( resp ); // eslint-disable-line no-alert
+				var error = JSON.parse( resp.responseText ), errorText;
+				if ( error.data ) {
+					errorText = error.data.replace( /_/g, ' ' );
+					alert( errorText.charAt( 0 ).toUpperCase() + errorText.slice( 1 ) ); // eslint-disable-line no-alert
+				}
 			} );
 
 			request.done( function( resp ) {
@@ -107,7 +113,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 
 			request.always( function() {
 				$btn.removeClass( 'disabled' );
-				component.previewButtonSpinner.removeClass( 'is-active' ).removeClass( 'is-active-preview' );
+				component.previewButtonSpinner.removeClass( 'is-active is-active-preview' );
 			} );
 		}
 	};
