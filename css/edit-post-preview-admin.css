@@ -1,0 +1,3 @@
+#preview-action .spinner:not(.is-active-preview) {
+	visibility: hidden !important;
+}

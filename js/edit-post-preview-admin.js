@@ -1,11 +1,16 @@
-/* global jQuery, _editPostPreviewAdminExports, JSON, tinymce */
+/* global jQuery, _editPostPreviewAdminExports, JSON, tinymce, wp, alert */
 /* exported EditPostPreviewAdmin */
+/*eslint no-magic-numbers: ["error", { "ignore": [0, 1] }]*/
+
 var EditPostPreviewAdmin = (function( $ ) {
 	'use strict';
 
 	var component = {
 		data: {
-			customize_url: null
+			customize_url: null,
+			is_compat: false,
+			previewed_post: null,
+			customize_posts_update_changeset_nonce: null
 		}
 	};
 
@@ -14,7 +19,10 @@ var EditPostPreviewAdmin = (function( $ ) {
 	}
 
 	component.init = function() {
-		$( '#post-preview' )
+		component.previewButton = $( '#post-preview' );
+		component.previewButtonSpinner = $( 'span.spinner' ).first().clone();
+		component.previewButton.after( component.previewButtonSpinner );
+		component.previewButton
 			.off( 'click.post-preview' )
 			.on( 'click.post-preview', component.onClickPreviewBtn );
 	};
@@ -29,7 +37,8 @@ var EditPostPreviewAdmin = (function( $ ) {
 			editor = tinymce.get( 'content' ),
 			wasMobile,
 			parentId,
-			menuOrder;
+			menuOrder,
+			request;
 
 		event.preventDefault();
 
@@ -55,7 +64,6 @@ var EditPostPreviewAdmin = (function( $ ) {
 			menuOrder = 0;
 		}
 
-		// Send the current input fields from the edit post page to the Customizer via sessionStorage.
 		postSettingValue = {
 			post_title: $( '#title' ).val(),
 			post_name: $( '#post_name' ).val(),
@@ -73,11 +81,51 @@ var EditPostPreviewAdmin = (function( $ ) {
 		// Allow plugins to inject additional settings to preview.
 		wp.customize.trigger( 'settings-from-edit-post-screen', settings );
 
-		sessionStorage.setItem( 'previewedCustomizePostSettings[' + postId + ']', JSON.stringify( settings ) );
+		// For backward compatibility send the current input fields from the edit post page to the Customizer via sessionStorage.
+		if ( component.data.is_compat ) {
+			sessionStorage.setItem( 'previewedCustomizePostSettings[' + postId + ']', JSON.stringify( settings ) );
+			wp.customize.Loader.open( component.data.customize_url );
+			wp.customize.Loader.settings.browser.mobile = wasMobile;
+			component.bindChangesFromCustomizer( postSettingId, editor );
+		} else {
+			$btn.addClass( 'disabled' );
+			component.previewButtonSpinner.addClass( 'is-active is-active-preview' );
+			request = wp.ajax.post( 'customize_posts_update_changeset', {
+				customize_posts_update_changeset_nonce: component.data.customize_posts_update_changeset_nonce,
+				previewed_post: component.data.previewed_post,
+				customize_url: component.data.customize_url,
+				input_data: postSettingValue
+			} );
 
-		wp.customize.Loader.open( component.data.customize_url );
+			request.fail( function( resp ) {
+				var error = JSON.parse( resp.responseText ), errorText;
+				if ( error.data ) {
+					errorText = error.data.replace( /_/g, ' ' );
+					alert( errorText.charAt( 0 ).toUpperCase() + errorText.slice( 1 ) ); // eslint-disable-line no-alert
+				}
+			} );
 
-		// Sync changes from the Customizer to the post input fields.
+			request.done( function( resp ) {
+				wp.customize.Loader.open( resp.customize_url );
+				wp.customize.Loader.settings.browser.mobile = wasMobile;
+				component.bindChangesFromCustomizer( postSettingId, editor );
+			} );
+
+			request.always( function() {
+				$btn.removeClass( 'disabled' );
+				component.previewButtonSpinner.removeClass( 'is-active is-active-preview' );
+			} );
+		}
+	};
+
+	/**
+	 * Sync changes from the Customizer to the post input fields.
+	 *
+	 * @param {string} postSettingId post setting id.
+	 * @param {object} editor Tinymce object.
+	 * @return {void}
+	 */
+	component.bindChangesFromCustomizer = function( postSettingId, editor ) {
 		wp.customize.Loader.messenger.bind( 'customize-post-settings-data', function( data ) {
 			var settingParentId;
 			if ( data[ postSettingId ] ) {
@@ -103,8 +151,6 @@ var EditPostPreviewAdmin = (function( $ ) {
 			// Let plugins handle updates.
 			wp.customize.trigger( 'settings-from-customizer', data );
 		} );
-
-		wp.customize.Loader.settings.browser.mobile = wasMobile;
 	};
 
 	/**

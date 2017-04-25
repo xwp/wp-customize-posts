@@ -13,6 +13,8 @@ class Edit_Post_Preview {
 
 	const PREVIEW_POST_NONCE_ACTION = 'customize_preview_post';
 	const PREVIEW_POST_NONCE_QUERY_VAR = 'customize_preview_post_nonce';
+	const UPDATE_CHANGESET_NONCE_ACTION = 'customize_posts_update_changeset';
+	const UPDATE_CHANGESET_NONCE = 'customize_posts_update_changeset_nonce';
 
 	/**
 	 * Plugin instance.
@@ -36,6 +38,7 @@ class Edit_Post_Preview {
 		add_action( 'customize_controls_init', array( $this, 'remove_static_controls_and_sections' ), 100 );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_customize_scripts' ) );
 		add_action( 'customize_preview_init', array( $this, 'make_auto_draft_status_previewable' ) );
+		add_action( 'wp_ajax_' . self::UPDATE_CHANGESET_NONCE_ACTION, array( $this, 'update_post_changeset' ) );
 	}
 
 	/**
@@ -122,10 +125,11 @@ class Edit_Post_Preview {
 	 * Enqueue scripts for post edit screen.
 	 */
 	public function enqueue_admin_scripts() {
-		if ( ! function_exists( 'get_current_screen' ) || ! get_current_screen() || 'post' !== get_current_screen()->base ) {
+		if ( ! function_exists( 'get_current_screen' ) || ! get_current_screen() || 'post' !== get_current_screen()->base || ! current_user_can( 'customize' ) ) {
 			return;
 		}
 		wp_enqueue_script( 'edit-post-preview-admin' );
+		wp_enqueue_style( 'edit-post-preview-admin' );
 		$post = $this->get_previewed_post();
 
 		$customize_url = add_query_arg(
@@ -137,9 +141,14 @@ class Edit_Post_Preview {
 			),
 			wp_customize_url()
 		);
+
 		$data = array(
 			'customize_url' => $customize_url,
+			self::UPDATE_CHANGESET_NONCE => wp_create_nonce( self::UPDATE_CHANGESET_NONCE_ACTION ),
+			'previewed_post' => $post->ID,
+			'is_compat' => version_compare( strtok( get_bloginfo( 'version' ), '-' ), '4.7', '<' ),
 		);
+
 		wp_scripts()->add_data( 'edit-post-preview-admin', 'data', sprintf( 'var _editPostPreviewAdminExports = %s;', wp_json_encode( $data ) ) );
 		wp_enqueue_script( 'customize-loader' );
 		wp_add_inline_script( 'edit-post-preview-admin', 'jQuery( function() { EditPostPreviewAdmin.init(); } );', 'after' );
@@ -196,5 +205,118 @@ class Edit_Post_Preview {
 	public function make_auto_draft_status_previewable() {
 		global $wp_post_statuses;
 		$wp_post_statuses['auto-draft']->protected = true;
+	}
+
+	/**
+	 * Updates changeset via ajax when preview button is clicked.
+	 *
+	 * @global WP_Customize_Manager $wp_customize
+	 */
+	public function update_post_changeset() {
+		global $wp_customize;
+
+		if ( ! check_ajax_referer( self::UPDATE_CHANGESET_NONCE_ACTION, self::UPDATE_CHANGESET_NONCE, false ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'bad_nonce' );
+		} elseif ( ! current_user_can( 'customize' ) ) {
+			status_header( 403 );
+			wp_send_json_error( 'customize_not_allowed' );
+		} elseif ( ! isset( $_POST['previewed_post'] ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'missing_previewed_post' );
+		} elseif ( empty( $_POST['customize_url'] ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'missing_customize_url' );
+		} elseif ( empty( $_POST['input_data'] ) || ! is_array( $_POST['input_data'] ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'missing_input_data' );
+		}
+
+		$previewed_post_id = intval( wp_unslash( $_POST['previewed_post'] ) );
+		if ( empty( $previewed_post_id ) || ! get_post( $previewed_post_id ) ) {
+			status_header( 404 );
+			wp_send_json_error( 'post_not_found' );
+		} elseif ( ! current_user_can( 'edit_post', $previewed_post_id ) ) {
+			status_header( 403 );
+			wp_send_json_error( 'missing_previewed_post' );
+		}
+
+		$changeset_uuid = get_post_meta( $previewed_post_id, '_preview_changeset_uuid', true );
+
+		if ( empty( $wp_customize ) || ! ( $wp_customize instanceof WP_Customize_Manager ) ) {
+			require_once ABSPATH . WPINC . '/class-wp-customize-manager.php';
+			require_once dirname( __FILE__ ) . '/class-wp-customize-posts.php';
+		}
+
+		if ( $changeset_uuid ) {
+			$wp_customize = new \WP_Customize_Manager( array(
+				'changeset_uuid' => $changeset_uuid,
+			) );
+			$changeset_post_id = $wp_customize->changeset_post_id();
+
+			if ( $changeset_post_id ) {
+				if ( 'publish' === get_post_status( $changeset_post_id ) ) {
+					status_header( 400 );
+					wp_send_json_error( 'changeset_already_published' );
+				}
+
+				if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->edit_post, $changeset_post_id ) ) {
+					status_header( 403 );
+					wp_send_json_error( 'cannot_edit_changeset_post' );
+				}
+			}
+		}
+
+		if ( empty( $changeset_post_id ) ) {
+			if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->create_posts ) ) {
+				status_header( 403 );
+				wp_send_json_error( 'cannot_create_changeset_post' );
+			}
+			$wp_customize = new \WP_Customize_Manager();
+			$changeset_uuid = $wp_customize->changeset_uuid();
+			update_post_meta( $previewed_post_id, '_preview_changeset_uuid', $changeset_uuid );
+		}
+
+		$customize_url = add_query_arg(
+			compact( 'changeset_uuid' ),
+			wp_unslash( $_POST['customize_url'] )
+		);
+
+		if ( ! isset( $wp_customize->posts ) || ! ( $wp_customize->posts instanceof WP_Customize_Posts ) ) {
+			wp_send_json_error( 'missing_posts_component' );
+		}
+
+		/**
+		 * Posts component.
+		 *
+		 * @var WP_Customize_Posts $wp_customize_posts
+		 */
+		$wp_customize_posts = $wp_customize->posts;
+
+		$settings = $wp_customize_posts->get_settings( array( $previewed_post_id ) );
+		$setting = array_shift( $settings );
+
+		if ( ! $setting ) {
+			status_header( 404 );
+			wp_send_json_error( 'setting_not_found' );
+			return;
+		} elseif ( ! $setting->check_capabilities() ) {
+			status_header( 403 );
+			wp_send_json_error( 'changeset_already_published' );
+			return;
+		}
+		$setting->preview();
+
+		// Note that save_changeset_post() will handle validation and sanitization.
+		$wp_customize->set_post_value( $setting->id, wp_array_slice_assoc(
+			array_merge( $setting->value(), wp_unslash( $_POST['input_data'] ) ),
+			array_keys( $setting->default )
+		) );
+		$response = $wp_customize->save_changeset_post();
+		if ( is_wp_error( $response ) ) {
+			wp_send_json_error( $response->get_error_code() );
+		}
+
+		wp_send_json_success( compact( 'customize_url', 'response' ) );
 	}
 }

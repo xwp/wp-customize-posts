@@ -457,4 +457,75 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 		$this->die_args = func_get_args();
 	}
 
+	/**
+	 * Test update_post_changeset() successes.
+	 *
+	 * @see Edit_Post_Preview::update_post_changeset()
+	 */
+	public function test_update_post_changeset_successes() {
+		if ( version_compare( strtok( get_bloginfo( 'version' ), '-' ), '4.7', '<' ) ) {
+			return;
+		}
+
+		$user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		$post_id = self::factory()->post->create( array(
+			'post_name' => 'Testing',
+			'post_content' => 'hello world'
+		) );
+
+		$input_data = array(
+			'post_title' => 'Testing New',
+			'post_name' => 'testing-new',
+			'post_parent' => '',
+			'menu_order' => '',
+			'post_content' => 'hello world new',
+			'post_excerpt' => 'Test excerpt',
+			'comment_status' => 'closed',
+			'ping_status' => 'closed',
+			'post_author' => $user_id,
+		);
+
+		$_POST = wp_slash( array(
+			'customize_posts_update_changeset_nonce' => wp_create_nonce( 'customize_posts_update_changeset' ),
+			'previewed_post' => $post_id,
+			'customize_url' => wp_customize_url(),
+			'input_data' => $input_data,
+		) );
+		$this->make_ajax_call( 'customize_posts_update_changeset' );
+		$response = json_decode( $this->_last_response, true );
+
+		$this->assertTrue( $response['success'] );
+		$this->assertArrayHasKey( 'customize_url', $response['data'] );
+		$this->assertArrayHasKey( 'response', $response['data'] );
+		$this->assertArrayHasKey( 'setting_validities', $response['data']['response'] );
+
+		$setting_key = "post[post][$post_id]";
+		$this->assertTrue( $response['data']['response']['setting_validities'][ $setting_key ] );
+
+		$customize_url_parts = parse_url( $response['data']['customize_url'] );
+		parse_str( $customize_url_parts['query'], $url_query );
+		$this->assertNotEmpty( $url_query['changeset_uuid'] );
+		$this->assertEquals( get_post_meta( $post_id, '_preview_changeset_uuid', true ), $url_query['changeset_uuid'] );
+
+		$query = new WP_Query( array(
+			'post_name' => $url_query['changeset_uuid'],
+			'post_type' => 'customize_changeset',
+			'post_status' => 'auto-draft',
+			'no_found_rows' => true,
+			'update_post_term_cache' => false,
+			'update_post_meta_cache' => false,
+			'posts_page_page' => 1,
+		) );
+
+		$post = array_shift( $query->posts );
+
+		$settings_data = json_decode( $post->post_content, true );
+
+		foreach( $settings_data as $key => $data ) {
+			$this->assertEquals( $setting_key, $key );
+			$this->assertArraySubset( $input_data, $data['value'] );
+		}
+	}
 }
