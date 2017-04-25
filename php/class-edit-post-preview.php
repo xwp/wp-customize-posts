@@ -254,16 +254,20 @@ class Edit_Post_Preview {
 			) );
 			$changeset_post_id = $wp_customize->changeset_post_id();
 
-			if ( 'publish' === get_post_status( $changeset_post_id ) ) {
-				status_header( 400 );
-				wp_send_json_error( 'changeset_already_published' );
-			}
+			if ( $changeset_post_id ) {
+				if ( 'publish' === get_post_status( $changeset_post_id ) ) {
+					status_header( 400 );
+					wp_send_json_error( 'changeset_already_published' );
+				}
 
-			if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->edit_post, $changeset_post_id ) ) {
-				status_header( 403 );
-				wp_send_json_error( 'cannot_edit_changeset_post' );
+				if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->edit_post, $changeset_post_id ) ) {
+					status_header( 403 );
+					wp_send_json_error( 'cannot_edit_changeset_post' );
+				}
 			}
-		} else {
+		}
+
+		if ( empty( $changeset_post_id ) ) {
 			if ( ! current_user_can( get_post_type_object( 'customize_changeset' )->cap->create_posts ) ) {
 				status_header( 403 );
 				wp_send_json_error( 'cannot_create_changeset_post' );
