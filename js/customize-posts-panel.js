@@ -193,7 +193,7 @@
 			statusControl = api.control( postData.section.id + '[post_status]' );
 
 			if ( ! statusControl || 'trash' === statusControl.setting.get().post_status ) {
-			    return;
+				return;
 			}
 
 			statusControl.notifications.add( panel.trashNotificationCode, notification );
