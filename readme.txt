@@ -1,5 +1,5 @@
 === Customize Posts ===
-Contributors:      xwp, westonruter, valendesigns
+Contributors:      xwp, westonruter, valendesigns, sayedwp, utkarshpatel.
 Tags:              customizer, customize, posts, postmeta, editor, preview, featured-image, page-template
 Requires at least: 4.5.0
 Tested up to:      4.8.0
@@ -66,6 +66,22 @@ The following are listed in reverse chronological order. The first, more recent 
 7. [0.8.0] Post parent and basic menu order control.
 
 == Changelog ==
+
+= [0.8.6] - [2017-06-08] =
+
+* Bumped compatibility to WordPress 4.8.
+* Added: Show notification when a post a restored from trash. PR <a href="https://github.com/xwp/wp-customize-posts/pull/347" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/347" data-id="210498140">#347</a>. Issue <a href="https://github.com/xwp/wp-customize-posts/issues/217" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/217" data-id="171111793">#217</a>.
+* Added: Allow the <code>customize_action</code> template for a given post type's panel to be defined via registered post type labels. Issue <a href="https://github.com/xwp/wp-customize-posts/issues/343" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/343" data-id="203033985">#343</a>. PR <a href="https://github.com/xwp/wp-customize-posts/pull/345" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/345" data-id="203795097">#345</a>.
+* Added: Focus on specific field that have conflict. Issue <a href="https://github.com/xwp/wp-customize-posts/issues/35" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/35" data-id="138341625">#35</a>. PR <a href="https://github.com/xwp/wp-customize-posts/pull/341" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/341" data-id="202486533">#341</a>.<br>
+* Updated: Remove sessionStorage and use changeset to save post editor screen data. Issue <a href="https://github.com/xwp/wp-customize-posts/issues/338" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/338" data-id="198599727">#338</a>. PR <a href="https://github.com/xwp/wp-customize-posts/pull/350" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/350" data-id="219883491">#350</a>.
+* Updated: Removed reference to obsolete plugin. Issue <a href="https://github.com/xwp/wp-customize-posts/issues/323" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/323" data-id="191750337">#323</a>. PR <a href="https://github.com/xwp/wp-customize-posts/pull/342" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/342" data-id="203019613">#342</a>.
+* Fixed: Stop continuous ajax requests in select2. PR <a href="https://github.com/xwp/wp-customize-posts/pull/351" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/351" data-id="222634958">#351</a>.
+* Fixed: Prevent warning when importing starter content including CPT posts. PR <a href="https://github.com/xwp/wp-customize-posts/pull/340" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/340" data-id="201179029">#340</a>.
+* Fixed: Use auto-draft with late future date instead of customize-draft and clean auto-draft on changeset delete. Issue <a href="https://github.com/xwp/wp-customize-posts/issues/329" class="issue-link js-issue-link" data-id="194814988" title="Delete all customize-draft posts that are referenced by a given changeset post that is deleted">#329</a>. PR <a href="https://github.com/xwp/wp-customize-posts/pull/348" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/348" data-id="210759416">#348</a>.
+
+See <a href="https://github.com/xwp/wp-customize-posts/milestone/15?closed=1">issues and PRs in milestone</a> and <a href="https://github.com/xwp/wp-customize-posts/compare/0.8.5...0.8.6">full release commit log</a>.
+
+Props Weston Ruter (<a href="https://github.com/westonruter" class="user-mention">@westonruter</a>), Sayed Taqui (<a href="https://github.com/sayedtaqui" class="user-mention">@sayedtaqui</a>), Utkarsh Patel (<a href="https://github.com/patelutkarsh" class="user-mention">@PatelUtkarsh</a>), Jeffrey Paul (<a href="https://github.com/jeffpaul" class="user-mention">@jeffpaul</a>), Zlatko Zlatev (<a href="https://github.com/entr" class="user-mention">@entr</a>).
 
 = [0.8.5] - 2017-01-03 =
 
