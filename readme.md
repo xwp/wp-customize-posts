@@ -7,8 +7,8 @@ Edit posts and postmeta in the Customizer. Stop editing your posts/postmeta blin
 **Contributors:** [xwp](https://profiles.wordpress.org/xwp), [westonruter](https://profiles.wordpress.org/westonruter), [valendesigns](https://profiles.wordpress.org/valendesigns)  
 **Tags:** [customizer](https://wordpress.org/plugins/tags/customizer), [customize](https://wordpress.org/plugins/tags/customize), [posts](https://wordpress.org/plugins/tags/posts), [postmeta](https://wordpress.org/plugins/tags/postmeta), [editor](https://wordpress.org/plugins/tags/editor), [preview](https://wordpress.org/plugins/tags/preview), [featured-image](https://wordpress.org/plugins/tags/featured-image), [page-template](https://wordpress.org/plugins/tags/page-template)  
 **Requires at least:** 4.5.0  
-**Tested up to:** 4.7.0  
-**Stable tag:** 0.8.5  
+**Tested up to:** 4.8.0  
+**Stable tag:** 0.8.6  
 **License:** [GPLv2 or later](http://www.gnu.org/licenses/gpl-2.0.html)  
 
 [![Build Status](https://travis-ci.org/xwp/wp-customize-posts.svg?branch=master)](https://travis-ci.org/xwp/wp-customize-posts) [![Coverage Status](https://coveralls.io/repos/xwp/wp-customize-posts/badge.svg?branch=master)](https://coveralls.io/github/xwp/wp-customize-posts) [![Built with Grunt](https://cdn.gruntjs.com/builtwith.svg)](http://gruntjs.com) [![devDependency Status](https://david-dm.org/xwp/wp-customize-posts/dev-status.svg)](https://david-dm.org/xwp/wp-customize-posts#info=devDependencies) 
@@ -62,27 +62,27 @@ The following are listed in reverse chronological order. The first, more recent 
 
 ### [0.7.0] Select2 dropdown in a post type's panel allows all posts of that type to be searched, including trashes. Selecting a post here causes its section to be added and expanded, with the preview then navigating to the URL for that post.
 
-![[0.7.0] Select2 dropdown in a post type's panel allows all posts of that type to be searched, including trashes. Selecting a post here causes its section to be added and expanded, with the preview then navigating to the URL for that post.](wp-assets/screenshot-1.png)
+![[0.7.0] Select2 dropdown in a post type's panel allows all posts of that type to be searched, including trashes. Selecting a post here causes its section to be added and expanded, with the preview then navigating to the URL for that post.](wp-assets/screenshot-1.png)
 
 ### [0.7.0] Post status control is now accompanied by a post date control. A Move to Trash link also appears with the status control.
 
-![[0.7.0] Post status control is now accompanied by a post date control. A Move to Trash link also appears with the status control.](wp-assets/screenshot-2.png)
+![[0.7.0] Post status control is now accompanied by a post date control. A Move to Trash link also appears with the status control.](wp-assets/screenshot-2.png)
 
 ### [0.7.0] Selecting a future date switches status form published to scheduled, and a countdown for when the post will be scheduled is available along with the timezone information.
 
-![[0.7.0] Selecting a future date switches status form published to scheduled, and a countdown for when the post will be scheduled is available along with the timezone information.](wp-assets/screenshot-3.png)
+![[0.7.0] Selecting a future date switches status form published to scheduled, and a countdown for when the post will be scheduled is available along with the timezone information.](wp-assets/screenshot-3.png)
 
 ### [0.7.0] Clicking the date reset link causes the setting's date to be emptied, with the control's inputs then receiving the current date/time as placeholders which update each minute to correspond to the current date/time.
 
-![[0.7.0] Clicking the date reset link causes the setting's date to be emptied, with the control's inputs then receiving the current date/time as placeholders which update each minute to correspond to the current date/time.](wp-assets/screenshot-4.png)
+![[0.7.0] Clicking the date reset link causes the setting's date to be emptied, with the control's inputs then receiving the current date/time as placeholders which update each minute to correspond to the current date/time.](wp-assets/screenshot-4.png)
 
 ### [0.8.0] Integration with dropdown-pages controls. Buttons to add and edit posts appear next to the page on front and page for posts controls.
 
-![[0.8.0] Integration with dropdown-pages controls. Buttons to add and edit posts appear next to the page on front and page for posts controls.](wp-assets/screenshot-5.png)
+![[0.8.0] Integration with dropdown-pages controls. Buttons to add and edit posts appear next to the page on front and page for posts controls.](wp-assets/screenshot-5.png)
 
 ### [0.8.0] Edit post button appears in nav menu items that link to a post or page.
 
-![[0.8.0] Edit post button appears in nav menu items that link to a post or page.](wp-assets/screenshot-6.png)
+![[0.8.0] Edit post button appears in nav menu items that link to a post or page.](wp-assets/screenshot-6.png)
 
 ### [0.8.0] Post parent and basic menu order control.
 

@@ -2,8 +2,8 @@
 Contributors:      xwp, westonruter, valendesigns
 Tags:              customizer, customize, posts, postmeta, editor, preview, featured-image, page-template
 Requires at least: 4.5.0
-Tested up to:      4.7.0
-Stable tag:        0.8.5
+Tested up to:      4.8.0
+Stable tag:        0.8.6
 License:           GPLv2 or later
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
 
