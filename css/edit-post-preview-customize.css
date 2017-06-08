@@ -3,7 +3,11 @@
 }
 
 #customize-header-actions #save,
-#customize-header-actions #snapshot-save {
+#customize-header-actions #snapshot-save,
+#snapshot-status-button-wrapper,
+#snapshot-preview-link,
+#snapshot-expand-button
+{
 	display: none !important;
 }
 

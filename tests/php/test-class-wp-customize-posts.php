@@ -551,29 +551,31 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$changeset_post_id = wp_insert_post( wp_slash( array(
 			'post_type' => 'customize_changeset',
 			'post_status' => 'auto-draft',
-			'post_content' => wp_json_encode( $data )
+			'post_date' => gmdate( 'Y-m-d H:i:d', strtotime( '+7 days' ) ),
+			'post_content' => wp_json_encode( $data ),
+			'edit_date' => true,
 		) ) );
 
+		$changeset_post = get_post( $changeset_post_id );
 		$this->assertEquals( 'auto-draft', get_post_status( $auto_draft_post->ID ) );
+		$this->assertEquals( $changeset_post->post_date, get_post_field( 'post_date', $auto_draft_post->ID, 'raw' ) );
 		$this->assertEquals( 'auto-draft', get_post_status( $auto_draft_page->ID ) );
+		$this->assertEquals( $changeset_post->post_date, get_post_field( 'post_date', $auto_draft_page->ID, 'raw' ) );
 		$this->assertEquals( 'auto-draft', get_post_status( $nav_menu_created_stub_post->ID ) );
+		$this->assertEquals( $changeset_post->post_date, get_post_field( 'post_date', $nav_menu_created_stub_post->ID, 'raw' ) );
 
-		$old_status = 'auto-draft';
-		$new_status = 'customize-draft';
 		$count = did_action( 'transition_post_status' );
-		$count_status_change = did_action( "{$old_status}_to_{$new_status}" );
-		$count_post_status = did_action( "{$new_status}_post" );
-		$count_page_status = did_action( "{$new_status}_page" );
+		$count = post_type_supports( 'customize_changeset', 'revisions' ) ? $count + 1 : $count;
 		wp_update_post( array( 'ID' => $changeset_post_id, 'post_status' => 'draft' ) );
-		$this->assertEquals( $count + 4, did_action( 'transition_post_status' ) );
-		$this->assertEquals( $count_status_change + 3, did_action( "{$old_status}_to_{$new_status}" ) );
-		$this->assertEquals( $count_post_status + 2, did_action( "{$new_status}_post" ) );
-		$this->assertEquals( $count_page_status + 1, did_action( "{$new_status}_page" ) );
-
-		$this->assertEquals( 'customize-draft', get_post_status( $auto_draft_post->ID ) );
-		$this->assertEquals( 'customize-draft', get_post_status( $auto_draft_page->ID ) );
-		$this->assertEquals( 'customize-draft', get_post_status( $nav_menu_created_stub_post->ID ) );
-
+		$this->assertEquals( $count + 1, did_action( 'transition_post_status' ) );
+		$new_status = 'auto-draft';
+		$this->assertEquals( $new_status, get_post_status( $auto_draft_post->ID ) );
+		$this->assertEquals( $new_status, get_post_status( $auto_draft_page->ID ) );
+		$this->assertEquals( $new_status, get_post_status( $nav_menu_created_stub_post->ID ) );
+		$expected_year = date('Y') + 100;
+		$this->assertEquals( $expected_year, date( 'Y', strtotime( get_post( $auto_draft_post->ID )->post_date ) ) );
+		$this->assertEquals( $expected_year, date( 'Y', strtotime( get_post( $auto_draft_page->ID )->post_date ) ) );
+		$this->assertEquals( $expected_year, date( 'Y', strtotime( get_post( $nav_menu_created_stub_post->ID )->post_date ) ) );
 		wp_update_post( array( 'ID' => $changeset_post_id, 'post_status' => 'publish' ) );
 		$this->assertEquals( 'publish', get_post_status( $auto_draft_post->ID ) );
 		$this->assertEquals( 'draft', get_post_status( $auto_draft_page->ID ) );
@@ -602,7 +604,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->posts->preview_customize_draft_post_ids();
 		$this->assertEmpty( $this->posts->customize_draft_post_ids );
 
-		wp_update_post( array( 'ID' => $post_id, 'post_status' => 'customize-draft' ) );
+		wp_update_post( array( 'ID' => $post_id, 'post_status' => 'auto-draft' ) );
 		$this->posts->manager->set_post_value( $setting_id, array_merge(
 			$setting->value(),
 			array(
@@ -663,7 +665,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertEquals( 'true', $GLOBALS['wp_query']->query_vars['preview'] );
 		$this->assertEquals( $post->ID, $GLOBALS['wp_query']->query_vars['p'] );
 		$this->assertArrayHasKey( 'post_status', $GLOBALS['wp_query']->query_vars );
-		$this->assertEquals( 'customize-draft', $GLOBALS['wp_query']->query_vars['post_status'] );
+		$this->assertEquals( 'auto-draft', $GLOBALS['wp_query']->query_vars['post_status'] );
 	}
 
 	/**

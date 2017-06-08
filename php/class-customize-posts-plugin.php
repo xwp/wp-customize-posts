@@ -70,6 +70,7 @@ class Customize_Posts_Plugin {
 		add_filter( 'customize_loaded_components', array( $this, 'add_posts_to_customize_loaded_components' ), 0, 1 );
 		add_filter( 'customize_loaded_components', array( $this, 'filter_customize_loaded_components' ), 100, 2 );
 		add_action( 'customize_register', array( $this, 'load_support_classes' ) );
+		add_action( 'delete_post', array( $this, 'cleanup_autodraft_on_changeset_delete' ) );
 	}
 
 	/**
@@ -407,5 +408,45 @@ class Customize_Posts_Plugin {
 		$src = plugins_url( 'css/edit-post-preview-customize' . $suffix, dirname( __FILE__ ) );
 		$deps = array( 'customize-controls' );
 		$wp_styles->add( $handle, $src, $deps, $this->version );
+
+		$handle = 'edit-post-preview-admin';
+		$src = plugins_url( 'css/edit-post-preview-admin' . $suffix, dirname( __FILE__ ) );
+		$deps = array( 'common' );
+		$wp_styles->add( $handle, $src, $deps, $this->version );
+	}
+
+	/**
+	 * Delete auto-draft posts associated with the supplied changeset.
+	 *
+	 * @param int $post_id changeset/snapshot post_id.
+	 */
+	public function cleanup_autodraft_on_changeset_delete( $post_id ) {
+		global $wpdb;
+		$post = get_post( $post_id );
+		$allowed_snapshot_post_type = array( 'customize_changeset', 'customize_snapshot' );
+		if ( ! $post || ! in_array( $post->post_type, $allowed_snapshot_post_type, true ) ) {
+			return;
+		}
+		require_once( ABSPATH . WPINC . '/class-wp-customize-setting.php' );
+		require_once( dirname( __FILE__ ) . '/class-wp-customize-post-setting.php' );
+		$settings_data = json_decode( $post->post_content, true );
+		$status_to_delete = array( 'auto-draft', 'customize-draft' );
+		foreach ( $settings_data as $setting_key => $val ) {
+			if ( preg_match( WP_Customize_Post_Setting::SETTING_ID_PATTERN, $setting_key, $matches ) ) {
+				$setting_post = get_post( $matches['post_id'] );
+				if ( ! ( $setting_post instanceof WP_Post ) || ! in_array( $setting_post->post_status, $status_to_delete, true ) ) {
+					continue;
+				}
+
+				// Confirm that this changeset is the only one which references this post so it is cleared for garbage collection.
+				$query = $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = %s AND ID != %d AND ", $post->post_type, $post->ID );
+				$query .= $wpdb->prepare( 'post_content LIKE %s', '%' . $wpdb->esc_like( wp_json_encode( $setting_key ) ) . '%' );
+				$query .= ' LIMIT 1';
+				if ( $wpdb->get_var( $query ) ) { // WPCS: unprepared SQL ok.
+					continue;
+				}
+				wp_delete_post( $setting_post->ID, true );
+			}
+		}
 	}
 }
