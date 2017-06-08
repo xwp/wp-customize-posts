@@ -3,7 +3,7 @@
  * Plugin Name: Customize Posts
  * Description: Manage posts and postmeta via the Customizer.
  * Plugin URI: https://github.com/xwp/wp-customize-posts/
- * Version: 0.8.5
+ * Version: 0.8.6
  * Author: XWP
  * Author URI: https://make.xwp.co/
  * License: GPLv2+

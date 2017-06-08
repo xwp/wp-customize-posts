@@ -4,11 +4,11 @@
 ![Banner](wp-assets/banner-1544x500.png)
 Edit posts and postmeta in the Customizer. Stop editing your posts/postmeta blind!
 
-**Contributors:** [xwp](https://profiles.wordpress.org/xwp), [westonruter](https://profiles.wordpress.org/westonruter), [valendesigns](https://profiles.wordpress.org/valendesigns)  
+**Contributors:** [xwp](https://profiles.wordpress.org/xwp), [westonruter](https://profiles.wordpress.org/westonruter), [valendesigns](https://profiles.wordpress.org/valendesigns), [sayedwp](https://profiles.wordpress.org/sayedwp), [utkarshpatel.](https://profiles.wordpress.org/utkarshpatel.)  
 **Tags:** [customizer](https://wordpress.org/plugins/tags/customizer), [customize](https://wordpress.org/plugins/tags/customize), [posts](https://wordpress.org/plugins/tags/posts), [postmeta](https://wordpress.org/plugins/tags/postmeta), [editor](https://wordpress.org/plugins/tags/editor), [preview](https://wordpress.org/plugins/tags/preview), [featured-image](https://wordpress.org/plugins/tags/featured-image), [page-template](https://wordpress.org/plugins/tags/page-template)  
 **Requires at least:** 4.5.0  
-**Tested up to:** 4.7.0  
-**Stable tag:** 0.8.5  
+**Tested up to:** 4.8.0  
+**Stable tag:** 0.8.6  
 **License:** [GPLv2 or later](http://www.gnu.org/licenses/gpl-2.0.html)  
 
 [![Build Status](https://travis-ci.org/xwp/wp-customize-posts.svg?branch=master)](https://travis-ci.org/xwp/wp-customize-posts) [![Coverage Status](https://coveralls.io/repos/xwp/wp-customize-posts/badge.svg?branch=master)](https://coveralls.io/github/xwp/wp-customize-posts) [![Built with Grunt](https://cdn.gruntjs.com/builtwith.svg)](http://gruntjs.com) [![devDependency Status](https://david-dm.org/xwp/wp-customize-posts/dev-status.svg)](https://david-dm.org/xwp/wp-customize-posts#info=devDependencies) 
@@ -62,33 +62,48 @@ The following are listed in reverse chronological order. The first, more recent 
 
 ### [0.7.0] Select2 dropdown in a post type's panel allows all posts of that type to be searched, including trashes. Selecting a post here causes its section to be added and expanded, with the preview then navigating to the URL for that post.
 
-![[0.7.0] Select2 dropdown in a post type's panel allows all posts of that type to be searched, including trashes. Selecting a post here causes its section to be added and expanded, with the preview then navigating to the URL for that post.](wp-assets/screenshot-1.png)
+![[0.7.0] Select2 dropdown in a post type's panel allows all posts of that type to be searched, including trashes. Selecting a post here causes its section to be added and expanded, with the preview then navigating to the URL for that post.](wp-assets/screenshot-1.png)
 
 ### [0.7.0] Post status control is now accompanied by a post date control. A Move to Trash link also appears with the status control.
 
-![[0.7.0] Post status control is now accompanied by a post date control. A Move to Trash link also appears with the status control.](wp-assets/screenshot-2.png)
+![[0.7.0] Post status control is now accompanied by a post date control. A Move to Trash link also appears with the status control.](wp-assets/screenshot-2.png)
 
 ### [0.7.0] Selecting a future date switches status form published to scheduled, and a countdown for when the post will be scheduled is available along with the timezone information.
 
-![[0.7.0] Selecting a future date switches status form published to scheduled, and a countdown for when the post will be scheduled is available along with the timezone information.](wp-assets/screenshot-3.png)
+![[0.7.0] Selecting a future date switches status form published to scheduled, and a countdown for when the post will be scheduled is available along with the timezone information.](wp-assets/screenshot-3.png)
 
 ### [0.7.0] Clicking the date reset link causes the setting's date to be emptied, with the control's inputs then receiving the current date/time as placeholders which update each minute to correspond to the current date/time.
 
-![[0.7.0] Clicking the date reset link causes the setting's date to be emptied, with the control's inputs then receiving the current date/time as placeholders which update each minute to correspond to the current date/time.](wp-assets/screenshot-4.png)
+![[0.7.0] Clicking the date reset link causes the setting's date to be emptied, with the control's inputs then receiving the current date/time as placeholders which update each minute to correspond to the current date/time.](wp-assets/screenshot-4.png)
 
 ### [0.8.0] Integration with dropdown-pages controls. Buttons to add and edit posts appear next to the page on front and page for posts controls.
 
-![[0.8.0] Integration with dropdown-pages controls. Buttons to add and edit posts appear next to the page on front and page for posts controls.](wp-assets/screenshot-5.png)
+![[0.8.0] Integration with dropdown-pages controls. Buttons to add and edit posts appear next to the page on front and page for posts controls.](wp-assets/screenshot-5.png)
 
 ### [0.8.0] Edit post button appears in nav menu items that link to a post or page.
 
-![[0.8.0] Edit post button appears in nav menu items that link to a post or page.](wp-assets/screenshot-6.png)
+![[0.8.0] Edit post button appears in nav menu items that link to a post or page.](wp-assets/screenshot-6.png)
 
 ### [0.8.0] Post parent and basic menu order control.
 
 ![[0.8.0] Post parent and basic menu order control.](wp-assets/screenshot-7.png)
 
 ## Changelog ##
+
+### [0.8.6] - [2017-06-08] ###
+* Bumped compatibility to WordPress 4.8.
+* Added: Show notification when a post a restored from trash. PR <a href="https://github.com/xwp/wp-customize-posts/pull/347" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/347" data-id="210498140">#347</a>. Issue <a href="https://github.com/xwp/wp-customize-posts/issues/217" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/217" data-id="171111793">#217</a>.
+* Added: Allow the <code>customize_action</code> template for a given post type's panel to be defined via registered post type labels. Issue <a href="https://github.com/xwp/wp-customize-posts/issues/343" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/343" data-id="203033985">#343</a>. PR <a href="https://github.com/xwp/wp-customize-posts/pull/345" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/345" data-id="203795097">#345</a>.
+* Added: Focus on specific field that have conflict. Issue <a href="https://github.com/xwp/wp-customize-posts/issues/35" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/35" data-id="138341625">#35</a>. PR <a href="https://github.com/xwp/wp-customize-posts/pull/341" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/341" data-id="202486533">#341</a>.<br>
+* Updated: Remove sessionStorage and use changeset to save post editor screen data. Issue <a href="https://github.com/xwp/wp-customize-posts/issues/338" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/338" data-id="198599727">#338</a>. PR <a href="https://github.com/xwp/wp-customize-posts/pull/350" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/350" data-id="219883491">#350</a>.
+* Updated: Removed reference to obsolete plugin. Issue <a href="https://github.com/xwp/wp-customize-posts/issues/323" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/323" data-id="191750337">#323</a>. PR <a href="https://github.com/xwp/wp-customize-posts/pull/342" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/342" data-id="203019613">#342</a>.
+* Fixed: Stop continuous ajax requests in select2. PR <a href="https://github.com/xwp/wp-customize-posts/pull/351" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/351" data-id="222634958">#351</a>.
+* Fixed: Prevent warning when importing starter content including CPT posts. PR <a href="https://github.com/xwp/wp-customize-posts/pull/340" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/340" data-id="201179029">#340</a>.
+* Fixed: Use auto-draft with late future date instead of customize-draft and clean auto-draft on changeset delete. Issue <a href="https://github.com/xwp/wp-customize-posts/issues/329" class="issue-link js-issue-link" data-id="194814988" title="Delete all customize-draft posts that are referenced by a given changeset post that is deleted">#329</a>. PR <a href="https://github.com/xwp/wp-customize-posts/pull/348" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/348" data-id="210759416">#348</a>.
+
+See <a href="https://github.com/xwp/wp-customize-posts/milestone/15?closed=1">issues and PRs in milestone</a> and <a href="https://github.com/xwp/wp-customize-posts/compare/0.8.5...0.8.6">full release commit log</a>.
+
+Props Weston Ruter (<a href="https://github.com/westonruter" class="user-mention">@westonruter</a>), Sayed Taqui (<a href="https://github.com/sayedtaqui" class="user-mention">@sayedtaqui</a>), Utkarsh Patel (<a href="https://github.com/patelutkarsh" class="user-mention">@PatelUtkarsh</a>), Jeffrey Paul (<a href="https://github.com/jeffpaul" class="user-mention">@jeffpaul</a>), Zlatko Zlatev (<a href="https://github.com/entr" class="user-mention">@entr</a>).
 
 ### [0.8.5] - 2017-01-03 ###
 * Add syncing of customize post settings to Backbone post models; try this out with the <a href="https://github.com/xwp/wp-next-recent-posts-widget">Next Recent Posts Widget</a>. Fixes <a href="https://github.com/xwp/wp-customize-posts/issues/331" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/331">#331</a>, PR <a href="https://github.com/xwp/wp-customize-posts/pull/333" class="issue-link js-issue-link" data-url="https://github.com/xwp/wp-customize-posts/issues/333" data-id="195595516" data-error-text="Failed to load issue title">#333</a>.
