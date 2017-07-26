@@ -61,6 +61,26 @@
 		},
 
 		/**
+		 * Create and show the edit shortcut for a given partial placement container.
+		 *
+		 * Prevent multiple edit shortcuts from being created on the same placement.
+		 * This should probably be upstreamed to core.
+		 *
+		 * @param {Placement} placement The placement container element.
+		 * @returns {void}
+		 */
+		createEditShortcutForPlacement: function( placement ) {
+			var partial = this;
+			if ( placement.container && placement.container.data( 'edit-shortcut-created' ) ) {
+				return;
+			}
+			api.selectiveRefresh.Partial.prototype.createEditShortcutForPlacement.call( partial, placement );
+			if ( placement.container ) {
+				placement.container.data( 'edit-shortcut-created', true );
+			}
+		},
+
+		/**
 		 * Request the new partial and render it into the placements.
 		 *
 		 * @return {jQuery.Promise} Refresh promise.
