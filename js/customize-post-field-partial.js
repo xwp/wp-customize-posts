@@ -168,6 +168,26 @@
 		},
 
 		/**
+		 * Find all placements for this partial in the document.
+		 *
+		 * Fixes issue where selector can match too many elements when post loops are nested inside other posts.
+		 *
+		 * @return {Array.<Placement>} Placements.
+		 */
+		placements: function() {
+			var partial = this, placements;
+			placements = api.selectiveRefresh.partialConstructor.deferred.prototype.placements.call( this );
+
+			// Remove all placements whose closest .hentry is not for this post.
+			placements = _.filter( placements, function( placement ) {
+				var closestHentry = placement.container.closest( '.hentry' );
+				return ! closestHentry.length || closestHentry.hasClass( 'post-' + String( partial.params.post_id ) );
+			});
+
+			return placements;
+		},
+
+		/**
 		 * @inheritdoc
 		 */
 		isRelatedSetting: function( setting, newValue, oldValue ) {
