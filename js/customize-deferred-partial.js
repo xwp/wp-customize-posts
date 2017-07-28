@@ -71,13 +71,10 @@
 		 */
 		createEditShortcutForPlacement: function( placement ) {
 			var partial = this;
-			if ( placement.container && placement.container.data( 'edit-shortcut-created' ) ) {
+			if ( placement.container && placement.container.find( '> .customize-partial-edit-shortcut-button:first-child' ).length ) {
 				return;
 			}
 			api.selectiveRefresh.Partial.prototype.createEditShortcutForPlacement.call( partial, placement );
-			if ( placement.container ) {
-				placement.container.data( 'edit-shortcut-created', true );
-			}
 		},
 
 		/**

@@ -52,7 +52,7 @@
 			_.each( mutations, function( mutation ) {
 				var hentryElements, mutationTarget;
 				mutationTarget = $( mutation.target );
-				hentryElements = $( mutation.target ).find( '.hentry' );
+				hentryElements = mutationTarget.find( '.hentry' );
 				if ( mutationTarget.is( '.hentry' ) ) {
 					hentryElements = hentryElements.add( mutationTarget );
 				}
@@ -82,7 +82,7 @@
 					});
 				});
 			});
-		} );
+		});
 		api.previewPosts.mutationObserver.observe( document.documentElement, {
 			childList: true,
 			subtree: true
