@@ -71,7 +71,7 @@
 		 */
 		createEditShortcutForPlacement: function( placement ) {
 			var partial = this;
-			if ( placement.container && placement.container.find( '> .customize-partial-edit-shortcut-button:first-child' ).length ) {
+			if ( placement.container && placement.container.find( '> .customize-partial-edit-shortcut:first-child' ).length ) {
 				return;
 			}
 			api.selectiveRefresh.Partial.prototype.createEditShortcutForPlacement.call( partial, placement );
