@@ -2,8 +2,8 @@
 Contributors:      xwp, westonruter, valendesigns, sayedwp, utkarshpatel.
 Tags:              customizer, customize, posts, postmeta, editor, preview, featured-image, page-template
 Requires at least: 4.5.0
-Tested up to:      4.8.0
-Stable tag:        0.8.6
+Tested up to:      4.8.1
+Stable tag:        0.8.7
 License:           GPLv2 or later
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,6 +66,13 @@ The following are listed in reverse chronological order. The first, more recent 
 7. [0.8.0] Post parent and basic menu order control.
 
 == Changelog ==
+
+= [0.8.7] - [2017-08-03] =
+
+* Fixed: Ensure that nested edit shortcuts in Twenty Seventeen front-page panels are positioned properly. See [#357](https://github.com/xwp/wp-customize-posts/pull/357).
+* Fixed: Prevent post field partials from erroneously selecting nested post placements, prevent edit shortcuts from being duplicated, and ensure partials get created for all posts displayed. See [#355](https://github.com/xwp/wp-customize-posts/pull/355), [#356](https://github.com/xwp/wp-customize-posts/pull/356).
+
+See <a href="https://github.com/xwp/wp-customize-posts/milestone/16?closed=1">issues and PRs in milestone</a> and <a href="https://github.com/xwp/wp-customize-posts/compare/0.8.6...0.8.7">full release commit log</a>.
 
 = [0.8.6] - [2017-06-08] =
 
