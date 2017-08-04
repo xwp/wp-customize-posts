@@ -125,6 +125,7 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertEquals( 10, has_filter( 'customize_dynamic_partial_args', array( $preview, 'filter_customize_dynamic_partial_args' ) ) );
 		$this->assertEquals( 10, has_filter( 'customize_dynamic_partial_class', array( $preview, 'filter_customize_dynamic_partial_class' ) ) );
 		$this->assertEquals( 1000, has_filter( 'the_posts', array( $preview, 'filter_the_posts_to_tally_previewed_posts' ) ) );
+		$this->assertEquals( 10, has_action( 'the_post', array( $preview, 'handle_the_post_to_tally_previewed_post' ) ) );
 		$this->assertEquals( 10, has_filter( 'the_posts', array( $preview, 'filter_the_posts_to_tally_orderby_keys' ) ) );
 		$this->assertEquals( 10, has_action( 'wp_footer', array( $preview, 'export_preview_data' ) ) );
 		$this->assertEquals( 10, has_filter( 'get_edit_post_link', array( $preview, 'filter_get_edit_post_link' ) ) );
@@ -275,6 +276,19 @@ class Test_WP_Customize_Posts_Preview extends WP_UnitTestCase {
 		$this->assertCount( 3, $query->posts );
 		$this->assertNotEmpty( $this->posts_component->preview->queried_post_ids );
 		$this->assertEqualSets( $post_ids, $this->posts_component->preview->queried_post_ids );
+	}
+
+	/**
+	 * Test handle_the_post_to_tally_previewed_post().
+	 *
+	 * @covers WP_Customize_Posts_Preview::handle_the_post_to_tally_previewed_post()
+	 */
+	public function test_handle_the_post_to_tally_previewed_post() {
+		$post_id = $this->factory()->post->create();
+		$this->assertEmpty( $this->posts_component->preview->queried_post_ids );
+		$this->posts_component->preview->customize_preview_init();
+		setup_postdata( $post_id );
+		$this->assertEqualSets( array( $post_id ), $this->posts_component->preview->queried_post_ids );
 	}
 
 	/**

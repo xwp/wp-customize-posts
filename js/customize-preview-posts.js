@@ -21,6 +21,75 @@
 	} );
 
 	/**
+	 * Parse the class name for an .hentry element, that is for an element that uses post_class().
+	 *
+	 * @param {string} className Class name.
+	 * @returns {object|null} Object with postType and postId props, or null if no matches.
+	 */
+	api.previewPosts.parsePostClassName = function parsePostClassName( className ) {
+		var matches, postId, postType;
+		matches = className.match( /(\s|^)post-(\d+)(\s|$)/ );
+		if ( matches ) {
+			postId = parseInt( matches[2], 10 );
+		} else {
+			return null;
+		}
+		matches = className.match( /(\s|^)type-(\S+)(\s|$)/ );
+		if ( matches ) {
+			postType = matches[2];
+		} else {
+			return null;
+		}
+		return {
+			postId: postId,
+			postType: postType
+		};
+	};
+
+	// Add partials when the document is modified and new post hentry elements are added.
+	if ( 'undefined' !== typeof MutationObserver ) {
+		api.previewPosts.mutationObserver = new MutationObserver( function( mutations ) {
+			_.each( mutations, function( mutation ) {
+				var hentryElements, mutationTarget;
+				mutationTarget = $( mutation.target );
+				hentryElements = mutationTarget.find( '.hentry' );
+				if ( mutationTarget.is( '.hentry' ) ) {
+					hentryElements = hentryElements.add( mutationTarget );
+				}
+
+				hentryElements.each( function() {
+					var postInfo, settingId;
+					postInfo = api.previewPosts.parsePostClassName( $( this ).prop( 'className' ) );
+					if ( ! postInfo ) {
+						return;
+					}
+					settingId = 'post[' + postInfo.postType + '][' + String( postInfo.postId ) + ']';
+					api.previewPosts.ensurePartialsForPostSetting( settingId );
+
+					// Ensure edit shortcuts are added for all placements inside the mutation target.
+					_.each( api.previewPosts.partialSchema( settingId ), function( schema ) {
+						var partial;
+						partial = api.selectiveRefresh.partial( schema.id );
+						if ( ! partial ) {
+							return;
+						}
+						_.each( partial.placements(), function( placement ) { // eslint-disable-line max-nested-callbacks
+							if ( mutationTarget.is( placement.container ) || $.contains( mutation.target, placement.container[0] ) ) {
+								$( placement.container ).attr( 'title', api.selectiveRefresh.data.l10n.shiftClickToEdit );
+								partial.createEditShortcutForPlacement( placement );
+							}
+						});
+					});
+				});
+			});
+		});
+		api.previewPosts.mutationObserver.observe( document.documentElement, {
+			childList: true,
+			subtree: true
+		});
+	}
+
+	/**
 	 * Ensure that each post setting is added and has corresponding partials.
 	 *
 	 * @param {wp.customize.Value|wp.customize.Setting} setting Setting.

@@ -92,6 +92,7 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'customize_dynamic_partial_args', array( $this, 'filter_customize_dynamic_partial_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_partial_class', array( $this, 'filter_customize_dynamic_partial_class' ), 10, 3 );
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_tally_previewed_posts' ), 1000 );
+		add_action( 'the_post', array( $this, 'handle_the_post_to_tally_previewed_post' ) );
 		add_filter( 'the_posts', array( $this, 'filter_the_posts_to_tally_orderby_keys' ), 10, 2 );
 		add_action( 'wp_footer', array( $this, 'export_preview_data' ), 10 );
 		add_filter( 'get_edit_post_link', array( $this, 'filter_get_edit_post_link' ), 10, 2 );
@@ -248,6 +249,15 @@ final class WP_Customize_Posts_Preview {
 			$this->queried_post_ids[] = $post->ID;
 		}
 		return $posts;
+	}
+
+	/**
+	 * Tally the set-up post as being previewed in the page.
+	 *
+	 * @param WP_Post $post Post.
+	 */
+	public function handle_the_post_to_tally_previewed_post( $post ) {
+		$this->queried_post_ids[] = $post->ID;
 	}
 
 	/**
