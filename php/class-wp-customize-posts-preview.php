@@ -43,6 +43,13 @@ final class WP_Customize_Posts_Preview {
 	public $previewed_postmeta_settings = array();
 
 	/**
+	 * Previewed post terms settings by post ID and taxonomy key.
+	 *
+	 * @var WP_Customize_Post_Terms_Setting[]
+	 */
+	public $previewed_post_terms_settings = array();
+
+	/**
 	 * List of the orderby keys used in queries in the response.
 	 *
 	 * @var array
@@ -118,6 +125,7 @@ final class WP_Customize_Posts_Preview {
 		add_action( 'the_post', array( $this, 'preview_setup_postdata' ) );
 		add_filter( 'the_title', array( $this, 'filter_the_title' ), 1, 2 );
 		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_preview' ), 1000, 4 );
+		add_filter( 'get_object_terms', array( $this, 'filter_get_object_terms_to_preview' ), 1000, 4 );
 		add_filter( 'wp_setup_nav_menu_item', array( $this, 'filter_nav_menu_item_to_set_post_dependent_props' ), 100 );
 		add_filter( 'comments_open', array( $this, 'filter_preview_comments_open' ), 10, 2 );
 		add_filter( 'pings_open', array( $this, 'filter_preview_pings_open' ), 10, 2 );
@@ -1182,6 +1190,181 @@ final class WP_Customize_Posts_Preview {
 			}
 			return $meta_values;
 		}
+	}
+
+	/**
+	 * Filter post terms to inject customized value.
+	 *
+	 * @see WP_Customize_Post_Terms_Setting::preview()
+	 * @see wp_get_post_terms()
+	 * @see wp_get_object_terms()
+	 *
+	 * @param array $terms      An array of terms for the given object or objects.
+	 * @param array $object_ids Array of object IDs for which `$terms` were retrieved.
+	 * @param array $taxonomies Array of taxonomies from which `$terms` were retrieved.
+	 * @param array $args       An array of arguments for retrieving terms for the given
+	 *                          object(s). See wp_get_object_terms() for details.
+	 * @return array|int Terms.
+	 */
+	public function filter_get_object_terms_to_preview( $terms, $object_ids, $taxonomies, $args ) {
+
+		if ( empty( $object_ids ) ) {
+			trigger_error( 'Customize Posts: filter_get_object_terms_to_preview requires one or more object_ids to operate.', E_USER_WARNING );
+			return $terms;
+		}
+
+		/** @var WP_Customize_Post_Terms_Setting[] $previewed_settings */
+		$previewed_settings = array();
+		foreach ( $object_ids as $object_id ) {
+			foreach ( $taxonomies as $taxonomy ) {
+				if ( isset( $this->previewed_post_terms_settings[ $object_id ][ $taxonomy ] ) ) {
+					$previewed_settings[] = $this->previewed_post_terms_settings[ $object_id ][ $taxonomy ];
+				}
+			}
+		}
+
+		// Short-circuit if none of the settings have been previewed.
+		if ( empty( $previewed_settings ) ) {
+			return $terms;
+		}
+
+		$args = array_merge(
+			array(
+				'fields' => 'all',
+				'count' => false,
+				'order' => 'ASC',
+				'orderby' => 'name',
+			),
+			$args
+		);
+
+		// Unsupported to get counts for each term. Will require lower-level WP_Term_Query integration.
+		if ( ! in_array( $args['fields'], array( 'all', 'ids', 'all_with_object_id' ), true ) ) {
+			trigger_error( sprintf( 'Customize Posts: postterms setting unsupported fields arg "%s".', $args['fields'] ), E_USER_WARNING );
+			return $terms;
+		}
+
+		// Make sure 0 is set to global $post.
+		$object_ids = wp_list_pluck( array_map( 'get_post', $object_ids ), 'ID' );
+
+		/*
+		 * Args that can possibly be added via the `wp_get_object_terms_args` filter which aren't supported yet,
+		 * or which may not be supportable without lower-level integration with WP_Term_Query.
+		 */
+		$unsupported_args = array(
+			'hide_empty',
+			'include',
+			'exclude',
+			'exclude_tree',
+			'number',
+			'offset',
+			'name',
+			'slug',
+			'term_taxonomy_id',
+			'hierarchical',
+			'search',
+			'name__like',
+			'description__like',
+			'pad_counts',
+			'get',
+			'child_of',
+			'parent',
+			'childless',
+			'meta_query',
+			'meta_key',
+			'meta_value',
+			'meta_type',
+			'meta_compare',
+		);
+		$unsupported_count = 0;
+		foreach ( $unsupported_args as $arg_name ) {
+			if ( array_key_exists( $arg_name, $args ) ) {
+				trigger_error( sprintf( 'Customize Posts: postterms setting unsupported arg: %s', $arg_name ), E_USER_WARNING );
+				$unsupported_count += 1;
+			}
+		}
+		if ( $unsupported_count > 0 ) {
+			return $terms;
+		}
+
+		$object_linked_terms = array();
+		foreach ( $terms as $term ) {
+			if ( ! ( $term instanceof WP_Term) ) {
+				$term = get_term( $term );
+			}
+			if ( ! ( $term instanceof WP_Term) ) {
+				continue;
+			}
+			if ( ! empty( $term->object_id ) ) {
+				$object_linked_terms[] = $term;
+			} else {
+				foreach ( $object_ids as $object_id ) {
+					if ( has_term( $term->term_id, $term->taxonomy, $object_id ) ) {
+						$object_term = clone $term;
+						$object_term->object_id = $object_id;
+						$object_linked_terms[] = $object_term;
+					}
+				}
+			}
+		}
+
+		// @todo Will have to be able to group by taxonomy+object_id in order to be able to override.
+		$grouped_terms = array();
+		foreach ( $object_linked_terms as $term ) {
+			$post = get_post( $term->object_id );
+			if ( ! $post ) {
+				continue;
+			}
+			$setting_id = WP_Customize_Post_Terms_Setting::get_post_terms_setting_id( $post, $term->taxonomy );
+			if ( ! isset( $grouped_terms[ $setting_id ] ) ) {
+				$grouped_terms[ $setting_id ] = array();
+			}
+			$grouped_terms[ $setting_id ][] = $term;
+		}
+
+		foreach ( $previewed_settings as $previewed_setting ) {
+			$post_value = $previewed_setting->post_value( null );
+			if ( is_array( $post_value ) ) {
+				$customized_terms = array();
+				foreach ( $post_value as $term_id ) {
+					$term = get_term( $term_id );
+					if ( $term instanceof WP_Term ) {
+						if ( 'all_with_object_id' === $args['fields'] ) {
+							$term->object_id = $previewed_setting->post_id;
+						}
+
+						$customized_terms[] = $term;
+					}
+				}
+				$grouped_terms[ $previewed_setting->id ] = $customized_terms;
+			}
+		}
+
+		$terms = call_user_func_array( 'array_merge', $grouped_terms );
+
+		if ( $args['count'] ) {
+			return count( $terms );
+		}
+
+		$terms = wp_list_sort( $terms, $args['orderby'], $args['order'] );
+
+		$returned_terms = array();
+		if ( 'ids' === $args['fields'] ) {
+			$returned_terms = wp_list_pluck( $terms, 'term_id' );
+		} elseif ( 'tt_ids' === $args['fields'] ) {
+			$returned_terms = wp_list_pluck( $terms, 'term_taxonomy_id' );
+		} elseif ( 'id=>' === strpos( $args['fields'], 0, 4 ) ) {
+			$field = strpos( $args['fields'], 4 );
+			foreach ( $terms as $term ) {
+				$returned_terms[ $term->term_id ] = $term->$field;
+			}
+		} elseif ( 'names' === $args['fields'] ) {
+			$returned_terms = wp_list_pluck( $terms, 'name' );
+		} else {
+			$returned_terms = $terms;
+		}
+
+		return $returned_terms;
 	}
 
 	/**

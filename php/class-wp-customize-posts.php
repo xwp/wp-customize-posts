@@ -80,6 +80,7 @@ final class WP_Customize_Posts {
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-discussion-fields-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-setting.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-setting.php';
+		require_once dirname( __FILE__ ) . '/class-wp-customize-post-terms-setting.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-date-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-status-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-editor-control.php';
@@ -212,10 +213,12 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Configure built-in core post types and taxonomies.
+	 *
 	 * Set missing post type descriptions for built-in post types and explicitly disallow attachments in customizer UI.
 	 */
-	public function configure_builtin_post_types() {
-		global $wp_post_types;
+	public function configure_builtins() {
+		global $wp_post_types, $wp_taxonomies;
 		if ( post_type_exists( 'post' ) && empty( $wp_post_types['post']->description ) ) {
 			$wp_post_types['post']->description = __( 'Posts are entries listed in reverse chronological order, usually on the site homepage or on a dedicated posts page. Posts can be organized by tags or categories.', 'customize-posts' );
 		}
@@ -224,6 +227,11 @@ final class WP_Customize_Posts {
 		}
 		if ( post_type_exists( 'attachment' ) && ! isset( $wp_post_types['attachment']->show_in_customizer ) ) {
 			$wp_post_types['attachment']->show_in_customizer = false;
+		}
+		if ( taxonomy_exists( 'post_format' ) ) {
+			if ( ! isset( $wp_taxonomies['post_format']->show_in_customizer ) ) {
+				$wp_taxonomies['post_format']->show_in_customizer = true;
+			}
 		}
 	}
 
@@ -438,7 +446,7 @@ final class WP_Customize_Posts {
 		$panel_priority = 900; // Before widgets.
 
 		// Note that this does not include nav_menu_item.
-		$this->configure_builtin_post_types();
+		$this->configure_builtins();
 		foreach ( $this->get_post_types() as $post_type_object ) {
 			if ( empty( $post_type_object->show_in_customizer ) ) {
 				continue;
@@ -525,6 +533,18 @@ final class WP_Customize_Posts {
 				$registered
 			);
 			$args['type'] = 'postmeta';
+		} elseif ( preg_match( WP_Customize_Post_Terms_Setting::SETTING_ID_PATTERN, $setting_id, $matches ) ) {
+			if ( ! post_type_exists( $matches['post_type'] ) || ! taxonomy_exists( $matches['taxonomy'] ) ) {
+				return $args;
+			}
+			$taxonomy = get_taxonomy( $matches['taxonomy'] );
+			if ( empty( $taxonomy->show_in_customizer ) ) {
+				return $args;
+			}
+			if ( false === $args ) {
+				$args = array();
+			}
+			$args['type'] = 'postterms';
 		}
 
 		return $args;
@@ -550,6 +570,8 @@ final class WP_Customize_Posts {
 				} else {
 					$class = 'WP_Customize_Postmeta_Setting';
 				}
+			} elseif ( 'postterms' === $args['type'] ) {
+				$class = 'WP_Customize_Post_Terms_Setting';
 			}
 		}
 		return $class;
@@ -598,6 +620,24 @@ final class WP_Customize_Posts {
 			}
 			$this->manager->add_dynamic_settings( $setting_ids );
 		}
+		return $setting_ids;
+	}
+
+	/**
+	 * Add all post terms settings for all taxonomies that support showing in Customizer.
+	 *
+	 * @param WP_Post $post Post.
+	 * @return array
+	 */
+	public function register_post_terms_settings( $post ) {
+		$setting_ids = array();
+		foreach ( get_taxonomies() as $taxonomy ) {
+			if ( empty( $taxonomy->show_in_customizer ) ) {
+				continue;
+			}
+			$setting_ids[] = WP_Customize_Post_Terms_Setting::get_post_terms_setting_id( $post, $taxonomy->name );
+		}
+		$this->manager->add_dynamic_settings( $setting_ids );
 		return $setting_ids;
 	}
 
@@ -757,7 +797,7 @@ final class WP_Customize_Posts {
 		$response['saved_post_setting_values'] = array();
 		foreach ( array_keys( $this->manager->unsanitized_post_values() ) as $setting_id ) {
 			$setting = $this->manager->get_setting( $setting_id );
-			if ( ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting ) && get_post( $setting->post_id ) ) {
+			if ( ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting || $setting instanceof WP_Customize_Post_Terms_Setting ) && get_post( $setting->post_id ) ) {
 				$response['saved_post_setting_values'][ $setting->id ] = $setting->js_value();
 			}
 		}
@@ -824,6 +864,7 @@ final class WP_Customize_Posts {
 				'fieldExcerptLabel' => __( 'Excerpt', 'customize-posts' ),
 				'fieldDiscussionLabel' => __( 'Discussion', 'customize-posts' ),
 				'fieldAuthorLabel' => __( 'Author', 'customize-posts' ),
+				'fieldPostFormatLabel' => __( 'Post Format', 'customize-posts' ),
 				'fieldParentLabel' => __( 'Parent', 'customize-posts' ),
 				'fieldOrderLabel' => __( 'Order', 'customize-posts' ),
 				'noTitle' => __( '(no title)', 'customize-posts' ),
@@ -1315,10 +1356,10 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Get post/postmeta settings for the given post IDs.
+	 * Get post/postmeta/post_terms settings for the given post IDs.
 	 *
 	 * @param int[] $post_ids Post IDs.
-	 * @return WP_Customize_Post_Setting[]|WP_Customize_Postmeta_Setting[] Settings.
+	 * @return WP_Customize_Post_Setting[]|WP_Customize_Postmeta_Setting[]|WP_Customize_Post_Terms_Setting[]|WP_Customize_Nav_Menu_Item_Setting[] Settings.
 	 */
 	public function get_settings( array $post_ids ) {
 		$query = new WP_Query( array(
@@ -1339,6 +1380,7 @@ final class WP_Customize_Posts {
 		$this->manager->add_dynamic_settings( $post_setting_ids );
 		foreach ( $query->posts as $post ) {
 			$this->register_post_type_meta_settings( $post );
+			$this->register_post_terms_settings( $post );
 		}
 		$settings = array();
 		foreach ( $this->manager->settings() as $setting ) {
@@ -1346,6 +1388,8 @@ final class WP_Customize_Posts {
 				$setting instanceof WP_Customize_Post_Setting
 				||
 				$setting instanceof WP_Customize_Postmeta_Setting
+				||
+				$setting instanceof WP_Customize_Post_Terms_Setting
 				||
 				$setting instanceof WP_Customize_Nav_Menu_Item_Setting
 			);
@@ -1471,7 +1515,7 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Handle ajax request for lazy-loaded post/postmeta settings.
+	 * Handle ajax request for lazy-loaded post/postmeta/post_terms settings.
 	 *
 	 * @action wp_ajax_customize-posts-fetch-settings
 	 * @access public

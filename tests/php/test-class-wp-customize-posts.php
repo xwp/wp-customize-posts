@@ -170,7 +170,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	/**
 	 * Test post type descriptions for built-in post types gets set.
 	 *
-	 * @see WP_Customize_Posts::configure_builtin_post_types()
+	 * @see WP_Customize_Posts::configure_builtins()
 	 */
 	public function test_configure_builtin_post_types() {
 		global $wp_post_types;
@@ -183,14 +183,14 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertEmpty( $wp_post_types['page']->description );
 		$this->assertObjectNotHasAttribute( 'show_in_customizer', $wp_post_types['attachment'] );
 
-		$this->posts->configure_builtin_post_types();
+		$this->posts->configure_builtins();
 
 		$this->assertNotEmpty( $wp_post_types['post']->description );
 		$this->assertNotEmpty( $wp_post_types['page']->description );
 		$this->assertFalse( $wp_post_types['attachment']->show_in_customizer );
 
 		$wp_post_types['attachment']->show_in_customizer = true;
-		$this->posts->configure_builtin_post_types();
+		$this->posts->configure_builtins();
 		$this->assertTrue( $wp_post_types['attachment']->show_in_customizer );
 	}
 

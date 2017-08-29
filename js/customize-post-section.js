@@ -282,6 +282,9 @@
 				section.addStatusControl();
 				section.addDateControl();
 			}
+			if ( postTypeObj.supports['post-formats'] ) {
+				section.addPostFormatControl();
+			}
 			if ( postTypeObj.supports['page-attributes'] || postTypeObj.supports.parent ) {
 				section.addParentControl();
 			}
@@ -630,6 +633,55 @@
 				control.notifications.add = section.addPostFieldControlNotification;
 				control.notifications.setting_property = control.params.setting_property;
 			}
+			return control;
+		},
+
+		/**
+		 * Add post format control.
+		 *
+		 * @todo Move this into a separate file.
+		 *
+		 * @returns {wp.customize.Control} Added control.
+		 */
+		addPostFormatControl: function addPostFormatControl() {
+			var section = this, control, setting = api( section.id ), controlId, settingId, params, postTypeObj, supports;
+
+			// @todo Get whether or not the theme has indicated support for post formats.
+			supports = api.Posts.data.postTypes[ section.params.post_type ].supports;
+
+			if ( ! supports['post-formats'] || 'page' !== section.params.post_type ) {
+				return null;
+			}
+
+
+			return;
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+			settingId = 'postterms[' + section.params.post_type + '][' + String( section.params.post_id ) + '][post_format]';
+			controlId = section.id + '[post_format]';
+
+			control = new api.controlConstructor.dynamic( section.id + '[post_format]', {
+				params: {
+					section: section.id,
+					priority: 65,
+					label: postTypeObj.labels.post_format_field || api.Posts.data.l10n.fieldPostFormatLabel,
+					active: true,
+					settings: {
+						'default': setting.id
+					},
+					field_type: 'select',
+					choices: postTypeObj['post-formats']
+				}
+			} );
+
+			// Override preview trying to de-activate control not present in preview context.
+			control.active.validate = function() {
+				return true;
+			};
+
+			// Register.
+			section.postFieldControls.post_format = control;
+			api.control.add( control.id, control );
+
 			return control;
 		},
 
