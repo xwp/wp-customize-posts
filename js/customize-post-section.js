@@ -282,7 +282,7 @@
 				section.addStatusControl();
 				section.addDateControl();
 			}
-			if ( postTypeObj.supports['post-formats'] ) {
+			if ( api.Posts.data.themeSupports['post-formats'] && postTypeObj.supports['post-formats'] ) {
 				section.addPostFormatControl();
 			}
 			if ( postTypeObj.supports['page-attributes'] || postTypeObj.supports.parent ) {
@@ -639,27 +639,33 @@
 		/**
 		 * Add post format control.
 		 *
-		 * @todo Move this into a separate file.
+		 * @todo Move this into a separate file/component like Page Template and Featured Image.
+		 *
+		 * @see post_format_meta_box() in PHP.
 		 *
 		 * @returns {wp.customize.Control} Added control.
 		 */
 		addPostFormatControl: function addPostFormatControl() {
-			var section = this, control, setting = api( section.id ), controlId, settingId, params, postTypeObj, supports;
+			var section = this, control, settingId, setting, controlId, postTypeObj, postFormats;
 
-			// @todo Get whether or not the theme has indicated support for post formats.
-			supports = api.Posts.data.postTypes[ section.params.post_type ].supports;
-
-			if ( ! supports['post-formats'] || 'page' !== section.params.post_type ) {
+			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
+			if ( ! api.Posts.data.themeSupports['post-formats'] || ! postTypeObj.supports['post-formats'] ) {
 				return null;
 			}
 
+			settingId = 'post_terms[' + section.params.post_type + '][' + String( section.params.post_id ) + '][post_format]';
+			setting = api( settingId );
+			if ( ! setting ) {
+				return null;
+			}
 
-			return;
-			postTypeObj = api.Posts.data.postTypes[ section.params.post_type ];
-			settingId = 'postterms[' + section.params.post_type + '][' + String( section.params.post_id ) + '][post_format]';
+			// Add in the current one if it isn't there yet, in case the current theme doesn't support it
+			postFormats = _.uniq(
+				[ 'standard' ].concat( api.Posts.data.themeSupports['post-formats'] ).concat( [ setting.get() ] )
+			);
+
 			controlId = section.id + '[post_format]';
-
-			control = new api.controlConstructor.dynamic( section.id + '[post_format]', {
+			control = new api.controlConstructor.dynamic( controlId, {
 				params: {
 					section: section.id,
 					priority: 65,
@@ -669,7 +675,15 @@
 						'default': setting.id
 					},
 					field_type: 'select',
-					choices: postTypeObj['post-formats']
+					input_attrs: {
+						'data-customize-setting-link': settingId // @todo The need for this needs to be eliminated in core.
+					},
+					choices: _.map( postFormats, function( postFormat ) {
+						return {
+							text: api.Posts.data.l10n.postFormatStrings[ postFormat ] || postFormat,
+							value: postFormat
+						};
+					} )
 				}
 			} );
 

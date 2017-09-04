@@ -95,6 +95,7 @@ final class WP_Customize_Posts {
 		add_action( 'customize_register', array( $this, 'ensure_static_front_page_constructs_registered' ), 11 );
 		add_action( 'customize_register', array( $this, 'register_constructs' ), 20 );
 		add_filter( 'map_meta_cap', array( $this, 'filter_map_meta_cap' ), 10, 4 );
+		add_action( 'init', array( $this, 'configure_builtins' ), 1 );
 		add_action( 'init', array( $this, 'register_meta' ), 100 );
 		add_filter( 'customize_dynamic_setting_args', array( $this, 'filter_customize_dynamic_setting_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_setting_class', array( $this, 'filter_customize_dynamic_setting_class' ), 5, 3 );
@@ -229,6 +230,7 @@ final class WP_Customize_Posts {
 		if ( post_type_exists( 'attachment' ) && ! isset( $wp_post_types['attachment']->show_in_customizer ) ) {
 			$wp_post_types['attachment']->show_in_customizer = false;
 		}
+
 		if ( taxonomy_exists( 'post_format' ) ) {
 			if ( ! isset( $wp_taxonomies['post_format']->show_in_customizer ) ) {
 				$wp_taxonomies['post_format']->show_in_customizer = true;
@@ -448,7 +450,6 @@ final class WP_Customize_Posts {
 		$panel_priority = 900; // Before widgets.
 
 		// Note that this does not include nav_menu_item.
-		$this->configure_builtins();
 		foreach ( $this->get_post_types() as $post_type_object ) {
 			if ( empty( $post_type_object->show_in_customizer ) ) {
 				continue;
@@ -638,7 +639,7 @@ final class WP_Customize_Posts {
 	 */
 	public function register_post_terms_settings( $post ) {
 		$setting_ids = array();
-		foreach ( get_taxonomies() as $taxonomy ) {
+		foreach ( get_taxonomies( array(), 'objects' ) as $taxonomy ) {
 			if ( empty( $taxonomy->show_in_customizer ) ) {
 				continue;
 			}
@@ -853,7 +854,16 @@ final class WP_Customize_Posts {
 			);
 		}
 
+		$theme_supports = array();
+		if ( current_theme_supports( 'post-formats' ) ) {
+			$theme_support = get_theme_support( 'post-formats' );
+			if ( isset( $theme_support[0] ) && is_array( $theme_support[0] ) ) {
+				$theme_supports['post-formats'] = $theme_support[0];
+			}
+		}
+
 		$exports = array(
+			'themeSupports' => $theme_supports,
 			'postTypes' => $post_types,
 			'postStatusChoices' => $this->get_post_status_choices(),
 			'authorChoices' => $this->get_author_choices(), // @todo Use Ajax to fetch this data or Customize Object Selector (once it supports users).
@@ -900,6 +910,7 @@ final class WP_Customize_Posts {
 
 				/* translators: %s post type */
 				'jumpToPostPlaceholder' => __( 'Jump to %s', 'customize-posts' ),
+				'postFormatStrings' => get_post_format_strings(),
 			),
 		);
 

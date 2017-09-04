@@ -60,16 +60,18 @@ class WP_Customize_Post_Format_Setting extends WP_Customize_Post_Terms_Setting {
 		$value = array();
 		if ( 'standard' !== $format ) {
 			$slug = 'post-format-' . $format;
-			$term = get_term_by( 'slug', $format, $this->taxonomy );
+			$term = get_term_by( 'slug', $slug, $this->taxonomy );
 
 			// Make sure the post format term exists.
-			if ( ! $term ) {
+			if ( $term instanceof WP_Term ) {
+				$value[] = $term->term_id;
+			} else {
 				$term = wp_insert_term( $slug, $this->taxonomy );
 				if ( is_wp_error( $term ) ) {
 					return $has_setting_validation ? $term : null;
 				}
+				$value[] = $term['term_id'];
 			}
-			$value[] = $term->term_id;
 		}
 
 		$value = parent::sanitize( $value );

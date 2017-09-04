@@ -73,30 +73,36 @@
 	component.parseSettingId = function parseSettingId( settingId ) {
 		var parsed = {}, idParts;
 		idParts = settingId.replace( /]/g, '' ).split( '[' );
-		if ( 'post' !== idParts[0] && 'postmeta' !== idParts[0] ) {
-			return null;
-		}
-		parsed.settingType = idParts[0];
-		if ( 'post' === parsed.settingType && 3 !== idParts.length || 'postmeta' === parsed.settingType && 4 !== idParts.length ) {
-			return null;
-		}
+		parsed.settingType = idParts.shift();
 
-		parsed.postType = idParts[1];
+		parsed.postType = idParts.shift();
 		if ( ! parsed.postType ) {
 			return null;
 		}
 
-		parsed.postId = parseInt( idParts[2], 10 );
-		if ( isNaN( parsed.postId ) || parsed.postId <= 0 ) {
+		parsed.postId = parseInt( idParts.shift(), 10 );
+		if ( ! parsed.postId || isNaN( parsed.postId ) || parsed.postId <= 0 ) {
 			return null;
 		}
 
 		if ( 'postmeta' === parsed.settingType ) {
-			parsed.metaKey = idParts[3];
+			parsed.metaKey = idParts.shift();
 			if ( ! parsed.metaKey ) {
 				return null;
 			}
+		} else if ( 'post_terms' === parsed.settingType ) {
+			parsed.taxonomy = idParts.shift();
+			if ( ! parsed.taxonomy ) {
+				return null;
+			}
+		} else if ( 'post' !== parsed.settingType ) {
+			return null;
 		}
+
+		if ( 0 !== idParts.length ) {
+			return null; // Too many ID parts.
+		}
+
 		return parsed;
 	};
 
