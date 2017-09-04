@@ -81,6 +81,7 @@ final class WP_Customize_Posts {
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-setting.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-setting.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-terms-setting.php';
+		require_once dirname( __FILE__ ) . '/class-wp-customize-post-format-setting.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-date-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-status-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-editor-control.php';
@@ -232,6 +233,7 @@ final class WP_Customize_Posts {
 			if ( ! isset( $wp_taxonomies['post_format']->show_in_customizer ) ) {
 				$wp_taxonomies['post_format']->show_in_customizer = true;
 			}
+			$wp_taxonomies['post_format']->customize_setting_class = 'WP_Customize_Post_Format_Setting';
 		}
 	}
 
@@ -259,7 +261,7 @@ final class WP_Customize_Posts {
 				'sanitize_callback' => null,
 				'sanitize_js_callback' => null,
 				'validate_callback' => null,
-				'setting_class' => 'WP_Customize_Postmeta_Setting',
+				'setting_class' => 'WP_Customize_Postmeta_Setting', // @todo Rename to customize_setting_class?
 			),
 			$setting_args
 		);
@@ -544,7 +546,14 @@ final class WP_Customize_Posts {
 			if ( false === $args ) {
 				$args = array();
 			}
-			$args['type'] = 'postterms';
+			if ( isset( $taxonomy->customize_setting_type ) ) {
+				$args['type'] = $taxonomy->customize_setting_type;
+			} else {
+				$args['type'] = 'post_terms';
+			}
+			if ( isset( $taxonomy->customize_setting_class ) ) {
+				$args['setting_class'] = $taxonomy->customize_setting_class;
+			}
 		}
 
 		return $args;
@@ -561,16 +570,14 @@ final class WP_Customize_Posts {
 	 */
 	public function filter_customize_dynamic_setting_class( $class, $setting_id, $args ) {
 		unset( $setting_id );
-		if ( isset( $args['type'] ) ) {
+		if ( isset( $args['setting_class'] ) ) {
+			$class = $args['setting_class'];
+		} elseif ( isset( $args['type'] ) ) {
 			if ( 'post' === $args['type'] ) {
 				$class = 'WP_Customize_Post_Setting';
 			} elseif ( 'postmeta' === $args['type'] ) {
-				if ( isset( $args['setting_class'] ) ) {
-					$class = $args['setting_class'];
-				} else {
-					$class = 'WP_Customize_Postmeta_Setting';
-				}
-			} elseif ( 'postterms' === $args['type'] ) {
+				$class = 'WP_Customize_Postmeta_Setting';
+			} elseif ( 'post_terms' === $args['type'] ) {
 				$class = 'WP_Customize_Post_Terms_Setting';
 			}
 		}
@@ -868,6 +875,7 @@ final class WP_Customize_Posts {
 				'fieldParentLabel' => __( 'Parent', 'customize-posts' ),
 				'fieldOrderLabel' => __( 'Order', 'customize-posts' ),
 				'noTitle' => __( '(no title)', 'customize-posts' ),
+				/* translators: placeholder is conflicted value */
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
 				'openEditor' => __( 'Open Editor', 'customize-posts' ), // @todo Move this into editor control?
 				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
@@ -880,6 +888,7 @@ final class WP_Customize_Posts {
 				'editPostFailure' => __( 'Failed to open for editing.', 'customize-posts' ),
 				'createPostFailure' => __( 'Failed to create for editing.', 'customize-posts' ),
 				'installCustomizeObjectSelector' => sprintf(
+					/* translators: placeholder is link to Customize Object Selector plugin */
 					__( 'This control depends on having the %s plugin installed and activated.', 'customize-posts' ),
 					sprintf(
 						'<a href="%s" target="_blank">%s</a>',

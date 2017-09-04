@@ -18,7 +18,6 @@ class WP_Customize_Post_Terms_Setting extends WP_Customize_Setting {
 	/**
 	 * Type of setting.
 	 *
-	 * @access public
 	 * @var string
 	 */
 	public $type = self::TYPE;
@@ -26,7 +25,6 @@ class WP_Customize_Post_Terms_Setting extends WP_Customize_Setting {
 	/**
 	 * Post type.
 	 *
-	 * @access public
 	 * @var string
 	 */
 	public $post_type;
@@ -34,7 +32,6 @@ class WP_Customize_Post_Terms_Setting extends WP_Customize_Setting {
 	/**
 	 * Post ID.
 	 *
-	 * @access public
 	 * @var string
 	 */
 	public $post_id;
@@ -42,7 +39,6 @@ class WP_Customize_Post_Terms_Setting extends WP_Customize_Setting {
 	/**
 	 * Taxonomy name.
 	 *
-	 * @access public
 	 * @var string
 	 */
 	public $taxonomy;
@@ -50,7 +46,6 @@ class WP_Customize_Post_Terms_Setting extends WP_Customize_Setting {
 	/**
 	 * Posts component.
 	 *
-	 * @access public
 	 * @var WP_Customize_Posts
 	 */
 	public $posts_component;
@@ -71,8 +66,6 @@ class WP_Customize_Post_Terms_Setting extends WP_Customize_Setting {
 
 	/**
 	 * WP_Customize_Post_Terms_Setting constructor.
-	 *
-	 * @access public
 	 *
 	 * @param WP_Customize_Manager $manager Manager.
 	 * @param string               $id      Setting ID.
@@ -108,8 +101,6 @@ class WP_Customize_Post_Terms_Setting extends WP_Customize_Setting {
 	/**
 	 * Get setting ID for a given post taxonomy terms setting.
 	 *
-	 * @access public
-	 *
 	 * @param WP_Post $post     Post.
 	 * @param string  $taxonomy Taxonomy name.
 	 * @return string Setting ID.
@@ -121,46 +112,46 @@ class WP_Customize_Post_Terms_Setting extends WP_Customize_Setting {
 	/**
 	 * Return setting value.
 	 *
-	 * @access public
-	 *
 	 * @return array Term IDs.
 	 */
 	public function value() {
-		return wp_get_post_terms( $this->post_id, $this->taxonomy, array(
+		$terms = wp_get_post_terms( $this->post_id, $this->taxonomy, array(
 			'fields' => 'ids',
 		) );
+		if ( is_wp_error( $terms ) ) {
+			return array();
+		}
+		return $terms;
 	}
 
 	/**
 	 * Sanitize (and validate) an input.
 	 *
-	 * @access public
-	 *
-	 * @param string $post_terms The value to sanitize.
-	 * @return mixed|WP_Error|null Sanitized post term array or WP_Error if invalid (or null if not WP 4.6-alpha).
+	 * @param array $term_ids The term IDs to sanitize and validate.
+	 * @return array|WP_Error|null Sanitized term IDs array or WP_Error if invalid (or null if not WP 4.6-alpha).
 	 */
-	public function sanitize( $post_terms ) {
+	public function sanitize( $term_ids ) {
 		$has_setting_validation = method_exists( 'WP_Customize_Setting', 'validate' );
 
-		if ( ! is_array( $post_terms ) ) {
+		if ( ! is_array( $term_ids ) ) {
 			return $has_setting_validation ? new WP_Error( 'expected_array', __( 'Expected array value for post terms setting.', 'customize-posts' ) ) : null;
 		}
 
 		/** This filter is documented in wp-includes/class-wp-customize-setting.php */
-		$post_terms = apply_filters( "customize_sanitize_{$this->id}", $post_terms, $this );
+		$term_ids = apply_filters( "customize_sanitize_{$this->id}", $term_ids, $this );
 
-		if ( is_wp_error( $post_terms ) ) {
-			return $has_setting_validation ? $post_terms : null;
+		if ( is_wp_error( $term_ids ) ) {
+			return $has_setting_validation ? $term_ids : null;
 		}
 
-		foreach ( $post_terms as $term_id ) {
+		foreach ( $term_ids as $term_id ) {
 			if ( ! is_numeric( $term_id ) || $term_id <= 0 ) {
 				return $has_setting_validation ? new WP_Error( 'invalid_term_id', __( 'Invalid ID supplied for post terms.', 'customize-posts' ) ) : null;
 			}
 		}
 
-		$post_terms = array_map( 'intval', $post_terms );
-		return $post_terms;
+		$term_ids = array_map( 'intval', $term_ids );
+		return $term_ids;
 	}
 
 	/**
@@ -168,7 +159,6 @@ class WP_Customize_Post_Terms_Setting extends WP_Customize_Setting {
 	 *
 	 * Note that the previewing logic is handled by WP_Customize_Posts_Preview.
 	 *
-	 * @access public
 	 * @see wp_get_object_terms()
 	 *
 	 * @return bool
@@ -187,58 +177,17 @@ class WP_Customize_Post_Terms_Setting extends WP_Customize_Setting {
 	}
 
 	/**
-	 * Update the post.
+	 * Update the post terms.
 	 *
 	 * Please note that the capability check will have already been done.
 	 *
 	 * @see WP_Customize_Setting::save()
 	 *
-	 * @param string $meta_value The value to update.
+	 * @param string $term_ids The value to update.
 	 * @return bool The result of saving the value.
 	 */
-	protected function update( $meta_value ) {
-
-		if ( $this->single ) {
-			$result = update_post_meta( $this->post_id, $this->taxonomy, $meta_value );
-			return ( false !== $result );
-		} else {
-			if ( ! is_array( $meta_value ) ) {
-				return false;
-			}
-
-			// Non Serialized $meta_value Sync to reduce SQL overhead.
-			$meta_update = get_post_meta( $this->post_id, $this->taxonomy, false );
-
-			$delete = array_diff( $meta_update, $meta_value );
-			if ( ! empty( $delete ) ) {
-				$delete = array_values( $delete );
-			}
-
-			$add = array_diff( $meta_value, $meta_update );
-			if ( ! empty( $add ) ) {
-				$add = array_values( $add );
-			}
-
-			$delete_count = count( $delete );
-			$add_count = count( $add );
-
-			// Update is faster than delete + insert (SQL).
-			for ( $i = 0; $i < $delete_count && $i < $add_count; $i ++ ) {
-				update_post_meta( $this->post_id, $this->taxonomy, $add[ $i ], $delete[ $i ] );
-				unset( $add[ $i ], $delete[ $i ] );
-			}
-
-			// Delete if not updated.
-			foreach ( $delete as $id ) {
-				delete_post_meta( $this->post_id, $this->taxonomy, $id );
-			}
-
-			// Add if not updated.
-			foreach ( $add as $item ) {
-				add_post_meta( $this->post_id, $this->taxonomy, $item, false );
-			}
-
-			return true;
-		}
+	protected function update( $term_ids ) {
+		$r = wp_set_post_terms( $this->post_id, $term_ids, $this->taxonomy, false );
+		return ! is_wp_error( $r );
 	}
 }
