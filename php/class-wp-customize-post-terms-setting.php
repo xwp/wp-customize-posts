@@ -115,13 +115,11 @@ class WP_Customize_Post_Terms_Setting extends WP_Customize_Setting {
 	 * @return array Term IDs.
 	 */
 	public function value() {
-		$terms = wp_get_post_terms( $this->post_id, $this->taxonomy, array(
-			'fields' => 'ids',
-		) );
-		if ( is_wp_error( $terms ) ) {
+		$terms = get_the_terms( $this->post_id, $this->taxonomy );
+		if ( ! is_array( $terms ) ) {
 			return array();
 		}
-		return $terms;
+		return wp_list_pluck( $terms, 'term_id' );
 	}
 
 	/**

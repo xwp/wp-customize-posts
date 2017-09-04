@@ -95,7 +95,8 @@ final class WP_Customize_Posts {
 		add_action( 'customize_register', array( $this, 'ensure_static_front_page_constructs_registered' ), 11 );
 		add_action( 'customize_register', array( $this, 'register_constructs' ), 20 );
 		add_filter( 'map_meta_cap', array( $this, 'filter_map_meta_cap' ), 10, 4 );
-		add_action( 'init', array( $this, 'configure_builtins' ), 1 );
+		$this->configure_builtins();
+		add_action( 'init', array( $this, 'configure_builtins' ), 1 ); // Because built-ins get registered twice.
 		add_action( 'init', array( $this, 'register_meta' ), 100 );
 		add_filter( 'customize_dynamic_setting_args', array( $this, 'filter_customize_dynamic_setting_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_setting_class', array( $this, 'filter_customize_dynamic_setting_class' ), 5, 3 );
@@ -542,6 +543,9 @@ final class WP_Customize_Posts {
 			}
 			$taxonomy = get_taxonomy( $matches['taxonomy'] );
 			if ( empty( $taxonomy->show_in_customizer ) ) {
+				return $args;
+			}
+			if ( 'post_format' === $taxonomy->name && ! post_type_supports( $matches['post_type'], 'post-formats' ) ) { // @todo Remove from being hard-coded?
 				return $args;
 			}
 			if ( false === $args ) {

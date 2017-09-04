@@ -227,9 +227,14 @@ class Edit_Post_Preview {
 		} elseif ( empty( $_POST['customize_url'] ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'missing_customize_url' );
-		} elseif ( empty( $_POST['input_data'] ) || ! is_array( $_POST['input_data'] ) ) {
+		} elseif ( empty( $_POST['settings'] ) ) {
 			status_header( 400 );
-			wp_send_json_error( 'missing_input_data' );
+			wp_send_json_error( 'missing_settings' );
+		}
+		$setting_values = json_decode( wp_unslash( $_POST['settings'] ), true );
+		if ( ! is_array( $setting_values ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'invalid_settings' );
 		}
 
 		$previewed_post_id = intval( wp_unslash( $_POST['previewed_post'] ) );
@@ -293,25 +298,21 @@ class Edit_Post_Preview {
 		 */
 		$wp_customize_posts = $wp_customize->posts;
 
-		$settings = $wp_customize_posts->get_settings( array( $previewed_post_id ) );
-		$setting = array_shift( $settings );
-
-		if ( ! $setting ) {
-			status_header( 404 );
-			wp_send_json_error( 'setting_not_found' );
-			return;
-		} elseif ( ! $setting->check_capabilities() ) {
-			status_header( 403 );
-			wp_send_json_error( 'changeset_already_published' );
-			return;
+		if ( ! did_action( 'customize_register' ) ) {
+			remove_action( 'customize_register', array( $wp_customize, 'register_controls' ) );
+			$wp_customize->register_controls(); // Due to race condition with themes that set customize_register priority to 10.
+			do_action( 'customize_register', $wp_customize );
 		}
-		$setting->preview();
+		if ( ! did_action( 'customize_posts_register_meta' ) ) {
+			$wp_customize_posts->register_meta();
+		}
 
-		// Note that save_changeset_post() will handle validation and sanitization.
-		$wp_customize->set_post_value( $setting->id, wp_array_slice_assoc(
-			array_merge( $setting->value(), wp_unslash( $_POST['input_data'] ) ),
-			array_keys( $setting->default )
-		) );
+		$wp_customize->add_dynamic_settings( array_keys( $setting_values ) );
+
+		foreach ( $setting_values as $setting_id => $setting_value ) {
+			$wp_customize->set_post_value( $setting_id, $setting_value );
+		}
+
 		$response = $wp_customize->save_changeset_post();
 		if ( is_wp_error( $response ) ) {
 			wp_send_json_error( $response->get_error_code() );

@@ -486,12 +486,15 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 			'ping_status' => 'closed',
 			'post_author' => $user_id,
 		);
+		$settings = array();
+		$setting_id = "post[post][$post_id]";
+		$settings[ $setting_id ] = $input_data;
 
 		$_POST = wp_slash( array(
 			'customize_posts_update_changeset_nonce' => wp_create_nonce( 'customize_posts_update_changeset' ),
 			'previewed_post' => $post_id,
 			'customize_url' => wp_customize_url(),
-			'input_data' => $input_data,
+			'settings' => wp_json_encode( $settings ),
 		) );
 		$this->make_ajax_call( 'customize_posts_update_changeset' );
 		$response = json_decode( $this->_last_response, true );
@@ -501,8 +504,7 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 		$this->assertArrayHasKey( 'response', $response['data'] );
 		$this->assertArrayHasKey( 'setting_validities', $response['data']['response'] );
 
-		$setting_key = "post[post][$post_id]";
-		$this->assertTrue( $response['data']['response']['setting_validities'][ $setting_key ] );
+		$this->assertTrue( $response['data']['response']['setting_validities'][ $setting_id ] );
 
 		$customize_url_parts = parse_url( $response['data']['customize_url'] );
 		parse_str( $customize_url_parts['query'], $url_query );
@@ -524,7 +526,7 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 		$settings_data = json_decode( $post->post_content, true );
 
 		foreach( $settings_data as $key => $data ) {
-			$this->assertEquals( $setting_key, $key );
+			$this->assertEquals( $setting_id, $key );
 			$this->assertArraySubset( $input_data, $data['value'] );
 		}
 	}

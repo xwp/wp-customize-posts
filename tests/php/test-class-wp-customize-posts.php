@@ -748,11 +748,13 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertEqualSets(
 			array(
 				WP_Customize_Post_Setting::get_post_setting_id( get_post( $published_post_id ) ),
+				WP_Customize_Post_Terms_Setting::get_post_terms_setting_id( get_post( $published_post_id ), 'post_format' ),
 				WP_Customize_Post_Setting::get_post_setting_id( get_post( $trashed_post_id ) ),
+				WP_Customize_Post_Terms_Setting::get_post_terms_setting_id( get_post( $trashed_post_id ), 'post_format' ),
 				WP_Customize_Post_Setting::get_post_setting_id( get_post( $draft_page_id ) ),
 				sprintf( 'nav_menu_item[%s]', $nav_menu_item_id ),
 				WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $published_post_id ), 'baz' ),
-				WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $trashed_post_id ), 'baz' )
+				WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $trashed_post_id ), 'baz' ),
 			),
 			array_keys( $settings_params )
 		);

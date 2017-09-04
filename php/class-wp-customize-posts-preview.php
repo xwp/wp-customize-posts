@@ -1210,7 +1210,11 @@ final class WP_Customize_Posts_Preview {
 			return $terms;
 		}
 
-		/** @var WP_Customize_Post_Terms_Setting $previewed_setting */
+		/**
+		 * Previewed setting.
+		 *
+		 * @var WP_Customize_Post_Terms_Setting $previewed_setting
+		 */
 		$previewed_setting = $this->previewed_post_terms_settings[ $post_id ][ $taxonomy ];
 
 		$post_value = $previewed_setting->post_value( null );
