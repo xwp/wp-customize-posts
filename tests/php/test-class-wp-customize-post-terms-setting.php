@@ -28,6 +28,36 @@ class Test_Customize_Post_Terms_Setting extends WP_UnitTestCase {
 	public $manager;
 
 	/**
+	 * Post IDs for testing.
+	 *
+	 * @var int
+	 */
+	static $post_ids = array();
+
+	/**
+	 * Post tags for testing.
+	 *
+	 * @var array
+	 */
+	static $post_tag_term_ids = array();
+
+	/**
+	 * Create objects for use in tests.
+	 */
+	static function setUpBeforeClass() {
+		parent::setUpBeforeClass();
+
+		self::$post_ids = self::factory()->post->create_many( 3, array( 'post_type' => 'post' ) );
+
+		foreach ( array( 'a', 'b', 'c' ) as $slug ) {
+			self::$post_tag_term_ids[ $slug ] = self::factory()->term->create( array(
+				'taxonomy' => 'post_tag',
+				'name' => $slug,
+			) );
+		};
+	}
+
+	/**
 	 * Set up.
 	 */
 	function setUp() {
@@ -233,32 +263,57 @@ class Test_Customize_Post_Terms_Setting extends WP_UnitTestCase {
 	 * Test previewing.
 	 *
 	 * @covers WP_Customize_Post_Terms_Setting::preview()
+	 * @covers WP_Customize_Posts_Preview::filter_get_the_terms_to_preview()
+	 * @covers WP_Customize_Posts_Preview::filter_wp_get_object_terms_args()
+	 * @covers WP_Customize_Posts_Preview::filter_get_object_terms_to_preview()
 	 */
 	function test_preview() {
-		$post_id = $this->factory()->post->create( array( 'post_type' => 'post') );
-
 		$taxonomy = 'post_tag';
-		$term_id_1 = $this->factory()->term->create( array(
-			'taxonomy' => $taxonomy,
-			'name' => 'Foo',
-		) );
-		$term_id_2 = $this->factory()->term->create( array(
-			'taxonomy' => $taxonomy,
-			'name' => 'Bar',
-		) );
-		$initial_post_terms = array( $term_id_1 );
-		wp_set_post_terms( $post_id, $initial_post_terms, $taxonomy );
+		$initial_post_terms = array( self::$post_tag_term_ids['a'], self::$post_tag_term_ids['b'] );
+		wp_set_post_terms( self::$post_ids[0], $initial_post_terms, $taxonomy );
+		wp_set_post_terms( self::$post_ids[1], array( self::$post_tag_term_ids['b'], self::$post_tag_term_ids['c'] ), $taxonomy );
 
-		$setting_id = WP_Customize_Post_Terms_Setting::get_post_terms_setting_id( get_post( $post_id ), $taxonomy );
-		$previewed_post_terms = array( $term_id_2 );
+		$terms = wp_get_object_terms( array( self::$post_ids[0], self::$post_ids[1] ), 'post_tag', array( 'fields' => 'all_with_object_id' ) );
+		$this->assertEqualSets( array( self::$post_tag_term_ids['a'], self::$post_tag_term_ids['b'], self::$post_tag_term_ids['b'], self::$post_tag_term_ids['c'] ), wp_list_pluck( $terms, 'term_id' ) );
+
+		$setting_id = WP_Customize_Post_Terms_Setting::get_post_terms_setting_id( get_post( self::$post_ids[0] ), $taxonomy );
+		$previewed_post_terms = array( self::$post_tag_term_ids['b'], self::$post_tag_term_ids['c'] );
 		$this->manager->set_post_value( $setting_id, $previewed_post_terms );
 
 		$setting = new WP_Customize_Post_Terms_Setting( $this->manager, $setting_id );
 		$this->assertEquals( $initial_post_terms, $setting->value() );
-		$this->assertEquals( $initial_post_terms, wp_list_pluck( get_the_terms( $post_id, $taxonomy ), 'term_id' ) );
+		$this->assertEquals( $initial_post_terms, wp_list_pluck( get_the_terms( self::$post_ids[0], $taxonomy ), 'term_id' ) );
+		$this->assertEquals( $initial_post_terms, wp_get_post_terms( self::$post_ids[0], $taxonomy, array( 'fields' => 'ids' ) ) );
+		$terms = wp_get_post_terms( self::$post_ids[0], $taxonomy, array( 'fields' => 'all_with_object_id' ) );
+		$this->assertEquals( $initial_post_terms, wp_list_pluck( $terms, 'term_id' ) );
+
+		$this->assertEquals( array( self::$post_tag_term_ids['b'], self::$post_tag_term_ids['a'] ), wp_get_post_terms( self::$post_ids[0], $taxonomy, array(
+			'fields' => 'ids',
+			'orderby' => 'name',
+			'order' => 'DESC',
+		) ) );
+
 		$this->assertTrue( $setting->preview() );
+
 		$this->assertEquals( $previewed_post_terms, $setting->value() );
-		$this->assertEquals( $previewed_post_terms, wp_list_pluck( get_the_terms( $post_id, $taxonomy ), 'term_id' ) );
+		$this->assertEquals( $previewed_post_terms, wp_list_pluck( get_the_terms( self::$post_ids[0], $taxonomy ), 'term_id' ) );
+		$this->assertEquals( $previewed_post_terms, wp_get_post_terms( self::$post_ids[0], $taxonomy, array( 'fields' => 'ids' ) ) );
+		$terms = wp_get_post_terms( self::$post_ids[0], $taxonomy, array( 'fields' => 'all' ) );
+		$this->assertEquals( $previewed_post_terms, wp_list_pluck( $terms, 'term_id' ) );
+		$this->assertObjectNotHasAttribute( 'object_id', $terms[0] );
+		$terms = wp_get_post_terms( self::$post_ids[0], $taxonomy, array( 'fields' => 'all_with_object_id' ) );
+		$this->assertEquals( $previewed_post_terms, wp_list_pluck( $terms, 'term_id' ) );
+		$this->assertObjectHasAttribute( 'object_id', $terms[0] );
+		$this->assertSame( self::$post_ids[0], $terms[0]->object_id );
+
+		$this->assertEquals( array( self::$post_tag_term_ids['c'], self::$post_tag_term_ids['b'] ), wp_get_post_terms( self::$post_ids[0], $taxonomy, array(
+			'fields' => 'ids',
+			'orderby' => 'name',
+			'order' => 'DESC',
+		) ) );
+
+		$terms = wp_get_object_terms( array( self::$post_ids[0], self::$post_ids[1] ), 'post_tag', array( 'fields' => 'all_with_object_id' ) );
+		$this->assertEqualSets( array( self::$post_tag_term_ids['b'], self::$post_tag_term_ids['b'], self::$post_tag_term_ids['c'], self::$post_tag_term_ids['c'] ), wp_list_pluck( $terms, 'term_id' ) );
 	}
 
 	/**
@@ -267,16 +322,10 @@ class Test_Customize_Post_Terms_Setting extends WP_UnitTestCase {
 	 * @covers WP_Customize_Post_Terms_Setting::update()
 	 */
 	function test_update() {
-		$post_id = $this->factory()->post->create( array( 'post_type' => 'post') );
+		$post_id = self::$post_ids[0];
 		$taxonomy = 'post_tag';
-		$term_id_1 = $this->factory()->term->create( array(
-			'taxonomy' => $taxonomy,
-			'name' => 'Foo',
-		) );
-		$term_id_2 = $this->factory()->term->create( array(
-			'taxonomy' => $taxonomy,
-			'name' => 'Bar',
-		) );
+		$term_id_1 = self::$post_tag_term_ids['a'];
+		$term_id_2 = self::$post_tag_term_ids['b'];
 		$initial_post_terms = array( $term_id_1 );
 		wp_set_post_terms( $post_id, $initial_post_terms, $taxonomy );
 

@@ -169,8 +169,6 @@ class WP_Customize_Post_Terms_Setting extends WP_Customize_Setting {
 	 *
 	 * @see get_the_terms()
 	 * @see WP_Customize_Posts_Preview::filter_get_the_terms_to_preview()
-	 * @todo Support is lacking for previewing calls to wp_get_post_terms()/wp_get_object_terms().
-	 * @todo Filtering 'get_object_terms' is dangerous since get_the_terms() will cache the filtered value.
 	 *
 	 * @return bool
 	 */
