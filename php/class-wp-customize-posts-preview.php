@@ -126,7 +126,6 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'the_title', array( $this, 'filter_the_title' ), 1, 2 );
 		add_filter( 'get_post_metadata', array( $this, 'filter_get_post_meta_to_preview' ), 1000, 4 );
 		add_filter( 'get_the_terms', array( $this, 'filter_get_the_terms_to_preview' ), 1, 3 );
-		add_filter( 'wp_get_object_terms_args', array( $this, 'filter_wp_get_object_terms_args' ), 1, 3 );
 		add_filter( 'get_object_terms', array( $this, 'filter_get_object_terms_to_preview' ), 1, 4 );
 		add_filter( 'wp_setup_nav_menu_item', array( $this, 'filter_nav_menu_item_to_set_post_dependent_props' ), 100 );
 		add_filter( 'comments_open', array( $this, 'filter_preview_comments_open' ), 10, 2 );
@@ -1257,26 +1256,11 @@ final class WP_Customize_Posts_Preview {
 	}
 
 	/**
-	 * Filter wp_get_object_terms_args to vary the cache_domain when customizing.
+	 * Whether post terms previewing is suspended.
 	 *
-	 * @param array        $args       An array of arguments for retrieving terms for the given object(s).
-	 * @param int|array    $object_ids Object ID or array of IDs.
-	 * @param string|array $taxonomies The taxonomies to retrieve terms from.
-	 * @return array Args.
+	 * @var bool
 	 */
-	public function filter_wp_get_object_terms_args( $args, $object_ids, $taxonomies ) {
-		$previewed_settings = $this->get_previewed_post_terms_settings( (array) $object_ids, (array) $taxonomies );
-		if ( ! empty( $previewed_settings ) ) {
-			$cache_domain = '';
-			foreach ( $previewed_settings as $previewed_setting ) {
-				$cache_domain .= sprintf( '%s=%s;', $previewed_setting->id, join( ',', $previewed_setting->post_value() ) );
-			}
-			if ( ! empty( $cache_domain ) ) {
-				$args['cache_domain'] = md5( $cache_domain );
-			}
-		}
-		return $args;
-	}
+	public $post_terms_preview_suspended = false;
 
 	/**
 	 * Filter post terms to inject customized value.
@@ -1293,6 +1277,9 @@ final class WP_Customize_Posts_Preview {
 	 * @return array|int Terms.
 	 */
 	public function filter_get_object_terms_to_preview( $terms, $object_ids, $taxonomies, $args ) {
+		if ( $this->post_terms_preview_suspended ) {
+			return $terms;
+		}
 
 		if ( empty( $object_ids ) ) {
 			trigger_error( 'Customize Posts: filter_get_object_terms_to_preview requires one or more object_ids to operate.', E_USER_NOTICE );
@@ -1384,11 +1371,13 @@ final class WP_Customize_Posts_Preview {
 				$object_linked_terms[] = $term;
 			} else {
 				foreach ( $object_ids as $object_id ) {
+					$this->post_terms_preview_suspended = true; // Since has_term() can end up calling wp_get_object_terms().
 					if ( has_term( $term->term_id, $term->taxonomy, $object_id ) ) {
 						$object_term = clone $term;
 						$object_term->object_id = $object_id;
 						$object_linked_terms[] = $object_term;
 					}
+					$this->post_terms_preview_suspended = false;
 				}
 			}
 		}

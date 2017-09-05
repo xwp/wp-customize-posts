@@ -168,6 +168,8 @@ class WP_Customize_Post_Terms_Setting extends WP_Customize_Setting {
 	 * Note that the previewing logic is handled by WP_Customize_Posts_Preview.
 	 *
 	 * @see get_the_terms()
+	 * @see wp_get_post_terms()
+	 * @see wp_get_object_terms()
 	 * @see WP_Customize_Posts_Preview::filter_get_the_terms_to_preview()
 	 *
 	 * @return bool
@@ -176,13 +178,32 @@ class WP_Customize_Post_Terms_Setting extends WP_Customize_Setting {
 		if ( $this->is_previewed ) {
 			return true;
 		}
+		$this->is_previewed = true;
+
+		if ( array_key_exists( $this->id, $this->manager->unsanitized_post_values() ) ) {
+			$this->prime_term_relationships_cache();
+		} else {
+			add_action( "customize_post_value_set_{$this->id}", array( $this, 'prime_term_relationships_cache' ) );
+		}
+
 		if ( ! isset( $this->posts_component->preview->previewed_post_terms_settings[ $this->post_id ] ) ) {
 			$this->posts_component->preview->previewed_post_terms_settings[ $this->post_id ] = array();
 		}
 		$this->posts_component->preview->previewed_post_terms_settings[ $this->post_id ][ $this->taxonomy ] = $this;
 		$this->posts_component->preview->add_preview_filters();
-		$this->is_previewed = true;
 		return true;
+	}
+
+	/**
+	 * Prime the cache to prevent customized state from being cached.
+	 *
+	 * @see get_the_terms()
+	 * @return void
+	 */
+	public function prime_term_relationships_cache() {
+		$this->posts_component->preview->post_terms_preview_suspended = true;
+		get_the_terms( $this->post_id, $this->taxonomy );
+		$this->posts_component->preview->post_terms_preview_suspended = false;
 	}
 
 	/**
