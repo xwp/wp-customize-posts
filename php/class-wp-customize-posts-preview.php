@@ -1197,6 +1197,7 @@ final class WP_Customize_Posts_Preview {
 	 *
 	 * @see WP_Customize_Post_Terms_Setting::preview()
 	 * @see get_the_terms()
+	 * @todo Support is lacking for previewing calls to wp_get_post_terms()/wp_get_object_terms().
 	 *
 	 * @param array|WP_Error $terms    List of attached terms, or WP_Error on failure.
 	 * @param int            $post_id  Post ID.

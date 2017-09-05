@@ -146,6 +146,16 @@ class WP_Customize_Post_Terms_Setting extends WP_Customize_Setting {
 			if ( ! is_numeric( $term_id ) || $term_id <= 0 ) {
 				return $has_setting_validation ? new WP_Error( 'invalid_term_id', __( 'Invalid ID supplied for post terms.', 'customize-posts' ) ) : null;
 			}
+			$term = get_term( $term_id, $this->taxonomy );
+			if ( is_wp_error( $term ) ) {
+				return $has_setting_validation ? $term : null;
+			}
+			if ( ! ( $term instanceof WP_Term ) ) {
+				return $has_setting_validation ? new WP_Error( 'missing_term', __( 'Missing term', 'customize-posts' ) ) : null;
+			}
+			if ( $term->taxonomy !== $this->taxonomy ) {
+				return $has_setting_validation ? new WP_Error( 'term_taxonomy_mismatch', __( 'Supplied term is not for the expected taxonomy', 'customize-posts' ) ) : null;
+			}
 		}
 
 		$term_ids = array_map( 'intval', $term_ids );
@@ -157,7 +167,10 @@ class WP_Customize_Post_Terms_Setting extends WP_Customize_Setting {
 	 *
 	 * Note that the previewing logic is handled by WP_Customize_Posts_Preview.
 	 *
-	 * @see wp_get_object_terms()
+	 * @see get_the_terms()
+	 * @see WP_Customize_Posts_Preview::filter_get_the_terms_to_preview()
+	 * @todo Support is lacking for previewing calls to wp_get_post_terms()/wp_get_object_terms().
+	 * @todo Filtering 'get_object_terms' is dangerous since get_the_terms() will cache the filtered value.
 	 *
 	 * @return bool
 	 */
