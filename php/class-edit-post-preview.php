@@ -310,6 +310,13 @@ class Edit_Post_Preview {
 		$wp_customize->add_dynamic_settings( array_keys( $setting_values ) );
 
 		foreach ( $setting_values as $setting_id => $setting_value ) {
+			$setting = $wp_customize->get_setting( $setting_id );
+			if ( $setting instanceof WP_Customize_Post_Setting ) {
+				$setting_value = wp_array_slice_assoc(
+					array_merge( $setting->value(), $setting_value ),
+					array_keys( $setting->default )
+				);
+			}
 			$wp_customize->set_post_value( $setting_id, $setting_value );
 		}
 
