@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+	<title>Customize Posts QUnit Tests Suite</title>
+
+	<!-- Dependencies -->
+	<script src="../../../../../wp-includes/js/jquery/jquery.js"></script>
+	<script src="../../../../../wp-includes/js/jquery/ui/core.min.js"></script>
+	<script src="../../../../../wp-includes/js/underscore.min.js"></script>
+	<script src="../../../../../wp-includes/js/backbone.min.js"></script>
+	<script src="../../../../../wp-includes/js/wp-backbone.min.js"></script>
+	<script src="../../../../../wp-includes/js/wp-util.min.js"></script>
+	<script src="../../../../../wp-includes/js/wp-a11y.min.js"></script>
+	<script src="../../../../../wp-includes/js/tinymce/tinymce.min.js"></script>
+
+	<!-- QUnit -->
+	<link rel="stylesheet" href="../../node_modules/qunitjs/qunit/qunit.css" type="text/css" media="screen" />
+	<script src="../../node_modules/qunitjs/qunit/qunit.js"></script>
+	<script src="../../node_modules/sinon/pkg/sinon.js"></script>
+</head>
+<body>
+
+	<div id="qunit"></div>
+	<div id="qunit-fixture"></div>
+
+	<!-- Core Files -->
+	<script src="../../../../../wp-includes/js/customize-base.js"></script>
+	<script src="../../../../../wp-includes/js/customize-models.js"></script>
+	<script src="../../../../../wp-admin/js/customize-controls.js"></script>
+
+	<!-- Customize Posts Plugin Files -->
+	<script src='../../js/customize-posts-panel.js'></script>
+	<script src='../../js/customize-dynamic-control.js'></script>
+	<script src='../../js/customize-controls-patched-36521.js'></script>
+	<script src='../../js/customize-post-date-control.js'></script>
+	<script src='../../js/customize-post-status-control.js'></script>
+	<script src='../../js/customize-post-editor-control.js'></script>
+	<script src='../../js/customize-post-section.js'></script>
+	<script src='../../js/customize-posts.js'></script>
+
+	<!-- Unit tests -->
+	<script src="js/customize-qunit-tests.js"></script>
+
+</body>
+</html>
