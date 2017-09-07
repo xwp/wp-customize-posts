@@ -93,7 +93,7 @@ class WP_Customize_Posts_Panel extends WP_Customize_Panel {
 			<# } else if ( data.text ) { #>
 				{{ data.text }}
 			<# } else { #>
-				<em><?php esc_html_e( '(No title)', 'customize-posts' ); ?></em>
+				<em><?php esc_html_e( '(no title)', 'default' ); ?></em>
 			<# } #>
 		</script>
 
