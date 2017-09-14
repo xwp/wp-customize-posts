@@ -117,7 +117,7 @@ module.exports = function( grunt ) {
 
 		// QUnit tests.
 		qunit: {
-			all: [ 'tests/qunit/*.html']
+			all: [ 'tests/qunit/index.html']
 		}
 
 	} );
