@@ -1050,6 +1050,18 @@ final class WP_Customize_Posts {
 			</button>
 		</script>
 
+		<script type="text/html" id="tmpl-customize-post-field-notification">
+			<li class="notice notice-{{ data.type || 'info' }} {{ data.altNotice ? 'notice-alt' : '' }}" data-code="{{ data.code }}" data-type="{{ data.type }}">
+				<# if ( /post_update_conflict/.test( data.code ) ) { #>
+					<button class="button override-post-conflict" type="button"><?php esc_html_e( 'Override', 'customize-posts' ); ?></button>
+				<# } #>
+				{{ data.message || data.code }}
+			</li>
+		</script>
+
+		<?php
+		// The following template is obsolete as of WordPress 4.9.
+		?>
 		<script type="text/html" id="tmpl-customize-post-section-notifications">
 			<ul>
 				<# _.each( data.notifications, function( notification ) { #>
