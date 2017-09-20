@@ -826,36 +826,26 @@
 		},
 
 		/**
-		 * Set up section notifications.
+		 * Polyfill notifications API onto sections if not yet on WordPress 4.9 where it is defined in core.
 		 *
+		 * @link <https://core.trac.wordpress.org/ticket/38794>
 		 * @returns {void}
 		 */
-		setupSectionNotifications: function() {
-			var section = this, setting = api( section.id ), debouncedRenderNotifications, setPageForPostsNotice;
-			if ( ! setting.notifications ) {
+		polyfillNotifications: function() {
+			var section = this, debouncedRenderNotifications;
+			if ( section.notifications ) {
 				return;
 			}
 
-			// Add the notifications API.
 			section.notifications = new api.Values({ defaultConstructor: api.Notification });
 			section.notificationsContainer = $( '<div class="customize-control-notifications-container"></div>' );
+			section.notifications.container = section.notificationsContainer;
 			section.notificationsTemplate = wp.template( 'customize-post-section-notifications' );
 			section.container.find( '.customize-section-title' ).after( section.notificationsContainer );
 			section.getNotificationsContainerElement = function() {
 				return section.notificationsContainer;
 			};
 			section.renderNotifications = api.Control.prototype.renderNotifications;
-
-			// Sync setting notifications into the section notifications
-			setting.notifications.bind( 'add', function( settingNotification ) {
-				var notification = new api.Notification( setting.id + ':' + settingNotification.code, settingNotification );
-				if ( ! settingNotification.data || ! settingNotification.data.setting_property || ! api.control.has( section.id + '[' + settingNotification.data.setting_property + ']' ) ) {
-					section.notifications.add( notification.code, notification );
-				}
-			} );
-			setting.notifications.bind( 'remove', function( settingNotification ) {
-				section.notifications.remove( setting.id + ':' + settingNotification.code );
-			} );
 
 			/*
 			 * Render notifications when the collection is updated.
@@ -872,9 +862,40 @@
 			} );
 			section.notifications.bind( 'remove', debouncedRenderNotifications );
 			section.renderNotifications();
+		},
+
+		/**
+		 * Set up section notifications.
+		 *
+		 * @returns {void}
+		 */
+		setupSectionNotifications: function() {
+			var section = this, setting = api( section.id ), setPageForPostsNotice, notificationTemplate;
+			if ( ! setting.notifications ) {
+				return;
+			}
+
+			// Add the notifications API if not present.
+			section.polyfillNotifications();
+
+			// Sync setting notifications into the section notifications
+			setting.notifications.bind( 'add', function( settingNotification ) {
+				var notification = new api.Notification( setting.id + ':' + settingNotification.code, _.extend( {},
+					settingNotification,
+					{
+						template: notificationTemplate
+					}
+				) );
+				if ( ! settingNotification.data || ! settingNotification.data.setting_property || ! api.control.has( section.id + '[' + settingNotification.data.setting_property + ']' ) ) {
+					section.notifications.add( notification.code, notification );
+				}
+			} );
+			setting.notifications.bind( 'remove', function( settingNotification ) {
+				section.notifications.remove( setting.id + ':' + settingNotification.code );
+			} );
 
 			// Dismiss conflict block when clicking on button.
-			section.notificationsContainer.on( 'click', '.override-post-conflict', function( e ) {
+			section.notifications.container.on( 'click', '.override-post-conflict', function( e ) {
 				var ourValue;
 				e.preventDefault();
 				ourValue = _.clone( setting.get() );
@@ -890,6 +911,7 @@
 			} );
 
 			// Detect conflict errors.
+			notificationTemplate = wp.template( 'customize-post-field-notification' );
 			api.bind( 'error', function( response ) {
 				var theirValue, ourValue,
 					conflictedControls = [];
