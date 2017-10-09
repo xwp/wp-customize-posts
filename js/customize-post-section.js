@@ -307,16 +307,17 @@
 		 * unless the notification is specifically for this control's setting property.
 		 *
 		 * @this {wp.customize.Control}
-		 * @param {string} code                            Notification code.
-		 * @param {wp.customize.Notification} notification Notification object.
+		 * @param {string|wp.customize.Notification} notification - Notification object to add. Alternatively code may be supplied, and in that case the second notificationObject argument must be supplied.
+		 * @param {wp.customize.Notification} [notificationObject] - Notification to add when first argument is the code string.
 		 * @returns {wp.customize.Notification|null} Notification if not bypassed.
 		 */
-		addPostFieldControlNotification: function addPostFieldControlNotification( code, notification ) {
-			var isSettingNotification, isSettingPropertyNotification;
+		addPostFieldControlNotification: function addPostFieldControlNotification( notification, notificationObject ) {
+			var isSettingNotification, isSettingPropertyNotification, code;
+			code = 'string' === typeof notification ? notification : notification.code;
 			isSettingNotification = -1 !== code.indexOf( ':' ) || notification.setting; // Note that sniffing for ':' is deprecated as of #36944 & #37890.
 			isSettingPropertyNotification = notification.data && notification.data.setting_property === this.setting_property;
 			if ( isSettingPropertyNotification || ! isSettingNotification ) {
-				return api.Values.prototype.add.call( this, code, notification );
+				return ( api.Notifications || api.Values ).prototype.add.call( this, notification, notificationObject );
 			} else {
 				return null;
 			}
