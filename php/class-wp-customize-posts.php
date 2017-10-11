@@ -655,7 +655,8 @@ final class WP_Customize_Posts {
 			foreach ( (array) $users as $user ) {
 				$choices[] = array(
 					'value' => (int) $user->ID,
-					'text'  => sprintf( _x( '%1$s (%2$s)', 'user dropdown', 'customize-posts' ), $user->display_name, $user->user_login ),
+					/* translators: 1: display name, 2: user login */
+					'text'  => sprintf( _x( '%1$s (%2$s)', 'user dropdown', 'default' ), $user->display_name, $user->user_login ),
 				);
 			}
 		}
@@ -680,7 +681,7 @@ final class WP_Customize_Posts {
 			$month_text = $wp_locale->get_month_abbrev( $wp_locale->get_month( $i ) );
 
 			/* translators: 1: month number, 2: month abbreviation */
-			$months[ $i ]['text'] = sprintf( __( '%1$s-%2$s', 'customize-posts' ), $month_number, $month_text );
+			$months[ $i ]['text'] = sprintf( __( '%1$s-%2$s', 'default' ), $month_number, $month_text );
 			$months[ $i ]['value'] = $month_number;
 		}
 		return $months;
@@ -820,10 +821,10 @@ final class WP_Customize_Posts {
 				'fieldSlugLabel' => __( 'Slug', 'customize-posts' ),
 				'fieldStatusLabel' => __( 'Status', 'customize-posts' ),
 				'fieldDateLabel' => __( 'Date', 'customize-posts' ),
-				'fieldContentLabel' => __( 'Content', 'customize-posts' ),
+				'fieldContentLabel' => __( 'Content', 'default' ),
 				'fieldExcerptLabel' => __( 'Excerpt', 'customize-posts' ),
 				'fieldDiscussionLabel' => __( 'Discussion', 'customize-posts' ),
-				'fieldAuthorLabel' => __( 'Author', 'customize-posts' ),
+				'fieldAuthorLabel' => __( 'Author', 'default' ),
 				'fieldParentLabel' => __( 'Parent', 'customize-posts' ),
 				'fieldOrderLabel' => __( 'Order', 'customize-posts' ),
 				'noTitle' => __( '(no title)', 'customize-posts' ),
@@ -1450,7 +1451,8 @@ final class WP_Customize_Posts {
 		if ( is_wp_error( $r ) ) {
 			$error = $r;
 			$data = array(
-				'message' => sprintf( __( '%1$s could not be created: %2$s', 'customize-posts' ), $singular_name, $error->get_error_message() ),
+				/* translators: 1: singular post name, 2: error message */
+				'message' => sprintf( __( '%1$s could not be created: %2$s', 'default' ), $singular_name, $error->get_error_message() ),
 			);
 			wp_send_json_error( $data );
 		}

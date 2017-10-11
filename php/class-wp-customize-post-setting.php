@@ -345,7 +345,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 
 		/** This filter is documented in wp-includes/post.php */
 		if ( 'trash' !== $post_data['post_status'] && apply_filters( 'wp_insert_post_empty_content', $maybe_empty, $post_data ) ) {
-			return $has_setting_validation ? new WP_Error( 'empty_content', __( 'Content, title, and excerpt are empty.', 'customize-posts' ), array( 'setting_property' => 'post_content' ) ) : null;
+			return $has_setting_validation ? new WP_Error( 'empty_content', __( 'Content, title, and excerpt are empty.', 'default' ), array( 'setting_property' => 'post_content' ) ) : null;
 		}
 
 		if ( empty( $post_data['post_status'] ) ) {
