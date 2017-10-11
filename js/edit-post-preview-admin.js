@@ -38,7 +38,8 @@ var EditPostPreviewAdmin = (function( $ ) {
 			wasMobile,
 			parentId,
 			menuOrder,
-			request;
+			request,
+			postFormat;
 
 		event.preventDefault();
 
@@ -75,8 +76,16 @@ var EditPostPreviewAdmin = (function( $ ) {
 			ping_status: $( '#ping_status' ).prop( 'checked' ) ? 'open' : 'closed',
 			post_author: parseInt( $( '#post_author_override' ).val(), 10 )
 		};
-		postSettingId = 'post[' + postType + '][' + postId + ']';
+		postSettingId = 'post[' + postType + '][' + String( postId ) + ']';
 		settings[ postSettingId ] = postSettingValue;
+
+		postFormat = $( '#post-formats-select input[name=post_format]:checked' ).val();
+		if ( '0' === postFormat ) {
+			postFormat = 'standard';
+		}
+		if ( postFormat ) {
+			settings[ 'post_terms[' + postType + '][' + String( postId ) + '][post_format]' ] = postFormat;
+		}
 
 		// Allow plugins to inject additional settings to preview.
 		wp.customize.trigger( 'settings-from-edit-post-screen', settings );
@@ -86,7 +95,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 			sessionStorage.setItem( 'previewedCustomizePostSettings[' + postId + ']', JSON.stringify( settings ) );
 			wp.customize.Loader.open( component.data.customize_url );
 			wp.customize.Loader.settings.browser.mobile = wasMobile;
-			component.bindChangesFromCustomizer( postSettingId, editor );
+			component.bindChangesFromCustomizer( postId, postType, editor );
 		} else {
 			$btn.addClass( 'disabled' );
 			component.previewButtonSpinner.addClass( 'is-active is-active-preview' );
@@ -94,7 +103,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 				customize_posts_update_changeset_nonce: component.data.customize_posts_update_changeset_nonce,
 				previewed_post: component.data.previewed_post,
 				customize_url: component.data.customize_url,
-				input_data: postSettingValue
+				settings: JSON.stringify( settings )
 			} );
 
 			request.fail( function( resp ) {
@@ -108,7 +117,7 @@ var EditPostPreviewAdmin = (function( $ ) {
 			request.done( function( resp ) {
 				wp.customize.Loader.open( resp.customize_url );
 				wp.customize.Loader.settings.browser.mobile = wasMobile;
-				component.bindChangesFromCustomizer( postSettingId, editor );
+				component.bindChangesFromCustomizer( postId, postType, editor );
 			} );
 
 			request.always( function() {
@@ -121,13 +130,17 @@ var EditPostPreviewAdmin = (function( $ ) {
 	/**
 	 * Sync changes from the Customizer to the post input fields.
 	 *
-	 * @param {string} postSettingId post setting id.
-	 * @param {object} editor Tinymce object.
+	 * @param {int}    postId   - Post ID.
+	 * @param {string} postType - Post type.
+	 * @param {object} editor   - Tinymce object.
 	 * @return {void}
 	 */
-	component.bindChangesFromCustomizer = function( postSettingId, editor ) {
+	component.bindChangesFromCustomizer = function( postId, postType, editor ) {
+		var postSettingId, postFormatSettingId;
+		postSettingId = 'post[' + postType + '][' + String( postId ) + ']';
+		postFormatSettingId = 'post_terms[' + postType + '][' + String( postId ) + '][post_format]';
 		wp.customize.Loader.messenger.bind( 'customize-post-settings-data', function( data ) {
-			var settingParentId;
+			var settingParentId, postFormatRadioSelector;
 			if ( data[ postSettingId ] ) {
 				$( '#title' ).val( data[ postSettingId ].post_title ).trigger( 'change' );
 				if ( editor ) {
@@ -146,6 +159,14 @@ var EditPostPreviewAdmin = (function( $ ) {
 				$( '#menu_order' ).val( String( data[ postSettingId ].menu_order ) ).trigger( 'change' );
 				$( '#new-post-slug' ).val( data[ postSettingId ].post_name );
 				$( '#editable-post-name, #editable-post-name-full' ).text( data[ postSettingId ].post_name );
+			}
+			if ( data[ postFormatSettingId ] ) {
+				if ( 'standard' === data[ postFormatSettingId ] ) {
+					postFormatRadioSelector = '#post-format-0';
+				} else {
+					postFormatRadioSelector = '#post-format-' + data[ postFormatSettingId ];
+				}
+				$( postFormatRadioSelector ).prop( 'checked', true ).trigger( 'change' );
 			}
 
 			// Let plugins handle updates.

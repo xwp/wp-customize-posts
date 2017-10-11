@@ -67,7 +67,7 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 	public $posts_component;
 
 	/**
-	 * WP_Customize_Post_Setting constructor.
+	 * WP_Customize_Postmeta_Setting constructor.
 	 *
 	 * @access public
 	 *

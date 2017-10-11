@@ -170,7 +170,7 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 	/**
 	 * Test post type descriptions for built-in post types gets set.
 	 *
-	 * @see WP_Customize_Posts::configure_builtin_post_types()
+	 * @see WP_Customize_Posts::configure_builtins()
 	 */
 	public function test_configure_builtin_post_types() {
 		global $wp_post_types;
@@ -183,14 +183,14 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertEmpty( $wp_post_types['page']->description );
 		$this->assertObjectNotHasAttribute( 'show_in_customizer', $wp_post_types['attachment'] );
 
-		$this->posts->configure_builtin_post_types();
+		$this->posts->configure_builtins();
 
 		$this->assertNotEmpty( $wp_post_types['post']->description );
 		$this->assertNotEmpty( $wp_post_types['page']->description );
 		$this->assertFalse( $wp_post_types['attachment']->show_in_customizer );
 
 		$wp_post_types['attachment']->show_in_customizer = true;
-		$this->posts->configure_builtin_post_types();
+		$this->posts->configure_builtins();
 		$this->assertTrue( $wp_post_types['attachment']->show_in_customizer );
 	}
 
@@ -748,11 +748,13 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		$this->assertEqualSets(
 			array(
 				WP_Customize_Post_Setting::get_post_setting_id( get_post( $published_post_id ) ),
+				WP_Customize_Post_Terms_Setting::get_post_terms_setting_id( get_post( $published_post_id ), 'post_format' ),
 				WP_Customize_Post_Setting::get_post_setting_id( get_post( $trashed_post_id ) ),
+				WP_Customize_Post_Terms_Setting::get_post_terms_setting_id( get_post( $trashed_post_id ), 'post_format' ),
 				WP_Customize_Post_Setting::get_post_setting_id( get_post( $draft_page_id ) ),
 				sprintf( 'nav_menu_item[%s]', $nav_menu_item_id ),
 				WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $published_post_id ), 'baz' ),
-				WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $trashed_post_id ), 'baz' )
+				WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $trashed_post_id ), 'baz' ),
 			),
 			array_keys( $settings_params )
 		);

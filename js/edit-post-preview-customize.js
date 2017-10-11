@@ -101,13 +101,11 @@ var EditPostPreviewCustomize = (function( $, api ) {
 		} );
 
 		// Start listening to changes to the post and postmeta.
-		api( 'post[' + component.data.previewed_post.post_type + '][' + component.data.previewed_post.ID + ']', function( setting ) {
-			setting.bind( function( data ) {
-				var settings = {};
-				settings[ setting.id ] = data;
-				component.sendSettingsToEditPostScreen( settings );
-			} );
-		} );
+		api.bind( 'change', function( setting ) {
+			var settings = {};
+			settings[ setting.id ] = setting.get();
+			component.sendSettingsToEditPostScreen( settings );
+		});
 
 		component.parentFrame.send( 'customize-post-preview-ready' );
 	};

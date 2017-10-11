@@ -80,6 +80,8 @@ final class WP_Customize_Posts {
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-discussion-fields-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-setting.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-postmeta-setting.php';
+		require_once dirname( __FILE__ ) . '/class-wp-customize-post-terms-setting.php';
+		require_once dirname( __FILE__ ) . '/class-wp-customize-post-format-setting.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-date-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-status-control.php';
 		require_once dirname( __FILE__ ) . '/class-wp-customize-post-editor-control.php';
@@ -93,6 +95,8 @@ final class WP_Customize_Posts {
 		add_action( 'customize_register', array( $this, 'ensure_static_front_page_constructs_registered' ), 11 );
 		add_action( 'customize_register', array( $this, 'register_constructs' ), 20 );
 		add_filter( 'map_meta_cap', array( $this, 'filter_map_meta_cap' ), 10, 4 );
+		$this->configure_builtins();
+		add_action( 'init', array( $this, 'configure_builtins' ), 1 ); // Because built-ins get registered twice.
 		add_action( 'init', array( $this, 'register_meta' ), 100 );
 		add_filter( 'customize_dynamic_setting_args', array( $this, 'filter_customize_dynamic_setting_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_setting_class', array( $this, 'filter_customize_dynamic_setting_class' ), 5, 3 );
@@ -212,10 +216,12 @@ final class WP_Customize_Posts {
 	}
 
 	/**
+	 * Configure built-in core post types and taxonomies.
+	 *
 	 * Set missing post type descriptions for built-in post types and explicitly disallow attachments in customizer UI.
 	 */
-	public function configure_builtin_post_types() {
-		global $wp_post_types;
+	public function configure_builtins() {
+		global $wp_post_types, $wp_taxonomies;
 		if ( post_type_exists( 'post' ) && empty( $wp_post_types['post']->description ) ) {
 			$wp_post_types['post']->description = __( 'Posts are entries listed in reverse chronological order, usually on the site homepage or on a dedicated posts page. Posts can be organized by tags or categories.', 'customize-posts' );
 		}
@@ -224,6 +230,13 @@ final class WP_Customize_Posts {
 		}
 		if ( post_type_exists( 'attachment' ) && ! isset( $wp_post_types['attachment']->show_in_customizer ) ) {
 			$wp_post_types['attachment']->show_in_customizer = false;
+		}
+
+		if ( taxonomy_exists( 'post_format' ) ) {
+			if ( ! isset( $wp_taxonomies['post_format']->show_in_customizer ) ) {
+				$wp_taxonomies['post_format']->show_in_customizer = true;
+			}
+			$wp_taxonomies['post_format']->customize_setting_class = 'WP_Customize_Post_Format_Setting';
 		}
 	}
 
@@ -251,7 +264,7 @@ final class WP_Customize_Posts {
 				'sanitize_callback' => null,
 				'sanitize_js_callback' => null,
 				'validate_callback' => null,
-				'setting_class' => 'WP_Customize_Postmeta_Setting',
+				'setting_class' => 'WP_Customize_Postmeta_Setting', // @todo Rename to customize_setting_class?
 			),
 			$setting_args
 		);
@@ -438,7 +451,6 @@ final class WP_Customize_Posts {
 		$panel_priority = 900; // Before widgets.
 
 		// Note that this does not include nav_menu_item.
-		$this->configure_builtin_post_types();
 		foreach ( $this->get_post_types() as $post_type_object ) {
 			if ( empty( $post_type_object->show_in_customizer ) ) {
 				continue;
@@ -525,6 +537,28 @@ final class WP_Customize_Posts {
 				$registered
 			);
 			$args['type'] = 'postmeta';
+		} elseif ( preg_match( WP_Customize_Post_Terms_Setting::SETTING_ID_PATTERN, $setting_id, $matches ) ) {
+			if ( ! post_type_exists( $matches['post_type'] ) || ! taxonomy_exists( $matches['taxonomy'] ) ) {
+				return $args;
+			}
+			$taxonomy = get_taxonomy( $matches['taxonomy'] );
+			if ( empty( $taxonomy->show_in_customizer ) ) {
+				return $args;
+			}
+			if ( 'post_format' === $taxonomy->name && ! post_type_supports( $matches['post_type'], 'post-formats' ) ) { // @todo Remove from being hard-coded?
+				return $args;
+			}
+			if ( false === $args ) {
+				$args = array();
+			}
+			if ( isset( $taxonomy->customize_setting_type ) ) {
+				$args['type'] = $taxonomy->customize_setting_type;
+			} else {
+				$args['type'] = 'post_terms';
+			}
+			if ( isset( $taxonomy->customize_setting_class ) ) {
+				$args['setting_class'] = $taxonomy->customize_setting_class;
+			}
 		}
 
 		return $args;
@@ -541,15 +575,15 @@ final class WP_Customize_Posts {
 	 */
 	public function filter_customize_dynamic_setting_class( $class, $setting_id, $args ) {
 		unset( $setting_id );
-		if ( isset( $args['type'] ) ) {
+		if ( isset( $args['setting_class'] ) ) {
+			$class = $args['setting_class'];
+		} elseif ( isset( $args['type'] ) ) {
 			if ( 'post' === $args['type'] ) {
 				$class = 'WP_Customize_Post_Setting';
 			} elseif ( 'postmeta' === $args['type'] ) {
-				if ( isset( $args['setting_class'] ) ) {
-					$class = $args['setting_class'];
-				} else {
-					$class = 'WP_Customize_Postmeta_Setting';
-				}
+				$class = 'WP_Customize_Postmeta_Setting';
+			} elseif ( 'post_terms' === $args['type'] ) {
+				$class = 'WP_Customize_Post_Terms_Setting';
 			}
 		}
 		return $class;
@@ -598,6 +632,24 @@ final class WP_Customize_Posts {
 			}
 			$this->manager->add_dynamic_settings( $setting_ids );
 		}
+		return $setting_ids;
+	}
+
+	/**
+	 * Add all post terms settings for all taxonomies that support showing in Customizer.
+	 *
+	 * @param WP_Post $post Post.
+	 * @return array
+	 */
+	public function register_post_terms_settings( $post ) {
+		$setting_ids = array();
+		foreach ( get_taxonomies( array(), 'objects' ) as $taxonomy ) {
+			if ( empty( $taxonomy->show_in_customizer ) ) {
+				continue;
+			}
+			$setting_ids[] = WP_Customize_Post_Terms_Setting::get_post_terms_setting_id( $post, $taxonomy->name );
+		}
+		$this->manager->add_dynamic_settings( $setting_ids );
 		return $setting_ids;
 	}
 
@@ -757,7 +809,7 @@ final class WP_Customize_Posts {
 		$response['saved_post_setting_values'] = array();
 		foreach ( array_keys( $this->manager->unsanitized_post_values() ) as $setting_id ) {
 			$setting = $this->manager->get_setting( $setting_id );
-			if ( ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting ) && get_post( $setting->post_id ) ) {
+			if ( ( $setting instanceof WP_Customize_Post_Setting || $setting instanceof WP_Customize_Postmeta_Setting || $setting instanceof WP_Customize_Post_Terms_Setting ) && get_post( $setting->post_id ) ) {
 				$response['saved_post_setting_values'][ $setting->id ] = $setting->js_value();
 			}
 		}
@@ -806,7 +858,16 @@ final class WP_Customize_Posts {
 			);
 		}
 
+		$theme_supports = array();
+		if ( current_theme_supports( 'post-formats' ) ) {
+			$theme_support = get_theme_support( 'post-formats' );
+			if ( isset( $theme_support[0] ) && is_array( $theme_support[0] ) ) {
+				$theme_supports['post-formats'] = $theme_support[0];
+			}
+		}
+
 		$exports = array(
+			'themeSupports' => $theme_supports,
 			'postTypes' => $post_types,
 			'postStatusChoices' => $this->get_post_status_choices(),
 			'authorChoices' => $this->get_author_choices(), // @todo Use Ajax to fetch this data or Customize Object Selector (once it supports users).
@@ -824,9 +885,11 @@ final class WP_Customize_Posts {
 				'fieldExcerptLabel' => __( 'Excerpt', 'customize-posts' ),
 				'fieldDiscussionLabel' => __( 'Discussion', 'customize-posts' ),
 				'fieldAuthorLabel' => __( 'Author', 'customize-posts' ),
+				'fieldPostFormatLabel' => __( 'Post Format', 'customize-posts' ),
 				'fieldParentLabel' => __( 'Parent', 'customize-posts' ),
 				'fieldOrderLabel' => __( 'Order', 'customize-posts' ),
 				'noTitle' => __( '(no title)', 'customize-posts' ),
+				/* translators: placeholder is conflicted value */
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
 				'openEditor' => __( 'Open Editor', 'customize-posts' ), // @todo Move this into editor control?
 				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
@@ -839,6 +902,7 @@ final class WP_Customize_Posts {
 				'editPostFailure' => __( 'Failed to open for editing.', 'customize-posts' ),
 				'createPostFailure' => __( 'Failed to create for editing.', 'customize-posts' ),
 				'installCustomizeObjectSelector' => sprintf(
+					/* translators: placeholder is link to Customize Object Selector plugin */
 					__( 'This control depends on having the %s plugin installed and activated.', 'customize-posts' ),
 					sprintf(
 						'<a href="%s" target="_blank">%s</a>',
@@ -850,6 +914,7 @@ final class WP_Customize_Posts {
 
 				/* translators: %s post type */
 				'jumpToPostPlaceholder' => __( 'Jump to %s', 'customize-posts' ),
+				'postFormatStrings' => get_post_format_strings(),
 			),
 		);
 
@@ -1327,10 +1392,10 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Get post/postmeta settings for the given post IDs.
+	 * Get post/postmeta/post_terms settings for the given post IDs.
 	 *
 	 * @param int[] $post_ids Post IDs.
-	 * @return WP_Customize_Post_Setting[]|WP_Customize_Postmeta_Setting[] Settings.
+	 * @return WP_Customize_Post_Setting[]|WP_Customize_Postmeta_Setting[]|WP_Customize_Post_Terms_Setting[]|WP_Customize_Nav_Menu_Item_Setting[] Settings.
 	 */
 	public function get_settings( array $post_ids ) {
 		$query = new WP_Query( array(
@@ -1351,6 +1416,7 @@ final class WP_Customize_Posts {
 		$this->manager->add_dynamic_settings( $post_setting_ids );
 		foreach ( $query->posts as $post ) {
 			$this->register_post_type_meta_settings( $post );
+			$this->register_post_terms_settings( $post );
 		}
 		$settings = array();
 		foreach ( $this->manager->settings() as $setting ) {
@@ -1358,6 +1424,8 @@ final class WP_Customize_Posts {
 				$setting instanceof WP_Customize_Post_Setting
 				||
 				$setting instanceof WP_Customize_Postmeta_Setting
+				||
+				$setting instanceof WP_Customize_Post_Terms_Setting
 				||
 				$setting instanceof WP_Customize_Nav_Menu_Item_Setting
 			);
@@ -1483,7 +1551,7 @@ final class WP_Customize_Posts {
 	}
 
 	/**
-	 * Handle ajax request for lazy-loaded post/postmeta settings.
+	 * Handle ajax request for lazy-loaded post/postmeta/post_terms settings.
 	 *
 	 * @action wp_ajax_customize-posts-fetch-settings
 	 * @access public
