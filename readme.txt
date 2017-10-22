@@ -1,7 +1,7 @@
 === Customize Posts ===
 Contributors:      xwp, westonruter, valendesigns, sayedwp, utkarshpatel.
 Tags:              customizer, customize, posts, postmeta, editor, preview, featured-image, page-template
-Requires at least: 4.5.0
+Requires at least: 4.7.0
 Tested up to:      4.9.0
 Stable tag:        0.8.7
 License:           GPLv2 or later
