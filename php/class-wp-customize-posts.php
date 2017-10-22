@@ -1184,7 +1184,7 @@ final class WP_Customize_Posts {
 				continue;
 			}
 			$post = get_post( $post_id );
-			if ( 'auto-draft' !== $post->post_status && 'customize-draft' !== $post->post_status ) { // This is the patched line.
+			if ( 'auto-draft' !== $post->post_status && 'draft' !== $post->post_status && 'customize-draft' !== $post->post_status ) { // This is the patched line.
 				continue;
 			}
 			$post_type_obj = get_post_type_object( $post->post_type );
