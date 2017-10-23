@@ -1462,7 +1462,7 @@ final class WP_Customize_Posts_Preview {
 		// Abort if the partial render request isn't for a post field partial.
 		$requesting_post_field_partial = false;
 		foreach ( array_keys( $partials ) as $partial_id ) {
-			if ( $selective_refresh->get_partial( $partial_id ) instanceof \WP_Customize_Post_Field_Partial ) {
+			if ( $selective_refresh->get_partial( $partial_id ) instanceof WP_Customize_Post_Field_Partial ) {
 				$requesting_post_field_partial = true;
 				break;
 			}
@@ -1474,7 +1474,7 @@ final class WP_Customize_Posts_Preview {
 		// Gather the customized posts by type.
 		$posts_by_type = array();
 		foreach ( $selective_refresh->manager->settings() as $setting ) {
-			if ( $setting instanceof \WP_Customize_Post_Setting ) {
+			if ( $setting instanceof WP_Customize_Post_Setting ) {
 				if ( ! isset( $posts_by_type[ $setting->post_type ] ) ) {
 					$posts_by_type[ $setting->post_type ] = array();
 				}
@@ -1497,7 +1497,7 @@ final class WP_Customize_Posts_Preview {
 			}
 
 			// @todo Do a separate request for each post individually to improve performance?
-			$request = new \WP_REST_Request( 'GET', '/wp/v2/' . $post_type_object->rest_base );
+			$request = new WP_REST_Request( 'GET', '/wp/v2/' . $post_type_object->rest_base );
 			$request->set_query_params( array(
 				'per_page' => 100,
 				'include' => wp_list_pluck( $posts, 'ID' ),
