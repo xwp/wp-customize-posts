@@ -17,7 +17,7 @@ language:
   - node_js
 
 php:
-  - 5.3
+  - 5.2
   - 7.0
 
 env:
