@@ -23,6 +23,13 @@
 	<rule ref="Generic.Formatting.MultipleStatementAlignment.NotSameWarning">
 		<severity>0</severity>
 	</rule>
+	<rule ref="WordPress.Arrays.MultipleStatementAlignment.DoubleArrowNotAligned">
+		<severity>0</severity>
+	</rule>
+
+	<arg name="extensions" value="php"/>
+	<arg value="s"/>
+	<file>.</file>
 
 	<exclude-pattern>*/dev-lib/*</exclude-pattern>
 	<exclude-pattern>*/node_modules/*</exclude-pattern>

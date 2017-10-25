@@ -303,6 +303,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			if ( $locked_user ) {
 				$user = get_user_by( 'ID', $locked_user );
 				$error_message = sprintf(
+					/* translators: %s is user display name */
 					__( 'Post is currently locked by %s.', 'customize-posts' ),
 					$user ? $user->display_name : __( '(unknown user)', 'customize-posts' )
 				);
@@ -323,6 +324,7 @@ class WP_Customize_Post_Setting extends WP_Customize_Setting {
 			if ( $is_update_conflict ) {
 				$user = get_user_by( 'ID', get_post_meta( $this->post_id, '_edit_last', true ) );
 				$error_message = sprintf(
+					/* translators: %s is user display name */
 					__( 'Conflict due to concurrent post update by %s.', 'customize-posts' ),
 					$user ? $user->display_name : __( '(unknown user)', 'customize-posts' )
 				);

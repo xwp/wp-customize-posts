@@ -404,7 +404,7 @@ class WP_Customize_Featured_Image_Controller extends WP_Customize_Postmeta_Contr
 		 * and the meta is registered wit WP_Customize_Featured_Image_Controller::sanitize_value() as the sanitize_callback().
 		 * So $attachment_id is either a valid attachment ID, -1, or false.
 		 */
-		if ( ! $is_valid  ) {
+		if ( ! $is_valid ) {
 			return $has_setting_validation ? new WP_Error( 'invalid_attachment_id', __( 'The attachment is invalid.', 'customize-posts' ) ) : null;
 		}
 

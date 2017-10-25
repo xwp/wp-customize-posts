@@ -60,14 +60,14 @@ class WP_Customize_Post_Editor_Control extends WP_Customize_Dynamic_Control {
 		$data = $this->json();
 		?>
 		<#
-		_.defaults( data, <?php echo wp_json_encode( $data ) ?> );
+		_.defaults( data, <?php echo wp_json_encode( $data ); ?> );
 		data.input_id = 'input-' + String( Math.random() );
 		#>
 		<span class="customize-control-title"><label for="{{ data.input_id }}">{{ data.label }}</label></span>
 		<# if ( data.description ) { #>
 			<span class="description customize-control-description">{{ data.description }}</span>
 		<# } #>
-		<button id="{{ data.input_id }}" type="button" class="button toggle-post-editor"><?php esc_html_e( 'Open Editor', 'customize-posts' ) ?></button>
+		<button id="{{ data.input_id }}" type="button" class="button toggle-post-editor"><?php esc_html_e( 'Open Editor', 'customize-posts' ); ?></button>
 		<?php
 	}
 }
