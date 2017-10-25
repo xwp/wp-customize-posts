@@ -662,11 +662,6 @@
 				} );
 			}
 
-			// Override preview trying to de-activate control not present in preview context.
-			control.active.validate = function() {
-				return true;
-			};
-
 			// Register.
 			section.postFieldControls.page_parent = control;
 			api.control.add( control.id, control );
@@ -699,11 +694,6 @@
 					setting_property: 'menu_order'
 				}
 			} );
-
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
 
 			// Register.
 			section.postFieldControls.menu_order = control;
