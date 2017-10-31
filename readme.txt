@@ -3,7 +3,7 @@ Contributors:      xwp, westonruter, valendesigns, sayedwp, utkarshpatel.
 Tags:              customizer, customize, posts, postmeta, editor, preview, featured-image, page-template
 Requires at least: 4.7.0
 Tested up to:      4.9.0
-Stable tag:        0.8.7
+Stable tag:        0.9.0
 License:           GPLv2 or later
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,6 +66,15 @@ The following are listed in reverse chronological order. The first, more recent 
 7. [0.8.0] Post parent and basic menu order control.
 
 == Changelog ==
+
+= [0.9.0] - [2017-11-01] =
+
+* Bump minimum required WP version to 4.7; update compatibility for 4.9. See [#371](https://github.com/xwp/wp-customize-posts/pull/371).
+* Update wrapper around `notifications.add` for new params accepted in 4.9. See [#369](https://github.com/xwp/wp-customize-posts/pull/369).
+* Make use of section notifications API in WP 4.9 when available; otherwise polyfill. See [#366](https://github.com/xwp/wp-customize-posts/pull/366).
+* Fix syncing of post changes made in post preview customizer back to edit post screen. See [#361](https://github.com/xwp/wp-customize-posts/pull/361).
+
+See [issues and PRs in milestone](https://github.com/xwp/wp-customize-posts/pulls?q=is%3Apr+milestone%3A0.9.0+is%3Aclosed) and [full release commit log](https://github.com/xwp/wp-customize-posts/compare/0.8.5...0.8.6).
 
 = [0.8.7] - [2017-08-03] =
 
