@@ -123,11 +123,6 @@ var CustomizeFeaturedImage = (function( api ) {
 			} );
 		};
 
-		control.active.set( true );
-		control.active.validate = function validateForcingTrue() {
-			return true;
-		};
-
 		// Register.
 		api.control.add( control.id, control );
 

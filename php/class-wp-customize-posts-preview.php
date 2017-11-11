@@ -225,12 +225,22 @@ final class WP_Customize_Posts_Preview {
 			if ( ! empty( $post_data['post_password'] ) ) {
 
 				/** This filter is documented in wp-includes/post-template.php */
-				$protected_title_format = apply_filters( 'protected_title_format', __( 'Protected: %s', 'customize-posts' ), $mock_post );
+				$protected_title_format = apply_filters(
+					'protected_title_format',
+					/* translators: %s is post title */
+					__( 'Protected: %s', 'customize-posts' ),
+					$mock_post
+				);
 				$title = sprintf( $protected_title_format, $title );
 			} elseif ( isset( $post_data['post_status'] ) && 'private' === $post_data['post_status'] ) {
 
 				/** This filter is documented in wp-includes/post-template.php */
-				$private_title_format = apply_filters( 'private_title_format', __( 'Private: %s', 'customize-posts' ), $mock_post );
+				$private_title_format = apply_filters(
+					'private_title_format',
+					/* translators: %s is post title */
+					__( 'Private: %s', 'customize-posts' ),
+					$mock_post
+				);
 				$title = sprintf( $private_title_format, $title );
 			}
 		}
@@ -323,7 +333,14 @@ final class WP_Customize_Posts_Preview {
 		$unsupported_args = array( 'offset', 'meta_key', 'meta_value' );
 		foreach ( $unsupported_args as $unsupported_arg ) {
 			if ( ! empty( $args[ $unsupported_arg ] ) ) {
-				_doing_it_wrong( 'get_pages', sprintf( esc_html__( 'The %s argument for get_pages() is not supported by Customize Posts.', 'customize-posts' ), esc_html( $unsupported_arg ) ), '0.8.0' );
+				_doing_it_wrong(
+					'get_pages',
+					sprintf(
+						/* translators: %s is unsupported arg name */
+						esc_html__( 'The %s argument for get_pages() is not supported by Customize Posts.', 'customize-posts' ), esc_html( $unsupported_arg )
+					),
+					'0.8.0'
+				);
 				return false;
 			}
 		}
@@ -1355,7 +1372,15 @@ final class WP_Customize_Posts_Preview {
 		foreach ( $schema as $_field_id => $_partial_args ) {
 			foreach ( $deprecated_keys as $deprecated_key ) {
 				if ( array_key_exists( $deprecated_key, $_partial_args ) ) {
-					_deprecated_argument( __FUNCTION__, '0.8.5', sprintf( __( 'The %s param has been removed from the partial schema. Consider fallback_dependent_selector if needed.', 'customize-posts' ), $deprecated_key ) );
+					_deprecated_argument(
+						__FUNCTION__,
+						'0.8.5',
+						sprintf(
+							/* translators: %s is param name */
+							__( 'The %s param has been removed from the partial schema. Consider fallback_dependent_selector if needed.', 'customize-posts' ),
+							$deprecated_key
+						)
+					);
 				}
 			}
 		}
@@ -1462,7 +1487,7 @@ final class WP_Customize_Posts_Preview {
 		// Abort if the partial render request isn't for a post field partial.
 		$requesting_post_field_partial = false;
 		foreach ( array_keys( $partials ) as $partial_id ) {
-			if ( $selective_refresh->get_partial( $partial_id ) instanceof \WP_Customize_Post_Field_Partial ) {
+			if ( $selective_refresh->get_partial( $partial_id ) instanceof WP_Customize_Post_Field_Partial ) {
 				$requesting_post_field_partial = true;
 				break;
 			}
@@ -1474,7 +1499,7 @@ final class WP_Customize_Posts_Preview {
 		// Gather the customized posts by type.
 		$posts_by_type = array();
 		foreach ( $selective_refresh->manager->settings() as $setting ) {
-			if ( $setting instanceof \WP_Customize_Post_Setting ) {
+			if ( $setting instanceof WP_Customize_Post_Setting ) {
 				if ( ! isset( $posts_by_type[ $setting->post_type ] ) ) {
 					$posts_by_type[ $setting->post_type ] = array();
 				}
@@ -1497,7 +1522,7 @@ final class WP_Customize_Posts_Preview {
 			}
 
 			// @todo Do a separate request for each post individually to improve performance?
-			$request = new \WP_REST_Request( 'GET', '/wp/v2/' . $post_type_object->rest_base );
+			$request = new WP_REST_Request( 'GET', '/wp/v2/' . $post_type_object->rest_base );
 			$request->set_query_params( array(
 				'per_page' => 100,
 				'include' => wp_list_pluck( $posts, 'ID' ),
