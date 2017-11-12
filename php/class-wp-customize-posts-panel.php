@@ -63,7 +63,7 @@ class WP_Customize_Posts_Panel extends WP_Customize_Panel {
 	 */
 	public function print_template() {
 		?>
-		<script type="text/html" id="tmpl-customize-posts-<?php echo esc_attr( $this->post_type ) ?>-panel-actions">
+		<script type="text/html" id="tmpl-customize-posts-<?php echo esc_attr( $this->post_type ); ?>-panel-actions">
 			<li class="customize-posts-panel-actions">
 				<select class="post-selection-lookup"></select>
 
@@ -76,19 +76,19 @@ class WP_Customize_Posts_Panel extends WP_Customize_Panel {
 				<# } #>
 			</li>
 		</script>
-		<script type="text/html" id="tmpl-customize-posts-<?php echo esc_attr( $this->post_type ) ?>-panel-select2-selection-item">
+		<script type="text/html" id="tmpl-customize-posts-<?php echo esc_attr( $this->post_type ); ?>-panel-select2-selection-item">
 			<# if ( ! data.id ) { // placeholder #>
 				{{ data.text }}
 			<# } else { #>
-				<em><?php esc_html_e( 'Loading &ldquo;{{ data.text }}&rdquo;&hellip;', 'customize-posts' ) ?></em>
+				<em><?php esc_html_e( 'Loading &ldquo;{{ data.text }}&rdquo;&hellip;', 'customize-posts' ); ?></em>
 			<# } #>
 		</script>
-		<script type="text/html" id="tmpl-customize-posts-<?php echo esc_attr( $this->post_type ) ?>-panel-select2-result-item">
+		<script type="text/html" id="tmpl-customize-posts-<?php echo esc_attr( $this->post_type ); ?>-panel-select2-result-item">
 			<# if ( data.featured_image && data.featured_image.sizes && data.featured_image.sizes.thumbnail && data.featured_image.sizes.thumbnail.url ) { #>
 				<img class="customize-posts-select2-thumbnail" src="{{ data.featured_image.sizes.thumbnail.url }}">
 			<# } #>
 			<# if ( data.status && 'trash' === data.status ) { #>
-				<em><?php esc_html_e( '[Trashed]', 'customize-posts' ) ?></em>
+				<em><?php esc_html_e( '[Trashed]', 'customize-posts' ); ?></em>
 				<span class="trashed-title">{{ data.title }}</span>
 			<# } else if ( data.text ) { #>
 				{{ data.text }}
@@ -97,7 +97,7 @@ class WP_Customize_Posts_Panel extends WP_Customize_Panel {
 			<# } #>
 		</script>
 
-		<script id="tmpl-customize-panel-posts-<?php echo esc_attr( $this->post_type ) ?>-notice" type="text/html">
+		<script id="tmpl-customize-panel-posts-<?php echo esc_attr( $this->post_type ); ?>-notice" type="text/html">
 			<div class="customize-posts-panel-notice">
 				<em>{{ data.message }}</em>
 			</div>

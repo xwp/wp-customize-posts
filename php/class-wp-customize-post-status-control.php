@@ -60,7 +60,7 @@ class WP_Customize_Post_Status_Control extends WP_Customize_Dynamic_Control {
 		$data = $this->json();
 		?>
 		<#
-		_.defaults( data, <?php echo wp_json_encode( $data ) ?> );
+		_.defaults( data, <?php echo wp_json_encode( $data ); ?> );
 		data.input_id = 'input-' + String( Math.random() );
 		#>
 		<span class="customize-control-title"><label for="{{ data.input_id }}">{{ data.label }}</label></span>
@@ -85,8 +85,8 @@ class WP_Customize_Post_Status_Control extends WP_Customize_Dynamic_Control {
 				<option value="{{ value }}">{{ text }}</option>
 			<# } ); #>
 		</select>
-		<a class="trash" href="javascript:void(0)"><?php esc_html_e( 'Move to Trash', 'customize-posts' ) ?></a>
-		<a class="untrash" href="javascript:void(0)"><?php esc_html_e( 'Undo Trash', 'customize-posts' ) ?></a>
+		<a class="trash" href="javascript:void(0)"><?php esc_html_e( 'Move to Trash', 'customize-posts' ); ?></a>
+		<a class="untrash" href="javascript:void(0)"><?php esc_html_e( 'Undo Trash', 'customize-posts' ); ?></a>
 		<?php
 	}
 }

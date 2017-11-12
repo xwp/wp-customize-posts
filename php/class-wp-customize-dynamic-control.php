@@ -74,7 +74,7 @@ class WP_Customize_Dynamic_Control extends WP_Customize_Control {
 		$data = $this->json();
 		?>
 		<#
-		_.defaults( data, <?php echo wp_json_encode( $data ) ?> );
+		_.defaults( data, <?php echo wp_json_encode( $data ); ?> );
 		data.input_id = 'input-' + String( Math.random() );
 		#>
 		<# if ( 'checkbox' === data.field_type ) { #>

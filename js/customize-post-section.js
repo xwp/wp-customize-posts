@@ -307,16 +307,17 @@
 		 * unless the notification is specifically for this control's setting property.
 		 *
 		 * @this {wp.customize.Control}
-		 * @param {string} code                            Notification code.
-		 * @param {wp.customize.Notification} notification Notification object.
+		 * @param {string|wp.customize.Notification} notification - Notification object to add. Alternatively code may be supplied, and in that case the second notificationObject argument must be supplied.
+		 * @param {wp.customize.Notification} [notificationObject] - Notification to add when first argument is the code string.
 		 * @returns {wp.customize.Notification|null} Notification if not bypassed.
 		 */
-		addPostFieldControlNotification: function addPostFieldControlNotification( code, notification ) {
-			var isSettingNotification, isSettingPropertyNotification;
+		addPostFieldControlNotification: function addPostFieldControlNotification( notification, notificationObject ) {
+			var isSettingNotification, isSettingPropertyNotification, code;
+			code = 'string' === typeof notification ? notification : notification.code;
 			isSettingNotification = -1 !== code.indexOf( ':' ) || notification.setting; // Note that sniffing for ':' is deprecated as of #36944 & #37890.
 			isSettingPropertyNotification = notification.data && notification.data.setting_property === this.setting_property;
 			if ( isSettingPropertyNotification || ! isSettingNotification ) {
-				return api.Values.prototype.add.call( this, code, notification );
+				return ( api.Notifications || api.Values ).prototype.add.call( this, notification, notificationObject );
 			} else {
 				return null;
 			}
@@ -393,11 +394,6 @@
 				}
 			} );
 
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
-
 			// Register.
 			section.postFieldControls.post_title = control;
 			api.control.add( control.id, control );
@@ -451,11 +447,6 @@
 				setting.bind( setPlaceholder );
 			} );
 
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
-
 			// Register.
 			section.postFieldControls.post_name = control;
 			api.control.add( control.id, control );
@@ -486,11 +477,6 @@
 					}
 				}
 			} );
-
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
 
 			// Register.
 			section.postFieldControls.post_status = control;
@@ -523,11 +509,6 @@
 					}
 				}
 			} );
-
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
 
 			// Register.
 			section.postFieldControls.post_date = control;
@@ -617,11 +598,6 @@
 				}
 			} );
 
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
-
 			// Register.
 			section.postFieldControls.post_excerpt = control;
 			api.control.add( control.id, control );
@@ -686,11 +662,6 @@
 				} );
 			}
 
-			// Override preview trying to de-activate control not present in preview context.
-			control.active.validate = function() {
-				return true;
-			};
-
 			// Register.
 			section.postFieldControls.page_parent = control;
 			api.control.add( control.id, control );
@@ -724,11 +695,6 @@
 				}
 			} );
 
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
-
 			// Register.
 			section.postFieldControls.menu_order = control;
 			api.control.add( control.id, control );
@@ -760,11 +726,6 @@
 					post_type_supports: postTypeObj.supports
 				}
 			} );
-
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
 
 			// Register.
 			section.postFieldControls.post_discussion_fields = control;
@@ -809,11 +770,6 @@
 				return data;
 			};
 
-			// Override preview trying to de-activate control not present in preview context. See WP Trac #37270.
-			control.active.validate = function() {
-				return true;
-			};
-
 			// Register.
 			section.postFieldControls.post_author = control;
 			api.control.add( control.id, control );
@@ -826,36 +782,26 @@
 		},
 
 		/**
-		 * Set up section notifications.
+		 * Polyfill notifications API onto sections if not yet on WordPress 4.9 where it is defined in core.
 		 *
+		 * @link <https://core.trac.wordpress.org/ticket/38794>
 		 * @returns {void}
 		 */
-		setupSectionNotifications: function() {
-			var section = this, setting = api( section.id ), debouncedRenderNotifications, setPageForPostsNotice;
-			if ( ! setting.notifications ) {
+		polyfillNotifications: function() {
+			var section = this, debouncedRenderNotifications;
+			if ( section.notifications ) {
 				return;
 			}
 
-			// Add the notifications API.
 			section.notifications = new api.Values({ defaultConstructor: api.Notification });
 			section.notificationsContainer = $( '<div class="customize-control-notifications-container"></div>' );
+			section.notifications.container = section.notificationsContainer;
 			section.notificationsTemplate = wp.template( 'customize-post-section-notifications' );
 			section.container.find( '.customize-section-title' ).after( section.notificationsContainer );
 			section.getNotificationsContainerElement = function() {
 				return section.notificationsContainer;
 			};
 			section.renderNotifications = api.Control.prototype.renderNotifications;
-
-			// Sync setting notifications into the section notifications
-			setting.notifications.bind( 'add', function( settingNotification ) {
-				var notification = new api.Notification( setting.id + ':' + settingNotification.code, settingNotification );
-				if ( ! settingNotification.data || ! settingNotification.data.setting_property || ! api.control.has( section.id + '[' + settingNotification.data.setting_property + ']' ) ) {
-					section.notifications.add( notification.code, notification );
-				}
-			} );
-			setting.notifications.bind( 'remove', function( settingNotification ) {
-				section.notifications.remove( setting.id + ':' + settingNotification.code );
-			} );
 
 			/*
 			 * Render notifications when the collection is updated.
@@ -872,9 +818,40 @@
 			} );
 			section.notifications.bind( 'remove', debouncedRenderNotifications );
 			section.renderNotifications();
+		},
+
+		/**
+		 * Set up section notifications.
+		 *
+		 * @returns {void}
+		 */
+		setupSectionNotifications: function() {
+			var section = this, setting = api( section.id ), setPageForPostsNotice, notificationTemplate;
+			if ( ! setting.notifications ) {
+				return;
+			}
+
+			// Add the notifications API if not present.
+			section.polyfillNotifications();
+
+			// Sync setting notifications into the section notifications
+			setting.notifications.bind( 'add', function( settingNotification ) {
+				var notification = new api.Notification( setting.id + ':' + settingNotification.code, _.extend( {},
+					settingNotification,
+					{
+						template: notificationTemplate
+					}
+				) );
+				if ( ! settingNotification.data || ! settingNotification.data.setting_property || ! api.control.has( section.id + '[' + settingNotification.data.setting_property + ']' ) ) {
+					section.notifications.add( notification.code, notification );
+				}
+			} );
+			setting.notifications.bind( 'remove', function( settingNotification ) {
+				section.notifications.remove( setting.id + ':' + settingNotification.code );
+			} );
 
 			// Dismiss conflict block when clicking on button.
-			section.notificationsContainer.on( 'click', '.override-post-conflict', function( e ) {
+			section.notifications.container.on( 'click', '.override-post-conflict', function( e ) {
 				var ourValue;
 				e.preventDefault();
 				ourValue = _.clone( setting.get() );
@@ -890,6 +867,7 @@
 			} );
 
 			// Detect conflict errors.
+			notificationTemplate = wp.template( 'customize-post-field-notification' );
 			api.bind( 'error', function( response ) {
 				var theirValue, ourValue,
 					conflictedControls = [];

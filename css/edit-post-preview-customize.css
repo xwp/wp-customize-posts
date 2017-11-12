@@ -6,7 +6,8 @@
 #customize-header-actions #snapshot-save,
 #snapshot-status-button-wrapper,
 #snapshot-preview-link,
-#snapshot-expand-button
+#snapshot-expand-button,
+#publish-settings
 {
 	display: none !important;
 }

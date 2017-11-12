@@ -655,7 +655,12 @@ final class WP_Customize_Posts {
 			foreach ( (array) $users as $user ) {
 				$choices[] = array(
 					'value' => (int) $user->ID,
-					'text'  => sprintf( _x( '%1$s (%2$s)', 'user dropdown', 'customize-posts' ), $user->display_name, $user->user_login ),
+					'text'  => sprintf(
+						/* translators: 1 is user display name, 2 is user login */
+						_x( '%1$s (%2$s)', 'user dropdown', 'customize-posts' ),
+						$user->display_name,
+						$user->user_login
+					),
 				);
 			}
 		}
@@ -680,7 +685,12 @@ final class WP_Customize_Posts {
 			$month_text = $wp_locale->get_month_abbrev( $wp_locale->get_month( $i ) );
 
 			/* translators: 1: month number, 2: month abbreviation */
-			$months[ $i ]['text'] = sprintf( __( '%1$s-%2$s', 'customize-posts' ), $month_number, $month_text );
+			$months[ $i ]['text'] = sprintf(
+				/* translators: 1 is month number and 2 is month text */
+				__( '%1$s-%2$s', 'customize-posts' ),
+				$month_number,
+				$month_text
+			);
 			$months[ $i ]['value'] = $month_number;
 		}
 		return $months;
@@ -827,6 +837,7 @@ final class WP_Customize_Posts {
 				'fieldParentLabel' => __( 'Parent', 'customize-posts' ),
 				'fieldOrderLabel' => __( 'Order', 'customize-posts' ),
 				'noTitle' => __( '(no title)', 'customize-posts' ),
+				/* translators: %s is value that other user supplied for setting */
 				'theirChange' => __( 'Their change: %s', 'customize-posts' ),
 				'openEditor' => __( 'Open Editor', 'customize-posts' ), // @todo Move this into editor control?
 				'closeEditor' => __( 'Close Editor', 'customize-posts' ),
@@ -839,6 +850,7 @@ final class WP_Customize_Posts {
 				'editPostFailure' => __( 'Failed to open for editing.', 'customize-posts' ),
 				'createPostFailure' => __( 'Failed to create for editing.', 'customize-posts' ),
 				'installCustomizeObjectSelector' => sprintf(
+					/* translators: %s is link to Customize Object Selector plugin */
 					__( 'This control depends on having the %s plugin installed and activated.', 'customize-posts' ),
 					sprintf(
 						'<a href="%s" target="_blank">%s</a>',
@@ -846,7 +858,7 @@ final class WP_Customize_Posts {
 						__( 'Customize Object Selector', 'customize-posts' )
 					)
 				),
-				'trashPostNotification' => __( 'This has been untrashed. If you publish changes now, its status will change to the selected status. Move back to trash to avoid this.' , 'customize-posts' ),
+				'trashPostNotification' => __( 'This has been untrashed. If you publish changes now, its status will change to the selected status. Move back to trash to avoid this.', 'customize-posts' ),
 
 				/* translators: %s post type */
 				'jumpToPostPlaceholder' => __( 'Jump to %s', 'customize-posts' ),
@@ -1003,7 +1015,7 @@ final class WP_Customize_Posts {
 		?>
 		<script id="tmpl-customize-posts-navigation" type="text/html">
 			<button class="customize-posts-navigation dashicons dashicons-visibility" tabindex="0">
-				<span class="screen-reader-text"><?php esc_html_e( 'Preview', 'customize-posts' ); ?> {{ data.label }}</span><?php // @todo This translates poorly ?>
+				<span class="screen-reader-text"><?php esc_html_e( 'Preview', 'customize-posts' ); // @todo This translates with data.label translates poorly. ?> {{ data.label }}</span>
 			</button>
 		</script>
 
@@ -1050,6 +1062,18 @@ final class WP_Customize_Posts {
 			</button>
 		</script>
 
+		<script type="text/html" id="tmpl-customize-post-field-notification">
+			<li class="notice notice-{{ data.type || 'info' }} {{ data.altNotice ? 'notice-alt' : '' }}" data-code="{{ data.code }}" data-type="{{ data.type }}">
+				<# if ( /post_update_conflict/.test( data.code ) ) { #>
+					<button class="button override-post-conflict" type="button"><?php esc_html_e( 'Override', 'customize-posts' ); ?></button>
+				<# } #>
+				{{ data.message || data.code }}
+			</li>
+		</script>
+
+		<?php
+		// The following template is obsolete as of WordPress 4.9.
+		?>
 		<script type="text/html" id="tmpl-customize-post-section-notifications">
 			<ul>
 				<# _.each( data.notifications, function( notification ) { #>
@@ -1172,7 +1196,7 @@ final class WP_Customize_Posts {
 				continue;
 			}
 			$post = get_post( $post_id );
-			if ( 'auto-draft' !== $post->post_status && 'customize-draft' !== $post->post_status ) { // This is the patched line.
+			if ( 'auto-draft' !== $post->post_status && 'draft' !== $post->post_status && 'customize-draft' !== $post->post_status ) { // This is the patched line.
 				continue;
 			}
 			$post_type_obj = get_post_type_object( $post->post_type );
@@ -1438,6 +1462,7 @@ final class WP_Customize_Posts {
 		if ( is_wp_error( $r ) ) {
 			$error = $r;
 			$data = array(
+				/* translators: 1 is singular post name, 2 is error message */
 				'message' => sprintf( __( '%1$s could not be created: %2$s', 'customize-posts' ), $singular_name, $error->get_error_message() ),
 			);
 			wp_send_json_error( $data );
@@ -1719,7 +1744,10 @@ final class WP_Customize_Posts {
 		}
 
 		$s = sanitize_text_field( wp_unslash( $_POST['search'] ) );
-		$items = $this->manager->nav_menus->search_available_items_query( array( 'pagenum' => $p, 's' => $s ) );
+		$items = $this->manager->nav_menus->search_available_items_query( array(
+			'pagenum' => $p,
+			's' => $s,
+		) );
 
 		if ( empty( $items ) ) {
 			wp_send_json_error( array( 'message' => __( 'No results found.', 'default' ) ) );
