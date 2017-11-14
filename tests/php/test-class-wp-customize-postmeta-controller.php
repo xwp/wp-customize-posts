@@ -148,7 +148,6 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 		);
 		/** @var WP_Customize_Postmeta_Controller $stub */
 		$stub = $this->getMockForAbstractClass( 'WP_Customize_Postmeta_Controller', array( $args ) );
-		$this->assertEmpty( $this->wp_customize->posts->registered_post_meta );
 		$this->assertEquals( 0, $stub->register_meta( $this->wp_customize->posts ) );
 	}
 
@@ -167,7 +166,7 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 		);
 		/** @var WP_Customize_Postmeta_Controller $stub */
 		$stub = $this->getMockForAbstractClass( 'WP_Customize_Postmeta_Controller', array( $args ) );
-		$this->assertEmpty( $customize_posts->registered_post_meta );
+		$customize_posts->registered_post_meta = array();
 		$this->assertEquals( count( $args['post_types'] ), $stub->register_meta( $this->wp_customize->posts ) );
 		$this->assertEquals( 10, has_filter( "sanitize_post_meta_{$args['meta_key']}", array( $stub, 'sanitize_value' ) ) );
 		$this->assertArrayHasKey( 'post', $customize_posts->registered_post_meta );
@@ -191,6 +190,7 @@ class Test_WP_Customize_Postmeta_Controller extends WP_UnitTestCase {
 		);
 		/** @var WP_Customize_Postmeta_Controller $stub */
 		$stub = $this->getMockForAbstractClass( 'WP_Customize_Postmeta_Controller', array( $args ) );
+		$customize_posts->registered_post_meta = array();
 		$this->assertEquals( count( get_post_types_by_support( 'page-attributes' ) ), $stub->register_meta( $this->wp_customize->posts ) );
 		$this->assertEquals( 10, has_filter( "sanitize_post_meta_{$args['meta_key']}", array( $stub, 'sanitize_value' ) ) );
 		$this->assertArrayNotHasKey( 'post', $customize_posts->registered_post_meta );

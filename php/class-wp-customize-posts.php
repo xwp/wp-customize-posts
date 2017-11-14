@@ -94,6 +94,9 @@ final class WP_Customize_Posts {
 		add_action( 'customize_register', array( $this, 'register_constructs' ), 20 );
 		add_filter( 'map_meta_cap', array( $this, 'filter_map_meta_cap' ), 10, 4 );
 		add_action( 'init', array( $this, 'register_meta' ), 100 );
+		if ( did_action( 'init' ) ) {
+			$this->register_meta(); // The init action will have already done in WP-CLI or WP Cron.
+		}
 		add_filter( 'customize_dynamic_setting_args', array( $this, 'filter_customize_dynamic_setting_args' ), 10, 2 );
 		add_filter( 'customize_dynamic_setting_class', array( $this, 'filter_customize_dynamic_setting_class' ), 5, 3 );
 		add_filter( 'customize_sanitize_nav_menus_created_posts', array( $this, 'filter_out_nav_menus_created_posts_for_customized_posts' ), 20 );

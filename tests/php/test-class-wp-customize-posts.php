@@ -757,17 +757,18 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		wp_trash_post( $trashed_post_id );
 
 		$settings_params = $this->posts->get_settings( array( $published_post_id, $trashed_post_id, $draft_page_id, $nav_menu_item_id ) );
-		$this->assertEqualSets(
-			array(
-				WP_Customize_Post_Setting::get_post_setting_id( get_post( $published_post_id ) ),
-				WP_Customize_Post_Setting::get_post_setting_id( get_post( $trashed_post_id ) ),
-				WP_Customize_Post_Setting::get_post_setting_id( get_post( $draft_page_id ) ),
-				sprintf( 'nav_menu_item[%s]', $nav_menu_item_id ),
-				WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $published_post_id ), 'baz' ),
-				WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $trashed_post_id ), 'baz' )
-			),
-			array_keys( $settings_params )
+		$actual_setting_ids = array_keys( $settings_params );
+		$expected_setting_ids = array(
+			WP_Customize_Post_Setting::get_post_setting_id( get_post( $published_post_id ) ),
+			WP_Customize_Post_Setting::get_post_setting_id( get_post( $trashed_post_id ) ),
+			WP_Customize_Post_Setting::get_post_setting_id( get_post( $draft_page_id ) ),
+			sprintf( 'nav_menu_item[%s]', $nav_menu_item_id ),
+			WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $published_post_id ), 'baz' ),
+			WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $trashed_post_id ), 'baz' )
 		);
+		foreach ( $expected_setting_ids as $expected_setting_id ) {
+			$this->assertContains( $expected_setting_id, $actual_setting_ids );
+		}
 	}
 
 	/**
