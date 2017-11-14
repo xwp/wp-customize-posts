@@ -67,6 +67,10 @@ The following are listed in reverse chronological order. The first, more recent 
 
 == Changelog ==
 
+= [0.9.1] - [2017-11-13] =
+
+Fix saving of postmeta in scheduled changesets. See [#375](https://github.com/xwp/wp-customize-posts/pull/375).
+
 = [0.9.0] - [2017-11-11] =
 
 * Bump minimum required WP version to 4.7; update compatibility for 4.9. See [#371](https://github.com/xwp/wp-customize-posts/pull/371).
