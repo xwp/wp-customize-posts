@@ -571,7 +571,7 @@
 	 * @return {void}
 	 */
 	component.focusControl = function focusControl( controlId ) {
-		var control, section, postSectionId, matches;
+		var control, section, postSectionId, matches, postId;
 
 		/**
 		 * Attempt focus on the control.
@@ -594,18 +594,33 @@
 		if ( ! matches ) {
 			return;
 		}
-		postSectionId = 'post[' + matches[1] + '][' + matches[2] + ']';
-		section = api.section( postSectionId );
-		if ( ! section || ! section.extended( component.PostSection ) ) {
-			return;
-		}
-		section.expand();
-		section.contentsEmbedded.done( function() {
-			var ms = 500;
+		postId = parseInt( matches[2], 10 );
+		postSectionId = 'post[' + matches[1] + '][' + String( postId ) + ']';
 
-			// @todo It is not clear why a delay is needed for focus to work. It could be due to focus failing during animation.
-			_.delay( tryFocus, ms );
-		} );
+		/**
+		 * Expand and focus on control in section.
+		 *
+		 * @param {component.PostSection} postSection - Section.
+		 * @returns {void}
+		 */
+		function sectionResolved( postSection ) {
+			postSection.expand();
+			postSection.contentsEmbedded.done( function() {
+				var ms = 500;
+
+				// @todo It is not clear why a delay is needed for focus to work. It could be due to focus failing during animation.
+				_.delay( tryFocus, ms );
+			} );
+		}
+
+		section = api.section( postSectionId );
+		if ( section ) {
+			sectionResolved( section );
+		} else {
+			api.Posts.ensurePosts( [ postId ] ).done( function( data ) {
+				sectionResolved( data[ postId ].section );
+			} );
+		}
 	};
 
 	/**
