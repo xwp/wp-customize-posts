@@ -441,7 +441,8 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 }
 
 @media screen and (max-width:600px) {
-	.outer-section-open .select2-container {
+	.outer-section-open .select2-container,
+	.outer-section-open .select2-selection__clear {
 		z-index: auto !Important;
 	}
 }
