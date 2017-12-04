@@ -439,3 +439,9 @@ body.customize-posts-content-editor-pane-resize #customize-preview:before {
 	content: "\f464";
 	top: -2px;
 }
+
+@media screen and (max-width:600px) {
+	.outer-section-open .select2-container {
+		z-index: auto !Important;
+	}
+}
