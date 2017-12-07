@@ -166,9 +166,9 @@ final class WP_Customize_Posts_Preview {
 			&&
 			function_exists( 'amp_load_classes' )
 			&&
-			defined( 'AMP_QUERY_VAR' )
+			function_exists( 'is_amp_endpoint' )
 			&&
-			false !== get_query_var( AMP_QUERY_VAR, false )
+			is_amp_endpoint()
 		);
 		if ( $should_get_amp_content ) {
 			$post = get_post( $partial->post_id );
