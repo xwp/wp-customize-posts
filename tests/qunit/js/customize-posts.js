@@ -1,6 +1,6 @@
-/* global QUnit, wp, _ */
+/* global jQuery, QUnit, wp, _ */
 
-(function() {
+jQuery( window ).on( 'load', function (){
 
 	'use strict';
 
@@ -8,4 +8,4 @@
 		assert.ok( _.isObject( wp.customize.Posts ) );
 		assert.ok( ! _.isEmpty( wp.customize.Posts ) );
 	});
-})();
+});
