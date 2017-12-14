@@ -48,17 +48,30 @@ class Customize_Posts_WP_CLI_Command extends WP_CLI_Command {
 	 *
 	 * @param string $script_tag Script tag.
 	 * @param string $handle     Script handle.
-	 * @return string Rewritten script src.
+	 * @return string|boolean Rewritten script src.
 	 */
 	static function filter_script_loader_tag( $script_tag, $handle ) {
 		if ( in_array( $handle, self::$plugin_script_handles, true ) ) {
 			$script_tag = preg_replace( '#https?://[^"]+?/wp-content/plugins/[^/]+/#', self::PLUGIN_BASE_HREF, $script_tag );
 		} elseif ( 0 === strpos( $handle, 'select2-locale-' ) ) {
 			$script_tag = '';
-		} else {
+		} elseif ( self::is_core_script( $script_tag ) ) {
 			$script_tag = preg_replace( '#https?://[^"]+?/(?=(wp-includes|wp-admin)/)#', self::CORE_BASE_HREF, $script_tag );
+		} else {
+			$script_tag = false;
 		}
+
 		return $script_tag;
+	}
+
+	/**
+	 * Checks to see if its core script.
+	 *
+	 * @param string $script_tag Script handle.
+	 * @return bool
+	 */
+	public static function is_core_script( $script_tag ) {
+		return false !== strpos( $script_tag, 'wp-includes/' ) || false !== strpos( $script_tag, 'wp-admin/' );
 	}
 
 	/**
