@@ -50,7 +50,7 @@ var CustomizePageTemplate = (function( api ) {
 	 * @returns {wp.customize.Control|null} The control.
 	 */
 	component.addControl = function( section ) {
-		var supports, control, controlId, settingId, isActiveCallback;
+		var supports, control, controlId, settingId;
 		supports = api.Posts.data.postTypes[ section.params.post_type ].supports;
 
 		if ( ! supports['page-attributes'] || 'page' !== section.params.post_type ) {
@@ -103,13 +103,13 @@ var CustomizePageTemplate = (function( api ) {
 		 *
 		 * @returns {boolean} Is active.
 		 */
-		isActiveCallback = function() {
+		function isActiveCallback() {
 			var defaultSize = 1;
 			if ( api.has( 'page_for_posts' ) && parseInt( api( 'page_for_posts' ).get(), 10 ) === section.params.post_id ) {
 				return false;
 			}
 			return _.size( control.params.choices ) > defaultSize;
-		};
+		}
 		control.active.set( isActiveCallback() );
 		control.active.validate = isActiveCallback;
 		api( 'page_for_posts', function( pageOnFrontSetting ) {

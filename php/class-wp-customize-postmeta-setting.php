@@ -168,6 +168,7 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 			$values = array( $meta_value );
 		} else {
 			if ( ! is_array( $meta_value ) ) {
+				/* translators: %s is meta key */
 				return $has_setting_validation ? new WP_Error( 'expected_array', sprintf( __( 'Expected array value for non-single "%s" meta.', 'customize-posts' ), $meta_key ) ) : null;
 			}
 			$values = $meta_value;
@@ -194,6 +195,7 @@ class WP_Customize_Postmeta_Setting extends WP_Customize_Setting {
 			/** This filter is documented in wp-includes/meta.php */
 			$check = apply_filters( "update_{$meta_type}_metadata", null, $object_id, $meta_key, $value, $prev_value );
 			if ( null !== $check ) {
+				/* translators: %s is meta key */
 				return $has_setting_validation ? new WP_Error( 'not_allowed', sprintf( __( 'Update to post meta "%s" blocked.', 'customize-posts' ), $meta_key ) ) : null;
 			}
 		}

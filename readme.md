@@ -6,9 +6,9 @@ Edit posts and postmeta in the Customizer. Stop editing your posts/postmeta blin
 
 **Contributors:** [xwp](https://profiles.wordpress.org/xwp), [westonruter](https://profiles.wordpress.org/westonruter), [valendesigns](https://profiles.wordpress.org/valendesigns), [sayedwp](https://profiles.wordpress.org/sayedwp), [utkarshpatel.](https://profiles.wordpress.org/utkarshpatel.)  
 **Tags:** [customizer](https://wordpress.org/plugins/tags/customizer), [customize](https://wordpress.org/plugins/tags/customize), [posts](https://wordpress.org/plugins/tags/posts), [postmeta](https://wordpress.org/plugins/tags/postmeta), [editor](https://wordpress.org/plugins/tags/editor), [preview](https://wordpress.org/plugins/tags/preview), [featured-image](https://wordpress.org/plugins/tags/featured-image), [page-template](https://wordpress.org/plugins/tags/page-template)  
-**Requires at least:** 4.5.0  
-**Tested up to:** 4.8.1  
-**Stable tag:** 0.8.7  
+**Requires at least:** 4.7.0  
+**Tested up to:** 4.9.0  
+**Stable tag:** 0.9.1  
 **License:** [GPLv2 or later](http://www.gnu.org/licenses/gpl-2.0.html)  
 
 [![Build Status](https://travis-ci.org/xwp/wp-customize-posts.svg?branch=master)](https://travis-ci.org/xwp/wp-customize-posts) [![Coverage Status](https://coveralls.io/repos/xwp/wp-customize-posts/badge.svg?branch=master)](https://coveralls.io/github/xwp/wp-customize-posts) [![Built with Grunt](https://cdn.gruntjs.com/builtwith.svg)](http://gruntjs.com) [![devDependency Status](https://david-dm.org/xwp/wp-customize-posts/dev-status.svg)](https://david-dm.org/xwp/wp-customize-posts?type=dev) 
@@ -89,6 +89,17 @@ The following are listed in reverse chronological order. The first, more recent 
 ![[0.8.0] Post parent and basic menu order control.](wp-assets/screenshot-7.png)
 
 ## Changelog ##
+
+### [0.9.1] - [2017-11-13] ###
+Fix saving of postmeta in scheduled changesets. See [#375](https://github.com/xwp/wp-customize-posts/pull/375).
+
+### [0.9.0] - [2017-11-11] ###
+* Bump minimum required WP version to 4.7; update compatibility for 4.9. See [#371](https://github.com/xwp/wp-customize-posts/pull/371).
+* Update wrapper around `notifications.add` for new params accepted in 4.9. See [#369](https://github.com/xwp/wp-customize-posts/pull/369).
+* Make use of section notifications API in WP 4.9 when available; otherwise polyfill. See [#366](https://github.com/xwp/wp-customize-posts/pull/366).
+* Fix syncing of post changes made in post preview customizer back to edit post screen. See [#361](https://github.com/xwp/wp-customize-posts/pull/361).
+
+See [issues and PRs in milestone](https://github.com/xwp/wp-customize-posts/milestone/8?closed=1) and [full release commit log](https://github.com/xwp/wp-customize-posts/compare/0.8.7...0.9.0).
 
 ### [0.8.7] - [2017-08-03] ###
 * Fixed: Ensure that nested edit shortcuts in Twenty Seventeen front-page panels are positioned properly. See [#357](https://github.com/xwp/wp-customize-posts/pull/357).

@@ -60,12 +60,12 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 		$data = $this->json();
 		?>
 		<#
-		_.defaults( data, <?php echo wp_json_encode( $data ) ?> );
+		_.defaults( data, <?php echo wp_json_encode( $data ); ?> );
 		data.input_id_base = 'input-' + String( Math.random() );
 		#>
 		<span class="customize-control-title">
 			<label for="{{ data.input_id_base }}_month">{{ data.label }}</label>
-			<span class="wrap-reset-time">(<a href="javascript:void(0)" class="reset-time"><?php esc_html_e( 'Reset', 'customize-posts' ) ?></a>)</span>
+			<span class="wrap-reset-time">(<a href="javascript:void(0)" class="reset-time"><?php esc_html_e( 'Reset', 'customize-posts' ); ?></a>)</span>
 		</span>
 
 		<?php
@@ -86,10 +86,10 @@ class WP_Customize_Post_Date_Control extends WP_Customize_Dynamic_Control {
 			/* translators: %s: UTC offset  */
 			$date_control_description = sprintf( __( 'Timezone is %s.', 'customize-posts' ), $tz_abbr );
 		}
+
+		// @todo Use the new WP_Customize_Date_Time_Control in 4.9, or use an HTML5 details element for the time info once browser support is better.
 		?>
 		<div class="description customize-control-description">
-			<?php // @todo Use an HTML5 details element for the time info once browser support is better. ?>
-
 			<a href="javascript:void(0)" tabindex="0" role="button" aria-controls="{{ data.input_id_base }}_time_info" class="time-info-handle" aria-pressed="false">
 				<span class="time-handle-arrow dashicons dashicons-arrow-down"></span>
 				<?php echo esc_html( $tz_abbr ); ?>

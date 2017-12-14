@@ -29,7 +29,7 @@ class WP_Customize_Post_Discussion_Fields_Control extends WP_Customize_Dynamic_C
 		$data = $this->json();
 		?>
 		<#
-		_.defaults( data, <?php echo wp_json_encode( $data ) ?> );
+		_.defaults( data, <?php echo wp_json_encode( $data ); ?> );
 		data.ping_status_input_id = 'input-' + String( Math.random() );
 		data.comment_status_input_id = 'input-' + String( Math.random() );
 		#>

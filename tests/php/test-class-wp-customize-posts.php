@@ -566,17 +566,29 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 
 		$count = did_action( 'transition_post_status' );
 		$count = post_type_supports( 'customize_changeset', 'revisions' ) ? $count + 1 : $count;
-		wp_update_post( array( 'ID' => $changeset_post_id, 'post_status' => 'draft' ) );
+		wp_update_post( array(
+			'ID' => $changeset_post_id,
+			'post_status' => 'draft',
+		) );
 		$this->assertEquals( $count + 1, did_action( 'transition_post_status' ) );
 		$new_status = 'auto-draft';
 		$this->assertEquals( $new_status, get_post_status( $auto_draft_post->ID ) );
 		$this->assertEquals( $new_status, get_post_status( $auto_draft_page->ID ) );
-		$this->assertEquals( $new_status, get_post_status( $nav_menu_created_stub_post->ID ) );
+		if ( version_compare( strtok( get_bloginfo( 'version' ), '-' ), '4.9', '>=' ) ) {
+			$this->assertEquals( 'draft', get_post_status( $nav_menu_created_stub_post->ID ) );
+		} else {
+			$this->assertEquals( $new_status, get_post_status( $nav_menu_created_stub_post->ID ) );
+		}
 		$expected_year = date('Y') + 100;
 		$this->assertEquals( $expected_year, date( 'Y', strtotime( get_post( $auto_draft_post->ID )->post_date ) ) );
 		$this->assertEquals( $expected_year, date( 'Y', strtotime( get_post( $auto_draft_page->ID )->post_date ) ) );
-		$this->assertEquals( $expected_year, date( 'Y', strtotime( get_post( $nav_menu_created_stub_post->ID )->post_date ) ) );
-		wp_update_post( array( 'ID' => $changeset_post_id, 'post_status' => 'publish' ) );
+		if ( version_compare( strtok( get_bloginfo( 'version' ), '-' ), '4.9', '<' ) ) {
+			$this->assertEquals( $expected_year, date( 'Y', strtotime( get_post( $nav_menu_created_stub_post->ID )->post_date ) ) );
+		}
+		wp_update_post( array(
+			'ID' => $changeset_post_id,
+			'post_status' => 'publish',
+		) );
 		$this->assertEquals( 'publish', get_post_status( $auto_draft_post->ID ) );
 		$this->assertEquals( 'draft', get_post_status( $auto_draft_page->ID ) );
 		$this->assertEquals( 'publish', get_post_status( $nav_menu_created_stub_post->ID ) );
@@ -745,17 +757,18 @@ class Test_WP_Customize_Posts extends WP_UnitTestCase {
 		wp_trash_post( $trashed_post_id );
 
 		$settings_params = $this->posts->get_settings( array( $published_post_id, $trashed_post_id, $draft_page_id, $nav_menu_item_id ) );
-		$this->assertEqualSets(
-			array(
-				WP_Customize_Post_Setting::get_post_setting_id( get_post( $published_post_id ) ),
-				WP_Customize_Post_Setting::get_post_setting_id( get_post( $trashed_post_id ) ),
-				WP_Customize_Post_Setting::get_post_setting_id( get_post( $draft_page_id ) ),
-				sprintf( 'nav_menu_item[%s]', $nav_menu_item_id ),
-				WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $published_post_id ), 'baz' ),
-				WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $trashed_post_id ), 'baz' )
-			),
-			array_keys( $settings_params )
+		$actual_setting_ids = array_keys( $settings_params );
+		$expected_setting_ids = array(
+			WP_Customize_Post_Setting::get_post_setting_id( get_post( $published_post_id ) ),
+			WP_Customize_Post_Setting::get_post_setting_id( get_post( $trashed_post_id ) ),
+			WP_Customize_Post_Setting::get_post_setting_id( get_post( $draft_page_id ) ),
+			sprintf( 'nav_menu_item[%s]', $nav_menu_item_id ),
+			WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $published_post_id ), 'baz' ),
+			WP_Customize_Postmeta_Setting::get_post_meta_setting_id( get_post( $trashed_post_id ), 'baz' )
 		);
+		foreach ( $expected_setting_ids as $expected_setting_id ) {
+			$this->assertContains( $expected_setting_id, $actual_setting_ids );
+		}
 	}
 
 	/**

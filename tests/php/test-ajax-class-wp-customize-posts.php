@@ -525,7 +525,10 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 
 		foreach( $settings_data as $key => $data ) {
 			$this->assertEquals( $setting_key, $key );
-			$this->assertArraySubset( $input_data, $data['value'] );
+			$this->assertEquals(
+				wp_array_slice_assoc( $input_data, array_keys( $input_data ) ),
+				wp_array_slice_assoc( $data['value'], array_keys( $input_data ) )
+			);
 		}
 	}
 }
