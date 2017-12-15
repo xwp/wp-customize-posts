@@ -129,7 +129,9 @@
 					selectorBases.push( 'body.postid-' + String( postId ) );
 				}
 				schema.params.selector = _.map( selectorBases, function( selectorBase ) {
-					var selector = selectorBase + ' ' + schema.params.selector;
+					var selector = schema.params.selector.split( /,/ ).map( function( subSelector ) {
+						return selectorBase + ' ' + subSelector;
+					} ).join( ',' );
 					selector = selector.replace( /%d/g, String( postId ) );
 					return selector;
 				} ).join( ', ' );
