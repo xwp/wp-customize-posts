@@ -103,10 +103,12 @@ final class WP_Customize_Posts_Preview {
 		remove_filter( 'get_edit_post_link', '__return_empty_string' ); // See <https://core.trac.wordpress.org/ticket/38648>.
 
 		// Support for AMP.
-		add_action( 'amp_customizer_enqueue_preview_scripts', array( $this, 'enqueue_scripts' ) );
-		add_action( 'amp_customizer_enqueue_preview_scripts', array( $this, 'export_preview_data' ) );
-		add_filter( 'amp_post_template_data', array( $this, 'filter_amp_post_template_data' ), 10, 2 );
-		add_filter( 'customize_partial_render', array( $this, 'sanitize_amp_rendered_content_partial' ), 10, 3 );
+		if ( defined( 'AMP__VERSION' ) && version_compare( strtok( AMP__VERSION, '-' ), '0.6', '>=' ) ) {
+			add_action( 'amp_customizer_enqueue_preview_scripts', array( $this, 'enqueue_scripts' ) );
+			add_action( 'amp_customizer_enqueue_preview_scripts', array( $this, 'export_preview_data' ) );
+			add_filter( 'amp_post_template_data', array( $this, 'filter_amp_post_template_data' ), 10, 2 );
+			add_filter( 'customize_partial_render', array( $this, 'sanitize_amp_rendered_content_partial' ), 10, 3 );
+		}
 	}
 
 	/**
