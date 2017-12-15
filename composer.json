@@ -24,8 +24,5 @@
 			"name": "Weston Ruter",
 			"homepage": "https://weston.ruter.net/"
 		}
-	],
-	"require-dev": {
-		"satooshi/php-coveralls": "dev-master"
-	}
+	]
 }
