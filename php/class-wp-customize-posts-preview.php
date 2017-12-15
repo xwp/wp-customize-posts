@@ -104,9 +104,7 @@ final class WP_Customize_Posts_Preview {
 
 		// Support for AMP.
 		add_action( 'amp_customizer_enqueue_preview_scripts', array( $this, 'enqueue_scripts' ) );
-		if ( false === has_action( 'amp_post_template_footer', array( $this->component->manager->selective_refresh, 'export_preview_data' ) ) ) {
-			add_action( 'amp_post_template_footer', array( $this->component->manager->selective_refresh, 'export_preview_data' ) );
-		}
+		add_action( 'amp_customizer_enqueue_preview_scripts', array( $this, 'export_preview_data' ) );
 		add_filter( 'amp_post_template_data', array( $this, 'filter_amp_post_template_data' ), 10, 2 );
 		add_filter( 'customize_partial_render', array( $this, 'sanitize_amp_rendered_content_partial' ), 10, 3 );
 	}
@@ -164,16 +162,12 @@ final class WP_Customize_Posts_Preview {
 			&&
 			'post_content' === $partial->field_id
 			&&
-			function_exists( 'amp_load_classes' )
-			&&
 			function_exists( 'is_amp_endpoint' )
 			&&
 			is_amp_endpoint()
 		);
 		if ( $should_get_amp_content ) {
 			$post = get_post( $partial->post_id );
-
-			amp_load_classes();
 
 			// The following is copied from  AMP_Post_Template::__construct(). See <https://github.com/Automattic/amp-wp/blob/c73f4794b35e410c5c9cb4930c2514575d1bb741/includes/class-amp-post-template.php#L47-L51>.
 			$content_max_width = AMP_Post_Template::CONTENT_MAX_WIDTH;
