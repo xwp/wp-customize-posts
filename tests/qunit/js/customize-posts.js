@@ -103,4 +103,11 @@ jQuery( window ).on( 'load', function() {
 		assert.ok( _.isEqual( date.getSeconds(), 36 ) ); // eslint-disable-line
 	});
 
+	QUnit.test( 'Test if wp.customize.Posts.formatDate object exits', function( assert ) {
+		var dateString = '2017-12-14 19:26:36',
+			date = posts.parsePostDate( dateString );
+
+		assert.ok( _.isEqual( posts.formatDate( date ), dateString ) );
+	});
+
 });
