@@ -19,7 +19,7 @@ jQuery( window ).on( 'load', function() {
 		assert.ok( _.has( posts.data, 'initialServerTimestamp' ) );
 		assert.ok( _.has( posts.data, 'l10n' ) );
 		assert.ok( _.has( posts.data, 'postIdInput' ) );
-		assert.ok( 'number', typeof posts.data.initialClientTimestamp );
+		assert.ok( _.isEqual( typeof posts.data.initialClientTimestamp, 'number' )  );
 	});
 
 	QUnit.test( 'Test if wp.customize.controlConstructor.post_discussion_fields', function( assert ) {
@@ -30,6 +30,26 @@ jQuery( window ).on( 'load', function() {
 		assert.ok( control.extended( api.controlConstructor.dynamic ) );
 		assert.equal( control.params.type, 'post_discussion_fields' );
 		assert.equal( control.params.field_type, 'checkbox' );
+	});
+
+	QUnit.test( 'Test wp.customize.parseSettingId', function( assert ) {
+		var parsed = posts.parseSettingId( 'post[post][203]' );
+
+		assert.ok( _.isEqual( posts.parseSettingId( '2' ), null ) );
+		assert.ok( _.isEqual( parsed.postId, 203 ) ); // eslint-disable-line
+		assert.ok( _.isEqual( parsed.postType, 'post' ) );
+		assert.ok( _.isEqual( parsed.settingType, 'post' ) );
+
+		parsed = posts.parseSettingId( 'post[page][204]' );
+		assert.ok( _.isEqual( parsed.postId, 204 ) ); // eslint-disable-line
+		assert.ok( _.isEqual( parsed.postType, 'page' ) );
+		assert.ok( _.isEqual( parsed.settingType, 'post' ) );
+
+		parsed = posts.parseSettingId( 'postmeta[post][202][hello_world]' );
+		assert.ok( _.isEqual( parsed.postId, 202 ) ); // eslint-disable-line
+		assert.ok( _.isEqual( parsed.postType, 'post' ) );
+		assert.ok( _.isEqual( parsed.settingType, 'postmeta' ) );
+		assert.ok( _.isEqual( parsed.metaKey, 'hello_world' ) );
 	});
 
 });
