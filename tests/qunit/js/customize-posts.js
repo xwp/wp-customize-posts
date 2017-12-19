@@ -24,7 +24,7 @@ jQuery( window ).on( 'load', function() {
 		assert.ok( _.isEqual( typeof posts.data.initialClientTimestamp, 'number' )  );
 	});
 
-	QUnit.test( 'Test if wp.customize.controlConstructor.post_discussion_fields', function( assert ) {
+	QUnit.test( 'Test if wp.customize.Posts.controlConstructor.post_discussion_fields', function( assert ) {
 		var control = new api.controlConstructor.post_discussion_fields( 'test_id', {
 			params: {}
 		} );
@@ -34,7 +34,7 @@ jQuery( window ).on( 'load', function() {
 		assert.equal( control.params.field_type, 'checkbox' );
 	});
 
-	QUnit.test( 'Test wp.customize.parseSettingId', function( assert ) {
+	QUnit.test( 'Test wp.customize.Posts.parseSettingId', function( assert ) {
 		var parsed = posts.parseSettingId( 'post[post][203]' );
 
 		assert.ok( _.isEqual( posts.parseSettingId( '2' ), null ) );
@@ -54,7 +54,7 @@ jQuery( window ).on( 'load', function() {
 		assert.ok( _.isEqual( parsed.metaKey, 'hello_world' ) );
 	});
 
-	QUnit.test( 'Test wp.customize.getPostUrl', function( assert ) {
+	QUnit.test( 'Test wp.customize.Posts.getPostUrl', function( assert ) {
 		api.settings.url = api.settings.url || {};
 		api.settings.url.home = 'http://example.org';
 
@@ -69,6 +69,27 @@ jQuery( window ).on( 'load', function() {
 			post_id: 24, // eslint-disable-line
 			preview: true
 		} ), 'http://example.org?preview=true&page_id=24' ) );
+	});
+
+	QUnit.test( 'Test wp.customize.Posts.getPreviewUrl', function( assert ) {
+		api.settings.url = api.settings.url || {};
+		api.settings.url.home = 'http://example.org';
+
+		assert.ok( _.isEqual( posts.getPreviewUrl( {
+			post_type: 'post',
+			post_id: 23, // eslint-disable-line
+			preview: true
+		} ), 'http://example.org?preview=true&p=23' ) );
+	});
+
+	QUnit.test( 'Test wp.customize.Posts.sanitizeTitleWithDashes', function( assert ) {
+		assert.ok( _.isEqual( posts.sanitizeTitleWithDashes( 'hello world' ), 'hello-world' ) );
+		assert.ok( _.isEqual( posts.sanitizeTitleWithDashes( 'hello_world' ), 'hello_world' ) );
+		assert.ok( _.isEqual( posts.sanitizeTitleWithDashes( 'hello %## world' ), 'hello-world' ) );
+		assert.ok( _.isEqual( posts.sanitizeTitleWithDashes( 'HelLo %## woRld' ), 'hello-world' ) );
+		assert.ok( _.isEqual( posts.sanitizeTitleWithDashes( 'HelLo %## _ woRld' ), 'hello-_-world' ) );
+		assert.ok( _.isEqual( posts.sanitizeTitleWithDashes( '' ), '' ) );
+		assert.ok( _.isEqual( posts.sanitizeTitleWithDashes( 10 ), '10' ) ); // eslint-disable-line
 	});
 
 });
