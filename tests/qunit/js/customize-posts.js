@@ -92,4 +92,15 @@ jQuery( window ).on( 'load', function() {
 		assert.ok( _.isEqual( posts.sanitizeTitleWithDashes( 10 ), '10' ) ); // eslint-disable-line
 	});
 
+	QUnit.test( 'Test wp.customize.Posts.parsePostDate', function( assert ) {
+		var date = posts.parsePostDate( '2017-12-14 19:26:36' );
+		assert.ok( date instanceof Date );
+		assert.ok( _.isEqual( date.getFullYear(), 2017 ) ); // eslint-disable-line
+		assert.ok( _.isEqual( date.getDate(), 14 ) ); // eslint-disable-line
+		assert.ok( _.isEqual( date.getMonth() + 1, 12 ) ); // eslint-disable-line
+		assert.ok( _.isEqual( date.getHours(), 19 ) ); // eslint-disable-line
+		assert.ok( _.isEqual( date.getMinutes(), 26 ) ); // eslint-disable-line
+		assert.ok( _.isEqual( date.getSeconds(), 36 ) ); // eslint-disable-line
+	});
+
 });
