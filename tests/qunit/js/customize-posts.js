@@ -7,6 +7,8 @@ jQuery( window ).on( 'load', function() {
 	var api = wp.customize,
 		posts = api.Posts;
 
+	api.settings = api.settings || {};
+
 	QUnit.test( 'Test if wp.customize.Posts object exits', function( assert ) {
 		assert.ok( _.isObject( posts ) );
 		assert.ok( ! _.isEmpty( posts ) );
@@ -50,6 +52,23 @@ jQuery( window ).on( 'load', function() {
 		assert.ok( _.isEqual( parsed.postType, 'post' ) );
 		assert.ok( _.isEqual( parsed.settingType, 'postmeta' ) );
 		assert.ok( _.isEqual( parsed.metaKey, 'hello_world' ) );
+	});
+
+	QUnit.test( 'Test wp.customize.getPostUrl', function( assert ) {
+		api.settings.url = api.settings.url || {};
+		api.settings.url.home = 'http://example.org';
+
+		assert.ok( _.isEqual( posts.getPostUrl( {
+			post_type: 'post',
+			post_id: 23, // eslint-disable-line
+			preview: true
+		} ), 'http://example.org?preview=true&p=23' ) );
+
+		assert.ok( _.isEqual( posts.getPostUrl( {
+			post_type: 'page',
+			post_id: 24, // eslint-disable-line
+			preview: true
+		} ), 'http://example.org?preview=true&page_id=24' ) );
 	});
 
 });
