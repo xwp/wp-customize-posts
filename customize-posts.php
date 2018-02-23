@@ -29,6 +29,13 @@
  * @subpackage Customize
  */
 
+// Register WP-CLI command for generating QUnit test suite.
+if ( defined( 'WP_CLI' ) ) {
+	define( 'CUSTOMIZE_POSTS_DIR_URL', plugin_dir_url( __FILE__ ) );
+	require_once dirname( __FILE__ ) . '/php/class-customize-posts-wp-cli-command.php';
+	WP_CLI::add_command( 'customize-posts', new Customize_Posts_WP_CLI_Command() );
+}
+
 // @codeCoverageIgnoreStart
 require_once dirname( __FILE__ ) . '/php/class-customize-posts-plugin.php';
 $GLOBALS['customize_posts_plugin'] = new Customize_Posts_Plugin(); // @codeCoverageIgnoreEnd
