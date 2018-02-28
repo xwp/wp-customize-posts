@@ -101,6 +101,14 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'customize_render_partials_response', array( $this, 'amend_with_queried_post_ids' ) );
 		add_filter( 'customize_render_partials_response', array( $this, 'amend_partials_response_with_rest_resources' ), 10, 3 );
 		remove_filter( 'get_edit_post_link', '__return_empty_string' ); // See <https://core.trac.wordpress.org/ticket/38648>.
+
+		// Support for AMP.
+		if ( defined( 'AMP__VERSION' ) && version_compare( strtok( AMP__VERSION, '-' ), '0.6', '>=' ) ) {
+			add_action( 'amp_customizer_enqueue_preview_scripts', array( $this, 'enqueue_scripts' ) );
+			add_action( 'amp_customizer_enqueue_preview_scripts', array( $this, 'export_preview_data' ) );
+			add_filter( 'amp_post_template_data', array( $this, 'filter_amp_post_template_data' ), 10, 2 );
+			add_filter( 'customize_partial_render', array( $this, 'sanitize_amp_rendered_content_partial' ), 10, 3 );
+		}
 	}
 
 	/**
@@ -124,6 +132,102 @@ final class WP_Customize_Posts_Preview {
 		add_filter( 'get_post_status', array( $this, 'filter_get_post_status' ), 10, 2 );
 		$this->has_preview_filters = true;
 		return true;
+	}
+
+	/**
+	 * Filter AMP post template data to add body classes.
+	 *
+	 * @param array   $data Data.
+	 * @param WP_Post $post Post.
+	 *
+	 * @return array Data.
+	 */
+	public function filter_amp_post_template_data( $data, $post ) {
+		if ( 'page' === $post->post_type ) {
+			$data['body_class'] .= sprintf( 'page-id-%d', $post->ID );
+		} else {
+			$data['body_class'] .= sprintf( 'postid-%d', $post->ID );
+		}
+		return $data;
+	}
+
+	/**
+	 * Sanitize rendered content field partial for AMP.
+	 *
+	 * @param string|array|false   $rendered The partial value. Default false.
+	 * @param WP_Customize_Partial $partial  WP_Customize_Setting instance.
+	 * @return string Rendered partial.
+	 */
+	public function sanitize_amp_rendered_content_partial( $rendered, $partial ) {
+		$should_get_amp_content = (
+			$partial instanceof WP_Customize_Post_Field_Partial
+			&&
+			'post_content' === $partial->field_id
+			&&
+			function_exists( 'is_amp_endpoint' )
+			&&
+			is_amp_endpoint()
+		);
+		if ( $should_get_amp_content ) {
+			$post = get_post( $partial->post_id );
+
+			// The following is copied from  AMP_Post_Template::__construct(). See <https://github.com/Automattic/amp-wp/blob/c73f4794b35e410c5c9cb4930c2514575d1bb741/includes/class-amp-post-template.php#L47-L51>.
+			$content_max_width = AMP_Post_Template::CONTENT_MAX_WIDTH;
+			if ( isset( $GLOBALS['content_width'] ) && $GLOBALS['content_width'] > 0 ) {
+				$content_max_width = $GLOBALS['content_width'];
+			}
+			$content_max_width = apply_filters( 'amp_content_max_width', $content_max_width );
+
+			// The following is adapted from AMP_Post_Template::build_post_content(). See <https://github.com/Automattic/amp-wp/blob/c73f4794b35e410c5c9cb4930c2514575d1bb741/includes/class-amp-post-template.php#L231-L265>.
+			$amp_content = new AMP_Content( $rendered,
+				apply_filters(
+					'amp_content_embed_handlers', array(
+						'AMP_Twitter_Embed_Handler' => array(),
+						'AMP_YouTube_Embed_Handler' => array(),
+						'AMP_DailyMotion_Embed_Handler' => array(),
+						'AMP_Vimeo_Embed_Handler' => array(),
+						'AMP_SoundCloud_Embed_Handler' => array(),
+						'AMP_Instagram_Embed_Handler' => array(),
+						'AMP_Vine_Embed_Handler' => array(),
+						'AMP_Facebook_Embed_Handler' => array(),
+						'AMP_Pinterest_Embed_Handler' => array(),
+						'AMP_Gallery_Embed_Handler' => array(),
+					),
+					$post
+				),
+				apply_filters(
+					'amp_content_sanitizers', array(
+						'AMP_Style_Sanitizer' => array(),
+						'AMP_Img_Sanitizer' => array(),
+						'AMP_Video_Sanitizer' => array(),
+						'AMP_Audio_Sanitizer' => array(),
+						'AMP_Playbuzz_Sanitizer' => array(),
+						'AMP_Iframe_Sanitizer' => array(
+							'add_placeholder' => true,
+						),
+						'AMP_Tag_And_Attribute_Sanitizer' => array(),
+					),
+					$post
+				),
+				array(
+					'content_max_width' => $content_max_width,
+				)
+			);
+			$rendered = $amp_content->get_amp_content();
+			foreach ( $amp_content->get_amp_scripts() as $id => $src ) {
+				$rendered .= sprintf( '<script async custom-element="%s" src="%s"></script>', esc_attr( $id ), esc_url( $src ) );
+			}
+			$styles = $amp_content->get_amp_styles();
+			if ( ! empty( $styles ) ) {
+				$rendered .= '<style>';
+				foreach ( $styles as $selector => $declarations ) {
+					$declarations = implode( ';', $declarations ) . ';';
+					$rendered .= sprintf( '%1$s{%2$s}', $selector, $declarations );
+				}
+				$rendered .= '</style>';
+			}
+		}
+		return $rendered;
 	}
 
 	/**
@@ -1310,7 +1414,7 @@ final class WP_Customize_Posts_Preview {
 	public function get_post_field_partial_schema( $field_id = '' ) {
 		$schema = array(
 			'post_title' => array(
-				'selector' => '.entry-title',
+				'selector' => '.entry-title, .amp-wp-title',
 			),
 			'post_name' => array(
 				'fallback_refresh' => false,
@@ -1329,7 +1433,7 @@ final class WP_Customize_Posts_Preview {
 				'fallback_refresh' => false,
 			),
 			'post_content' => array(
-				'selector' => '.entry-content',
+				'selector' => '.entry-content, .amp-wp-article-content',
 			),
 			'post_excerpt' => array(
 				'selector' => '.entry-summary',

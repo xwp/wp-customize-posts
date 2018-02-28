@@ -490,27 +490,21 @@ class Test_Ajax_WP_Customize_Posts extends WP_Ajax_UnitTestCase {
 		$_POST = wp_slash( array(
 			'customize_posts_update_changeset_nonce' => wp_create_nonce( 'customize_posts_update_changeset' ),
 			'previewed_post' => $post_id,
-			'customize_url' => wp_customize_url(),
 			'input_data' => $input_data,
 		) );
 		$this->make_ajax_call( 'customize_posts_update_changeset' );
 		$response = json_decode( $this->_last_response, true );
 
 		$this->assertTrue( $response['success'] );
-		$this->assertArrayHasKey( 'customize_url', $response['data'] );
+		$this->assertArrayHasKey( 'changeset_uuid', $response['data'] );
 		$this->assertArrayHasKey( 'response', $response['data'] );
 		$this->assertArrayHasKey( 'setting_validities', $response['data']['response'] );
 
 		$setting_key = "post[post][$post_id]";
 		$this->assertTrue( $response['data']['response']['setting_validities'][ $setting_key ] );
 
-		$customize_url_parts = parse_url( $response['data']['customize_url'] );
-		parse_str( $customize_url_parts['query'], $url_query );
-		$this->assertNotEmpty( $url_query['changeset_uuid'] );
-		$this->assertEquals( get_post_meta( $post_id, '_preview_changeset_uuid', true ), $url_query['changeset_uuid'] );
-
 		$query = new WP_Query( array(
-			'post_name' => $url_query['changeset_uuid'],
+			'post_name' => $response['data']['changeset_uuid'],
 			'post_type' => 'customize_changeset',
 			'post_status' => 'auto-draft',
 			'no_found_rows' => true,

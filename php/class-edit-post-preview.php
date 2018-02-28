@@ -134,7 +134,6 @@ class Edit_Post_Preview {
 
 		$customize_url = add_query_arg(
 			array(
-				'url' => urlencode( self::get_preview_post_link( $post ) ),
 				'previewed_post' => $post->ID,
 				'autofocus[section]' => sprintf( 'post[%s][%d]', $post->post_type, $post->ID ),
 				self::PREVIEW_POST_NONCE_QUERY_VAR => wp_create_nonce( self::PREVIEW_POST_NONCE_ACTION ),
@@ -146,7 +145,6 @@ class Edit_Post_Preview {
 			'customize_url' => $customize_url,
 			self::UPDATE_CHANGESET_NONCE => wp_create_nonce( self::UPDATE_CHANGESET_NONCE_ACTION ),
 			'previewed_post' => $post->ID,
-			'is_compat' => version_compare( strtok( get_bloginfo( 'version' ), '-' ), '4.7', '<' ),
 		);
 
 		wp_scripts()->add_data( 'edit-post-preview-admin', 'data', sprintf( 'var _editPostPreviewAdminExports = %s;', wp_json_encode( $data ) ) );
@@ -224,9 +222,6 @@ class Edit_Post_Preview {
 		} elseif ( ! isset( $_POST['previewed_post'] ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'missing_previewed_post' );
-		} elseif ( empty( $_POST['customize_url'] ) ) {
-			status_header( 400 );
-			wp_send_json_error( 'missing_customize_url' );
 		} elseif ( empty( $_POST['input_data'] ) || ! is_array( $_POST['input_data'] ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'missing_input_data' );
@@ -249,9 +244,9 @@ class Edit_Post_Preview {
 		}
 
 		if ( $changeset_uuid ) {
-			$wp_customize = new \WP_Customize_Manager( array(
+			$wp_customize = new WP_Customize_Manager( array(
 				'changeset_uuid' => $changeset_uuid,
-			) );
+			) ); // WPCS: override ok.
 			$changeset_post_id = $wp_customize->changeset_post_id();
 
 			if ( $changeset_post_id ) {
@@ -272,15 +267,10 @@ class Edit_Post_Preview {
 				status_header( 403 );
 				wp_send_json_error( 'cannot_create_changeset_post' );
 			}
-			$wp_customize = new \WP_Customize_Manager();
+			$wp_customize = new WP_Customize_Manager(); // WPCS: override ok.
 			$changeset_uuid = $wp_customize->changeset_uuid();
 			update_post_meta( $previewed_post_id, '_preview_changeset_uuid', $changeset_uuid );
 		}
-
-		$customize_url = add_query_arg(
-			compact( 'changeset_uuid' ),
-			wp_unslash( $_POST['customize_url'] )
-		);
 
 		if ( ! isset( $wp_customize->posts ) || ! ( $wp_customize->posts instanceof WP_Customize_Posts ) ) {
 			wp_send_json_error( 'missing_posts_component' );
@@ -317,6 +307,6 @@ class Edit_Post_Preview {
 			wp_send_json_error( $response->get_error_code() );
 		}
 
-		wp_send_json_success( compact( 'customize_url', 'response' ) );
+		wp_send_json_success( compact( 'changeset_uuid', 'response' ) );
 	}
 }

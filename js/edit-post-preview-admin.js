@@ -8,7 +8,6 @@ var EditPostPreviewAdmin = (function( $ ) {
 	var component = {
 		data: {
 			customize_url: null,
-			is_compat: false,
 			previewed_post: null,
 			customize_posts_update_changeset_nonce: null
 		}
@@ -18,17 +17,23 @@ var EditPostPreviewAdmin = (function( $ ) {
 		$.extend( component.data, _editPostPreviewAdminExports );
 	}
 
+	/**
+	 * Init.
+	 *
+	 * @returns {void}
+	 */
 	component.init = function() {
-		component.previewButton = $( '#post-preview' );
-		component.previewButtonSpinner = $( 'span.spinner' ).first().clone();
-		component.previewButton.after( component.previewButtonSpinner );
-		component.previewButton
-			.off( 'click.post-preview' )
-			.on( 'click.post-preview', component.onClickPreviewBtn );
+		$( 'form#post' ).on( 'submit', component.onPreviewSubmitPostForm );
 	};
 
-	component.onClickPreviewBtn = function( event ) {
-		var $btn = $( this ),
+	/**
+	 * Handle submitting form from preview button.
+	 *
+	 * @param {jQuery.Event} event - Event.
+	 * @returns {void}
+	 */
+	component.onPreviewSubmitPostForm = function( event ) {
+		var $btn,
 			postId = $( '#post_ID' ).val(),
 			postType = $( '#post_type' ).val(),
 			postSettingId,
@@ -38,13 +43,21 @@ var EditPostPreviewAdmin = (function( $ ) {
 			wasMobile,
 			parentId,
 			menuOrder,
-			request;
+			request,
+			customizeUrl;
+
+		$btn = $( document.activeElement );
+		if ( ! $btn.is( 'a.preview' ) || 'dopreview' !== $( '#wp-preview' ).val() ) {
+			return;
+		}
 
 		event.preventDefault();
 
 		if ( $btn.hasClass( 'disabled' ) ) {
 			return;
 		}
+
+		customizeUrl = component.data.customize_url + '&url=' + encodeURIComponent( $btn.prop( 'href' ) );
 
 		wp.customize.Loader.link = $btn;
 
@@ -81,41 +94,30 @@ var EditPostPreviewAdmin = (function( $ ) {
 		// Allow plugins to inject additional settings to preview.
 		wp.customize.trigger( 'settings-from-edit-post-screen', settings );
 
-		// For backward compatibility send the current input fields from the edit post page to the Customizer via sessionStorage.
-		if ( component.data.is_compat ) {
-			sessionStorage.setItem( 'previewedCustomizePostSettings[' + postId + ']', JSON.stringify( settings ) );
-			wp.customize.Loader.open( component.data.customize_url );
+		$btn.addClass( 'disabled' ).addClass( 'loading' );
+		request = wp.ajax.post( 'customize_posts_update_changeset', {
+			customize_posts_update_changeset_nonce: component.data.customize_posts_update_changeset_nonce,
+			previewed_post: component.data.previewed_post,
+			input_data: postSettingValue
+		} );
+
+		request.fail( function( resp ) {
+			var error = JSON.parse( resp.responseText ), errorText;
+			if ( error.data ) {
+				errorText = error.data.replace( /_/g, ' ' );
+				alert( errorText.charAt( 0 ).toUpperCase() + errorText.slice( 1 ) ); // eslint-disable-line no-alert
+			}
+		} );
+
+		request.done( function( resp ) {
+			wp.customize.Loader.open( customizeUrl + '&changeset_uuid=' + encodeURIComponent( resp.changeset_uuid ) );
 			wp.customize.Loader.settings.browser.mobile = wasMobile;
 			component.bindChangesFromCustomizer( postSettingId, editor );
-		} else {
-			$btn.addClass( 'disabled' );
-			component.previewButtonSpinner.addClass( 'is-active is-active-preview' );
-			request = wp.ajax.post( 'customize_posts_update_changeset', {
-				customize_posts_update_changeset_nonce: component.data.customize_posts_update_changeset_nonce,
-				previewed_post: component.data.previewed_post,
-				customize_url: component.data.customize_url,
-				input_data: postSettingValue
-			} );
+		} );
 
-			request.fail( function( resp ) {
-				var error = JSON.parse( resp.responseText ), errorText;
-				if ( error.data ) {
-					errorText = error.data.replace( /_/g, ' ' );
-					alert( errorText.charAt( 0 ).toUpperCase() + errorText.slice( 1 ) ); // eslint-disable-line no-alert
-				}
-			} );
-
-			request.done( function( resp ) {
-				wp.customize.Loader.open( resp.customize_url );
-				wp.customize.Loader.settings.browser.mobile = wasMobile;
-				component.bindChangesFromCustomizer( postSettingId, editor );
-			} );
-
-			request.always( function() {
-				$btn.removeClass( 'disabled' );
-				component.previewButtonSpinner.removeClass( 'is-active is-active-preview' );
-			} );
-		}
+		request.always( function() {
+			$btn.removeClass( 'disabled' ).removeClass( 'loading' );
+		} );
 	};
 
 	/**
